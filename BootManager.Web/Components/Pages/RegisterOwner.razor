@@ -1,0 +1,87 @@
+@page "/register-owner"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using BootManager.Application.OwnerRegistration.DTOs
+@inject BootManager.Application.OwnerRegistration.Services.IOwnerRegistrationService RegistrationService
+
+ @inject NavigationManager Nav 
+
+<h3>Register Owner</h3>
+
+
+@if (_done)
+{
+    <div class="alert alert-success">
+        <p>Owner registered successfully.</p>
+        @if (!string.IsNullOrEmpty(_response?.RecoveryCodePlain))
+        {
+            <p><strong>Recovery Code (store safely):</strong> @_response.RecoveryCodePlain</p>
+        }
+        <button type="button" class="btn btn-primary" @onclick="GoDashboard">Continue</button>
+    </div>
+}
+else
+{
+    <EditForm Model="@_model" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="mb-2">
+            <label>Name</label>
+            <InputText class="form-control" @bind-Value="_model.Name" />
+        </div>
+        <div class="mb-2">
+            <label>Email</label>
+            <InputText class="form-control" @bind-Value="_model.Email" />
+        </div>
+        <div class="mb-2">
+            <label>Password</label>
+            <InputText class="form-control" type="password" @bind-Value="_model.Password" />
+        </div>
+        <div class="mb-2">
+            <label>Confirm Password</label>
+            <InputText class="form-control" type="password" @bind-Value="_model.ConfirmPassword" />
+        </div>
+        <div class="form-check mb-3">
+            <InputCheckbox class="form-check-input" @bind-Value="_model.GenerateRecoveryCode" />
+            <label class="form-check-label">Generate recovery code</label>
+        </div>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+        <button class="btn btn-success" type="submit" disabled="@_busy">Register</button>
+    </EditForm>
+}
+
+@code {
+    private RegisterOwnerRequestDto _model = new() { GenerateRecoveryCode = true };
+    private RegisterOwnerResponseDto? _response;
+    private bool _busy;
+    private bool _done;
+    private string? _error;
+
+    private async Task HandleSubmit()
+    {
+        _error = null;
+        _busy = true;
+        try
+        {
+            _response = await RegistrationService.RegisterFirstOwnerAsync(_model);
+            _done = true;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoDashboard() {
+        Nav.NavigateTo("/dashboard"); 
+    }
+    
+
+}

@@ -1,0 +1,64 @@
+@* 
+Component: StartupGate
+Purpose:
+- Acts as a startup guard that runs once on first render and routes the user to the correct entry page:
+  - If this is the first run (no owner profile exists): navigate to "/register-owner".
+  - Otherwise: navigate to "/login".
+
+How it works:
+- Uses OnAfterRenderAsync(firstRender: true) so navigation occurs after the first UI render (safe for NavigationManager redirect).
+- Calls IOwnerRegistrationService.CheckFirstRunAsync() to determine first-run state.
+- Uses a local _checked flag to ensure the navigation logic runs only once per render cycle and avoids duplicate redirects.
+
+Where to place:
+- Include once in Routes.razor inside the <Found> block so it evaluates on application startup or first navigation:
+  <Router ...>
+    <Found Context="routeData">
+      <StartupGate />
+      <RouteView RouteData="routeData" />
+    </Found>
+    ...
+  </Router>
+
+Dependencies:
+- IOwnerRegistrationService: provides the first-run check.
+- NavigationManager: performs the redirect.
+
+Blazor hosting notes:
+- Blazor Server: interactive by default; no extra render mode needed.
+- Blazor Web App (.NET 8): ensure this component (or its parent) uses an interactive render mode (e.g., InteractiveServer) so eventing and navigation occur on the server.
+
+Extensibility ideas (optional):
+- Add error handling (try/catch) and fallback route if the service call fails.
+- Add a small loading indicator while the check is in progress.
+- Add a parameter to opt-out of automatic navigation for testing.
+
+Testing guidance:
+- Mock IOwnerRegistrationService.CheckFirstRunAsync() to return true/false and assert that NavigationManager.NavigateTo is called with the expected route.
+*@
+@inject BootManager.Application.OwnerRegistration.Services.IOwnerRegistrationService RegistrationService
+@inject NavigationManager Nav
+
+@code {
+    // Ensures the redirect logic only executes once per component lifecycle/render.
+    private bool _checked;
+
+    /// <summary>
+    /// After the first render, determines whether BootManager is in first-run state.
+    /// Navigates to the registration page if no owner profile exists; otherwise to the login page.
+    /// Using OnAfterRenderAsync avoids navigation during render and ensures NavigationManager is ready.
+    /// </summary>
+    /// <param name="firstRender">True only on the first render of this component instance.</param>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _checked) return;
+
+        var result = await RegistrationService.CheckFirstRunAsync();
+        _checked = true;
+
+        if (result.IsFirstRun)
+            Nav.NavigateTo("/register-owner");
+        else
+            Nav.NavigateTo("/login");
+    }
+}

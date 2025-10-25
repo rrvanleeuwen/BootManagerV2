@@ -1,0 +1,18 @@
+@inject BootManager.Application.OwnerRegistration.Services.IOwnerRegistrationService RegistrationService
+@inject NavigationManager Nav
+
+@code {
+    private bool _checked;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _checked) return;
+
+        var result = await RegistrationService.CheckFirstRunAsync();
+        _checked = true;
+
+        if (result.IsFirstRun)
+            Nav.NavigateTo("/register-owner", forceLoad: false);
+        else
+            Nav.NavigateTo("/login", forceLoad: false); // placeholder
+    }
+}
