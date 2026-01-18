@@ -1,0 +1,167 @@
+@page "/recover"
+@using System.Net.Http.Json
+@inject BootManager.Application.Authentication.Services.IOwnerRecoveryService RecoveryService
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+
+<h3>Herstel toegang</h3>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5>Herstel via back-upcode</h5>
+        <EditForm Model="backupModel" OnValidSubmit="HandleBackup">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="mb-2">
+                <label>Back-upcode</label>
+                <InputText class="form-control" @bind-Value="backupModel.Code" />
+            </div>
+            <div class="mb-2">
+                <label>Nieuw wachtwoord</label>
+                <InputText class="form-control" type="password" @bind-Value="backupModel.NewPassword" />
+            </div>
+            <div class="mb-2">
+                <label>Bevestig nieuw wachtwoord</label>
+                <InputText class="form-control" type="password" @bind-Value="backupModel.ConfirmNewPassword" />
+            </div>
+            <button class="btn btn-primary">Herstel toegang</button>
+        </EditForm>
+        @if (!string.IsNullOrEmpty(backupMsg)) { <div class="text-info">@backupMsg</div> }
+        @if (!string.IsNullOrEmpty(newRecoveryShown))
+        {
+            <div class="alert alert-warning mt-2">
+                <p><strong>Nieuwe back-upcode (slechts éénmaal getoond):</strong></p>
+                <div class="d-flex align-items-center">
+                    <input class="form-control me-2" readonly value="@newRecoveryShown" />
+                    <button class="btn btn-outline-secondary" @onclick="() => CopyRecovery(newRecoveryShown)">Kopieer</button>
+                </div>
+                <p class="mt-2"><small>Sla deze code veilig op; deze wordt slechts éénmaal weergegeven.</small></p>
+                <div class="mt-2">
+                    <button class="btn btn-link" @onclick="GoLogin">Ga nu naar inloggen</button>
+                    @if (_countdown > 0) { <span class="ms-2">(Automatisch in @(_countdown)s)</span> }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5>Importeer beheersleutel</h5>
+        <EditForm Model="keyModel" OnValidSubmit="HandleImport">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="mb-2">
+                <label>Beheersleutel (tekst)</label>
+                <InputText class="form-control" @bind-Value="keyModel.Key" />
+            </div>
+            <div class="mb-2">
+                <label>Nieuw wachtwoord</label>
+                <InputText class="form-control" type="password" @bind-Value="keyModel.NewPassword" />
+            </div>
+            <div class="mb-2">
+                <label>Bevestig nieuw wachtwoord</label>
+                <InputText class="form-control" type="password" @bind-Value="keyModel.ConfirmNewPassword" />
+            </div>
+            <button class="btn btn-primary">Importeer sleutel</button>
+        </EditForm>
+        @if (!string.IsNullOrEmpty(keyMsg)) { <div class="text-info">@keyMsg</div> }
+        @if (!string.IsNullOrEmpty(newRecoveryShown))
+        {
+            <div class="alert alert-warning mt-2">
+                <p><strong>Nieuwe back-upcode (slechts éénmaal getoond):</strong></p>
+                <div class="d-flex align-items-center">
+                    <input class="form-control me-2" readonly value="@newRecoveryShown" />
+                    <button class="btn btn-outline-secondary" @onclick="() => CopyRecovery(newRecoveryShown)">Kopieer</button>
+                </div>
+                <p class="mt-2"><small>Sla deze code veilig op; deze wordt slechts éénmaal weergegeven.</small></p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private BackupModel backupModel = new();
+    private KeyModel keyModel = new();
+
+    private string? backupMsg;
+    private string? keyMsg;
+    private string? newRecoveryShown;
+
+    private async Task HandleBackup()
+    {
+        backupMsg = null;
+        if (backupModel.NewPassword != backupModel.ConfirmNewPassword)
+        {
+            backupMsg = "Wachtwoorden komen niet overeen.";
+            return;
+        }
+
+        var res = await RecoveryService.RestoreWithBackupCodeAsync(backupModel.Code, backupModel.NewPassword);
+        if (res.Success)
+        {
+            backupMsg = "Herstel geslaagd. Stel je inloggegevens veilig op. Je wordt doorgestuurd naar inloggen.";
+            newRecoveryShown = res.NewRecoveryCodePlain;
+            StartRedirectCountdown(5);
+        }
+        else
+        {
+            backupMsg = res.Message ?? "Mislukt";
+        }
+    }
+
+    private async Task HandleImport()
+    {
+        keyMsg = null;
+        if (keyModel.NewPassword != keyModel.ConfirmNewPassword)
+        {
+            keyMsg = "Wachtwoorden komen niet overeen.";
+            return;
+        }
+
+        var res = await RecoveryService.RestoreWithMasterKeyAsync(keyModel.Key, keyModel.NewPassword);
+        if (res.Success)
+        {
+            keyMsg = "Import geslaagd. Stel je inloggegevens veilig op. Je wordt doorgestuurd naar inloggen.";
+            newRecoveryShown = res.NewRecoveryCodePlain;
+            StartRedirectCountdown(5);
+        }
+        else
+        {
+            keyMsg = res.Message ?? "Mislukt";
+        }
+    }
+
+    private sealed class BackupModel { public string Code { get; set; } = string.Empty; public string NewPassword { get; set; } = string.Empty; public string ConfirmNewPassword { get; set; } = string.Empty; }
+    private sealed class KeyModel { public string Key { get; set; } = string.Empty; public string NewPassword { get; set; } = string.Empty; public string ConfirmNewPassword { get; set; } = string.Empty; }
+
+    private async Task CopyRecovery(string text)
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    private int _countdown;
+    private async void StartRedirectCountdown(int seconds)
+    {
+        _countdown = seconds;
+        while (_countdown > 0)
+        {
+            await Task.Delay(1000);
+            _countdown--;
+            await InvokeAsync(StateHasChanged);
+        }
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+
+    private void GoLogin()
+    {
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+}

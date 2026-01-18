@@ -41,6 +41,10 @@
     <button class="btn btn-primary" type="submit" disabled="@_busy">@(_busy ? "Bezig..." : "Inloggen")</button>
 </EditForm>
 
+<div class="mt-3">
+    <a href="/recover">Wachtwoord vergeten / Herstel toegang</a>
+</div>
+
 @code {
     private BootManager.Application.Authentication.DTOs.LoginRequestDto _model = new();
     private bool _busy;
