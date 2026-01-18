@@ -13,6 +13,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IOwnerRegistrationService, OwnerRegistrationService>();
         services.AddScoped<IOwnerLoginService, OwnerLoginService>();
+        services.AddScoped<IOwnerSettingsService, OwnerSettingsService>();
         return services;
     }
 }
