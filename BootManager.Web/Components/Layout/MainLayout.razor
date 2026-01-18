@@ -3,57 +3,77 @@
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Routing
 
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 
+<!-- SB Admin 2 theme and FontAwesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin-2@4.1.4/css/sb-admin-2.min.css" rel="stylesheet" />
 <link href="/css/site.css" rel="stylesheet" />
 
-<div class="site-header">
-    <div class="brand">eBusiness</div>
-    <nav class="top-nav @( _menuOpen ? "open" : "" )" aria-hidden="@(!_menuOpen)">
-        <NavLink href="/" class="nav-item" Match="NavLinkMatch.All" @onclick="CloseMenu">Home</NavLink>
-        <NavLink href="/about" class="nav-item" @onclick="CloseMenu">About</NavLink>
-        <AuthorizeView>
-            <Authorized>
-                <NavLink href="/settings" class="nav-item" @onclick="CloseMenu">Instellingen</NavLink>
-            </Authorized>
-        </AuthorizeView>
-        <NavLink href="/services" class="nav-item" @onclick="CloseMenu">Services</NavLink>
-        <NavLink href="/portfolio" class="nav-item" @onclick="CloseMenu">Portfolio</NavLink>
-        <NavLink href="/team" class="nav-item" @onclick="CloseMenu">Team</NavLink>
-        <NavLink href="/contact" class="nav-item" @onclick="CloseMenu">Contact</NavLink>
-        <button class="btn-getstarted" @onclick="CloseMenu">Get Started</button>
-    </nav>
-    <button class="nav-toggle @( _menuOpen ? "open" : "" )" @onclick="ToggleMenu" aria-label="Toggle navigation" aria-expanded="@(_menuOpen ? "true" : "false")">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
-    <div class="auth-area">
-        <AuthorizeView>
-            <Authorized Context="authState">
-                <div class="user-info">Ingelogd als @GetDisplayName(authState)</div>
-                <button class="btn-logout" @onclick="Logout" disabled="@_logoutBusy">@(_logoutBusy ? "Uitloggen..." : "Uitloggen")</button>
-            </Authorized>
-            <NotAuthorized>
-                <a class="btn-login" href="login">Inloggen</a>
-            </NotAuthorized>
-        </AuthorizeView>
+<div class="navbar navbar-expand-lg navbar-light bg-white topbar mb-4 static-top shadow site-header">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">BootManager</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topNavbarSupportedContent" aria-controls="topNavbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="fa fa-bars"></span>
+        </button>
+
+        <NavMenu />
+
+        <ul class="navbar-nav ml-auto">
+            <AuthorizeView>
+                <Authorized>
+                    <li class="nav-item">
+                        <button class="btn btn-link nav-link" @onclick="Logout" disabled="@_logoutBusy" title="Uitloggen">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="d-none d-lg-inline"> Uitloggen</span>
+                        </button>
+                    </li>
+                </Authorized>
+            </AuthorizeView>
+            <li class="nav-item dropdown no-arrow">
+                <AuthorizeView>
+                    <Authorized Context="authState">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="mr-2 d-none d-lg-inline text-gray-600 small">Ingelogd als @GetDisplayName(authState)</span>
+                            <i class="fas fa-user-circle fa-lg"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                            <a class="dropdown-item" href="/settings">Instellingen</a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item" @onclick="Logout" disabled="@_logoutBusy">@(_logoutBusy ? "Uitloggen..." : "Uitloggen")</button>
+                        </div>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a class="nav-link" href="/login">Inloggen</a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </li>
+        </ul>
     </div>
 </div>
 
-<main>
-    <article class="content">
-        @Body
-    </article>
-</main>
+<div class="container-fluid">
+    <main>
+        <article class="content p-4">
+            @Body
+        </article>
+    </main>
+</div>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+<!-- SB Admin 2 scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin-2@4.1.4/js/sb-admin-2.min.js"></script>
+<script src="/js/ui.js"></script>
 
 @code {
     private IJSObjectReference? _authModule;
@@ -69,6 +89,8 @@
         if (firstRender)
         {
             _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/authClient.js");
+            // Setup auto-collapse for mobile menu so clicking outside or on items closes it
+            await Js.InvokeVoidAsync("setupAutoCollapse", "topNavbarSupportedContent", null);
         }
     }
 
