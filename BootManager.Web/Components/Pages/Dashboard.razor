@@ -1,3 +1,5 @@
 @page "/dashboard"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+
 <h3>BootManager Dashboard</h3>
 <p>Welcome (placeholder).</p>

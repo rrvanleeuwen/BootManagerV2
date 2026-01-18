@@ -36,29 +36,41 @@ Extensibility ideas (optional):
 Testing guidance:
 - Mock IOwnerRegistrationService.CheckFirstRunAsync() to return true/false and assert that NavigationManager.NavigateTo is called with the expected route.
 *@
+@using Microsoft.AspNetCore.Components.Authorization
 @inject BootManager.Application.OwnerRegistration.Services.IOwnerRegistrationService RegistrationService
 @inject NavigationManager Nav
 
 @code {
-    // Ensures the redirect logic only executes once per component lifecycle/render.
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
     private bool _checked;
 
-    /// <summary>
-    /// After the first render, determines whether BootManager is in first-run state.
-    /// Navigates to the registration page if no owner profile exists; otherwise to the login page.
-    /// Using OnAfterRenderAsync avoids navigation during render and ensures NavigationManager is ready.
-    /// </summary>
-    /// <param name="firstRender">True only on the first render of this component instance.</param>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _checked) return;
 
-        var result = await RegistrationService.CheckFirstRunAsync();
-        _checked = true;
+        var relative = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+        var firstRun = await RegistrationService.CheckFirstRunAsync();
 
-        if (result.IsFirstRun)
-            Nav.NavigateTo("/register-owner");
-        else
-            Nav.NavigateTo("/login");
+        // 1) First run: always go to register page
+        if (firstRun.IsFirstRun)
+        {
+            _checked = true;
+            if (!string.Equals(relative, "register-owner", StringComparison.OrdinalIgnoreCase))
+                Nav.NavigateTo("/register-owner", replace: true);
+            return;
+        }
+
+        // 2) Not first run: only gate the site root
+        if (string.IsNullOrEmpty(relative))
+        {
+            var auth = AuthenticationStateTask is null ? null : await AuthenticationStateTask;
+            var isAuth = auth?.User?.Identity?.IsAuthenticated == true;
+            _checked = true;
+            Nav.NavigateTo(isAuth ? "/dashboard" : "/login", replace: true);
+            return;
+        }
+
+        // 3) Any other route: no redirect
+        _checked = true;
     }
 }

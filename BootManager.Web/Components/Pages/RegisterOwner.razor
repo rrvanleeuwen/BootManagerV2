@@ -1,13 +1,12 @@
 @page "/register-owner"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Forms
 @using BootManager.Application.OwnerRegistration.DTOs
 @inject BootManager.Application.OwnerRegistration.Services.IOwnerRegistrationService RegistrationService
-
- @inject NavigationManager Nav 
+@inject NavigationManager Nav
 
 <h3>Register Owner</h3>
-
 
 @if (_done)
 {

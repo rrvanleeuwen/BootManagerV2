@@ -1,14 +1,23 @@
 namespace BootManager.Core.Entities;
 
+/// <summary>
+/// Domein-entiteit voor het eigenaarprofiel. Er is maximaal 1 record.
+/// Bevat hash voor wachtwoord, optioneel pincode-hash en versleutelde PII (naam, e-mail).
+/// </summary>
 public class OwnerProfile
 {
-    // Er is maximaal 1 eigenaarprofiel. Id blijft generiek voor eenvoud.
     public Guid Id { get; private set; } = Guid.NewGuid();
 
+    // Wachtwoord (vereist)
     public string PasswordHash { get; private set; } = default!;
     public string PasswordSalt { get; private set; } = default!;
     public string HashAlgorithm { get; private set; } = default!;
 
+    // Optionele pincode (mag null zijn als niet ingesteld)
+    public string? PinHash { get; private set; }
+    public string? PinSalt { get; private set; }
+
+    // Recovery (optioneel)
     public string? RecoveryCodeHash { get; private set; }
     public string? RecoveryCodeSalt { get; private set; }
 
@@ -19,7 +28,7 @@ public class OwnerProfile
     public DateTime CreatedUtc { get; private set; }
     public DateTime? UpdatedUtc { get; private set; }
 
-    private OwnerProfile() { } // EF ctor
+    private OwnerProfile() { } // Voor EF
 
     private OwnerProfile(string passwordHash, string passwordSalt, string hashAlgorithm,
         byte[] encryptedProfilePayload, int encryptionVersion, DateTime createdUtc)
@@ -67,6 +76,22 @@ public class OwnerProfile
     {
         EncryptedProfilePayload = newPayload;
         EncryptionVersion = encryptionVersion;
+        UpdatedUtc = nowUtc;
+    }
+
+    /// <summary>Stelt/overschrijft de pincodehash (optioneel feature; mag null blijven in DB).</summary>
+    public void SetPin(string pinHash, string pinSalt, DateTime nowUtc)
+    {
+        PinHash = pinHash;
+        PinSalt = pinSalt;
+        UpdatedUtc = nowUtc;
+    }
+
+    /// <summary>Verwijdert de pincode.</summary>
+    public void ClearPin(DateTime nowUtc)
+    {
+        PinHash = null;
+        PinSalt = null;
         UpdatedUtc = nowUtc;
     }
 }

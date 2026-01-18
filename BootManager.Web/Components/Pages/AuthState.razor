@@ -1,0 +1,53 @@
+@page "/auth-state"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+<h3>Authentication State</h3>
+
+@if (_notConfigured)
+{
+    <p class="text-warning">No AuthenticationState available. Ensure the router is wrapped in CascadingAuthenticationState and AddCascadingAuthenticationState() is registered.</p>
+}
+else
+{
+    <p>Status: <strong>@_status</strong></p>
+    @if (_claims.Any())
+    {
+        <ul>
+            @foreach (var c in _claims)
+            {
+                <li>@c.Type: @c.Value</li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>No claims.</p>
+    }
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private string _status = "Loading...";
+    private bool _notConfigured;
+    private IReadOnlyList<Claim> _claims = Array.Empty<Claim>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthenticationStateTask is null)
+        {
+            _notConfigured = true;
+            _status = "Unknown";
+            _claims = Array.Empty<Claim>();
+            return;
+        }
+
+        var state = await AuthenticationStateTask;
+        var user = state.User;
+
+        _status = user.Identity?.IsAuthenticated == true ? "Authenticated" : "Anonymous";
+        _claims = user.Claims.ToList();
+    }
+}

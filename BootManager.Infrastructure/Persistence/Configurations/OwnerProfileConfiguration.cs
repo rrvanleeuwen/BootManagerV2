@@ -10,15 +10,22 @@ public class OwnerProfileConfiguration : IEntityTypeConfiguration<OwnerProfile>
     {
         b.ToTable("OwnerProfiles");
         b.HasKey(x => x.Id);
+
         b.Property(x => x.PasswordHash).IsRequired().HasMaxLength(512);
         b.Property(x => x.PasswordSalt).IsRequired().HasMaxLength(256);
         b.Property(x => x.HashAlgorithm).IsRequired().HasMaxLength(64);
+
+        // Optionele pincode-hash
+        b.Property(x => x.PinHash).HasMaxLength(512);
+        b.Property(x => x.PinSalt).HasMaxLength(256);
+
         b.Property(x => x.RecoveryCodeHash).HasMaxLength(512);
         b.Property(x => x.RecoveryCodeSalt).HasMaxLength(256);
+
         b.Property(x => x.EncryptedProfilePayload).IsRequired();
         b.Property(x => x.EncryptionVersion).IsRequired();
         b.Property(x => x.CreatedUtc).IsRequired();
+
         b.HasIndex(nameof(OwnerProfile.Id)).IsUnique();
-        // Constraint: maximaal 1 row (afdwingen via applicatielogica; optioneel trigger/ check)
     }
 }
