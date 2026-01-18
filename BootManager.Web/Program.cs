@@ -102,6 +102,11 @@ app.MapPost("/auth/logout", async (HttpContext http) =>
 })
 .DisableAntiforgery();
 
+// NOTE: change-password / set-pin / clear-pin minimal APIs removed.
+// These operations are invoked directly from Blazor Server components via DI
+// (IOwnerSettingsService). Keep login/logout endpoints because they must be
+// invoked from the browser so the authentication cookie is set/cleared.
+
 app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();
 

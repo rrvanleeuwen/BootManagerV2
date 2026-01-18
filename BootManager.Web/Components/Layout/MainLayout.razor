@@ -14,6 +14,11 @@
     <nav class="top-nav @( _menuOpen ? "open" : "" )" aria-hidden="@(!_menuOpen)">
         <NavLink href="/" class="nav-item" Match="NavLinkMatch.All" @onclick="CloseMenu">Home</NavLink>
         <NavLink href="/about" class="nav-item" @onclick="CloseMenu">About</NavLink>
+        <AuthorizeView>
+            <Authorized>
+                <NavLink href="/settings" class="nav-item" @onclick="CloseMenu">Instellingen</NavLink>
+            </Authorized>
+        </AuthorizeView>
         <NavLink href="/services" class="nav-item" @onclick="CloseMenu">Services</NavLink>
         <NavLink href="/portfolio" class="nav-item" @onclick="CloseMenu">Portfolio</NavLink>
         <NavLink href="/team" class="nav-item" @onclick="CloseMenu">Team</NavLink>

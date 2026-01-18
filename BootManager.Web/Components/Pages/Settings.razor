@@ -1,0 +1,143 @@
+@page "/settings"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject BootManager.Application.Authentication.Services.IOwnerSettingsService SettingsService
+
+<h3>Instellingen</h3>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5>Wachtwoord wijzigen</h5>
+        <EditForm Model="pwdModel" OnSubmit="HandlePasswordSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="mb-2">
+                <label>Huidig wachtwoord</label>
+                <InputText class="form-control" type="password" @bind-Value="pwdModel.CurrentPassword" />
+            </div>
+            <div class="mb-2">
+                <label>Nieuw wachtwoord</label>
+                <InputText class="form-control" type="password" @bind-Value="pwdModel.NewPassword" />
+            </div>
+            <div class="mb-2">
+                <label>Bevestig nieuw wachtwoord</label>
+                <InputText class="form-control" type="password" @bind-Value="pwdModel.ConfirmNewPassword" />
+            </div>
+            <button type="submit" class="btn btn-primary" disabled="@_pwdBusy">@(_pwdBusy ? "Bezig..." : "Wijzig wachtwoord")</button>
+        </EditForm>
+        @if (!string.IsNullOrEmpty(pwdError)) { <div class="text-danger">@pwdError</div> }
+        @if (pwdSuccess) { <div class="text-success">Wachtwoord gewijzigd.</div> }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5>Pincode</h5>
+        <EditForm Model="pinModel" OnSubmit="HandlePinSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="mb-2">
+                <label>Huidig wachtwoord of pincode</label>
+                <InputText class="form-control" type="password" @bind-Value="pinModel.CurrentPasswordOrPin" />
+            </div>
+            <div class="mb-2">
+                <label>Nieuwe pincode</label>
+                <InputText class="form-control" type="password" @bind-Value="pinModel.NewPin" />
+            </div>
+            <div class="mb-2">
+                <label>Bevestig pincode</label>
+                <InputText class="form-control" type="password" @bind-Value="pinModel.ConfirmNewPin" />
+            </div>
+            <button type="submit" class="btn btn-primary" disabled="@_pinBusy">@(_pinBusy ? "Bezig..." : "Stel pincode in")</button>
+        </EditForm>
+        <button class="btn btn-link text-danger" @onclick="ClearPin">Verwijder pincode</button>
+        @if (!string.IsNullOrEmpty(pinError)) { <div class="text-danger">@pinError</div> }
+        @if (pinSuccess) { <div class="text-success">Pincode opgeslagen.</div> }
+    </div>
+</div>
+
+@code {
+    private BootManager.Application.Authentication.DTOs.ChangePasswordRequestDto pwdModel = new();
+    private BootManager.Application.Authentication.DTOs.ChangePinRequestDto pinModel = new();
+
+    private string? pwdError;
+    private bool pwdSuccess;
+    private string? pinError;
+    private bool pinSuccess;
+
+    private async Task ChangePassword()
+    {
+        pwdError = null;
+        pwdSuccess = false;
+        try
+        {
+            // In Blazor Server the injected HttpClient issues server-side requests which
+            // do not include the user's authentication cookie. Call the application
+            // service directly to perform the change under the current user context.
+            await SettingsService.ChangePasswordAsync(pwdModel);
+            pwdSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            pwdError = ex.Message;
+        }
+    }
+
+    private bool _pwdBusy;
+    private bool _pinBusy;
+
+    private async Task HandlePasswordSubmit(Microsoft.AspNetCore.Components.Forms.EditContext ctx)
+    {
+        _pwdBusy = true;
+        try
+        {
+            await ChangePassword();
+        }
+        finally
+        {
+            _pwdBusy = false;
+        }
+    }
+
+    private async Task SetPin()
+    {
+        pinError = null;
+        pinSuccess = false;
+        try
+        {
+            await SettingsService.SetPinAsync(pinModel);
+            pinSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            pinError = ex.Message;
+        }
+    }
+
+    private async Task HandlePinSubmit(Microsoft.AspNetCore.Components.Forms.EditContext ctx)
+    {
+        _pinBusy = true;
+        try
+        {
+            await SetPin();
+        }
+        finally
+        {
+            _pinBusy = false;
+        }
+    }
+
+    private async Task ClearPin()
+    {
+        try
+        {
+            await SettingsService.ClearPinAsync();
+            pinSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            pinError = ex.Message;
+        }
+    }
+}
