@@ -7,38 +7,42 @@
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+<link href="/css/site.css" rel="stylesheet" />
+
+<div class="site-header">
+    <div class="brand">eBusiness</div>
+    <nav class="top-nav @( _menuOpen ? "open" : "" )" aria-hidden="@(!_menuOpen)">
+        <NavLink href="/" class="nav-item" Match="NavLinkMatch.All" @onclick="CloseMenu">Home</NavLink>
+        <NavLink href="/about" class="nav-item" @onclick="CloseMenu">About</NavLink>
+        <NavLink href="/services" class="nav-item" @onclick="CloseMenu">Services</NavLink>
+        <NavLink href="/portfolio" class="nav-item" @onclick="CloseMenu">Portfolio</NavLink>
+        <NavLink href="/team" class="nav-item" @onclick="CloseMenu">Team</NavLink>
+        <NavLink href="/contact" class="nav-item" @onclick="CloseMenu">Contact</NavLink>
+        <button class="btn-getstarted" @onclick="CloseMenu">Get Started</button>
+    </nav>
+    <button class="nav-toggle @( _menuOpen ? "open" : "" )" @onclick="ToggleMenu" aria-label="Toggle navigation" aria-expanded="@(_menuOpen ? "true" : "false")">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    <div class="auth-area">
+        <AuthorizeView>
+            <Authorized Context="authState">
+                <div class="user-info">Ingelogd als @GetDisplayName(authState)</div>
+                <button class="btn-logout" @onclick="Logout" disabled="@_logoutBusy">@(_logoutBusy ? "Uitloggen..." : "Uitloggen")</button>
+            </Authorized>
+            <NotAuthorized>
+                <a class="btn-login" href="login">Inloggen</a>
+            </NotAuthorized>
+        </AuthorizeView>
     </div>
-
-    <main>
-        <div class="top-row px-4 d-flex align-items-center justify-content-between">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-            <AuthorizeView>
-                <Authorized Context="authState">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted small">Ingelogd als @GetDisplayName(authState)</span>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="Logout" disabled="@_logoutBusy">
-                            @(_logoutBusy ? "Uitloggen..." : "Uitloggen")
-                        </button>
-                    </div>
-                    @if (!string.IsNullOrEmpty(_logoutError))
-                    {
-                        <span class="text-danger small ms-2">@_logoutError</span>
-                    }
-                </Authorized>
-                <NotAuthorized>
-                    <a class="btn btn-sm btn-outline-primary" href="login">Inloggen</a>
-                </NotAuthorized>
-            </AuthorizeView>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
 </div>
+
+<main>
+    <article class="content">
+        @Body
+    </article>
+</main>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
@@ -50,6 +54,7 @@
     private IJSObjectReference? _authModule;
     private bool _logoutBusy;
     private string? _logoutError;
+    private bool _menuOpen;
 
     /// <summary>
     /// Imports the shared auth JavaScript helper so the layout can trigger logout via fetch.
@@ -60,6 +65,16 @@
         {
             _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/authClient.js");
         }
+    }
+
+    private void ToggleMenu()
+    {
+        _menuOpen = !_menuOpen;
+    }
+
+    private void CloseMenu()
+    {
+        _menuOpen = false;
     }
 
     /// <summary>
