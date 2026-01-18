@@ -1,9 +1,77 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
+﻿# =========================
+# Visual Studio / .NET
+# =========================
 
-/.vs
-/BootManager.Application/bin/Debug/net8.0
-/BootManager.Application/obj/Debug/net8.0
-/BootManager.Application/obj
-/BootManager.Core/bin/Debug/net8.0
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug*/
+[Rr]elease*/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+[Ll]og/
+
+# VS working folders / caches
+.vs/
+.vscode/
+.idea/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ReSharper / Rider
+_ReSharper*/
+*.DotSettings.user
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# NuGet
+*.nupkg
+# (optioneel: als je packages per ongeluk in repo krijgt)
+packages/
+
+# Publish / artifacts
+publish/
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# SQL Server / LocalDB
+*.mdf
+*.ldf
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Secrets (zorg dat je deze nooit commit)
+**/secrets.json
+**/appsettings.*.json.user
+**/*.pfx
+**/*.snk
+
+# =========================
+# Blazor / Web
+# =========================
+wwwroot/lib/
+node_modules/
+
+# =========================
+# Coverage
+# =========================
+coverage/
+*.coverage
+*.coveragexml
