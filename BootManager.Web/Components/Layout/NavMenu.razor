@@ -1,34 +1,40 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">BootManager</a>
-    </div>
-</div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">Home</NavLink>
-        </div>
+<!-- Top navigation items rendered as horizontal navbar links. Intended to be placed inside the topbar. -->
+<div class="collapse navbar-collapse" id="topNavbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                <i class="fas fa-home"></i>
+                <span class="ml-2">Home</span>
+            </NavLink>
+        </li>
 
         <AuthorizeView>
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="dashboard">Dashboard</NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="settings">Instellingen</NavLink>
-                </div>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span class="ml-2">Dashboard</span>
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="settings">
+                        <i class="fas fa-cogs"></i>
+                        <span class="ml-2">Instellingen</span>
+                    </NavLink>
+                </li>
             </Authorized>
             <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="register-owner">Register Owner</NavLink>
-                </div>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="register-owner">
+                        <i class="fas fa-user-plus"></i>
+                        <span class="ml-2">Register Owner</span>
+                    </NavLink>
+                </li>
             </NotAuthorized>
         </AuthorizeView>
-    </nav>
+    </ul>
 </div>
 
