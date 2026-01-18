@@ -1,4 +1,11 @@
 ﻿@inherits LayoutComponentBase
+@implements IAsyncDisposable
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+
+@inject NavigationManager Nav
+@inject IJSRuntime Js
 
 <div class="page">
     <div class="sidebar">
@@ -6,8 +13,25 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
+        <div class="top-row px-4 d-flex align-items-center justify-content-between">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <AuthorizeView>
+                <Authorized Context="authState">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Ingelogd als @GetDisplayName(authState)</span>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="Logout" disabled="@_logoutBusy">
+                            @(_logoutBusy ? "Uitloggen..." : "Uitloggen")
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_logoutError))
+                    {
+                        <span class="text-danger small ms-2">@_logoutError</span>
+                    }
+                </Authorized>
+                <NotAuthorized>
+                    <a class="btn btn-sm btn-outline-primary" href="login">Inloggen</a>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
 
         <article class="content px-4">
@@ -21,3 +45,81 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    private IJSObjectReference? _authModule;
+    private bool _logoutBusy;
+    private string? _logoutError;
+
+    /// <summary>
+    /// Imports the shared auth JavaScript helper so the layout can trigger logout via fetch.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/authClient.js");
+        }
+    }
+
+    /// <summary>
+    /// Returns the display name shown in the header, defaulting to "Owner" if none is present.
+    /// </summary>
+    private string GetDisplayName(AuthenticationState authState)
+    {
+        return authState.User.Identity?.Name ?? "Owner";
+    }
+
+    /// <summary>
+    /// Calls the logout endpoint via the JS module so the cookie gets cleared in the browser context, then navigates to login.
+    /// </summary>
+    private async Task Logout()
+    {
+        if (_authModule is null)
+        {
+            _logoutError = "Actie mislukt. Probeer opnieuw.";
+            return;
+        }
+
+        try
+        {
+            _logoutBusy = true;
+            _logoutError = null;
+            var result = await _authModule.InvokeAsync<FetchResult>("postJson", "/auth/logout", new { });
+            if (result.Ok)
+            {
+                Nav.NavigateTo("/login", forceLoad: true);
+            }
+            else
+            {
+                _logoutError = "Uitloggen mislukt.";
+            }
+        }
+        catch (JSException ex)
+        {
+            _logoutError = $"Uitloggen mislukt: {ex.Message}";
+        }
+        finally
+        {
+            _logoutBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Disposes the imported JS module for cleanliness.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_authModule is not null)
+        {
+            await _authModule.DisposeAsync();
+        }
+    }
+
+    private sealed class FetchResult
+    {
+        public bool Ok { get; set; }
+        public int Status { get; set; }
+        public string? Body { get; set; }
+    }
+}

@@ -1,3 +1,204 @@
 @page "/login"
-<h3>Login (placeholder)</h3>
-<p>Owner already registered. Implement login later.</p>
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@implements IAsyncDisposable
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.Text.Json
+
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+
+<h3>Inloggen</h3>
+
+@if (!string.IsNullOrEmpty(_targetDescription))
+{
+    <div class="alert alert-info">Je logt in om @_targetDescription te openen.</div>
+}
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<EditForm Model="@_model" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <div class="mb-2">
+        <label class="form-label">Wachtwoord</label>
+        <InputText class="form-control" type="password" @bind-Value="_model.Password" />
+        <small class="text-muted">Laat leeg als je met pincode wilt inloggen.</small>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Pincode</label>
+        <InputText class="form-control" type="password" inputmode="numeric" @bind-Value="_model.Pin" />
+        <small class="text-muted">Laat leeg als je met wachtwoord wilt inloggen.</small>
+    </div>
+    <div class="form-check mb-3">
+        <InputCheckbox class="form-check-input" @bind-Value="_model.RememberMe" />
+        <label class="form-check-label">Ingelogd blijven</label>
+    </div>
+
+    <button class="btn btn-primary" type="submit" disabled="@_busy">@(_busy ? "Bezig..." : "Inloggen")</button>
+</EditForm>
+
+@code {
+    private BootManager.Application.Authentication.DTOs.LoginRequestDto _model = new();
+    private bool _busy;
+    private string? _error;
+    private string? _targetDescription;
+    private IJSObjectReference? _authModule;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    /// <summary>
+    /// Computes a friendly description of the return target whenever navigation parameters change.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        _targetDescription = DescribeTarget(ReturnUrl);
+    }
+
+    /// <summary>
+    /// Lazily loads the JavaScript auth module once so we can reuse the browser-side fetch helper.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/authClient.js");
+        }
+    }
+
+    /// <summary>
+    /// Disposes the imported JavaScript module when the component is torn down.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_authModule is not null)
+        {
+            await _authModule.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Handles the login submission by delegating to the JS fetch helper so cookies reach the browser session.
+    /// </summary>
+    private async Task HandleLogin()
+    {
+        if (_authModule is null)
+        {
+            _error = "Loginmodule niet geladen. Probeer het opnieuw.";
+            return;
+        }
+
+        try
+        {
+            _busy = true;
+            _error = null;
+            var resp = await _authModule.InvokeAsync<FetchResult>("postJson", "/auth/login", _model);
+            if (resp.Ok)
+            {
+                Nav.NavigateTo(ResolveRedirectTarget(), forceLoad: true);
+                return;
+            }
+
+            _error = TryExtractMessage(resp.Body) ?? "Inloggen mislukt.";
+        }
+        catch (JSException jsEx)
+        {
+            _error = $"Login mislukt: {jsEx.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>
+    /// Attempts to extract a friendly error message from the JSON payload the API returned.
+    /// </summary>
+    private static string? TryExtractMessage(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
+
+        try
+        {
+            var payload = JsonSerializer.Deserialize<Dictionary<string, string>>(body);
+            if (payload is not null && payload.TryGetValue("message", out var msg))
+            {
+                return msg;
+            }
+        }
+        catch
+        {
+            // Ignore parse errors; fall back to default error message
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Ensures we only redirect to local URLs (or same-host absolute URLs) after a successful sign-in.
+    /// </summary>
+    private string ResolveRedirectTarget()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl))
+        {
+            return "/dashboard";
+        }
+
+        if (ReturnUrl.StartsWith("/", StringComparison.Ordinal) &&
+            !ReturnUrl.StartsWith("//", StringComparison.Ordinal))
+        {
+            return ReturnUrl;
+        }
+
+        if (Uri.TryCreate(ReturnUrl, UriKind.Absolute, out var absolute))
+        {
+            var baseUri = new Uri(Nav.BaseUri);
+            if (string.Equals(absolute.Host, baseUri.Host, StringComparison.OrdinalIgnoreCase) &&
+                absolute.Port == baseUri.Port &&
+                string.Equals(absolute.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.IsNullOrEmpty(absolute.PathAndQuery) ? "/dashboard" : absolute.PathAndQuery;
+            }
+        }
+
+        return "/dashboard";
+    }
+
+    /// <summary>
+    /// Maps the raw returnUrl into a short description for the info alert.
+    /// </summary>
+    private static string? DescribeTarget(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        if (raw.StartsWith("/", StringComparison.Ordinal) && !raw.StartsWith("//", StringComparison.Ordinal))
+        {
+            return raw.Length == 1 ? "het dashboard" : raw;
+        }
+
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var absolute))
+        {
+            return string.IsNullOrEmpty(absolute.AbsolutePath) ? absolute.Host : absolute.AbsolutePath;
+        }
+
+        return null;
+    }
+
+    private sealed class FetchResult
+    {
+        public bool Ok { get; set; }
+        public int Status { get; set; }
+        public string? Body { get; set; }
+    }
+}
