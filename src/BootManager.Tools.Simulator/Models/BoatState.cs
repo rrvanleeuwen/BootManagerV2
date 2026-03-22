@@ -1,5 +1,8 @@
 namespace BootManager.Tools.Simulator.Models;
 
+/// <summary>
+/// Houdt de huidige toestand van de boot bij (positie, snelheid, sensorgegevens, stroom).
+/// </summary>
 public class BoatState
 {
     public DateTime TimestampUtc { get; set; }
@@ -14,5 +17,9 @@ public class BoatState
     public double BatteryVoltage { get; set; }
     public double BatterySoc { get; set; }
 
+    /// <summary>
+    /// Maakt een ondiepe kopie van de huidige toestand.
+    /// </summary>
+    /// <returns>Een kloon van deze BoatState.</returns>
     public BoatState Clone() => (BoatState)MemberwiseClone();
 }

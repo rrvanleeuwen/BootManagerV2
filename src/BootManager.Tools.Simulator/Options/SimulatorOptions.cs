@@ -1,5 +1,8 @@
 namespace BootManager.Tools.Simulator.Options;
 
+/// <summary>
+/// Opties/configuratie voor de simulator (doel-UDP, interval en scenario-instellingen).
+/// </summary>
 public class SimulatorOptions
 {
     public string TargetIp { get; set; } = "127.0.0.1";

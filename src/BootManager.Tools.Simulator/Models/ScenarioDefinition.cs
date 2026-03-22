@@ -1,5 +1,8 @@
 namespace BootManager.Tools.Simulator.Models;
 
+/// <summary>
+/// Definitie van een simulatie-scenario: beginwaarden voor positie, beweging en omgeving.
+/// </summary>
 public class ScenarioDefinition
 {
     public string Name { get; set; } = string.Empty;

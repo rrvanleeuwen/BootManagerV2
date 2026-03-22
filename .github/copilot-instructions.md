@@ -1,0 +1,10 @@
+# Copilot Instructions
+
+## Project Guidelines
+- User prefers simulator improvements: use NormalizeAngles, bounds for depth/battery/SOG, normalization of angles, bounds on physical values, realistic IJsselmeer sailing behavior, and great-circle position calculation for nautical bearing. User wants robust simulation changes while keeping code modifications minimal and maintaining existing structure.
+- User requested specific simulator improvements; remember to report files changed, problems fixed, and assumptions about limits: depth 1-6m, battery voltage 11-13V, SOG 0-12 knots, wind angle normalized to -180..180, angles normalized 0..360.
+- When improving simulation code, use helper methods for angle normalization and explicit little-endian byte encoding. Always inject ScenarioLoader via DI and register it in Program.cs with `AddSingleton<ScenarioLoader>()` to enhance the simulation framework, consistent UTC timestamps, explicit little-endian byte encoding with `BinaryPrimitives.WriteInt32LittleEndian` for payloads, and robust scenario loading. Keep console logging.
+- User is currently working on branch `feature/NetwerkData/Simulator` and the active file is `SimulationService.cs`. Changes should be minimal and maintain structure.
+- User wants concise change descriptions after modifications, including which files changed, what problems were fixed, and assumptions for realistic ranges: depth 1-6m, battery voltage 11-13V, SOG 0-12 knots, wind angle normalized to -180..180, angles normalized 0..360. User expects concise change reports after modifications; include which files changed and assumptions.
+- User requests targeted refactor: normalize angles, bounds for depth/battery/SOG, fix position calculation to use destination formula with 0°=north, robust scenario loading, consistent UTC timestamps, explicit little-endian encoding with `BinaryPrimitives`, and register ScenarioLoader in Program.cs. User expects targeted refactor with minimal structural changes.
+- User uses Visual Studio 2026, workspace path `C:\Users\rrvan\source\repos\BootManagerV2`, preferred terminal is `pwsh.exe`.

@@ -2,14 +2,27 @@ using BootManager.Tools.Simulator.Models;
 
 namespace BootManager.Tools.Simulator.Scenarios;
 
+/// <summary>
+/// Laadt beschikbare scenario-definities voor de simulator.
+/// </summary>
 public class ScenarioLoader
 {
+    /// <summary>
+    /// Laadt alle scenario's uit de opgegeven pad (vooralsnog een enkele ingebouwde).
+    /// </summary>
+    /// <param name="path">Pad waar scenario's normaal gesproken gezocht worden (wordt momenteel niet gebruikt).</param>
+    /// <returns>Collectie van beschikbare scenario-definities.</returns>
     public IEnumerable<ScenarioDefinition> LoadAll(string path)
     {
-        // For now return a single realistic IJsselmeer sailing scenario.
+        // Voor nu één realistisch IJsselmeer scenario teruggeven.
         return new[] { CreateSailingIjsselmeer() };
     }
 
+    /// <summary>
+    /// Probeert een scenario te laden op basis van de naam.
+    /// </summary>
+    /// <param name="name">Naam van het scenario.</param>
+    /// <returns>ScenarioDefinition indien gevonden; anders null.</returns>
     public ScenarioDefinition? LoadByName(string name)
     {
         if (string.Equals(name, "SailingIjsselmeer", StringComparison.OrdinalIgnoreCase))
@@ -17,9 +30,13 @@ public class ScenarioLoader
         return null;
     }
 
+    /// <summary>
+    /// Creëert een voorbeeldscenario voor varen op het IJsselmeer.
+    /// </summary>
+    /// <returns>Een ingevulde ScenarioDefinition.</returns>
     private ScenarioDefinition CreateSailingIjsselmeer()
     {
-        // Chosen start position: open water near 52.6N, 5.3E (central IJsselmeer)
+        // Startpositie gekozen in open water nabij 52.6N, 5.3E (centraal IJsselmeer)
         return new ScenarioDefinition
         {
             Name = "SailingIjsselmeer",
