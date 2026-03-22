@@ -2,6 +2,9 @@ namespace BootManager.Tools.Simulator.Options;
 
 public class SimulatorOptions
 {
-    public string? Example { get; set; }
+    public string TargetIp { get; set; } = "127.0.0.1";
+    public int TargetPort { get; set; } = 2000;
+    public int IntervalMs { get; set; } = 1000;
+    public string Scenario { get; set; } = "SailingIjsselmeer";
     public string? ScenarioPath { get; set; }
 }
