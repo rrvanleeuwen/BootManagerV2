@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,13 +12,14 @@ namespace BootManager.Tools.Ingest.Services;
 
 /// <summary>
 /// Background service voor ingest van netwerkgegevens.
-/// Deze service luistert naar UDP-berichten op het geconfigureerde adres en poort,
-/// splitst deze in losse regels en parseert ze in interne modellen.
+/// Deze service luistert naar UDP-berichten, parseert deze in interne modellen
+/// en verzendt ze via HTTP POST naar de BootManager.Web API.
 /// </summary>
 public class IngestService : BackgroundService
 {
     private readonly IOptions<IngestOptions> _options;
     private readonly ILogger<IngestService> _logger;
+    private readonly HttpClient _httpClient;
     private UdpClient? _udpClient;
 
     /// <summary>
@@ -25,10 +27,12 @@ public class IngestService : BackgroundService
     /// </summary>
     /// <param name="options">De ingest-opties uit configuratie.</param>
     /// <param name="logger">Logger-instantie.</param>
-    public IngestService(IOptions<IngestOptions> options, ILogger<IngestService> logger)
+    /// <param name="httpClient">HttpClient voor API-communicatie.</param>
+    public IngestService(IOptions<IngestOptions> options, ILogger<IngestService> logger, HttpClient httpClient)
     {
         _options = options;
         _logger = logger;
+        _httpClient = httpClient;
     }
 
     /// <summary>
@@ -74,7 +78,8 @@ public class IngestService : BackgroundService
     }
 
     /// <summary>
-    /// Luistert naar inkomende UDP-berichten, verwerkt deze in regels en parseert deze naar interne modellen.
+    /// Luistert naar inkomende UDP-berichten, verwerkt deze in regels,
+    /// parseert deze naar modellen en verzendt ze naar de API.
     /// </summary>
     /// <param name="stoppingToken">Token voor het stoppen van de luisterbewerking.</param>
     private async Task ListenForMessagesAsync(CancellationToken stoppingToken)
@@ -91,17 +96,34 @@ public class IngestService : BackgroundService
 
                 if (rawLines.Count > 0)
                 {
-                    // Parse elke regel naar het interne model
-                    var parsedLines = new List<ReceivedNetworkLine>();
+                    int successCount = 0;
+                    var failedMessageIds = new List<string>();
+
+                    // Parse en verstuur elke regel
                     foreach (var line in rawLines)
                     {
                         var parsed = ParseNetworkLine(line);
-                        parsedLines.Add(parsed);
+                        var success = await SendToApiAsync(parsed, stoppingToken);
+
+                        if (success)
+                        {
+                            successCount++;
+                        }
+                        else if (!string.IsNullOrEmpty(parsed.MessageId))
+                        {
+                            failedMessageIds.Add(parsed.MessageId);
+                        }
                     }
 
-                    _logger.LogInformation("Packet processed: {LineCount} lines, {MessageIds}", 
-                        parsedLines.Count, 
-                        string.Join(", ", parsedLines.Where(p => !string.IsNullOrEmpty(p.MessageId)).Select(p => p.MessageId)));
+                    // Compact logging
+                    _logger.LogInformation("Packet processed: {SuccessCount}/{TotalCount} sent", 
+                        successCount, rawLines.Count);
+
+                    if (failedMessageIds.Count > 0)
+                    {
+                        _logger.LogWarning("Failed to send messages with IDs: {FailedIds}", 
+                            string.Join(", ", failedMessageIds));
+                    }
                 }
                 else
                 {
@@ -117,6 +139,57 @@ public class IngestService : BackgroundService
             {
                 _logger.LogError(ex, "Error receiving UDP message");
             }
+        }
+    }
+
+    /// <summary>
+    /// Verzendt een geparste netwerkregel naar de BootManager.Web API.
+    /// </summary>
+    /// <param name="line">De geparste netwerkregel.</param>
+    /// <param name="cancellationToken">Cancellation token voor de HTTP-request.</param>
+    /// <returns>True als de request succesvol was, false otherwise.</returns>
+    private async Task<bool> SendToApiAsync(ReceivedNetworkLine line, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Bouw de request-DTO op op basis van het interne model
+            var request = new
+            {
+                receivedAtUtc = line.ReceivedAtUtc,
+                source = line.Source,
+                protocol = line.Protocol,
+                rawLine = line.RawLine,
+                messageId = string.IsNullOrEmpty(line.MessageId) ? null : line.MessageId,
+                payloadHex = string.IsNullOrEmpty(line.PayloadHex) ? null : line.PayloadHex
+            };
+
+            var url = $"{_options.Value.ApiBaseUrl}{_options.Value.NetworkMessagesEndpoint}";
+            var content = new StringContent(
+                JsonSerializer.Serialize(request),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await _httpClient.PostAsync(url, content, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            _logger.LogWarning("API returned status {StatusCode} for message {MessageId}", 
+                response.StatusCode, line.MessageId ?? "unknown");
+            return false;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP request failed for message {MessageId}", 
+                line.MessageId ?? "unknown");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error sending to API");
+            return false;
         }
     }
 
@@ -144,7 +217,7 @@ public class IngestService : BackgroundService
         {
             // Verwacht: [0] = HH:mm:ss.fff, [1] = R, [2] = 0A1B2C3D, [3+] = AA BB CC ...
             
-            // Haal MessageId (4e element, typisch device ID in hex)
+            // Haal MessageId (3e element, typisch device ID in hex)
             if (parts.Length > 2)
             {
                 model.MessageId = parts[2];

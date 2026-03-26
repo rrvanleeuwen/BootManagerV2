@@ -1,7 +1,7 @@
 namespace BootManager.Tools.Ingest.Options;
 
 /// <summary>
-/// Opties/configuratie voor de ingest-service (UDP-listener instellingen en queue-opties).
+/// Opties/configuratie voor de ingest-service (UDP-listener en API-instellingen).
 /// </summary>
 public class IngestOptions
 {
@@ -24,4 +24,14 @@ public class IngestOptions
     /// Aantal berichten per batch voor verwerking.
     /// </summary>
     public int BatchSize { get; set; } = 10;
+
+    /// <summary>
+    /// Base URL van de BootManager.Web API (bijv. http://localhost:5046).
+    /// </summary>
+    public string ApiBaseUrl { get; set; } = "http://localhost:5046";
+
+    /// <summary>
+    /// Relatief endpoint voor NetworkMessages API (bijv. /api/networkmessages).
+    /// </summary>
+    public string NetworkMessagesEndpoint { get; set; } = "/api/networkmessages";
 }

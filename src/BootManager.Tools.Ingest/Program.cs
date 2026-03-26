@@ -8,6 +8,10 @@ var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         services.Configure<IngestOptions>(context.Configuration.GetSection("Ingest"));
+        
+        // Registreer HttpClient voor API-calls
+        services.AddHttpClient<IngestService>();
+        
         services.AddHostedService<IngestService>();
     });
 
@@ -20,5 +24,6 @@ Console.WriteLine($"Environment: {Environment.GetEnvironmentVariable("DOTNET_ENV
 var ingestConfig = config.GetSection("Ingest");
 Console.WriteLine($"Listen address: {ingestConfig["ListenAddress"]}");
 Console.WriteLine($"Listen port: {ingestConfig["ListenPort"]}");
+Console.WriteLine($"API Base URL: {ingestConfig["ApiBaseUrl"]}");
 
 await host.RunAsync();
