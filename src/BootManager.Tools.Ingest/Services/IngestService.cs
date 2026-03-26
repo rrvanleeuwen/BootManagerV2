@@ -11,7 +11,7 @@ namespace BootManager.Tools.Ingest.Services;
 /// <summary>
 /// Background service voor ingest van netwerkgegevens.
 /// Deze service luistert naar UDP-berichten op het geconfigureerde adres en poort,
-/// en logt de ontvangen inhoud.
+/// splitst deze in losse regels en verwerkt ze verder.
 /// </summary>
 public class IngestService : BackgroundService
 {
@@ -73,7 +73,7 @@ public class IngestService : BackgroundService
     }
 
     /// <summary>
-    /// Luistert naar inkomende UDP-berichten en logt deze.
+    /// Luistert naar inkomende UDP-berichten, verwerkt deze in regels en logt compact.
     /// </summary>
     /// <param name="stoppingToken">Token voor het stoppen van de luisterbewerking.</param>
     private async Task ListenForMessagesAsync(CancellationToken stoppingToken)
@@ -86,8 +86,24 @@ public class IngestService : BackgroundService
                 var receivedData = Encoding.UTF8.GetString(result.Buffer);
                 var remoteEndPoint = result.RemoteEndPoint;
 
-                _logger.LogInformation("Received UDP message from {RemoteEndPoint}: {Message}",
-                    remoteEndPoint, receivedData);
+                // Verwerk de ontvangen data in losse regels
+                var lines = ExtractLinesFromData(receivedData);
+
+                if (lines.Count > 0)
+                {
+                    _logger.LogInformation("Packet from {RemoteEndPoint}: {LineCount} lines", 
+                        remoteEndPoint, lines.Count);
+
+                    // Log individuele regels op Debug-niveau
+                    foreach (var line in lines)
+                    {
+                        _logger.LogDebug("Line: {Line}", line);
+                    }
+                }
+                else
+                {
+                    _logger.LogDebug("Empty packet received from {RemoteEndPoint}", remoteEndPoint);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -99,5 +115,34 @@ public class IngestService : BackgroundService
                 _logger.LogError(ex, "Error receiving UDP message");
             }
         }
+    }
+
+    /// <summary>
+    /// Haalt afzonderlijke regels uit ontvangen UDP-data.
+    /// Splitst op CRLF en LF, en slaat lege en whitespace-regels over.
+    /// </summary>
+    /// <param name="data">De ontvangen UTF-8 gedecodeerde gegevens.</param>
+    /// <returns>Lijst met niet-lege regels.</returns>
+    private static List<string> ExtractLinesFromData(string data)
+    {
+        var lines = new List<string>();
+
+        // Splitsen op zowel CRLF als LF
+        var rawLines = data.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+
+        foreach (var rawLine in rawLines)
+        {
+            var trimmed = rawLine.Trim();
+
+            // Sla lege en whitespace-regels over
+            if (string.IsNullOrEmpty(trimmed))
+            {
+                continue;
+            }
+
+            lines.Add(trimmed);
+        }
+
+        return lines;
     }
 }
