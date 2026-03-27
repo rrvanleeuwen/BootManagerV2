@@ -7,6 +7,7 @@ using BootManager.Application.NetworkMessageInterpretation.DTOs;
 using BootManager.Application.NetworkMessageInterpretation.Services;
 using BootManager.Application.BatteryMeasurements.Services;
 using BootManager.Application.DepthMeasurements.Services;
+using BootManager.Application.WindMeasurements.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BootManager.Application;
@@ -34,12 +35,16 @@ public static class DependencyInjection
         // bovenop technische parse-resultaten. Transient is geschikt omdat geen state nodig is.
         services.AddTransient<INetworkMessageInterpreter<BatteryMessageInterpretationDto>, BatteryMessageInterpreterService>();
         services.AddTransient<INetworkMessageInterpreter<DepthMessageInterpretationDto>, DepthMessageInterpreterService>();
+        services.AddTransient<INetworkMessageInterpreter<WindMessageInterpretationDto>, WindMessageInterpreterService>();
 
         // Registratie van BatteryMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IBatteryMeasurementService, BatteryMeasurementService>();
 
         // Registratie van DepthMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IDepthMeasurementService, DepthMeasurementService>();
+
+        // Registratie van WindMeasurement application-service (gebruik generieke repository)
+        services.AddScoped<IWindMeasurementService, WindMeasurementService>();
 
         return services;
     }

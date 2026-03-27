@@ -7,6 +7,8 @@ using BootManager.Application.BatteryMeasurements.DTOs;
 using BootManager.Application.BatteryMeasurements.Services;
 using BootManager.Application.DepthMeasurements.DTOs;
 using BootManager.Application.DepthMeasurements.Services;
+using BootManager.Application.WindMeasurements.DTOs;
+using BootManager.Application.WindMeasurements.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -31,6 +33,8 @@ public class NetworkMessageService : INetworkMessageService
     private readonly IBatteryMeasurementService _batteryMeasurementService;
     private readonly INetworkMessageInterpreter<DepthMessageInterpretationDto> _depthInterpreter;
     private readonly IDepthMeasurementService _depthMeasurementService;
+    private readonly INetworkMessageInterpreter<WindMessageInterpretationDto> _windInterpreter;
+    private readonly IWindMeasurementService _windMeasurementService;
     private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
@@ -43,6 +47,8 @@ public class NetworkMessageService : INetworkMessageService
         IBatteryMeasurementService batteryMeasurementService,
         INetworkMessageInterpreter<DepthMessageInterpretationDto> depthInterpreter,
         IDepthMeasurementService depthMeasurementService,
+        INetworkMessageInterpreter<WindMessageInterpretationDto> windInterpreter,
+        IWindMeasurementService windMeasurementService,
         ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
@@ -51,6 +57,8 @@ public class NetworkMessageService : INetworkMessageService
         _batteryMeasurementService = batteryMeasurementService;
         _depthInterpreter = depthInterpreter;
         _depthMeasurementService = depthMeasurementService;
+        _windInterpreter = windInterpreter;
+        _windMeasurementService = windMeasurementService;
         _logger = logger;
     }
 
@@ -94,6 +102,7 @@ public class NetworkMessageService : INetworkMessageService
                     // Semantische interpretatie en afgeleide opslag voor ondersteunde berichttypen
                     await TryInterpretAndSaveBatteryMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveDepthMessageAsync(parseResult, request, ct);
+                    await TryInterpretAndSaveWindMessageAsync(parseResult, request, ct);
                 }
                 else
                 {
@@ -249,6 +258,77 @@ public class NetworkMessageService : INetworkMessageService
             _logger.LogWarning(
                 ex,
                 "Onverwachte fout bij Depth-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert semantische Wind-interpretatie uit te voeren op een technisch parse-resultaat
+    /// en persisteert het resultaat als een WindMeasurement.
+    /// Fouten blokkeren niet de bestaande raw opslag.
+    /// </summary>
+    /// <param name="parseResult">Het technische parse-resultaat.</param>
+    /// <param name="request">De originele netwerkbericht-request voor metadata.</param>
+    /// <param name="ct">Cancellation token.</param>
+    private async Task TryInterpretAndSaveWindMessageAsync(
+        NetworkMessageParseResultDto parseResult,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_windInterpreter.CanInterpret(parseResult))
+            {
+                return;
+            }
+
+            var interpretation = _windInterpreter.Interpret(parseResult);
+
+            if (interpretation.IsSuccess && interpretation.WindSpeedMps.HasValue && interpretation.WindAngleDegrees.HasValue)
+            {
+                _logger.LogInformation(
+                    "Wind-interpretatie geslaagd: Angle={Angle}{AngleUnit}, Speed={Speed}{SpeedUnit}",
+                    interpretation.WindAngleDegrees,
+                    interpretation.AngleUnit,
+                    interpretation.WindSpeedMps,
+                    interpretation.SpeedUnit);
+
+                // Persisteer afgeleide wind-meting
+                try
+                {
+                    var windDto = new CreateWindMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        WindAngleDegrees = interpretation.WindAngleDegrees.Value,
+                        WindSpeed = interpretation.WindSpeedMps.Value,
+                        SpeedUnit = interpretation.SpeedUnit
+                    };
+
+                    await _windMeasurementService.SaveAsync(windDto, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Wind-opslag-fouten blokkeren geen raw opslag. Log compact.
+                    _logger.LogWarning(
+                        ex,
+                        "Windmeting-opslag mislukt voor MessageId={MessageId}",
+                        request.MessageId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Wind-interpretatie mislukt: {Error}",
+                    interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Interpretatie-fouten blokkeren geen raw opslag.
+            _logger.LogWarning(
+                ex,
+                "Onverwachte fout bij Wind-interpretatie");
         }
     }
 
