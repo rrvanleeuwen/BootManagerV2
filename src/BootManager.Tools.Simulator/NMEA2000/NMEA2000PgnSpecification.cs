@@ -36,10 +36,24 @@ public static class NMEA2000PgnSpecification
     /// <summary>
     /// PGN 127250: Vessel Heading
     /// 
-    /// Simulatie-payload-layout (2 bytes):
-    /// - Bytes 0-1: Heading in 1/10000 radians (uint16, little-endian)
+    /// Simulatie-payload-layout (8 bytes):
+    /// - Byte 0: SID (Sequence ID) voor bericht-volgordenummering
+    ///           Geeft aan welke opeenvolgende heading-berichten verwant zijn (0-255)
+    /// - Bytes 1-2: Heading in 1/10000 radians (uint16, little-endian)
+    ///              Bereik: 0 tot 62832 (= 0 tot 2π radialen = 0 tot 360 graden)
+    ///              Conversie van graden: graden * 10000π / 360
+    /// - Bytes 3-4: Deviation in 1/10000 radians (uint16, little-endian)
+    ///              Magnetische deviatiehoek (verschil tussen True en Magnetic north)
+    ///              Voor nu: default 0 (kan later uitgebreid worden met realistischere waarden)
+    /// - Bytes 5-6: Variation in 1/10000 radians (uint16, little-endian)
+    ///              Magnetische variatiehoek (declination)
+    ///              Voor nu: default 0 (kan later uitgebreid worden met positie-gebaseerde waarden)
+    /// - Byte 7: Reference (directional reference type)
+    ///           Bits 0-1: 00=True, 01=Magnetic (voorlopig altijd True)
+    ///           Bits 2-7: reserved
     /// 
-    /// Conversie: graden * 10000 / 360 * π
+    /// Opmerking: NMEA 2000 PGN 127250 bevat nominaal meer velden, maar deze simulatie
+    /// concentreert zich op de essentiële heading-data met ruimte voor uitbreiding.
     /// </summary>
     public const uint PGN_HEADING = 127250;
 

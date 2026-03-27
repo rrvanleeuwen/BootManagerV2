@@ -12,6 +12,12 @@ using BootManager.Tools.Simulator.Models;
 public class NMEA2000PayloadBuilder
 {
     /// <summary>
+    /// Sequence ID (SID) teller voor PGN 127250 (Heading).
+    /// Gebruikt voor bericht-volgordenummering en wordt elk bericht opgehoogd.
+    /// Loopt van 0-255 (byte).
+    /// </summary>
+    private static byte _headingSid = 0;
+    /// <summary>
     /// Bouwt een PGN 129025 (Position, Rapid Update) payload.
     /// 
     /// Payload-layout (8 bytes):
@@ -63,17 +69,40 @@ public class NMEA2000PayloadBuilder
     }
 
     /// <summary>
-    /// Bouwt een PGN 127250 (Vessel Heading) payload.
+    /// Bouwt een PGN 127250 (Vessel Heading) payload met NMEA 2000-achtige structuur.
     /// 
-    /// Payload-layout (2 bytes):
-    /// - Bytes 0-1: Heading in 1/10000 radians (uint16, little-endian)
+    /// Payload-layout (8 bytes):
+    /// - Byte 0: SID (Sequence ID) voor bericht-volgordenummering
+    /// - Bytes 1-2: Heading in 1/10000 radians (uint16, little-endian)
+    /// - Bytes 3-4: Deviation in 1/10000 radians (uint16, little-endian)
+    ///              Voor nu: 0 (default; kan later uitgebreid worden met realistischere waarden)
+    /// - Bytes 5-6: Variation in 1/10000 radians (uint16, little-endian)
+    ///              Voor nu: 0 (default; kan later positie-gebaseerd worden)
+    /// - Byte 7: Reference (directional reference type)
+    ///           Bits 0-1: 00=True (gebruikt in deze simulatie)
+    ///           Bits 2-7: reserved/unused
     /// </summary>
     public static byte[] BuildHeadingPayload(BoatState state)
     {
-        var buffer = new byte[2];
-        var headingRadians = NMEA2000PgnSpecification.DegreesToNMEA2000Radians(state.HeadingDegrees);
+        var buffer = new byte[8];
 
-        BitConverter.GetBytes(headingRadians).CopyTo(buffer, 0);
+        // Byte 0: SID (sequentie ID)
+        buffer[0] = _headingSid++;
+
+        // Bytes 1-2: Heading in NMEA 2000-achtige uint16 (1e-4 radialen, little-endian)
+        ushort headingNMEA2000 = NMEA2000PgnSpecification.DegreesToNMEA2000Radians(state.HeadingDegrees);
+        BitConverter.GetBytes(headingNMEA2000).CopyTo(buffer, 1);
+
+        // Bytes 3-4: Deviation (voor nu: 0, later expandable)
+        ushort deviationRadians = 0;
+        BitConverter.GetBytes(deviationRadians).CopyTo(buffer, 3);
+
+        // Bytes 5-6: Variation (voor nu: 0, later expandable)
+        ushort variationRadians = 0;
+        BitConverter.GetBytes(variationRadians).CopyTo(buffer, 5);
+
+        // Byte 7: Reference (0x00 = True, bits 0-1 = 00)
+        buffer[7] = 0x00;
 
         return buffer;
     }
