@@ -19,10 +19,16 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<BatteryMeasurement> BatteryMeasurements => Set<BatteryMeasurement>();
 
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde dieptemetingen.
+    /// </summary>
+    public DbSet<DepthMeasurement> DepthMeasurements => Set<DepthMeasurement>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.NetworkMessageConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.BatteryMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.DepthMeasurementConfiguration());
     }
 }
