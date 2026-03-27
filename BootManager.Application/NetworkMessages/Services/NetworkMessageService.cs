@@ -1,6 +1,9 @@
 using BootManager.Application.NetworkMessages.DTOs;
+using BootManager.Application.NetworkMessageParsing.DTOs;
+using BootManager.Application.NetworkMessageParsing.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,17 +14,25 @@ namespace BootManager.Application.NetworkMessages.Services;
 
 /// <summary>
 /// Implementation of <see cref="INetworkMessageService"/> using the generic <see cref="IRepository{T}"/>.
+/// Voert parsing uit als tussenstap richting latere interpretatie, zonder extra persistentie.
 /// </summary>
 public class NetworkMessageService : INetworkMessageService
 {
     private readonly IRepository<NetworkMessage> _repo;
+    private readonly INetworkMessageParserService _parserService;
+    private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
     /// Creëert een nieuwe <see cref="NetworkMessageService"/>.
     /// </summary>
-    public NetworkMessageService(IRepository<NetworkMessage> repo)
+    public NetworkMessageService(
+        IRepository<NetworkMessage> repo,
+        INetworkMessageParserService parserService,
+        ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
+        _parserService = parserService;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -36,6 +47,48 @@ public class NetworkMessageService : INetworkMessageService
             messageId: request.MessageId,
             payloadHex: request.PayloadHex
         );
+
+        // Parsing als tussenstap: voer parse uit voordat we opslaan.
+        // Dit resultaat is voorlopig alleen intern en leidt niet tot extra persistentie.
+        if (!string.IsNullOrWhiteSpace(request.MessageId) && !string.IsNullOrWhiteSpace(request.PayloadHex))
+        {
+            try
+            {
+                var parseRequest = new NetworkMessageParseRequestDto
+                {
+                    Source = request.Source,
+                    ReceivedAtUtc = request.ReceivedAtUtc,
+                    RawLine = request.RawLine,
+                    MessageIdHex = request.MessageId,
+                    PayloadHex = request.PayloadHex
+                };
+
+                var parseResult = _parserService.Parse(parseRequest);
+
+                if (parseResult.IsSuccess)
+                {
+                    _logger.LogDebug(
+                        "Netwerkbericht succesvol geparset: MessageType={MessageType}, MessageId={MessageId}",
+                        parseResult.MessageType,
+                        parseResult.MessageIdHex);
+                }
+                else
+                {
+                    _logger.LogDebug(
+                        "Netwerkbericht parse-fout: MessageId={MessageId}, Error={Error}",
+                        parseResult.MessageIdHex,
+                        parseResult.ErrorMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Parse-fouten blokkeren geen raw opslag. Log alleen ter info.
+                _logger.LogWarning(
+                    ex,
+                    "Onverwachte fout bij parsing van netwerkbericht MessageId={MessageId}",
+                    request.MessageId);
+            }
+        }
 
         await _repo.AddAsync(entity, ct);
         return entity.Id;
