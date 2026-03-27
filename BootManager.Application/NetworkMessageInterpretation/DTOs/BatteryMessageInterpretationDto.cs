@@ -4,11 +4,9 @@ namespace BootManager.Application.NetworkMessageInterpretation.DTOs;
 /// Semantisch interpretatieresultaat voor batterij-statusberichten.
 /// 
 /// Dit DTO vertegenwoordigt de domein-waarden die zijn afgeleid van een technisch parse-resultaat.
-/// Dit is GEEN rauwe parse-output, maar een geïnterpreteerde, betekenisvolle interpretatie.
 /// 
-/// BELANGRIJK: Deze interpretatie is specifiek voor het huidige simulatorformaat en niet
-/// een algemene NMEA2000-decoder. Zodra volledige NMEA2000-ondersteuning wordt toegevoegd,
-/// zal dit vervangen of uitgebreid moeten worden.
+/// NMEA 2000-achtige implementatie (gebaseerd op PGN 127508 Battery Status).
+/// Zodra volledige NMEA 2000-ondersteuning wordt toegevoegd, zal dit vervangen of uitgebreid moeten worden.
 /// </summary>
 public class BatteryMessageInterpretationDto
 {
@@ -27,6 +25,12 @@ public class BatteryMessageInterpretationDto
     /// De eenheid van de spanning. Altijd "V" voor volts.
     /// </summary>
     public string Unit { get; set; } = "V";
+
+    /// <summary>
+    /// State of Charge in procenten (0-100).
+    /// Null als not available (0xFF in NMEA 2000) of als IsSuccess == false.
+    /// </summary>
+    public int? StateOfCharge { get; set; }
 
     /// <summary>
     /// Foutbericht als IsSuccess == false.

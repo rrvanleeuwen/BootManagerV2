@@ -7,13 +7,24 @@ using System.Text;
 using BootManager.Tools.Simulator.Models;
 using BootManager.Tools.Simulator.Options;
 using BootManager.Tools.Simulator.Scenarios;
+using BootManager.Tools.Simulator.NMEA2000;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace BootManager.Tools.Simulator.Services;
 
 /// <summary>
-/// Simuleert een boot en verzendt periodiek RAW-achtige UDP-berichten met statusinformatie.
+/// Simuleert een boot en verzendt periodiek RAW-achtige UDP-berichten met NMEA 2000-achtige payloads.
+/// 
+/// Dit is een simulatie en benadering van NMEA 2000-semantiek, geen volledige gecertificeerde implementatie.
+/// 
+/// Format per regel:
+///   HH:mm:ss.fff R [PGN_HEX_6CHARS] [PAYLOAD_HEX...]
+/// 
+/// Voorbeeld:
+///   14:23:45.123 R 01F801 7E 18 4A 62 5C D0 4F 4C
+/// 
+/// waarbij 01F801 hexadecimaal PGN 129025 (Position) voorstelt.
 /// </summary>
 public class SimulationService : BackgroundService
 {
@@ -77,7 +88,7 @@ public class SimulationService : BackgroundService
             var before = DateTime.UtcNow;
             UpdateState(_options.IntervalMs);
 
-            var lines = BuildRawLines(_state);
+            var lines = BuildRawNMEA2000Lines(_state);
 
             foreach (var line in lines)
             {
@@ -112,10 +123,10 @@ public class SimulationService : BackgroundService
 
         // kleine natuurlijke variaties
         _state.TimestampUtc = DateTime.UtcNow;
-        _state.SogKnots += ( _rand.NextDouble() - 0.5) * 0.2; // +/-0.1
+        _state.SogKnots += (_rand.NextDouble() - 0.5) * 0.2;
         _state.SogKnots = Math.Clamp(_state.SogKnots, 2.0, 8.0);
 
-        _state.CogDegrees += (_rand.NextDouble() - 0.5) * 1.5; // kleine drift
+        _state.CogDegrees += (_rand.NextDouble() - 0.5) * 1.5;
         _state.HeadingDegrees += (_rand.NextDouble() - 0.5) * 2.0;
 
         // normaliseer hoeken na wijziging zodat ze binnen verwachte grenzen blijven
@@ -127,11 +138,11 @@ public class SimulationService : BackgroundService
         _state.WindAngleDeg += (_rand.NextDouble() - 0.5) * 5.0;
         _state.WindAngleDeg = NormalizeAngle180(_state.WindAngleDeg);
 
-        _state.DepthMeters += (_rand.NextDouble() - 0.5) * 0.05; // lichte variatie
-        _state.DepthMeters = Math.Clamp(_state.DepthMeters, 2.0, 8.0); // realistische bodemdiepte
+        _state.DepthMeters += (_rand.NextDouble() - 0.5) * 0.05;
+        _state.DepthMeters = Math.Clamp(_state.DepthMeters, 2.0, 8.0);
 
         _state.BatteryVoltage += (_rand.NextDouble() - 0.5) * 0.005;
-        _state.BatteryVoltage = Math.Clamp(_state.BatteryVoltage, 12.0, 14.8); // realistische spanningsrange
+        _state.BatteryVoltage = Math.Clamp(_state.BatteryVoltage, 12.0, 14.8);
 
         _state.BatterySoc += (_rand.NextDouble() - 0.5) * 0.02;
         _state.BatterySoc = Math.Clamp(_state.BatterySoc, 0.0, 100.0);
@@ -154,8 +165,6 @@ public class SimulationService : BackgroundService
     /// <summary>
     /// Normaliseert een hoek naar het interval [0, 360).
     /// </summary>
-    /// <param name="angle">Hoek in graden (kan negatief of groter dan 360 zijn).</param>
-    /// <returns>Genormaliseerde hoek in graden tussen 0 (inclusief) en 360 (exclusief).</returns>
     private static double NormalizeAngle360(double angle)
     {
         var a = angle % 360.0;
@@ -166,8 +175,6 @@ public class SimulationService : BackgroundService
     /// <summary>
     /// Normaliseert een hoek naar het interval (-180, 180].
     /// </summary>
-    /// <param name="angle">Hoek in graden.</param>
-    /// <returns>Genormaliseerde hoek in graden tussen -180 (exclusief) en 180 (inclusief).</returns>
     private static double NormalizeAngle180(double angle)
     {
         var a = angle % 360.0;
@@ -177,81 +184,44 @@ public class SimulationService : BackgroundService
     }
 
     /// <summary>
-    /// Bouwt RAW-achtige tekstregels met hex-gecodeerde payloads voor verschillende sensoren/statussen.
+    /// Bouwt RAW-achtige tekstregels met NMEA 2000-achtige PGN's (in hexadecimale notatie) en payloads.
+    /// 
+    /// Format: HH:mm:ss.fff R [PGN_HEX] [PAYLOAD_HEX...]
+    /// 
+    /// Retourneert 6 regels (Position, COG/SOG, Heading, Wind, Depth, Battery).
+    /// Dit is een simulatie van NMEA 2000-semantiek, geen volledige gecertificeerde implementatie.
     /// </summary>
-    /// <param name="s">Huidige boottoestand.</param>
-    /// <returns>Collectie tekstregels die verzonden worden.</returns>
-    private IEnumerable<string> BuildRawLines(BoatState s)
+    private IEnumerable<string> BuildRawNMEA2000Lines(BoatState s)
     {
-        // Compose multiple RAW-like lines with different fake ids
-        // Format: HH:mm:ss.fff R <hex bytes...>
-
         var ts = DateTime.Now.ToString("HH:mm:ss.fff");
 
-        // Helper to create payload bytes (very simple scaling)
-        byte[] PosPayload()
+        var positionPayload = NMEA2000PayloadBuilder.BuildPositionPayload(s);
+        var cogSogPayload = NMEA2000PayloadBuilder.BuildCogSogPayload(s);
+        var headingPayload = NMEA2000PayloadBuilder.BuildHeadingPayload(s);
+        var windPayload = NMEA2000PayloadBuilder.BuildWindPayload(s);
+        var depthPayload = NMEA2000PayloadBuilder.BuildDepthPayload(s);
+        var batteryPayload = NMEA2000PayloadBuilder.BuildBatteryPayload(s);
+
+        var pgns = new[]
         {
-            var lat = (int)Math.Round(s.Latitude * 1e7); // 1e-7 deg -> int
-            var lon = (int)Math.Round(s.Longitude * 1e7);
-            var sog = (int)Math.Round(s.SogKnots * 100); // centi-knots
-            var cog = (int)Math.Round(s.CogDegrees * 100);
-            var buf = new List<byte>();
-            buf.AddRange(BitConverter.GetBytes(lat));
-            buf.AddRange(BitConverter.GetBytes(lon));
-            buf.AddRange(BitConverter.GetBytes(sog));
-            buf.AddRange(BitConverter.GetBytes(cog));
-            return buf.ToArray();
+            (NMEA2000PgnSpecification.PGN_POSITION, positionPayload),
+            (NMEA2000PgnSpecification.PGN_COG_SOG, cogSogPayload),
+            (NMEA2000PgnSpecification.PGN_HEADING, headingPayload),
+            (NMEA2000PgnSpecification.PGN_WIND, windPayload),
+            (NMEA2000PgnSpecification.PGN_DEPTH, depthPayload),
+            (NMEA2000PgnSpecification.PGN_BATTERY, batteryPayload)
+        };
+
+        var lines = new List<string>();
+        foreach (var (pgn, payload) in pgns)
+        {
+            var pgnHex = pgn.ToString("X").PadLeft(6, '0');
+            var payloadHex = NMEA2000PayloadBuilder.BytesToHexString(payload);
+            var line = $"{ts} R {pgnHex} {payloadHex}";
+            lines.Add(line);
         }
 
-        byte[] MotionPayload()
-        {
-            var hdg = (int)Math.Round(s.HeadingDegrees * 100);
-            var sog = (int)Math.Round(s.SogKnots * 100);
-            var buf = new List<byte>();
-            buf.AddRange(BitConverter.GetBytes(hdg));
-            buf.AddRange(BitConverter.GetBytes(sog));
-            return buf.ToArray();
-        }
-
-        byte[] WindPayload()
-        {
-            var wsp = (int)Math.Round(s.WindSpeedMps * 100);
-            var wang = (int)Math.Round(s.WindAngleDeg * 100);
-            var buf = new List<byte>();
-            buf.AddRange(BitConverter.GetBytes(wsp));
-            buf.AddRange(BitConverter.GetBytes(wang));
-            return buf.ToArray();
-        }
-
-        byte[] DepthPayload()
-        {
-            var depth = (int)Math.Round(s.DepthMeters * 100);
-            return BitConverter.GetBytes(depth);
-        }
-
-        byte[] BatteryPayload()
-        {
-            var volt = (int)Math.Round(s.BatteryVoltage * 1000); // mV
-            var soc = (int)Math.Round(s.BatterySoc * 100); // centi%
-            var buf = new List<byte>();
-            buf.AddRange(BitConverter.GetBytes(volt));
-            buf.AddRange(BitConverter.GetBytes(soc));
-            return buf.ToArray();
-        }
-
-        string ToHex(byte[] data)
-        {
-            return string.Join(' ', data.Select(b => b.ToString("X2")));
-        }
-
-        // IDs chosen arbitrarily
-        var posLine = $"{ts} R 0A1B2C3D " + ToHex(PosPayload());
-        var motionLine = $"{ts} R 0A1B2C3E " + ToHex(MotionPayload());
-        var windLine = $"{ts} R 0A1B2C3F " + ToHex(WindPayload());
-        var depthLine = $"{ts} R 0A1B2C40 " + ToHex(DepthPayload());
-        var battLine = $"{ts} R 0A1B2C41 " + ToHex(BatteryPayload());
-
-        return new[] { posLine, motionLine, windLine, depthLine, battLine };
+        return lines;
     }
 
     /// <summary>
