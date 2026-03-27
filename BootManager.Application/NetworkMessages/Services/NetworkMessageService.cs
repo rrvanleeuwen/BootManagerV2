@@ -3,6 +3,8 @@ using BootManager.Application.NetworkMessageParsing.DTOs;
 using BootManager.Application.NetworkMessageParsing.Services;
 using BootManager.Application.NetworkMessageInterpretation.Contracts;
 using BootManager.Application.NetworkMessageInterpretation.DTOs;
+using BootManager.Application.BatteryMeasurements.DTOs;
+using BootManager.Application.BatteryMeasurements.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -15,15 +17,16 @@ using System.Threading.Tasks;
 namespace BootManager.Application.NetworkMessages.Services;
 
 /// <summary>
-/// Implementation of <see cref="INetworkMessageService"/> using the generic <see cref="IRepository{T}"/>.
+/// Implementation van <see cref="INetworkMessageService"/> met behulp van de generieke <see cref="IRepository{T}"/>.
 /// Voert parsing uit als tussenstap richting latere interpretatie, zonder extra persistentie.
-/// Voert ook semantische interpretatie uit voor ondersteunde berichttypen (bijv. Battery).
+/// Voert ook semantische interpretatie uit voor ondersteunde berichttypen (bijv. Battery) en persisteert succesvolle afleidingen.
 /// </summary>
 public class NetworkMessageService : INetworkMessageService
 {
     private readonly IRepository<NetworkMessage> _repo;
     private readonly INetworkMessageParserService _parserService;
     private readonly INetworkMessageInterpreter<BatteryMessageInterpretationDto> _batteryInterpreter;
+    private readonly IBatteryMeasurementService _batteryMeasurementService;
     private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
@@ -33,11 +36,13 @@ public class NetworkMessageService : INetworkMessageService
         IRepository<NetworkMessage> repo,
         INetworkMessageParserService parserService,
         INetworkMessageInterpreter<BatteryMessageInterpretationDto> batteryInterpreter,
+        IBatteryMeasurementService batteryMeasurementService,
         ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
         _parserService = parserService;
         _batteryInterpreter = batteryInterpreter;
+        _batteryMeasurementService = batteryMeasurementService;
         _logger = logger;
     }
 
@@ -78,8 +83,8 @@ public class NetworkMessageService : INetworkMessageService
                         parseResult.MessageType,
                         parseResult.MessageIdHex);
 
-                    // Semantische interpretatie voor ondersteunde berichttypen
-                    TryInterpretBatteryMessage(parseResult);
+                    // Semantische interpretatie en afgeleide opslag voor ondersteunde berichttypen
+                    await TryInterpretAndSaveBatteryMessageAsync(parseResult, request, ct);
                 }
                 else
                 {
@@ -104,11 +109,17 @@ public class NetworkMessageService : INetworkMessageService
     }
 
     /// <summary>
-    /// Probeert semantische Battery-interpretatie uit te voeren op een technisch parse-resultaat.
-    /// Als interpretatie slaagt, logt dit intern. Fouten blokkeren niet de bestaande raw opslag.
+    /// Probeert semantische Battery-interpretatie uit te voeren op een technisch parse-resultaat
+    /// en persisteert het resultaat als een BatteryMeasurement.
+    /// Fouten blokkeren niet de bestaande raw opslag.
     /// </summary>
     /// <param name="parseResult">Het technische parse-resultaat.</param>
-    private void TryInterpretBatteryMessage(NetworkMessageParseResultDto parseResult)
+    /// <param name="request">De originele netwerkbericht-request voor metadata.</param>
+    /// <param name="ct">Cancellation token.</param>
+    private async Task TryInterpretAndSaveBatteryMessageAsync(
+        NetworkMessageParseResultDto parseResult,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
     {
         try
         {
@@ -125,6 +136,29 @@ public class NetworkMessageService : INetworkMessageService
                     "Battery-interpretatie geslaagd: Voltage={Voltage}{Unit}",
                     interpretation.Voltage,
                     interpretation.Unit);
+
+                // Persisteer afgeleide battery-meting
+                try
+                {
+                    var batteryDto = new CreateBatteryMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        Voltage = interpretation.Voltage.Value,
+                        StateOfCharge = interpretation.StateOfCharge
+                    };
+
+                    await _batteryMeasurementService.SaveAsync(batteryDto, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Battery-opslag-fouten blokkeren geen raw opslag. Log compact.
+                    _logger.LogWarning(
+                        ex,
+                        "Batterijmeting-opslag mislukt voor MessageId={MessageId}",
+                        request.MessageId);
+                }
             }
             else
             {
