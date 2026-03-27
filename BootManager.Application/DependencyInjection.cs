@@ -1,6 +1,7 @@
 using BootManager.Application.Authentication.Services;
 using BootManager.Application.OwnerRegistration.Services;
 using BootManager.Application.NetworkMessages.Services;
+using BootManager.Application.NetworkMessageParsing.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BootManager.Application;
@@ -19,6 +20,9 @@ public static class DependencyInjection
 
         // Registratie van NetworkMessage application-service (gebruik generieke repository)
         services.AddScoped<INetworkMessageService, NetworkMessageService>();
+
+        // Registratie van NetworkMessageParser service
+        services.AddScoped<INetworkMessageParserService, NetworkMessageParserService>();
 
         return services;
     }
