@@ -9,33 +9,36 @@ using NetworkMessageParsing.Enums;
 /// Semantische interpreter voor batterij-statusberichten.
 /// 
 /// Deze service interpreteert technische parse-resultaten van type Battery
-/// naar semantische domein-waarden (spanning, eenheid, etc.).
+/// naar semantische domein-waarden (spanning, SOC, etc.).
 /// 
-/// BELANGRIJK: Deze implementatie is specifiek voor het huidige simulatorformaat.
-/// De decodelogica werkt als volgt:
-/// - Vereist minimaal 2 bytes in de payload
-/// - Eerste byte (MSB) en tweede byte (LSB) worden gecombineerd tot een uint16
-/// - Deze waarde wordt geïnterpreteerd als spanning in decivolt (0,1V per eenheid)
-/// - Daarom: spanning in V = (uint16) / 10
+/// NMEA 2000-achtige implementatie (gebaseerd op PGN 127508):
+/// - Byte 0: Battery Instance (0x00 voor eerste batterij)
+/// - Bytes 1-2: Voltage in 0,01V (uint16, little-endian)
+/// - Byte 3: State of Charge in % (0-100, of 0xFF voor unknown)
 /// 
-/// Dit is GEEN NMEA2000-standaard-decoder. Als volledige NMEA2000 wordt geïmplementeerd,
-/// zal deze logica moeten worden vervangen of herzien.
+/// Decodelogica:
+/// - Spanning in V = (bytes[1] + bytes[2] * 256) / 100
+/// - SOC in % = bytes[3] (direct, null als 0xFF)
 /// </summary>
 public class BatteryMessageInterpreterService : INetworkMessageInterpreter<BatteryMessageInterpretationDto>
 {
-    /// <inheritdoc />
+    private const byte UnknownSocValue = 0xFF;
+
+    /// <summary>
+    /// Bepaalt of dit parse-resultaat door deze interpreter kan worden geïnterpreteerd.
+    /// </summary>
     public bool CanInterpret(NetworkMessageParseResultDto parseResult)
     {
-        // Interpreter kan alleen technisch succesvolle Battery-berichten verwerken
         return parseResult.IsSuccess
             && parseResult.MessageType == NetworkMessageType.Battery
-            && parseResult.PayloadBytes.Length >= 2;
+            && parseResult.PayloadBytes.Length >= 4;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Voert semantische interpretatie uit.
+    /// </summary>
     public BatteryMessageInterpretationDto Interpret(NetworkMessageParseResultDto parseResult)
     {
-        // Minimale validatie: als CanInterpret false zou zijn, dit is defensief
         if (!parseResult.IsSuccess)
         {
             return new BatteryMessageInterpretationDto
@@ -54,33 +57,35 @@ public class BatteryMessageInterpreterService : INetworkMessageInterpreter<Batte
             };
         }
 
-        if (parseResult.PayloadBytes.Length < 2)
+        if (parseResult.PayloadBytes.Length < 4)
         {
             return new BatteryMessageInterpretationDto
             {
                 IsSuccess = false,
-                ErrorMessage = "Onvoldoende bytes in payload. Minimaal 2 bytes vereist."
+                ErrorMessage = "Onvoldoende bytes in payload. Minimaal 4 bytes vereist."
             };
         }
 
         try
         {
-            // Decodeer spanning van eerste twee bytes (big-endian uint16)
-            // Formule: spanning in V = (first_byte * 256 + second_byte) / 10
-            // Dit geeft spanning in decivolt-eenheden
-            ushort voltageDecivolts = (ushort)((parseResult.PayloadBytes[0] << 8) | parseResult.PayloadBytes[1]);
-            decimal voltageVolts = voltageDecivolts / 10.0m;
+            // Decodeer spanning van bytes 1-2 (little-endian uint16, 0,01V per eenheid)
+            ushort voltageCentivolts = (ushort)(parseResult.PayloadBytes[1] | (parseResult.PayloadBytes[2] << 8));
+            decimal voltageVolts = voltageCentivolts / 100.0m;
+
+            // Decodeer State of Charge van byte 3
+            byte soc = parseResult.PayloadBytes[3];
+            int? socValue = soc == UnknownSocValue ? null : (int?)soc;
 
             return new BatteryMessageInterpretationDto
             {
                 IsSuccess = true,
                 Voltage = voltageVolts,
-                Unit = "V"
+                Unit = "V",
+                StateOfCharge = socValue
             };
         }
         catch (Exception ex)
         {
-            // Dit moet normaal niet gebeuren omdat we al hebben gevalideerd, maar defensief
             return new BatteryMessageInterpretationDto
             {
                 IsSuccess = false,

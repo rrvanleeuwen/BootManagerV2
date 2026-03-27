@@ -6,12 +6,39 @@ using Enums;
 /// <summary>
 /// Concrete implementatie van de netwerkbericht-parser service.
 /// 
-/// Voert technische parsing uit: ID-herkenning, type-classificatie en hex-to-byte conversie.
+/// Voert technische parsing uit: PGN-herkenning, type-classificatie en hex-to-byte conversie.
 /// Dit is GEEN domein-gerelateerde decoding.
+/// 
+/// De parser normaliseert MessageId's robuust om zowel hex-PGN's (uit huidige simulator)
+/// als decimale PGN-strings (toekomstige raw input) betrouwbaar te classificeren.
 /// </summary>
 internal class NetworkMessageParserService : INetworkMessageParserService
 {
-    private static readonly Dictionary<string, NetworkMessageType> MessageIdToType = new(StringComparer.OrdinalIgnoreCase)
+    /// <summary>
+    /// Mapping van genormaliseerde PGN-waarden (decimaal) naar berichttypen.
+    /// 
+    /// Deze mapping is gebaseerd op werkelijke NMEA 2000-semantiek:
+    /// - 129025: Position (Rapid Update)
+    /// - 129026: COG/SOG (Course Over Ground, Speed Over Ground)
+    /// - 127250: Heading (Vessel Heading)
+    /// - 130306: Wind Data
+    /// - 128267: Water Depth (Rapid Update)
+    /// - 127508: Battery Status
+    /// </summary>
+    private static readonly Dictionary<uint, NetworkMessageType> PgnToType = new()
+    {
+        { 129025, NetworkMessageType.Position },
+        { 129026, NetworkMessageType.Motion },
+        { 127250, NetworkMessageType.Motion },
+        { 130306, NetworkMessageType.Wind },
+        { 128267, NetworkMessageType.Depth },
+        { 127508, NetworkMessageType.Battery }
+    };
+
+    /// <summary>
+    /// Legacy-mapping voor oudere/arbitraire message IDs (backward compatibility).
+    /// </summary>
+    private static readonly Dictionary<string, NetworkMessageType> LegacyIdToType = new(StringComparer.OrdinalIgnoreCase)
     {
         { "0A1B2C3D", NetworkMessageType.Position },
         { "0A1B2C3E", NetworkMessageType.Motion },
@@ -22,6 +49,11 @@ internal class NetworkMessageParserService : INetworkMessageParserService
 
     /// <summary>
     /// Parseert een netwerkbericht.
+    /// 
+    /// Herkent:
+    /// - Hex-PGN's (bijv. "01F801" voor PGN 129025)
+    /// - Decimale PGN-strings (bijv. "129025")
+    /// - Legacy arbitraire IDs (bijv. "0A1B2C3D")
     /// </summary>
     public NetworkMessageParseResultDto Parse(NetworkMessageParseRequestDto request)
     {
@@ -68,9 +100,64 @@ internal class NetworkMessageParserService : INetworkMessageParserService
                !string.IsNullOrWhiteSpace(request.PayloadHex);
     }
 
+    /// <summary>
+    /// Bepaalt het berichttype op basis van MessageId.
+    /// 
+    /// Normaliseert eerst de MessageId naar een standaardformaat (genormaliseerde PGN-waarde),
+    /// en classificeert vervolgens.
+    /// </summary>
     private static NetworkMessageType GetMessageType(string messageIdHex)
     {
-        return MessageIdToType.TryGetValue(messageIdHex, out var type) ? type : NetworkMessageType.Unknown;
+        var normalizedPgn = NormalizeMessageId(messageIdHex);
+
+        // Probeer PGN-mapping
+        if (normalizedPgn.HasValue && PgnToType.TryGetValue(normalizedPgn.Value, out var type))
+        {
+            return type;
+        }
+
+        // Fall-back naar legacy IDs
+        if (LegacyIdToType.TryGetValue(messageIdHex, out var legacyType))
+        {
+            return legacyType;
+        }
+
+        return NetworkMessageType.Unknown;
+    }
+
+    /// <summary>
+    /// Normaliseert een MessageId naar een genormaliseerde PGN-waarde (uint).
+    /// 
+    /// Ondersteunt:
+    /// - Hex-strings (bijv. "01F801" → 129025)
+    /// - Decimale strings (bijv. "129025" → 129025)
+    /// - Case-insensitief verwerking
+    /// 
+    /// Retourneert null als normalisatie mislukt.
+    /// </summary>
+    private static uint? NormalizeMessageId(string messageId)
+    {
+        if (string.IsNullOrWhiteSpace(messageId))
+        {
+            return null;
+        }
+
+        var trimmedId = messageId.Trim();
+
+        // Poging 1: Probeer als decimale string
+        if (uint.TryParse(trimmedId, System.Globalization.NumberStyles.None, null, out var decimalValue))
+        {
+            return decimalValue;
+        }
+
+        // Poging 2: Probeer als hex-string (zonder 0x-prefix)
+        // Hex-strings uit de simulator zijn 6 karakters (bijv. "01F801" voor 129025)
+        if (uint.TryParse(trimmedId, System.Globalization.NumberStyles.HexNumber, null, out var hexValue))
+        {
+            return hexValue;
+        }
+
+        return null;
     }
 
     private static bool TryParseHexPayload(string payloadHex, out byte[]? bytes, out string? error)
@@ -84,10 +171,8 @@ internal class NetworkMessageParserService : INetworkMessageParserService
             return false;
         }
 
-        // Verwijder whitespace
         var cleanedHex = payloadHex.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
 
-        // Controleer of de lengte even is (elke byte is 2 hex-karakters)
         if (cleanedHex.Length % 2 != 0)
         {
             error = "Payload hex-string heeft oneven aantal karakters.";
