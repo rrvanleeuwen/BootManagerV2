@@ -7,6 +7,8 @@ using BootManager.Application.BatteryMeasurements.DTOs;
 using BootManager.Application.BatteryMeasurements.Services;
 using BootManager.Application.DepthMeasurements.DTOs;
 using BootManager.Application.DepthMeasurements.Services;
+using BootManager.Application.MotionMeasurements.DTOs;
+using BootManager.Application.MotionMeasurements.Services;
 using BootManager.Application.WindMeasurements.DTOs;
 using BootManager.Application.WindMeasurements.Services;
 using BootManager.Core.Entities;
@@ -23,7 +25,7 @@ namespace BootManager.Application.NetworkMessages.Services;
 /// <summary>
 /// Implementation van <see cref="INetworkMessageService"/> met behulp van de generieke <see cref="IRepository{T}"/>.
 /// Voert parsing uit als tussenstap richting latere interpretatie, zonder extra persistentie.
-/// Voert ook semantische interpretatie uit voor ondersteunde berichttypen (bijv. Battery, Depth) en persisteert succesvolle afleidingen.
+/// Voert ook semantische interpretatie uit voor ondersteunde berichttypen (bijv. Battery, Depth, Motion) en persisteert succesvolle afleidingen.
 /// </summary>
 public class NetworkMessageService : INetworkMessageService
 {
@@ -33,6 +35,8 @@ public class NetworkMessageService : INetworkMessageService
     private readonly IBatteryMeasurementService _batteryMeasurementService;
     private readonly INetworkMessageInterpreter<DepthMessageInterpretationDto> _depthInterpreter;
     private readonly IDepthMeasurementService _depthMeasurementService;
+    private readonly INetworkMessageInterpreter<MotionMessageInterpretationDto> _motionInterpreter;
+    private readonly IMotionMeasurementService _motionMeasurementService;
     private readonly INetworkMessageInterpreter<WindMessageInterpretationDto> _windInterpreter;
     private readonly IWindMeasurementService _windMeasurementService;
     private readonly ILogger<NetworkMessageService> _logger;
@@ -47,6 +51,8 @@ public class NetworkMessageService : INetworkMessageService
         IBatteryMeasurementService batteryMeasurementService,
         INetworkMessageInterpreter<DepthMessageInterpretationDto> depthInterpreter,
         IDepthMeasurementService depthMeasurementService,
+        INetworkMessageInterpreter<MotionMessageInterpretationDto> motionInterpreter,
+        IMotionMeasurementService motionMeasurementService,
         INetworkMessageInterpreter<WindMessageInterpretationDto> windInterpreter,
         IWindMeasurementService windMeasurementService,
         ILogger<NetworkMessageService> logger)
@@ -57,6 +63,8 @@ public class NetworkMessageService : INetworkMessageService
         _batteryMeasurementService = batteryMeasurementService;
         _depthInterpreter = depthInterpreter;
         _depthMeasurementService = depthMeasurementService;
+        _motionInterpreter = motionInterpreter;
+        _motionMeasurementService = motionMeasurementService;
         _windInterpreter = windInterpreter;
         _windMeasurementService = windMeasurementService;
         _logger = logger;
@@ -102,6 +110,7 @@ public class NetworkMessageService : INetworkMessageService
                     // Semantische interpretatie en afgeleide opslag voor ondersteunde berichttypen
                     await TryInterpretAndSaveBatteryMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveDepthMessageAsync(parseResult, request, ct);
+                    await TryInterpretAndSaveMotionMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveWindMessageAsync(parseResult, request, ct);
                 }
                 else
@@ -258,6 +267,76 @@ public class NetworkMessageService : INetworkMessageService
             _logger.LogWarning(
                 ex,
                 "Onverwachte fout bij Depth-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert semantische Motion-interpretatie uit te voeren op een technisch parse-resultaat
+    /// en persisteert het resultaat als een MotionMeasurement.
+    /// Fouten blokkeren niet de bestaande raw opslag.
+    /// </summary>
+    /// <param name="parseResult">Het technische parse-resultaat.</param>
+    /// <param name="request">De originele netwerkbericht-request voor metadata.</param>
+    /// <param name="ct">Cancellation token.</param>
+    private async Task TryInterpretAndSaveMotionMessageAsync(
+        NetworkMessageParseResultDto parseResult,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_motionInterpreter.CanInterpret(parseResult))
+            {
+                return;
+            }
+
+            var interpretation = _motionInterpreter.Interpret(parseResult);
+
+            if (interpretation.IsSuccess && interpretation.CourseOverGroundDegrees.HasValue && interpretation.SpeedOverGround.HasValue)
+            {
+                _logger.LogInformation(
+                    "Motion-interpretatie geslaagd: COG={COG}°, SOG={SOG}{Unit}",
+                    interpretation.CourseOverGroundDegrees,
+                    interpretation.SpeedOverGround,
+                    interpretation.SpeedUnit);
+
+                // Persisteer afgeleide motion-meting
+                try
+                {
+                    var motionDto = new CreateMotionMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        CourseOverGroundDegrees = interpretation.CourseOverGroundDegrees.Value,
+                        SpeedOverGround = interpretation.SpeedOverGround.Value,
+                        SpeedUnit = interpretation.SpeedUnit
+                    };
+
+                    await _motionMeasurementService.SaveAsync(motionDto, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Motion-opslag-fouten blokkeren geen raw opslag. Log compact.
+                    _logger.LogWarning(
+                        ex,
+                        "Bewegingsmeting-opslag mislukt voor MessageId={MessageId}",
+                        request.MessageId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Motion-interpretatie mislukt: {Error}",
+                    interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Interpretatie-fouten blokkeren geen raw opslag.
+            _logger.LogWarning(
+                ex,
+                "Onverwachte fout bij Motion-interpretatie");
         }
     }
 

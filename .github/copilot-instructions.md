@@ -38,6 +38,10 @@ Deze instructies gelden voor de hele BootManager-repository.
 - Voeg alleen korte Nederlandse inline comments toe waar de logica niet direct vanzelfsprekend is.
 - Verander geen functionele code alleen om documentatie mooier te maken.
 
+## Motion Verwerking
+- Herstel de Motion-verwerking structureel: Payload moet uint16 COG-radialen zijn (niet float), gevolgd door uint16 SOG in centiknoten.
+- Zorg ervoor dat de `MotionMessageInterpreterService` deze 4-byte payload correct decodert met little-endian conversies.
+
 ## Werkwijze
 - Voer wijzigingen stapsgewijs uit.
 - Na iedere stap moet de oplossing kunnen builden.
