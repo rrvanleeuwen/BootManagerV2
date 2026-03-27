@@ -3,15 +3,14 @@ namespace BootManager.Application.NetworkMessageParsing.Services;
 using DTOs;
 
 /// <summary>
-/// Interface voor netwerkbericht-parsing service.
-// 
 /// Biedt functionaliteit voor het herkennen en technisch parseren van onbewerkte netwerkberichten.
+/// 
 /// Dit is een LOW-LEVEL parseer-service die:
-/// - bericht-IDs herkent en classified naar <see cref="Enums.NetworkMessageType"/>
+/// - bericht-IDs herkent en classificeert naar <see cref="Enums.NetworkMessageType"/>
 /// - hexadecimale payloads converteert naar bytes
 /// - GEEN domein-gerelateerde decoding of interpretatie uitvoert
 /// 
-/// Dit is een tussenstap. Verdere interpretatie, validatie en decoding vindt plaats in latere stappen.
+/// Dit is een tussenstap. Verdere interpretatie, validatie en decoding vindt plaats via <see cref="INetworkMessageInterpreter{TInterpretationResult}"/>.
 /// </summary>
 public interface INetworkMessageParserService
 {

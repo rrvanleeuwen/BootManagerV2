@@ -1,7 +1,7 @@
+namespace BootManager.Infrastructure.Persistence;
+
 using BootManager.Core.Entities;
 using Microsoft.EntityFrameworkCore;
-
-namespace BootManager.Infrastructure.Persistence;
 
 public class BootManagerDbContext : DbContext
 {
@@ -12,11 +12,47 @@ public class BootManagerDbContext : DbContext
     /// <summary>
     /// DbSet voor opgeslagen ruwe netwerkregels.
     /// </summary>
-    public DbSet<NetworkMessage> NetworkMessages => Set<NetworkMessage>(); // Opgenomen voor persistente opslag van inkomende netwerkregels
+    public DbSet<NetworkMessage> NetworkMessages => Set<NetworkMessage>();
+
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde batterijmetingen.
+    /// </summary>
+    public DbSet<BatteryMeasurement> BatteryMeasurements => Set<BatteryMeasurement>();
+
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde dieptemetingen.
+    /// </summary>
+    public DbSet<DepthMeasurement> DepthMeasurements => Set<DepthMeasurement>();
+
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde windmetingen.
+    /// </summary>
+    public DbSet<WindMeasurement> WindMeasurements => Set<WindMeasurement>();
+
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde bewegingsmetingen.
+    /// </summary>
+    public DbSet<MotionMeasurement> MotionMeasurements => Set<MotionMeasurement>();
+
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde positiemetingen.
+    /// </summary>
+    public DbSet<PositionMeasurement> PositionMeasurements => Set<PositionMeasurement>();
+
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde koersmetingen.
+    /// </summary>
+    public DbSet<HeadingMeasurement> HeadingMeasurements => Set<HeadingMeasurement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.NetworkMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.BatteryMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.DepthMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.WindMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.MotionMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.PositionMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.HeadingMeasurementConfiguration());
     }
 }
