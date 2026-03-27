@@ -34,6 +34,11 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<MotionMeasurement> MotionMeasurements => Set<MotionMeasurement>();
 
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde positiemetingen.
+    /// </summary>
+    public DbSet<PositionMeasurement> PositionMeasurements => Set<PositionMeasurement>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
@@ -42,5 +47,6 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.DepthMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.WindMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.MotionMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.PositionMeasurementConfiguration());
     }
 }

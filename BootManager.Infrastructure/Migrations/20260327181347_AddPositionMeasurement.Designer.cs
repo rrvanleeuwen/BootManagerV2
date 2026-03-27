@@ -3,6 +3,7 @@ using System;
 using BootManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BootManager.Infrastructure.Migrations
 {
     [DbContext(typeof(BootManagerDbContext))]
-    partial class BootManagerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260327181347_AddPositionMeasurement")]
+    partial class AddPositionMeasurement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");

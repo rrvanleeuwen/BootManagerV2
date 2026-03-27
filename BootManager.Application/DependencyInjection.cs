@@ -8,6 +8,7 @@ using BootManager.Application.NetworkMessageInterpretation.Services;
 using BootManager.Application.BatteryMeasurements.Services;
 using BootManager.Application.DepthMeasurements.Services;
 using BootManager.Application.MotionMeasurements.Services;
+using BootManager.Application.PositionMeasurements.Services;
 using BootManager.Application.WindMeasurements.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddTransient<INetworkMessageInterpreter<BatteryMessageInterpretationDto>, BatteryMessageInterpreterService>();
         services.AddTransient<INetworkMessageInterpreter<DepthMessageInterpretationDto>, DepthMessageInterpreterService>();
         services.AddTransient<INetworkMessageInterpreter<MotionMessageInterpretationDto>, MotionMessageInterpreterService>();
+        services.AddTransient<INetworkMessageInterpreter<PositionMessageInterpretationDto>, PositionMessageInterpreterService>();
         services.AddTransient<INetworkMessageInterpreter<WindMessageInterpretationDto>, WindMessageInterpreterService>();
 
         // Registratie van BatteryMeasurement application-service (gebruik generieke repository)
@@ -47,6 +49,9 @@ public static class DependencyInjection
 
         // Registratie van MotionMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IMotionMeasurementService, MotionMeasurementService>();
+
+        // Registratie van PositionMeasurement application-service (gebruik generieke repository)
+        services.AddScoped<IPositionMeasurementService, PositionMeasurementService>();
 
         // Registratie van WindMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IWindMeasurementService, WindMeasurementService>();

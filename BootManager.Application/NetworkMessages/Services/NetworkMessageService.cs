@@ -9,6 +9,8 @@ using BootManager.Application.DepthMeasurements.DTOs;
 using BootManager.Application.DepthMeasurements.Services;
 using BootManager.Application.MotionMeasurements.DTOs;
 using BootManager.Application.MotionMeasurements.Services;
+using BootManager.Application.PositionMeasurements.DTOs;
+using BootManager.Application.PositionMeasurements.Services;
 using BootManager.Application.WindMeasurements.DTOs;
 using BootManager.Application.WindMeasurements.Services;
 using BootManager.Core.Entities;
@@ -37,6 +39,8 @@ public class NetworkMessageService : INetworkMessageService
     private readonly IDepthMeasurementService _depthMeasurementService;
     private readonly INetworkMessageInterpreter<MotionMessageInterpretationDto> _motionInterpreter;
     private readonly IMotionMeasurementService _motionMeasurementService;
+    private readonly INetworkMessageInterpreter<PositionMessageInterpretationDto> _positionInterpreter;
+    private readonly IPositionMeasurementService _positionMeasurementService;
     private readonly INetworkMessageInterpreter<WindMessageInterpretationDto> _windInterpreter;
     private readonly IWindMeasurementService _windMeasurementService;
     private readonly ILogger<NetworkMessageService> _logger;
@@ -53,6 +57,8 @@ public class NetworkMessageService : INetworkMessageService
         IDepthMeasurementService depthMeasurementService,
         INetworkMessageInterpreter<MotionMessageInterpretationDto> motionInterpreter,
         IMotionMeasurementService motionMeasurementService,
+        INetworkMessageInterpreter<PositionMessageInterpretationDto> positionInterpreter,
+        IPositionMeasurementService positionMeasurementService,
         INetworkMessageInterpreter<WindMessageInterpretationDto> windInterpreter,
         IWindMeasurementService windMeasurementService,
         ILogger<NetworkMessageService> logger)
@@ -65,6 +71,8 @@ public class NetworkMessageService : INetworkMessageService
         _depthMeasurementService = depthMeasurementService;
         _motionInterpreter = motionInterpreter;
         _motionMeasurementService = motionMeasurementService;
+        _positionInterpreter = positionInterpreter;
+        _positionMeasurementService = positionMeasurementService;
         _windInterpreter = windInterpreter;
         _windMeasurementService = windMeasurementService;
         _logger = logger;
@@ -111,6 +119,7 @@ public class NetworkMessageService : INetworkMessageService
                     await TryInterpretAndSaveBatteryMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveDepthMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveMotionMessageAsync(parseResult, request, ct);
+                    await TryInterpretAndSavePositionMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveWindMessageAsync(parseResult, request, ct);
                 }
                 else
@@ -337,6 +346,76 @@ public class NetworkMessageService : INetworkMessageService
             _logger.LogWarning(
                 ex,
                 "Onverwachte fout bij Motion-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert semantische Position-interpretatie uit te voeren op een technisch parse-resultaat
+    /// en persisteert het resultaat als een PositionMeasurement.
+    /// Fouten blokkeren niet de bestaande raw opslag.
+    /// </summary>
+    /// <param name="parseResult">Het technische parse-resultaat.</param>
+    /// <param name="request">De originele netwerkbericht-request voor metadata.</param>
+    /// <param name="ct">Cancellation token.</param>
+    private async Task TryInterpretAndSavePositionMessageAsync(
+        NetworkMessageParseResultDto parseResult,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_positionInterpreter.CanInterpret(parseResult))
+            {
+                return;
+            }
+
+            var interpretation = _positionInterpreter.Interpret(parseResult);
+
+            if (interpretation.IsSuccess && interpretation.Latitude.HasValue && interpretation.Longitude.HasValue)
+            {
+                _logger.LogInformation(
+                    "Position-interpretatie geslaagd: Latitude={Latitude}{Unit}, Longitude={Longitude}{Unit}",
+                    interpretation.Latitude,
+                    interpretation.Unit,
+                    interpretation.Longitude,
+                    interpretation.Unit);
+
+                // Persisteer afgeleide position-meting
+                try
+                {
+                    var positionDto = new CreatePositionMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        Latitude = interpretation.Latitude.Value,
+                        Longitude = interpretation.Longitude.Value
+                    };
+
+                    await _positionMeasurementService.SaveAsync(positionDto, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Position-opslag-fouten blokkeren geen raw opslag. Log compact.
+                    _logger.LogWarning(
+                        ex,
+                        "Positiemeting-opslag mislukt voor MessageId={MessageId}",
+                        request.MessageId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Position-interpretatie mislukt: {Error}",
+                    interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Interpretatie-fouten blokkeren geen raw opslag.
+            _logger.LogWarning(
+                ex,
+                "Onverwachte fout bij Position-interpretatie");
         }
     }
 
