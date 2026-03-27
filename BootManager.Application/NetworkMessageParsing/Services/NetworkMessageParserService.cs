@@ -29,7 +29,7 @@ internal class NetworkMessageParserService : INetworkMessageParserService
     {
         { 129025, NetworkMessageType.Position },
         { 129026, NetworkMessageType.Motion },
-        { 127250, NetworkMessageType.Motion },
+        { 127250, NetworkMessageType.Heading },
         { 130306, NetworkMessageType.Wind },
         { 128267, NetworkMessageType.Depth },
         { 127508, NetworkMessageType.Battery }

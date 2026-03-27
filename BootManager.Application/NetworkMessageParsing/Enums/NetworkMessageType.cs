@@ -34,5 +34,10 @@ public enum NetworkMessageType
     /// <summary>
     /// Batterijstatus (Message ID: 0A1B2C41).
     /// </summary>
-    Battery = 5
+    Battery = 5,
+
+    /// <summary>
+    /// Koersgegevens (PGN 127250 - Vessel Heading).
+    /// </summary>
+    Heading = 6
 }

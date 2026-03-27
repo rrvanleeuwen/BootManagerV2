@@ -13,6 +13,8 @@ using BootManager.Application.PositionMeasurements.DTOs;
 using BootManager.Application.PositionMeasurements.Services;
 using BootManager.Application.WindMeasurements.DTOs;
 using BootManager.Application.WindMeasurements.Services;
+using BootManager.Application.HeadingMeasurements.DTOs;
+using BootManager.Application.HeadingMeasurements.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -43,6 +45,8 @@ public class NetworkMessageService : INetworkMessageService
     private readonly IPositionMeasurementService _positionMeasurementService;
     private readonly INetworkMessageInterpreter<WindMessageInterpretationDto> _windInterpreter;
     private readonly IWindMeasurementService _windMeasurementService;
+    private readonly INetworkMessageInterpreter<HeadingMessageInterpretationDto> _headingInterpreter;
+    private readonly IHeadingMeasurementService _headingMeasurementService;
     private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
@@ -61,6 +65,8 @@ public class NetworkMessageService : INetworkMessageService
         IPositionMeasurementService positionMeasurementService,
         INetworkMessageInterpreter<WindMessageInterpretationDto> windInterpreter,
         IWindMeasurementService windMeasurementService,
+        INetworkMessageInterpreter<HeadingMessageInterpretationDto> headingInterpreter,
+        IHeadingMeasurementService headingMeasurementService,
         ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
@@ -75,6 +81,8 @@ public class NetworkMessageService : INetworkMessageService
         _positionMeasurementService = positionMeasurementService;
         _windInterpreter = windInterpreter;
         _windMeasurementService = windMeasurementService;
+        _headingInterpreter = headingInterpreter;
+        _headingMeasurementService = headingMeasurementService;
         _logger = logger;
     }
 
@@ -121,6 +129,7 @@ public class NetworkMessageService : INetworkMessageService
                     await TryInterpretAndSaveMotionMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSavePositionMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveWindMessageAsync(parseResult, request, ct);
+                    await TryInterpretAndSaveHeadingMessageAsync(parseResult, request, ct);
                 }
                 else
                 {
@@ -487,6 +496,73 @@ public class NetworkMessageService : INetworkMessageService
             _logger.LogWarning(
                 ex,
                 "Onverwachte fout bij Wind-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert semantische Heading-interpretatie uit te voeren op een technisch parse-resultaat
+    /// en persisteert het resultaat als een HeadingMeasurement.
+    /// Fouten blokkeren niet de bestaande raw opslag.
+    /// </summary>
+    /// <param name="parseResult">Het technische parse-resultaat.</param>
+    /// <param name="request">De originele netwerkbericht-request voor metadata.</param>
+    /// <param name="ct">Cancellation token.</param>
+    private async Task TryInterpretAndSaveHeadingMessageAsync(
+        NetworkMessageParseResultDto parseResult,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_headingInterpreter.CanInterpret(parseResult))
+            {
+                return;
+            }
+
+            var interpretation = _headingInterpreter.Interpret(parseResult);
+
+            if (interpretation.IsSuccess && interpretation.HeadingDegrees.HasValue)
+            {
+                _logger.LogInformation(
+                    "Heading-interpretatie geslaagd: Heading={Heading}{Unit}",
+                    interpretation.HeadingDegrees,
+                    interpretation.Unit);
+
+                // Persisteer afgeleide heading-meting
+                try
+                {
+                    var headingDto = new CreateHeadingMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        HeadingDegrees = interpretation.HeadingDegrees.Value
+                    };
+
+                    await _headingMeasurementService.SaveAsync(headingDto, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Heading-opslag-fouten blokkeren geen raw opslag. Log compact.
+                    _logger.LogWarning(
+                        ex,
+                        "Koersmeting-opslag mislukt voor MessageId={MessageId}",
+                        request.MessageId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Heading-interpretatie mislukt: {Error}",
+                    interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Interpretatie-fouten blokkeren geen raw opslag.
+            _logger.LogWarning(
+                ex,
+                "Onverwachte fout bij Heading-interpretatie");
         }
     }
 
