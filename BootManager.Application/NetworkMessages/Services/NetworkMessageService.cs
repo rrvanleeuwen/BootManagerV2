@@ -67,14 +67,14 @@ public class NetworkMessageService : INetworkMessageService
 
                 if (parseResult.IsSuccess)
                 {
-                    _logger.LogDebug(
-                        "Netwerkbericht succesvol geparset: MessageType={MessageType}, MessageId={MessageId}",
+                    _logger.LogInformation(
+                        "Netwerkbericht geparset: MessageType={MessageType}, MessageId={MessageId}",
                         parseResult.MessageType,
                         parseResult.MessageIdHex);
                 }
                 else
                 {
-                    _logger.LogDebug(
+                    _logger.LogWarning(
                         "Netwerkbericht parse-fout: MessageId={MessageId}, Error={Error}",
                         parseResult.MessageIdHex,
                         parseResult.ErrorMessage);
