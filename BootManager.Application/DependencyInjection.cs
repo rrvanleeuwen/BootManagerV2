@@ -2,6 +2,9 @@ using BootManager.Application.Authentication.Services;
 using BootManager.Application.OwnerRegistration.Services;
 using BootManager.Application.NetworkMessages.Services;
 using BootManager.Application.NetworkMessageParsing.Services;
+using BootManager.Application.NetworkMessageInterpretation.Contracts;
+using BootManager.Application.NetworkMessageInterpretation.DTOs;
+using BootManager.Application.NetworkMessageInterpretation.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BootManager.Application;
@@ -23,6 +26,11 @@ public static class DependencyInjection
 
         // Registratie van NetworkMessageParser service
         services.AddScoped<INetworkMessageParserService, NetworkMessageParserService>();
+
+        // Registratie van netwerkbericht-interpreters
+        // Dit zijn stateless application services die semantische interpretatie uitvoeren
+        // bovenop technische parse-resultaten. Transient is geschikt omdat geen state nodig is.
+        services.AddTransient<INetworkMessageInterpreter<BatteryMessageInterpretationDto>, BatteryMessageInterpreterService>();
 
         return services;
     }
