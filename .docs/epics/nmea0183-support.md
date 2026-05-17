@@ -1,7 +1,7 @@
 # Epic: NMEA 0183 Support
 
 **Datum:** 2026-05-17  
-**Status:** Fase 1 en Fase 2 geïmplementeerd
+**Status:** Fase 1, Fase 2 en Fase 3a geïmplementeerd
 
 ---
 
@@ -139,6 +139,38 @@ Zie: [.docs/features/nmea0183-parser-interpreter-architecture.md](./../features/
 ### Fase 3 – Sentence-specifieke interpreters en measurement-opslag
 
 Per NMEA 0183 sentence-type een verticale slice toevoegen, analoog aan de bestaande NMEA2000 slices.
+
+#### Fase 3a – VHW, MTW, DBT/DPT ✅ *Geïmplementeerd – 2026-05-17*
+
+**Scope:**
+- `INmea0183MessageInterpreter<T>` interface toegevoegd in `NetworkMessageInterpretation.Contracts`.
+- `Nmea0183VhwInterpreterService` – VHW sentence → `SpeedThroughWaterMeasurement` (knoten + m/s, fallback km/h).
+- `Nmea0183MtwInterpreterService` – MTW sentence → `WaterTemperatureMeasurement` (Celsius + Kelvin).
+- `Nmea0183DbtDptInterpreterService` – DBT/DPT sentence → `DepthMeasurement` (meters, fallback voet).
+- `NetworkMessageService` roept de drie interpreters aan in het NMEA0183-blok; fouten blokkeren raw opslag niet.
+- DI-registratie toegevoegd in `DependencyInjection.cs`.
+
+**Gewijzigde/toegevoegde bestanden:**
+- `BootManager.Application/NetworkMessageInterpretation/Contracts/INmea0183MessageInterpreter.cs` – nieuw
+- `BootManager.Application/NetworkMessageInterpretation/Services/Nmea0183VhwInterpreterService.cs` – nieuw
+- `BootManager.Application/NetworkMessageInterpretation/Services/Nmea0183MtwInterpreterService.cs` – nieuw
+- `BootManager.Application/NetworkMessageInterpretation/Services/Nmea0183DbtDptInterpreterService.cs` – nieuw
+- `BootManager.Application/NetworkMessages/Services/NetworkMessageService.cs` – NMEA0183-blok uitgebreid
+- `BootManager.Application/DependencyInjection.cs` – drie DI-registraties toegevoegd
+
+**Acceptatiecriteria (voldaan):**
+- Build slaagt (`dotnet build` ✅).
+- Voor `Protocol == NMEA0183` met VHW/MTW/DBT/DPT sentences worden measurement records opgeslagen via bestaande services.
+- Onbekende of ongeldige NMEA0183 sentences blokkeren raw opslag niet.
+- Bestaande NMEA2000-gedrag is intact.
+- Runtime-tests zijn niet uitgevoerd.
+
+#### Fase 3b – MWV, HDT/HDM *(volgende stap)*
+
+**Scope (gepland):**
+- `Nmea0183MwvInterpreterService` – MWV sentence → `WindMeasurement` (wind speed + angle, apparent/true onderscheid).
+- `Nmea0183HdtHdmInterpreterService` – HDT/HDM sentence → `HeadingMeasurement`.
+- Integratie analoog aan Fase 3a.
 
 Kandidaat-sentences (volgorde op basis van prioriteit):
 
