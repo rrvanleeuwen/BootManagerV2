@@ -218,6 +218,11 @@ Per stap werkt Codex idealiter als volgt:
    - duidelijk afgebakend
    - projectspecifiek
    - geen brede refactors zonder noodzaak
+   - beschrijf doel, scope, architectuurafspraken en acceptatiecriteria
+   - schrijf Copilot niet onnodig voor welke bestanden exact nieuw of aangepast moeten worden
+   - laat Copilot de bestaande structuur en instructies gebruiken om de implementatiedetails te bepalen
+   - neem bij nieuwe features expliciet op dat relevante `.docs` documentatie moet worden bijgewerkt
+   - neem bij documentatie-updates expliciet op dat datums de actuele sessiedatum moeten gebruiken en niet automatisch oude documentdatums mogen overnemen
 
 4. **Copilot-output beoordelen**
    - architectuur
@@ -463,13 +468,18 @@ Gebruik bij nieuwe werkstappen bij voorkeur deze aanpak:
 ### Daarna voorstellen
 - formuleer één volgende kleine of middelgrote user story
 - geef acceptatiecriteria
-- maak een Copilot-prompt die precies past bij de bestaande solutionstructuur
+- maak een Copilot-prompt die de gewenste functionaliteit, grenzen en architectuurafspraken beschrijft
+- vermijd een uitputtende bestandslijst of te gedetailleerde implementatie-instructies, tenzij de gebruiker daar expliciet om vraagt
+- vertrouw erop dat Copilot de bestaande solutionstructuur, `.docs` en repository-instructies gebruikt voor de concrete code-indeling
+- vermeld bij nieuwe features dat Copilot de relevante projectdocumentatie moet bijwerken
+- vermeld bij documentatie datums expliciet de actuele sessiedatum en vraag Copilot om geen verouderde datum uit bestaande docs over te nemen
 
 ### Daarna reviewen
 Na Copilot-output:
 - scope checken
 - architectuur checken
 - build/test checken
+- documentatie en datums checken
 - acceptatietest geven
 - commit/push-moment expliciet benoemen
 

@@ -12,6 +12,7 @@ Complete documentation of all implemented vertical slices in BootManager.
 | **Motion** (COG/SOG) | 129026 | `MotionMeasurement` | ✅ Complete | [motion-slice-spec.md](motion-slice-spec.md) |
 | **Position** | 129025 | `PositionMeasurement` | ✅ Complete | [position-slice-spec.md](position-slice-spec.md) |
 | **Heading** | 127250 | `HeadingMeasurement` | ✅ Complete | [heading-slice-spec.md](heading-slice-spec.md) |
+| **Speed Through Water** | 128259 | `SpeedThroughWaterMeasurement` | ✅ Complete | [speed-through-water-slice-spec.md](speed-through-water-slice-spec.md) |
 
 ## Quick Reference: Payload Formats
 
@@ -62,6 +63,14 @@ Bytes 5-6: Variation (1e-4 rad)
 Byte 7:   Reference
 ```
 **Key Fields:** HeadingDegrees
+
+### Speed Through Water (PGN 128259)
+```
+Byte 0:   SID
+Bytes 1-2: Speed (0.01 m/s, uint16 little-endian)
+Byte 3:   Speed Water Reference Type (0=Paddle wheel, 1=Pitot, 2=Doppler)
+```
+**Key Fields:** SpeedMetersPerSecond, SpeedKnots, SpeedWaterReferenceType
 
 ## Common Implementation Pattern
 
@@ -225,5 +234,5 @@ All slices follow non-fatal error handling:
 
 ---
 
-**Last Updated:** 2026-03-27  
+**Last Updated:** 2026-05-17  
 **Maintenance:** Keep in sync with codebase as new slices are added
