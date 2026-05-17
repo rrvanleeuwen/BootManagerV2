@@ -138,7 +138,7 @@ De bestaande verticale slices blijven intact.
 ```
 YDEN-03 (UDP poort 2000 / 10110)
       ↓
-   Ingest Tool (tweede UDP listener, NMEA0183 endpoint)
+   Ingest Tool (één gecombineerde UDP listener; protocolherkenning per regel)
       ↓
 BootManager.Web API (CreateNetworkMessage, Protocol=NMEA0183)
       ↓
@@ -162,10 +162,11 @@ Het `Protocol`-veld op measurement entities is een expliciete latere ontwerpkeuz
 
 | Fase | Inhoud |
 |------|--------|
-| **1 – Foundation** ✅ | Tweede UDP listener in Ingest, protocol tagging, raw NMEA 0183 opslag |
-| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning en veldextractie |
-| **3 – Interpreters** | Per sentence-type: VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW |
-| **Later** | Simulator NMEA 0183 output via settings |
+| **1 – Foundation** ✅ | Eén gecombineerde UDP listener in Ingest, protocolherkenning op regelinhoud, raw NMEA 0183 opslag |
+| **2 – Parser laag** ✅ | `Nmea0183ParserService` in Application, sentence-type herkenning en veldextractie |
+| **3 – Interpreters** ✅ | Per sentence-type: VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW |
+| **Simulator** ✅ | Configureerbare NMEA 0183 output via settings; standaard `NMEA0183` |
+| **Runtime-test** ✅ | Handmatige runtime/SQLite acceptatietest fase 3a-3c uitgevoerd |
 
 ### Parser/Interpreter scheiding voor NMEA 0183
 

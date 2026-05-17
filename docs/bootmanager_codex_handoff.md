@@ -171,7 +171,7 @@ Zie: `.docs/extraInfo/yden-03.md` en `.docs/epics/nmea0183-support.md`.
 ```
 YDEN-03 (UDP poort 2000 / 10110)
       ↓
-   Ingest Tool (tweede UDP listener, NMEA0183 endpoint)
+   Ingest Tool (één gecombineerde UDP listener, protocolherkenning per regel)
       ↓
 BootManager.Web API (CreateNetworkMessage, Protocol=NMEA0183)
       ↓
