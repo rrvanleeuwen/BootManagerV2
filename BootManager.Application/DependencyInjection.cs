@@ -11,6 +11,7 @@ using BootManager.Application.MotionMeasurements.Services;
 using BootManager.Application.PositionMeasurements.Services;
 using BootManager.Application.WindMeasurements.Services;
 using BootManager.Application.HeadingMeasurements.Services;
+using BootManager.Application.SpeedThroughWaterMeasurements.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BootManager.Application;
@@ -42,6 +43,7 @@ public static class DependencyInjection
         services.AddTransient<INetworkMessageInterpreter<PositionMessageInterpretationDto>, PositionMessageInterpreterService>();
         services.AddTransient<INetworkMessageInterpreter<WindMessageInterpretationDto>, WindMessageInterpreterService>();
         services.AddTransient<INetworkMessageInterpreter<HeadingMessageInterpretationDto>, HeadingMessageInterpreterService>();
+        services.AddTransient<INetworkMessageInterpreter<SpeedThroughWaterMessageInterpretationDto>, SpeedThroughWaterMessageInterpreterService>();
 
         // Registratie van BatteryMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IBatteryMeasurementService, BatteryMeasurementService>();
@@ -60,6 +62,9 @@ public static class DependencyInjection
 
         // Registratie van HeadingMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IHeadingMeasurementService, HeadingMeasurementService>();
+
+        // Registratie van SpeedThroughWaterMeasurement application-service (gebruik generieke repository)
+        services.AddScoped<ISpeedThroughWaterMeasurementService, SpeedThroughWaterMeasurementService>();
 
         return services;
     }

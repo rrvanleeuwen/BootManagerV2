@@ -15,6 +15,8 @@ using BootManager.Application.WindMeasurements.DTOs;
 using BootManager.Application.WindMeasurements.Services;
 using BootManager.Application.HeadingMeasurements.DTOs;
 using BootManager.Application.HeadingMeasurements.Services;
+using BootManager.Application.SpeedThroughWaterMeasurements.DTOs;
+using BootManager.Application.SpeedThroughWaterMeasurements.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -47,6 +49,8 @@ public class NetworkMessageService : INetworkMessageService
     private readonly IWindMeasurementService _windMeasurementService;
     private readonly INetworkMessageInterpreter<HeadingMessageInterpretationDto> _headingInterpreter;
     private readonly IHeadingMeasurementService _headingMeasurementService;
+    private readonly INetworkMessageInterpreter<SpeedThroughWaterMessageInterpretationDto> _speedThroughWaterInterpreter;
+    private readonly ISpeedThroughWaterMeasurementService _speedThroughWaterMeasurementService;
     private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
@@ -67,6 +71,8 @@ public class NetworkMessageService : INetworkMessageService
         IWindMeasurementService windMeasurementService,
         INetworkMessageInterpreter<HeadingMessageInterpretationDto> headingInterpreter,
         IHeadingMeasurementService headingMeasurementService,
+        INetworkMessageInterpreter<SpeedThroughWaterMessageInterpretationDto> speedThroughWaterInterpreter,
+        ISpeedThroughWaterMeasurementService speedThroughWaterMeasurementService,
         ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
@@ -83,6 +89,8 @@ public class NetworkMessageService : INetworkMessageService
         _windMeasurementService = windMeasurementService;
         _headingInterpreter = headingInterpreter;
         _headingMeasurementService = headingMeasurementService;
+        _speedThroughWaterInterpreter = speedThroughWaterInterpreter;
+        _speedThroughWaterMeasurementService = speedThroughWaterMeasurementService;
         _logger = logger;
     }
 
@@ -130,6 +138,7 @@ public class NetworkMessageService : INetworkMessageService
                     await TryInterpretAndSavePositionMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveWindMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveHeadingMessageAsync(parseResult, request, ct);
+                    await TryInterpretAndSaveSpeedThroughWaterMessageAsync(parseResult, request, ct);
                 }
                 else
                 {
@@ -563,6 +572,75 @@ public class NetworkMessageService : INetworkMessageService
             _logger.LogWarning(
                 ex,
                 "Onverwachte fout bij Heading-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert semantische SpeedThroughWater-interpretatie uit te voeren op een technisch parse-resultaat
+    /// en persisteert het resultaat als een SpeedThroughWaterMeasurement.
+    /// Fouten blokkeren niet de bestaande raw opslag.
+    /// </summary>
+    /// <param name="parseResult">Het technische parse-resultaat.</param>
+    /// <param name="request">De originele netwerkbericht-request voor metadata.</param>
+    /// <param name="ct">Cancellation token.</param>
+    private async Task TryInterpretAndSaveSpeedThroughWaterMessageAsync(
+        NetworkMessageParseResultDto parseResult,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_speedThroughWaterInterpreter.CanInterpret(parseResult))
+            {
+                return;
+            }
+
+            var interpretation = _speedThroughWaterInterpreter.Interpret(parseResult);
+
+            if (interpretation.IsSuccess && interpretation.SpeedMetersPerSecond.HasValue && interpretation.SpeedKnots.HasValue)
+            {
+                _logger.LogInformation(
+                    "SpeedThroughWater-interpretatie geslaagd: Speed={SpeedMps} m/s ({SpeedKnots} kn)",
+                    interpretation.SpeedMetersPerSecond,
+                    interpretation.SpeedKnots);
+
+                // Persisteer afgeleide snelheid-door-water-meting
+                try
+                {
+                    var speedDto = new CreateSpeedThroughWaterMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        SpeedMetersPerSecond = interpretation.SpeedMetersPerSecond.Value,
+                        SpeedKnots = interpretation.SpeedKnots.Value,
+                        SpeedWaterReferenceType = interpretation.SpeedWaterReferenceType
+                    };
+
+                    await _speedThroughWaterMeasurementService.SaveAsync(speedDto, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Opslag-fouten blokkeren geen raw opslag. Log compact.
+                    _logger.LogWarning(
+                        ex,
+                        "Snelheid-door-water-meting-opslag mislukt voor MessageId={MessageId}",
+                        request.MessageId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "SpeedThroughWater-interpretatie mislukt: {Error}",
+                    interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Interpretatie-fouten blokkeren geen raw opslag.
+            _logger.LogWarning(
+                ex,
+                "Onverwachte fout bij SpeedThroughWater-interpretatie");
         }
     }
 

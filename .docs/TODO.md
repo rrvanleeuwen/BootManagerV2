@@ -12,6 +12,7 @@
 | **Motion** (COG/SOG) | 129026 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 | **Position** | 129025 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 | **Heading** | 127250 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
+| **Speed Through Water** | 128259 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 
 ### 📋 Backlog
 

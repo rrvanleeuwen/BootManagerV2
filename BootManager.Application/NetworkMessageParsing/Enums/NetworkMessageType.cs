@@ -39,5 +39,10 @@ public enum NetworkMessageType
     /// <summary>
     /// Koersgegevens (PGN 127250 - Vessel Heading).
     /// </summary>
-    Heading = 6
+    Heading = 6,
+
+    /// <summary>
+    /// Snelheid door water (PGN 128259 - Speed Through Water).
+    /// </summary>
+    SpeedThroughWater = 7
 }
