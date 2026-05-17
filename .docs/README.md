@@ -103,7 +103,7 @@ dotnet ef migrations add AddYourFeature --project BootManager.Infrastructure
 - Wind (PGN 130306)
 - Motion / COG-SOG (PGN 129026)
 - Position (PGN 129025)
-- Heading (PGN 127250) - Code complete, awaiting migration
+- Heading (PGN 127250)
 
 See **[TODO.md](TODO.md)** for complete status and roadmap.
 
@@ -137,5 +137,5 @@ See **[TODO.md](TODO.md)** for complete status and roadmap.
 
 ---
 
-**Documentation Last Updated:** 2026-03-27  
-**Current Status:** Heading slice code-complete, pending migration & testing
+**Documentation Last Updated:** 2026-05-17  
+**Current Status:** Alle huidige slices (Battery, Depth, Wind, Motion, Position, Heading) zijn volledig geïmplementeerd inclusief migraties

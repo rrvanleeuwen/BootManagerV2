@@ -11,7 +11,7 @@ Complete documentation of all implemented vertical slices in BootManager.
 | **Wind** | 130306 | `WindMeasurement` | ✅ Complete | [wind-slice-spec.md](wind-slice-spec.md) |
 | **Motion** (COG/SOG) | 129026 | `MotionMeasurement` | ✅ Complete | [motion-slice-spec.md](motion-slice-spec.md) |
 | **Position** | 129025 | `PositionMeasurement` | ✅ Complete | [position-slice-spec.md](position-slice-spec.md) |
-| **Heading** | 127250 | `HeadingMeasurement` | ✅ Code-complete | [heading-slice-spec.md](heading-slice-spec.md) |
+| **Heading** | 127250 | `HeadingMeasurement` | ✅ Complete | [heading-slice-spec.md](heading-slice-spec.md) |
 
 ## Quick Reference: Payload Formats
 

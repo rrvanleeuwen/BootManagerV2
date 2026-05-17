@@ -11,13 +11,9 @@
 | **Wind** | 130306 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 | **Motion** (COG/SOG) | 129026 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 | **Position** | 129025 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
-| **Heading** | 127250 | ✅ | ✅ | ✅ | ✅ | ⏳ | Code-complete, migration pending |
+| **Heading** | 127250 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 
-### 🔄 In Progress
-
-- **Heading EF Migration:** `AddHeadingMeasurement` (awaiting `dotnet ef migrations add`)
-
-### 📋 Backlog / Future Features
+### 📋 Backlog
 
 #### High Priority
 
@@ -118,26 +114,24 @@
 - `.docs/DEVELOPMENT.md` - Dev workflow & guidelines
 - `.docs/features/heading-slice-spec.md` - Heading slice detailed spec
 
-**Status:** Code-complete, awaiting EF migration
+**Status:** Complete (inclusief EF migratie `AddHeadingMeasurement`)
 
-**Build:** ✅ Compiles successfully
+**Build:** ✅ Compileert succesvol
 
 ## Next Steps (Immediate)
 
-### 1. Database Migration
-```bash
-dotnet ef migrations add AddHeadingMeasurement --project BootManager.Infrastructure
-dotnet ef database update --project BootManager.Infrastructure
-```
+### 1. Simulatoruitbreiding
+- Snelheid door water (Speed Through Water, PGN 128259) toevoegen aan de simulator
+- Watertemperatuur (Water Temperature, PGN 130312) toevoegen aan de simulator
+- Beide als nieuwe verticale slices uitwerken zodra simulatorondersteuning gereed is
 
-### 2. Testing
-- Verify Heading messages parse correctly
-- Test storage and retrieval
-- Validate degree conversions
+### 2. Verticale slices
+- Speed Through Water en/of Water Temperature uitwerken als volwaardige slices (entity, interpreter, service, storage)
+- Patroon volgen van bestaande slices
 
-### 3. Documentation
-- Update API docs if Swagger is added
-- Example API calls for Heading endpoints
+### 3. Documentatie
+- API docs bijwerken als Swagger wordt toegevoegd
+- Voorbeeld-API-calls toevoegen voor nieuwe slices
 
 ## Deployment Checklist (Future)
 
@@ -165,5 +159,5 @@ dotnet ef database update --project BootManager.Infrastructure
 
 ---
 
-**Last Updated:** 2026-03-27  
+**Last Updated:** 2026-05-17  
 **Maintained By:** Development Team
