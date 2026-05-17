@@ -13,6 +13,7 @@ Complete documentation of all implemented vertical slices in BootManager.
 | **Position** | 129025 | `PositionMeasurement` | ✅ Complete | [position-slice-spec.md](position-slice-spec.md) |
 | **Heading** | 127250 | `HeadingMeasurement` | ✅ Complete | [heading-slice-spec.md](heading-slice-spec.md) |
 | **Speed Through Water** | 128259 | `SpeedThroughWaterMeasurement` | ✅ Complete | [speed-through-water-slice-spec.md](speed-through-water-slice-spec.md) |
+| **Water Temperature** | 130312 | `WaterTemperatureMeasurement` | ✅ Complete | [water-temperature-slice-spec.md](water-temperature-slice-spec.md) |
 
 ## Quick Reference: Payload Formats
 
@@ -71,6 +72,14 @@ Bytes 1-2: Speed (0.01 m/s, uint16 little-endian)
 Byte 3:   Speed Water Reference Type (0=Paddle wheel, 1=Pitot, 2=Doppler)
 ```
 **Key Fields:** SpeedMetersPerSecond, SpeedKnots, SpeedWaterReferenceType
+
+### Water Temperature (PGN 130312)
+```
+Byte 0:   SID
+Byte 1:   Temperature Instance (0=Sea/Water)
+Bytes 2-3: Temperature (0.01 K, uint16 little-endian)
+```
+**Key Fields:** TemperatureKelvin, TemperatureCelsius, TemperatureInstance
 
 ## Common Implementation Pattern
 

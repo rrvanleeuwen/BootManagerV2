@@ -49,6 +49,11 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<SpeedThroughWaterMeasurement> SpeedThroughWaterMeasurements => Set<SpeedThroughWaterMeasurement>();
 
+    /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde watertemperatuur-metingen.
+    /// </summary>
+    public DbSet<WaterTemperatureMeasurement> WaterTemperatureMeasurements => Set<WaterTemperatureMeasurement>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
@@ -60,5 +65,6 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.PositionMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.HeadingMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SpeedThroughWaterMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.WaterTemperatureMeasurementConfiguration());
     }
 }

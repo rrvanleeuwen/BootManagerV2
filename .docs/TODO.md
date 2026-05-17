@@ -13,6 +13,7 @@
 | **Position** | 129025 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 | **Heading** | 127250 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 | **Speed Through Water** | 128259 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
+| **Water Temperature** | 130312 | ✅ | ✅ | ✅ | ✅ | ✅ | Complete |
 
 ### 📋 Backlog
 
@@ -53,7 +54,6 @@
 #### Low Priority
 
 - [ ] **Additional PGN Support**
-  - Water Temperature (PGN 130312)
   - Barometric Pressure (PGN 130314)
   - Additional navigation data
 
@@ -121,18 +121,13 @@
 
 ## Next Steps (Immediate)
 
-### 1. Simulatoruitbreiding
-- Snelheid door water (Speed Through Water, PGN 128259) toevoegen aan de simulator
-- Watertemperatuur (Water Temperature, PGN 130312) toevoegen aan de simulator
-- Beide als nieuwe verticale slices uitwerken zodra simulatorondersteuning gereed is
-
-### 2. Verticale slices
-- Speed Through Water en/of Water Temperature uitwerken als volwaardige slices (entity, interpreter, service, storage)
-- Patroon volgen van bestaande slices
-
-### 3. Documentatie
+### 1. Documentatie
 - API docs bijwerken als Swagger wordt toegevoegd
 - Voorbeeld-API-calls toevoegen voor nieuwe slices
+
+### 2. Backlog prioritering
+- Barometric Pressure (PGN 130314) als volgende verticale slice uitwerken
+- NMEA 0183 Support evalueren als toekomstige uitbreiding
 
 ## Deployment Checklist (Future)
 
