@@ -262,6 +262,12 @@ Start waar relevant:
 - `BootManager.Tools.Ingest`
 - `BootManager.Tools.Simulator`
 
+Belangrijke procesafspraak:
+- Start long-running processen zoals `BootManager.Tools.Simulator`, `BootManager.Tools.Ingest` of `BootManager.Web` alleen gecontroleerd.
+- Gebruik geen simpele command-timeout als cleanup-mechanisme voor runtimechecks.
+- Als een proces tijdelijk wordt gestart, stop het expliciet en controleer daarna of er geen repo-gerelateerde `dotnet` processen zijn blijven draaien.
+- Gebruik waar nodig `dotnet build-server shutdown` na build- of runtimeproblemen met locks.
+
 #### Logging
 Controleer of:
 - parserclassificatie klopt
@@ -458,4 +464,3 @@ Na Copilot-output:
 ## 14. Samenvatting in één alinea
 
 BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position en Heading. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De eerstvolgende logische stap is simulatoruitbreiding voor snelheid door water en watertemperatuur, gevolgd door nieuwe verticale slices voor verwerking en opslag.
-

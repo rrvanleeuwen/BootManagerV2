@@ -17,6 +17,12 @@ public class BoatState
     public double BatteryVoltage { get; set; }
     public double BatterySoc { get; set; }
 
+    /// <summary>Snelheid door het water in knoten (PGN 128259, licht afwijkend van SOG).</summary>
+    public double SpeedThroughWaterKnots { get; set; }
+
+    /// <summary>Watertemperatuur in graden Celsius (PGN 130312).</summary>
+    public double WaterTemperatureCelsius { get; set; }
+
     /// <summary>
     /// Maakt een ondiepe kopie van de huidige toestand.
     /// </summary>

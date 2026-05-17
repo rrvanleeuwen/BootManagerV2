@@ -11,12 +11,14 @@ using BootManager.Tools.Simulator.Models;
 /// </summary>
 public class NMEA2000PayloadBuilder
 {
-    /// <summary>
-    /// Sequence ID (SID) teller voor PGN 127250 (Heading).
-    /// Gebruikt voor bericht-volgordenummering en wordt elk bericht opgehoogd.
-    /// Loopt van 0-255 (byte).
-    /// </summary>
+    /// <summary>Sequence ID-teller voor PGN 127250 (Heading). Loopt van 0-255.</summary>
     private static byte _headingSid = 0;
+
+    /// <summary>Sequence ID-teller voor PGN 128259 (Speed Through Water). Loopt van 0-255.</summary>
+    private static byte _speedThroughWaterSid = 0;
+
+    /// <summary>Sequence ID-teller voor PGN 130312 (Water Temperature). Loopt van 0-255.</summary>
+    private static byte _waterTemperatureSid = 0;
     /// <summary>
     /// Bouwt een PGN 129025 (Position, Rapid Update) payload.
     /// 
@@ -157,6 +159,59 @@ public class NMEA2000PayloadBuilder
         BitConverter.GetBytes(voltageCentivolts).CopyTo(buffer, 1);
 
         buffer[3] = (byte)Math.Round(Math.Clamp(state.BatterySoc, 0, 100));
+
+        return buffer;
+    }
+
+    /// <summary>
+    /// Bouwt een PGN 128259 (Speed Through Water) payload.
+    /// 
+    /// Payload-layout (4 bytes):
+    /// - Byte 0: SID (Sequence ID, 0-255)
+    /// - Bytes 1-2: Snelheid door water in 0,01 m/s (uint16, little-endian)
+    ///              Conversie van knoten: knoten * 1852 / 3600 * 100
+    /// - Byte 3: Speed Water Reference Type (0x00 = Paddle wheel)
+    /// </summary>
+    public static byte[] BuildSpeedThroughWaterPayload(BoatState state)
+    {
+        var buffer = new byte[4];
+
+        // Byte 0: SID (eigen teller voor PGN 128259, opgehoogd per bericht)
+        buffer[0] = _speedThroughWaterSid++;
+
+        // Bytes 1-2: STW in 0,01 m/s
+        // 1 knoop = 1852/3600 m/s; centi-m/s = knoten * 51,4444
+        var stwCentiMps = (ushort)Math.Round(Math.Clamp(state.SpeedThroughWaterKnots * 1852.0 / 3600.0 * 100.0, 0, 65535));
+        BitConverter.GetBytes(stwCentiMps).CopyTo(buffer, 1);
+
+        // Byte 3: Reference type 0x00 = Paddle wheel
+        buffer[3] = 0x00;
+
+        return buffer;
+    }
+
+    /// <summary>
+    /// Bouwt een PGN 130312 (Temperature, Rapid Update – Water Temperature) payload.
+    /// 
+    /// Payload-layout (4 bytes):
+    /// - Byte 0: SID (Sequence ID, 0-255)
+    /// - Byte 1: Temperature Instance (0x00 = Sea/Water Temperature)
+    /// - Bytes 2-3: Temperatuur in 0,01 Kelvin (uint16, little-endian)
+    ///              Conversie van Celsius: (Celsius + 273.15) * 100
+    /// </summary>
+    public static byte[] BuildWaterTemperaturePayload(BoatState state)
+    {
+        var buffer = new byte[4];
+
+        // Byte 0: SID (eigen teller voor PGN 130312, opgehoogd per bericht)
+        buffer[0] = _waterTemperatureSid++;
+
+        // Byte 1: Instance 0x00 = Sea Temperature
+        buffer[1] = 0x00;
+
+        // Bytes 2-3: temperatuur in 0,01 Kelvin
+        var tempCentiKelvin = (ushort)Math.Round(Math.Clamp((state.WaterTemperatureCelsius + 273.15) * 100.0, 0, 65535));
+        BitConverter.GetBytes(tempCentiKelvin).CopyTo(buffer, 2);
 
         return buffer;
     }

@@ -23,4 +23,11 @@ public class ScenarioDefinition
     // Power
     public double StartBatteryVoltage { get; set; }
     public double StartBatterySoc { get; set; }
+
+    // Water
+    /// <summary>Startwaarde voor snelheid door water in knoten (PGN 128259).</summary>
+    public double StartSpeedThroughWaterKnots { get; set; }
+
+    /// <summary>Startwaarde voor watertemperatuur in graden Celsius (PGN 130312).</summary>
+    public double StartWaterTemperatureCelsius { get; set; }
 }

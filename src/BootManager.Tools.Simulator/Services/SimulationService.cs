@@ -69,7 +69,9 @@ public class SimulationService : BackgroundService
             WindAngleDeg = scenario.StartWindAngleDeg,
             DepthMeters = scenario.StartDepthMeters,
             BatteryVoltage = scenario.StartBatteryVoltage,
-            BatterySoc = scenario.StartBatterySoc
+            BatterySoc = scenario.StartBatterySoc,
+            SpeedThroughWaterKnots = scenario.StartSpeedThroughWaterKnots,
+            WaterTemperatureCelsius = scenario.StartWaterTemperatureCelsius
         };
     }
 
@@ -147,6 +149,14 @@ public class SimulationService : BackgroundService
         _state.BatterySoc += (_rand.NextDouble() - 0.5) * 0.02;
         _state.BatterySoc = Math.Clamp(_state.BatterySoc, 0.0, 100.0);
 
+        // STW varieert realistisch rondom SOG (stroming, golfslag): ±0,3 kn afwijking
+        _state.SpeedThroughWaterKnots = _state.SogKnots + (_rand.NextDouble() - 0.5) * 0.3;
+        _state.SpeedThroughWaterKnots = Math.Clamp(_state.SpeedThroughWaterKnots, 1.5, 9.0);
+
+        // Watertemperatuur varieert zeer langzaam (maximaal 0,02 °C per tick)
+        _state.WaterTemperatureCelsius += (_rand.NextDouble() - 0.5) * 0.02;
+        _state.WaterTemperatureCelsius = Math.Clamp(_state.WaterTemperatureCelsius, 5.0, 30.0);
+
         // Verplaatsing op basis van SOG en COG (benadering)
         // Gebruik nautische koers: 0° = noord, 90° = oost.
         var sogMps = _state.SogKnots * 0.514444; // knots to m/s
@@ -188,7 +198,7 @@ public class SimulationService : BackgroundService
     /// 
     /// Format: HH:mm:ss.fff R [PGN_HEX] [PAYLOAD_HEX...]
     /// 
-    /// Retourneert 6 regels (Position, COG/SOG, Heading, Wind, Depth, Battery).
+    /// Retourneert 8 regels (Position, COG/SOG, Heading, Wind, Depth, Battery, SpeedThroughWater, WaterTemperature).
     /// Dit is een simulatie van NMEA 2000-semantiek, geen volledige gecertificeerde implementatie.
     /// </summary>
     private IEnumerable<string> BuildRawNMEA2000Lines(BoatState s)
@@ -201,6 +211,8 @@ public class SimulationService : BackgroundService
         var windPayload = NMEA2000PayloadBuilder.BuildWindPayload(s);
         var depthPayload = NMEA2000PayloadBuilder.BuildDepthPayload(s);
         var batteryPayload = NMEA2000PayloadBuilder.BuildBatteryPayload(s);
+        var stwPayload = NMEA2000PayloadBuilder.BuildSpeedThroughWaterPayload(s);
+        var waterTempPayload = NMEA2000PayloadBuilder.BuildWaterTemperaturePayload(s);
 
         var pgns = new[]
         {
@@ -209,7 +221,9 @@ public class SimulationService : BackgroundService
             (NMEA2000PgnSpecification.PGN_HEADING, headingPayload),
             (NMEA2000PgnSpecification.PGN_WIND, windPayload),
             (NMEA2000PgnSpecification.PGN_DEPTH, depthPayload),
-            (NMEA2000PgnSpecification.PGN_BATTERY, batteryPayload)
+            (NMEA2000PgnSpecification.PGN_BATTERY, batteryPayload),
+            (NMEA2000PgnSpecification.PGN_SPEED_THROUGH_WATER, stwPayload),
+            (NMEA2000PgnSpecification.PGN_WATER_TEMPERATURE, waterTempPayload)
         };
 
         var lines = new List<string>();
