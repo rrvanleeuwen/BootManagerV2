@@ -43,9 +43,11 @@
 
 - [ ] **NMEA 0183 Support** *(epic – gefaseerd)*
   - **Aanleiding:** YDEN-03 gateway zendt NMEA 2000-data als NMEA 0183 sentences uit via UDP (poort 2000 en 10110) en TCP (poort 1456).
-  - **Fase 1 – Foundation ✅:** tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag
+  - **Fase 1 – Foundation ✅:** één gecombineerde UDP listener in Ingest, protocoldetectie op regelinhoud, raw NMEA 0183 opslag
   - **Fase 2 – Parser laag ✅:** `Nmea0183ParserService` in Application voor sentence-type herkenning, veldextractie en checksum-validatie; integratie in `NetworkMessageService` voor `Protocol == NMEA0183`
-  - **Fase 3 – Interpreters:** per sentence-type (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) een verticale slice ← *eerstvolgende implementatie-story*
+  - **Fase 3 – Interpreters ✅:** VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM en MTW verticale slices
+  - **Simulator NMEA 0183 ✅:** standaard NMEA 0183 output via `BootManager.Tools.Simulator`
+  - **Runtime/SQLite acceptatietest ✅:** handmatig uitgevoerd via simulator NMEA0183-modus
   - Bestaande NMEA2000 slices blijven intact
   - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
   - Zie: [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md) en [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)
