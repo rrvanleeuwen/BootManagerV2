@@ -60,6 +60,9 @@ public class NetworkMessageService : INetworkMessageService
     private readonly INmea0183MessageInterpreter<SpeedThroughWaterMessageInterpretationDto> _nmea0183VhwInterpreter;
     private readonly INmea0183MessageInterpreter<WaterTemperatureMessageInterpretationDto> _nmea0183MtwInterpreter;
     private readonly INmea0183MessageInterpreter<DepthMessageInterpretationDto> _nmea0183DbtDptInterpreter;
+    // NMEA 0183 Fase 3b interpreters
+    private readonly INmea0183MessageInterpreter<WindMessageInterpretationDto> _nmea0183MwvInterpreter;
+    private readonly INmea0183MessageInterpreter<HeadingMessageInterpretationDto> _nmea0183HdtHdmInterpreter;
     private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
@@ -88,6 +91,8 @@ public class NetworkMessageService : INetworkMessageService
         INmea0183MessageInterpreter<SpeedThroughWaterMessageInterpretationDto> nmea0183VhwInterpreter,
         INmea0183MessageInterpreter<WaterTemperatureMessageInterpretationDto> nmea0183MtwInterpreter,
         INmea0183MessageInterpreter<DepthMessageInterpretationDto> nmea0183DbtDptInterpreter,
+        INmea0183MessageInterpreter<WindMessageInterpretationDto> nmea0183MwvInterpreter,
+        INmea0183MessageInterpreter<HeadingMessageInterpretationDto> nmea0183HdtHdmInterpreter,
         ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
@@ -112,6 +117,8 @@ public class NetworkMessageService : INetworkMessageService
         _nmea0183VhwInterpreter = nmea0183VhwInterpreter;
         _nmea0183MtwInterpreter = nmea0183MtwInterpreter;
         _nmea0183DbtDptInterpreter = nmea0183DbtDptInterpreter;
+        _nmea0183MwvInterpreter = nmea0183MwvInterpreter;
+        _nmea0183HdtHdmInterpreter = nmea0183HdtHdmInterpreter;
         _logger = logger;
     }
 
@@ -201,6 +208,9 @@ public class NetworkMessageService : INetworkMessageService
                     await TryInterpretAndSaveNmea0183VhwAsync(nmea0183Result, request, ct);
                     await TryInterpretAndSaveNmea0183MtwAsync(nmea0183Result, request, ct);
                     await TryInterpretAndSaveNmea0183DbtDptAsync(nmea0183Result, request, ct);
+                    // Fase 3b: MWV en HDT/HDM
+                    await TryInterpretAndSaveNmea0183MwvAsync(nmea0183Result, request, ct);
+                    await TryInterpretAndSaveNmea0183HdtHdmAsync(nmea0183Result, request, ct);
                 }
                 else
                 {
@@ -925,6 +935,107 @@ public class NetworkMessageService : INetworkMessageService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 DBT/DPT-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert NMEA 0183 MWV-sentence te interpreteren en op te slaan als WindMeasurement.
+    /// Fouten blokkeren niet de raw opslag.
+    /// </summary>
+    private async Task TryInterpretAndSaveNmea0183MwvAsync(
+        Nmea0183ParseResultDto nmea0183Result,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_nmea0183MwvInterpreter.CanInterpret(nmea0183Result))
+                return;
+
+            var interpretation = _nmea0183MwvInterpreter.Interpret(nmea0183Result);
+
+            if (interpretation.IsSuccess && interpretation.WindAngleDegrees.HasValue && interpretation.WindSpeedMps.HasValue)
+            {
+                _logger.LogInformation(
+                    "NMEA0183 MWV-interpretatie geslaagd: Hoek={Angle}° Snelheid={Speed} m/s",
+                    interpretation.WindAngleDegrees,
+                    interpretation.WindSpeedMps);
+
+                try
+                {
+                    var dto = new CreateWindMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        WindAngleDegrees = interpretation.WindAngleDegrees.Value,
+                        WindSpeed = interpretation.WindSpeedMps.Value,
+                        SpeedUnit = interpretation.SpeedUnit
+                    };
+                    await _windMeasurementService.SaveAsync(dto, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "NMEA0183 MWV-opslag mislukt voor RawLine={RawLine}", request.RawLine);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("NMEA0183 MWV-interpretatie mislukt: {Error}", interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 MWV-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert NMEA 0183 HDT/HDM-sentence te interpreteren en op te slaan als HeadingMeasurement.
+    /// Fouten blokkeren niet de raw opslag.
+    /// </summary>
+    private async Task TryInterpretAndSaveNmea0183HdtHdmAsync(
+        Nmea0183ParseResultDto nmea0183Result,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_nmea0183HdtHdmInterpreter.CanInterpret(nmea0183Result))
+                return;
+
+            var interpretation = _nmea0183HdtHdmInterpreter.Interpret(nmea0183Result);
+
+            if (interpretation.IsSuccess && interpretation.HeadingDegrees.HasValue)
+            {
+                _logger.LogInformation(
+                    "NMEA0183 HDT/HDM-interpretatie geslaagd: Koers={Heading}°",
+                    interpretation.HeadingDegrees);
+
+                try
+                {
+                    var dto = new CreateHeadingMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        HeadingDegrees = interpretation.HeadingDegrees.Value
+                    };
+                    await _headingMeasurementService.SaveAsync(dto, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "NMEA0183 HDT/HDM-opslag mislukt voor RawLine={RawLine}", request.RawLine);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("NMEA0183 HDT/HDM-interpretatie mislukt: {Error}", interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 HDT/HDM-interpretatie");
         }
     }
 

@@ -1,7 +1,7 @@
 # Epic: NMEA 0183 Support
 
 **Datum:** 2026-05-17  
-**Status:** Fase 1, Fase 2 en Fase 3a geïmplementeerd
+**Status:** Fase 1, Fase 2, Fase 3a en Fase 3b geïmplementeerd
 
 ---
 
@@ -165,12 +165,26 @@ Per NMEA 0183 sentence-type een verticale slice toevoegen, analoog aan de bestaa
 - Bestaande NMEA2000-gedrag is intact.
 - Runtime-tests zijn niet uitgevoerd.
 
-#### Fase 3b – MWV, HDT/HDM *(volgende stap)*
+#### Fase 3b – MWV, HDT/HDM ✅ *Geïmplementeerd – 2026-05-17*
 
-**Scope (gepland):**
-- `Nmea0183MwvInterpreterService` – MWV sentence → `WindMeasurement` (wind speed + angle, apparent/true onderscheid).
-- `Nmea0183HdtHdmInterpreterService` – HDT/HDM sentence → `HeadingMeasurement`.
-- Integratie analoog aan Fase 3a.
+**Scope:**
+- `Nmea0183MwvInterpreterService` – MWV sentence → `WindMeasurement` (windhoek + windsnelheid; eenheden K/M/N omgezet naar m/s; alleen status A opgeslagen).
+- `Nmea0183HdtHdmInterpreterService` – HDT/HDM sentence → `HeadingMeasurement` (koers in graden).
+- `NetworkMessageService` roept beide interpreters aan in het NMEA0183-blok; fouten blokkeren raw opslag niet.
+- DI-registratie toegevoegd in `DependencyInjection.cs`.
+
+**Gewijzigde/toegevoegde bestanden:**
+- `BootManager.Application/NetworkMessageInterpretation/Services/Nmea0183MwvInterpreterService.cs` – nieuw
+- `BootManager.Application/NetworkMessageInterpretation/Services/Nmea0183HdtHdmInterpreterService.cs` – nieuw
+- `BootManager.Application/NetworkMessages/Services/NetworkMessageService.cs` – NMEA0183-blok uitgebreid met MWV en HDT/HDM
+- `BootManager.Application/DependencyInjection.cs` – twee DI-registraties toegevoegd
+
+**Acceptatiecriteria (voldaan):**
+- Build slaagt (`dotnet build` ✅).
+- Voor `Protocol == NMEA0183` met MWV (status A) wordt een `WindMeasurement` opgeslagen.
+- Voor `Protocol == NMEA0183` met HDT of HDM wordt een `HeadingMeasurement` opgeslagen.
+- MWV met ongeldige checksum of status V levert geen meting op, maar raw opslag is intact.
+- Bestaande Fase 3a-interpreters (VHW/MTW/DBT/DPT) en NMEA2000-gedrag zijn intact.
 
 Kandidaat-sentences (volgorde op basis van prioriteit):
 

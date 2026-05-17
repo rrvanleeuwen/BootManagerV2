@@ -1,7 +1,7 @@
 # NMEA 0183 Parser/Interpreter Architectuur
 
 **Datum:** 2026-05-17  
-**Status:** Fase 2 en Fase 3a geïmplementeerd – Fase 3b volgende stap  
+**Status:** Fase 2, Fase 3a en Fase 3b geïmplementeerd
 **Epic:** [nmea0183-support.md](../epics/nmea0183-support.md)
 
 ---
@@ -51,9 +51,18 @@ Sentence-specifieke interpreters voor VHW, MTW en DBT/DPT toegevoegd aan `BootMa
 - `NetworkMessageService` roept de drie interpreters sequentieel aan na geslaagde NMEA0183-parse – fouten per interpreter blokkeren raw opslag niet
 - DI-registraties toegevoegd in `DependencyInjection.cs`
 
-### Fase 3b – Volgende stap
+### Fase 3b – Geïmplementeerd (2026-05-17)
 
-MWV (wind speed + angle) en HDT/HDM (heading) sentence-interpreters toevoegen, analoog aan de Fase 3a-aanpak.
+Sentence-specifieke interpreters voor MWV, HDT en HDM toegevoegd aan `BootManager.Application`:
+
+- `Nmea0183MwvInterpreterService` – MWV → `WindMessageInterpretationDto` (windhoek + windsnelheid; eenheden K/M/N omgezet naar m/s; alleen status A levert geldige interpretatie)
+- `Nmea0183HdtHdmInterpreterService` – HDT/HDM → `HeadingMessageInterpretationDto` (koers in graden)
+- `NetworkMessageService` roept beide interpreters sequentieel aan na geslaagde NMEA0183-parse
+- DI-registraties toegevoegd in `DependencyInjection.cs`
+
+### Fase 3c – Volgende stap
+
+RMC/GGA (positie/motion) sentence-interpreters als volgende uitbreiding.
 
 ### Bestaande NMEA2000 slices – onaangetast
 
