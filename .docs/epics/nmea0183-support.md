@@ -39,9 +39,11 @@ blijven intact en ongewijzigd.
 - Ingest ontvangt UDP-datagrammen en stuurt ze door – geen semantische logica.
 - Ingest hoeft geen YDEN-IP te kennen. Luisteren op `0.0.0.0` of een configureerbaar lokaal adres volstaat.
 - De remote endpoint mag als `Source` worden vastgelegd op het `NetworkMessage`.
-- Ingest krijgt uiteindelijk **twee configureerbare UDP listeners**:
-  - één endpoint voor NMEA2000/raw-like input (bestaand)
-  - één endpoint voor NMEA0183 sentence input (nieuw)
+- Ingest heeft **één gecombineerde UDP listener** op een configureerbaar endpoint (`Ingest:ListenAddress`/`Ingest:ListenPort`).
+  - Protocoldetectie vindt plaats op basis van regelinhoud: regels die beginnen met `$` zijn NMEA 0183, overige regels zijn NMEA 2000/raw-like.
+  - Dit voorkomt dubbele verwerking wanneer de YDEN dezelfde data op meerdere UDP-poorten uitzendt.
+  - Aanbevolen poort: `10110` (standaard NMEA 0183 UDP-poort). Alternatief: `2000` als de YDEN op die poort is geconfigureerd.
+  - Luister **niet** tegelijk op `2000` én `10110` om dubbele YDEN-opslag te voorkomen.
 
 ### Protocol tagging
 
@@ -73,34 +75,35 @@ Dit is een mogelijk toekomstig onderwerp (versie 2/3).
 
 ## Gefaseerde aanpak
 
-### Fase 1 – NMEA 0183 Ingest Foundation ✅ *Geïmplementeerd – 2026-05-17*
+### Fase 1 – NMEA 0183 Ingest Foundation ✅ *Geïmplementeerd – 2026-05-17, herzien naar gecombineerde listener*
 
-**Doel:** NMEA 0183 sentences ontvangen, protocol taggen en raw opslaan.
+**Doel:** NMEA 0183 sentences ontvangen, protocol taggen en raw opslaan via één gecombineerde UDP-listener.
 
 **Scope:**
-- Tweede configureerbare UDP listener (`Nmea0183IngestService`) toegevoegd aan Ingest naast de bestaande NMEA2000 listener.
-- Protocol tagging op `NetworkMessage` – onderscheid `NMEA2000` / `NMEA0183`.
+- Één gecombineerde UDP listener (`IngestService`) verwerkt zowel NMEA 2000/raw-like als NMEA 0183 regels.
+- Protocoldetectie op regelinhoud: regels die beginnen met `$` → `NMEA0183`, overig → `NMEA2000`.
 - Raw NMEA 0183 sentences opgeslagen in de bestaande `NetworkMessages`-tabel.
 - Geen verplichte semantische measurement-opslag in deze fase.
 - Onbekende of niet-parsebare NMEA 0183 sentences worden raw opgeslagen en niet verder verwerkt.
-- TCP is buiten scope gebleven in deze fase.
+- TCP is buiten scope gebleven.
 
 **Poortkeuze:**
-- NMEA2000/raw-like: `127.0.0.1:2000` (bestaand, ongewijzigd)
-- NMEA0183: `0.0.0.0:10110` (nieuw, configureerbaar)
+- Eén gecombineerd endpoint: `0.0.0.0:10110` (aanbevolen standaard)
+- Alternatief: `0.0.0.0:2000` als de YDEN op die poort is geconfigureerd
+- Niet tegelijk op beide poorten luisteren om dubbele YDEN-verwerking te voorkomen
 
 **Gewijzigde bestanden:**
-- `src/BootManager.Tools.Ingest/Options/IngestOptions.cs` – `Nmea0183ListenerOptions` sub-object toegevoegd
-- `src/BootManager.Tools.Ingest/Services/Nmea0183IngestService.cs` – nieuw: UDP listener voor NMEA 0183
-- `src/BootManager.Tools.Ingest/Services/IngestService.cs` – protocol-tag gewijzigd van `YdenRawLike` naar `NMEA2000`
-- `src/BootManager.Tools.Ingest/appsettings.json` – NMEA 0183 endpoint toegevoegd
-- `src/BootManager.Tools.Ingest/Program.cs` – `Nmea0183IngestService` geregistreerd
+- `src/BootManager.Tools.Ingest/Options/IngestOptions.cs` – `Nmea0183ListenerOptions` verwijderd; defaults bijgewerkt naar `0.0.0.0:10110`
+- `src/BootManager.Tools.Ingest/Services/Nmea0183IngestService.cs` – verwijderd (samengevoegd in `IngestService`)
+- `src/BootManager.Tools.Ingest/Services/IngestService.cs` – NMEA 0183 detectie toegevoegd; source = remote endpoint
+- `src/BootManager.Tools.Ingest/appsettings.json` – Nmea0183-sectie verwijderd
+- `src/BootManager.Tools.Ingest/Program.cs` – `Nmea0183IngestService` registratie verwijderd
 
 **Acceptatiecriteria (voldaan):**
-- Ingest luistert op twee configureerbare UDP endpoints.
-- Ontvangen NMEA 0183 sentences komen raw terecht in de `NetworkMessages`-tabel.
-- Protocol-tagging is zichtbaar in opgeslagen berichten.
-- Bestaande NMEA2000-flow blijft ongewijzigd werken.
+- Ingest luistert op één configureerbaar UDP endpoint.
+- NMEA 0183 sentences (beginnen met `$`) worden als `Protocol = "NMEA0183"` doorgestuurd.
+- NMEA 2000/raw-like regels worden als `Protocol = "NMEA2000"` doorgestuurd.
+- Geen dubbele verwerking van YDEN-output.
 
 ---
 

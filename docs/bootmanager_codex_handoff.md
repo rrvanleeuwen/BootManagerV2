@@ -519,7 +519,7 @@ Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase
 
 | Fase | Inhoud | Status |
 |------|--------|--------|
-| **1 – Foundation** | Tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag | ✅ Geïmplementeerd |
+| **1 – Foundation** | Één gecombineerde UDP listener in Ingest, protocoldetectie op regelinhoud (`$`→NMEA0183), raw opslag | ✅ Geïmplementeerd (herzien: gecombineerde listener) |
 | **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning, veldextractie, checksum-validatie | ✅ Geïmplementeerd |
 | **3a – Interpreters** | VHW, MTW, DBT/DPT | ✅ Geïmplementeerd |
 | **3b – Interpreters** | MWV, HDT/HDM | ✅ Geïmplementeerd |
@@ -557,9 +557,10 @@ De simulator ondersteunt nu configureerbare NMEA 0183 output naast de bestaande 
 
 | Optie | Standaard | Beschrijving |
 |-------|-----------|--------------|
-| `OutputMode` | `NMEA2000` | `NMEA2000`, `NMEA0183` of `Both` |
+| `OutputMode` | `NMEA0183` | `NMEA0183` (standaard), `NMEA2000` of `Both`. Standaard NMEA0183, omdat de echte YDEN-03 route UDP NMEA 0183 gebruikt. Bij `Both` sturen beide stromen naar dezelfde ingestpoort; Ingest herkent het protocol per regel. |
+| `TargetPort` | `10110` | UDP-doelpoort voor NMEA2000/raw-like output. Standaard gelijk aan `Nmea0183TargetPort` zodat de gecombineerde Ingest listener beide ontvangt. Alternatief: `2000`. |
 | `Nmea0183TargetIp` | `127.0.0.1` | UDP-doeladres voor NMEA 0183 sentences |
-| `Nmea0183TargetPort` | `10110` | UDP-doelpoort (passend bij Ingest NMEA0183 listener) |
+| `Nmea0183TargetPort` | `10110` | UDP-doelpoort voor NMEA 0183 sentences. Standaard `10110` (gecombineerde Ingest listener). Alternatief: `2000`. |
 | `IncludeNegativeTestSentences` | `false` | Stuurt ook ongeldige/negatieve testvarianten mee |
 
 ### NMEA 0183 sentence-types per tick

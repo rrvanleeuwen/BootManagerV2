@@ -15,29 +15,41 @@ public enum SimulatorOutputMode
 
 /// <summary>
 /// Opties/configuratie voor de simulator (doel-UDP, interval, scenario en outputmodus).
+/// Standaard outputmodus is <see cref="SimulatorOutputMode.NMEA0183"/>, omdat de echte YDEN-03
+/// route UDP NMEA 0183 gebruikt. Beide output-stromen sturen standaard naar poort 10110
+/// zodat de gecombineerde Ingest UDP-listener per regel het protocol herkent.
+/// Alternatief: gebruik poort 2000 als Ingest en simulator beiden expliciet op die poort zijn geconfigureerd.
 /// </summary>
 public class SimulatorOptions
 {
     public string TargetIp { get; set; } = "127.0.0.1";
-    public int TargetPort { get; set; } = 2000;
+
+    /// <summary>
+    /// UDP-poort waarnaar NMEA2000/raw-like regels worden verstuurd.
+    /// Standaard 10110 (gecombineerde Ingest listener). Alternatief: 2000.
+    /// </summary>
+    public int TargetPort { get; set; } = 10110;
     public int IntervalMs { get; set; } = 1000;
     public string Scenario { get; set; } = "SailingIjsselmeer";
     public string? ScenarioPath { get; set; }
 
     /// <summary>
-    /// Bepaalt welke outputmodus actief is: NMEA2000 (standaard), NMEA0183 of Both.
+    /// Bepaalt welke outputmodus actief is: NMEA0183 (standaard), NMEA2000 of Both.
+    /// Standaard NMEA0183, omdat de echte YDEN-03 route UDP NMEA 0183 gebruikt.
+    /// Bij Both sturen beide stromen naar dezelfde ingestpoort; Ingest herkent het protocol per regel.
+    /// <c>TargetPort</c> is alleen relevant bij OutputMode NMEA2000 of Both.
     /// </summary>
-    public SimulatorOutputMode OutputMode { get; set; } = SimulatorOutputMode.NMEA2000;
+    public SimulatorOutputMode OutputMode { get; set; } = SimulatorOutputMode.NMEA0183;
 
     /// <summary>
     /// IP-adres waarnaar NMEA 0183 sentences worden verstuurd.
-    /// Standaard 127.0.0.1 (passend bij de Ingest NMEA0183 listener).
+    /// Standaard 127.0.0.1.
     /// </summary>
     public string Nmea0183TargetIp { get; set; } = "127.0.0.1";
 
     /// <summary>
     /// UDP-poort waarnaar NMEA 0183 sentences worden verstuurd.
-    /// Standaard 10110 (passend bij de Ingest NMEA0183 listener).
+    /// Standaard 10110 (gecombineerde Ingest listener). Alternatief: 2000.
     /// </summary>
     public int Nmea0183TargetPort { get; set; } = 10110;
 

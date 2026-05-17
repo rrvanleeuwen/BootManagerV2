@@ -11,10 +11,8 @@ var builder = Host.CreateDefaultBuilder(args)
         
         // Registreer HttpClient voor API-calls
         services.AddHttpClient<IngestService>();
-        services.AddHttpClient<Nmea0183IngestService>();
 
         services.AddHostedService<IngestService>();
-        services.AddHostedService<Nmea0183IngestService>();
     });
 
 var host = builder.Build();
