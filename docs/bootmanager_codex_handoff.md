@@ -245,6 +245,20 @@ Per stap werkt Codex idealiter als volgt:
 - Geen onnodige herstructureringen.
 - Geen brede refactors als de user story daar niet om vraagt.
 
+### Git-regie door Codex
+
+Bij akkoord op een nieuwe slice of grotere werkstap regelt Codex de git-flow:
+
+1. Controleer huidige branch en `git status`.
+2. Controleer of er relevante open PR's of recent gemergde PR's zijn.
+3. Zorg dat lokale `master` actueel is via een fast-forward pull vanaf `origin/master`.
+4. Maak vanaf actuele `master` een nieuwe feature-branch met een duidelijke naam.
+5. Laat Copilot of codewijzigingen pas daarna uitvoeren.
+6. Review na wijzigingen de scope, build/teststatus en eventuele runtimechecks.
+7. Controleer dat er geen long-running repo-processen of `dotnet` processen zijn blijven hangen.
+8. Vraag de gebruiker expliciet om akkoord voordat Codex commit, push en PR aanmaakt.
+9. Na akkoord voert Codex commit, push en PR-aanmaak uit en controleert daarna opnieuw de werkmapstatus.
+
 ---
 
 ## 7. Testaanpak
