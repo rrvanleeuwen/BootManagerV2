@@ -1,7 +1,7 @@
 # NMEA 0183 Parser/Interpreter Architectuur
 
 **Datum:** 2026-05-17  
-**Status:** Fase 2, Fase 3a en Fase 3b geïmplementeerd
+**Status:** Fase 2, Fase 3a, Fase 3b en Fase 3c geïmplementeerd
 **Epic:** [nmea0183-support.md](../epics/nmea0183-support.md)
 
 ---
@@ -60,9 +60,22 @@ Sentence-specifieke interpreters voor MWV, HDT en HDM toegevoegd aan `BootManage
 - `NetworkMessageService` roept beide interpreters sequentieel aan na geslaagde NMEA0183-parse
 - DI-registraties toegevoegd in `DependencyInjection.cs`
 
-### Fase 3c – Volgende stap
+### Fase 3c – Geïmplementeerd (2026-05-17)
 
-RMC/GGA (positie/motion) sentence-interpreters als volgende uitbreiding.
+Sentence-specifieke interpreters voor RMC en GGA toegevoegd aan `BootManager.Application`:
+
+- `Nmea0183RmcInterpretationDto` – gecombineerd DTO voor positie + motion uit RMC
+- `Nmea0183RmcInterpreterService` – RMC → `PositionMeasurement` en/of `MotionMeasurement`
+  - Checksumbeleid: `ChecksumValid == false` → geen interpretatie
+  - Alleen bij status `A`
+  - Positie (lat/lon) en motion (SOG/COG) worden onafhankelijk opgeslagen indien geldig
+  - NMEA ddmm.mmmm/dddmm.mmmm geconverteerd naar decimale graden
+- `Nmea0183GgaInterpreterService` – GGA → `PositionMeasurement`
+  - Checksumbeleid: `ChecksumValid == false` → geen interpretatie
+  - Alleen bij fixkwaliteit > 0
+  - Hoogte, satellieten en HDOP niet opgeslagen in fase 3c
+- `NetworkMessageService` roept beide interpreters sequentieel aan na geslaagde NMEA0183-parse
+- DI-registraties toegevoegd in `DependencyInjection.cs`
 
 ### Bestaande NMEA2000 slices – onaangetast
 

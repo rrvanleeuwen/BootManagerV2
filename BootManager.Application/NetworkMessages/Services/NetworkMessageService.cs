@@ -63,6 +63,9 @@ public class NetworkMessageService : INetworkMessageService
     // NMEA 0183 Fase 3b interpreters
     private readonly INmea0183MessageInterpreter<WindMessageInterpretationDto> _nmea0183MwvInterpreter;
     private readonly INmea0183MessageInterpreter<HeadingMessageInterpretationDto> _nmea0183HdtHdmInterpreter;
+    // NMEA 0183 Fase 3c interpreters
+    private readonly INmea0183MessageInterpreter<Nmea0183RmcInterpretationDto> _nmea0183RmcInterpreter;
+    private readonly INmea0183MessageInterpreter<PositionMessageInterpretationDto> _nmea0183GgaInterpreter;
     private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
@@ -93,6 +96,8 @@ public class NetworkMessageService : INetworkMessageService
         INmea0183MessageInterpreter<DepthMessageInterpretationDto> nmea0183DbtDptInterpreter,
         INmea0183MessageInterpreter<WindMessageInterpretationDto> nmea0183MwvInterpreter,
         INmea0183MessageInterpreter<HeadingMessageInterpretationDto> nmea0183HdtHdmInterpreter,
+        INmea0183MessageInterpreter<Nmea0183RmcInterpretationDto> nmea0183RmcInterpreter,
+        INmea0183MessageInterpreter<PositionMessageInterpretationDto> nmea0183GgaInterpreter,
         ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
@@ -119,6 +124,8 @@ public class NetworkMessageService : INetworkMessageService
         _nmea0183DbtDptInterpreter = nmea0183DbtDptInterpreter;
         _nmea0183MwvInterpreter = nmea0183MwvInterpreter;
         _nmea0183HdtHdmInterpreter = nmea0183HdtHdmInterpreter;
+        _nmea0183RmcInterpreter = nmea0183RmcInterpreter;
+        _nmea0183GgaInterpreter = nmea0183GgaInterpreter;
         _logger = logger;
     }
 
@@ -211,6 +218,9 @@ public class NetworkMessageService : INetworkMessageService
                     // Fase 3b: MWV en HDT/HDM
                     await TryInterpretAndSaveNmea0183MwvAsync(nmea0183Result, request, ct);
                     await TryInterpretAndSaveNmea0183HdtHdmAsync(nmea0183Result, request, ct);
+                    // Fase 3c: RMC en GGA
+                    await TryInterpretAndSaveNmea0183RmcAsync(nmea0183Result, request, ct);
+                    await TryInterpretAndSaveNmea0183GgaAsync(nmea0183Result, request, ct);
                 }
                 else
                 {
@@ -1036,6 +1046,135 @@ public class NetworkMessageService : INetworkMessageService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 HDT/HDM-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert NMEA 0183 RMC-sentence te interpreteren en op te slaan als PositionMeasurement en/of MotionMeasurement.
+    /// Fouten blokkeren niet de raw opslag.
+    /// </summary>
+    private async Task TryInterpretAndSaveNmea0183RmcAsync(
+        Nmea0183ParseResultDto nmea0183Result,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_nmea0183RmcInterpreter.CanInterpret(nmea0183Result))
+                return;
+
+            var interpretation = _nmea0183RmcInterpreter.Interpret(nmea0183Result);
+
+            if (!interpretation.IsSuccess)
+            {
+                _logger.LogWarning("NMEA0183 RMC-interpretatie mislukt: {Error}", interpretation.ErrorMessage ?? "Onbekende fout");
+                return;
+            }
+
+            // Sla positiemeting op als positievelden geldig zijn
+            if (interpretation.HasValidPosition && interpretation.Latitude.HasValue && interpretation.Longitude.HasValue)
+            {
+                _logger.LogInformation(
+                    "NMEA0183 RMC-positie-interpretatie geslaagd: Lat={Lat}, Lon={Lon}",
+                    interpretation.Latitude,
+                    interpretation.Longitude);
+                try
+                {
+                    var dto = new CreatePositionMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        Latitude = interpretation.Latitude.Value,
+                        Longitude = interpretation.Longitude.Value
+                    };
+                    await _positionMeasurementService.SaveAsync(dto, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "NMEA0183 RMC-positie-opslag mislukt voor RawLine={RawLine}", request.RawLine);
+                }
+            }
+
+            // Sla motionmeting op als SOG en COG geldig zijn
+            if (interpretation.HasValidMotion && interpretation.SpeedOverGroundKnots.HasValue && interpretation.CourseOverGroundDegrees.HasValue)
+            {
+                _logger.LogInformation(
+                    "NMEA0183 RMC-motion-interpretatie geslaagd: SOG={SOG} kn, COG={COG}°",
+                    interpretation.SpeedOverGroundKnots,
+                    interpretation.CourseOverGroundDegrees);
+                try
+                {
+                    var dto = new CreateMotionMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        CourseOverGroundDegrees = interpretation.CourseOverGroundDegrees.Value,
+                        SpeedOverGround = interpretation.SpeedOverGroundKnots.Value,
+                        SpeedUnit = "kn"
+                    };
+                    await _motionMeasurementService.SaveAsync(dto, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "NMEA0183 RMC-motion-opslag mislukt voor RawLine={RawLine}", request.RawLine);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 RMC-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert NMEA 0183 GGA-sentence te interpreteren en op te slaan als PositionMeasurement.
+    /// Fouten blokkeren niet de raw opslag.
+    /// </summary>
+    private async Task TryInterpretAndSaveNmea0183GgaAsync(
+        Nmea0183ParseResultDto nmea0183Result,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_nmea0183GgaInterpreter.CanInterpret(nmea0183Result))
+                return;
+
+            var interpretation = _nmea0183GgaInterpreter.Interpret(nmea0183Result);
+
+            if (interpretation.IsSuccess && interpretation.Latitude.HasValue && interpretation.Longitude.HasValue)
+            {
+                _logger.LogInformation(
+                    "NMEA0183 GGA-interpretatie geslaagd: Lat={Lat}, Lon={Lon}",
+                    interpretation.Latitude,
+                    interpretation.Longitude);
+                try
+                {
+                    var dto = new CreatePositionMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        Latitude = interpretation.Latitude.Value,
+                        Longitude = interpretation.Longitude.Value
+                    };
+                    await _positionMeasurementService.SaveAsync(dto, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "NMEA0183 GGA-opslag mislukt voor RawLine={RawLine}", request.RawLine);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("NMEA0183 GGA-interpretatie mislukt: {Error}", interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 GGA-interpretatie");
         }
     }
 

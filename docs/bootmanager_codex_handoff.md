@@ -436,13 +436,13 @@ NMEA 0183 status:
 - Fase 2: parserlaag ✅
 - Fase 3a: VHW, MTW, DBT/DPT interpreters ✅
 - Fase 3b: MWV, HDT/HDM interpreters ✅
-- Fase 3c (volgende stap): RMC/GGA positie + motion
+- Fase 3c: RMC/GGA positie + motion ✅
 
 ---
 
 ## 11. Volgende logische stap
 
-De eerstvolgende implementatie-story is **NMEA 0183 Fase 3c – RMC/GGA sentence-interpreters**.
+De eerstvolgende implementatie-story is **Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c** – verifieer dat RMC, GGA, VHW, MTW, MWV, DBT/DPT en HDT/HDM sentences live worden ontvangen, geparset, geïnterpreteerd en opgeslagen.
 
 ### Aanpak per slice (prioriteitsvolgorde)
 
@@ -451,7 +451,7 @@ De eerstvolgende implementatie-story is **NMEA 0183 Fase 3c – RMC/GGA sentence
 3. ~~**MTW** – Watertemperatuur~~ ✅ (Fase 3a)
 4. ~~**MWV** – Wind~~ ✅ (Fase 3b)
 5. ~~**HDT / HDM** – Heading~~ ✅ (Fase 3b)
-6. **RMC / GGA** – Positie + Motion ← volgende
+6. ~~**RMC / GGA** – Positie + Motion~~ ✅ (Fase 3c)
 
 ### Per slice
 - Nieuwe interpreter-service (bijv. `Nmea0183RmcInterpreterService`)
@@ -518,7 +518,7 @@ Na Copilot-output:
 
 ## 14. Samenvatting in één alinea
 
-BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT) en Fase 3b (MWV/HDT/HDM) zijn geïmplementeerd. De eerstvolgende implementatie-story is **NMEA 0183 Fase 3c – RMC/GGA sentence-interpreters** voor Positie en Motion.
+BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM) en Fase 3c (RMC/GGA positie + motion) zijn geïmplementeerd. De eerstvolgende story is **Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c**.
 
 ---
 
@@ -534,7 +534,8 @@ BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NM
 | **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning, veldextractie, checksum-validatie | ✅ Geïmplementeerd |
 | **3a – Interpreters** | VHW, MTW, DBT/DPT | ✅ Geïmplementeerd |
 | **3b – Interpreters** | MWV, HDT/HDM | ✅ Geïmplementeerd |
-| **3c – Interpreters** | RMC/GGA positie + motion | ← Eerstvolgende story |
+| **3c – Interpreters** | RMC/GGA positie + motion | ✅ Geïmplementeerd |
+| **Volgende stap** | Runtime/SQLite acceptatietest fase 3a-3c | ← Eerstvolgende story |
 | **Later** | Simulator NMEA 0183 output via settings; TCP ondersteuning | Buiten scope |
 
 **Vaste principes voor deze epic:**

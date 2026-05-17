@@ -1,7 +1,7 @@
 # Epic: NMEA 0183 Support
 
 **Datum:** 2026-05-17  
-**Status:** Fase 1, Fase 2, Fase 3a en Fase 3b geïmplementeerd
+**Status:** Fase 1, Fase 2, Fase 3a, Fase 3b en Fase 3c geïmplementeerd
 
 ---
 
@@ -185,6 +185,38 @@ Per NMEA 0183 sentence-type een verticale slice toevoegen, analoog aan de bestaa
 - Voor `Protocol == NMEA0183` met HDT of HDM wordt een `HeadingMeasurement` opgeslagen.
 - MWV met ongeldige checksum of status V levert geen meting op, maar raw opslag is intact.
 - Bestaande Fase 3a-interpreters (VHW/MTW/DBT/DPT) en NMEA2000-gedrag zijn intact.
+
+#### Fase 3c – RMC, GGA ✅ *Geïmplementeerd – 2026-05-17*
+
+**Scope:**
+- `Nmea0183RmcInterpretationDto` – gecombineerd DTO voor positie + motion afgeleid uit RMC.
+- `Nmea0183RmcInterpreterService` – RMC sentence → `PositionMeasurement` en/of `MotionMeasurement`.
+  - Alleen bij status `A`; checksum `false` levert geen interpretatie.
+  - Positie (lat/lon) en motion (SOG knoten + COG graden) onafhankelijk opgeslagen als geldig.
+  - NMEA ddmm.mmmm/dddmm.mmmm geconverteerd naar decimale graden.
+- `Nmea0183GgaInterpreterService` – GGA sentence → `PositionMeasurement`.
+  - Alleen bij fixkwaliteit > 0; checksum `false` levert geen interpretatie.
+  - Hoogte, satellieten en HDOP worden in deze stap niet opgeslagen.
+- `NetworkMessageService` roept beide interpreters sequentieel aan na geslaagde NMEA0183-parse; fouten blokkeren raw opslag niet.
+- DI-registratie toegevoegd in `DependencyInjection.cs`.
+
+**Gewijzigde/toegevoegde bestanden:**
+- `BootManager.Application/NetworkMessageInterpretation/DTOs/Nmea0183RmcInterpretationDto.cs` – nieuw
+- `BootManager.Application/NetworkMessageInterpretation/Services/Nmea0183RmcInterpreterService.cs` – nieuw
+- `BootManager.Application/NetworkMessageInterpretation/Services/Nmea0183GgaInterpreterService.cs` – nieuw
+- `BootManager.Application/NetworkMessages/Services/NetworkMessageService.cs` – NMEA0183-blok uitgebreid met RMC en GGA
+- `BootManager.Application/DependencyInjection.cs` – twee DI-registraties toegevoegd
+
+**Acceptatiecriteria (voldaan):**
+- Build slaagt (`dotnet build` ✅).
+- RMC met geldige checksum en status `A` slaat `PositionMeasurement` op.
+- RMC met geldige SOG/COG slaat `MotionMeasurement` op.
+- GGA met fixkwaliteit > 0 slaat `PositionMeasurement` op.
+- RMC/GGA met `ChecksumValid == false` levert geen meting op; raw opslag intact.
+- Ongeldige RMC-status of GGA-fixkwaliteit levert geen meting op; raw opslag intact.
+- Bestaande Fase 3a/3b-interpreters en NMEA2000-gedrag zijn intact.
+
+**Volgende stap:** Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c – verifieer dat RMC, GGA, VHW, MTW, MWV, DBT/DPT, HDT/HDM sentences live worden ontvangen, geparset, geïnterpreteerd en opgeslagen.
 
 Kandidaat-sentences (volgorde op basis van prioriteit):
 
