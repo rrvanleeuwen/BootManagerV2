@@ -177,7 +177,7 @@ BootManager.Web API (CreateNetworkMessage, Protocol=NMEA0183)
       ↓
 NetworkMessageService (raw sentence opgeslagen)
       ↓
-[Fase 2] Nmea0183ParserService
+[Fase 2 ✅] Nmea0183ParserService (sentence-type herkenning, veldextractie, checksum-validatie)
       ↓
 [Fase 3] Sentence-specifieke Interpreter → Measurement Service → Database
 ```
@@ -415,52 +415,61 @@ Deviation/Variation/Reference zitten wel in payloadstructuur, maar hoeven nog ni
 
 We zijn geëindigd op:
 
-- branch: `feature/NetwerkData/Interpretation`
-- Heading-slice is afgerond en getest
-- regressiecheck liet zien dat de hele keten nog werkt
+- branch: `feature/nmea0183-parser-layer`
+- NMEA 0183 Fase 1 (ingest foundation) is afgerond en getest
+- NMEA 0183 Fase 2 (parserlaag) is geïmplementeerd: `Nmea0183ParserService`, `INmea0183ParserService`, `Nmea0183ParseResultDto`
+- `dotnet build` geslaagd; `dotnet test` geslaagd (1 niet-gerelateerde authenticatietest gefaald, pre-existent)
+- Runtime-tests zijn niet uitgevoerd voor Fase 2
 
-Werkende slices:
+Werkende NMEA2000 slices (ongewijzigd):
 - Battery
 - Depth
 - Wind
 - Motion
 - Position
 - Heading
+- Speed Through Water
+- Water Temperature
+
+NMEA 0183 status:
+- Fase 1: raw ingest via UDP ✅
+- Fase 2: parserlaag ✅
+- Fase 3: sentence-specifieke interpreters ← eerstvolgende story
 
 ---
 
 ## 11. Volgende logische stap
 
-De volgende logische stap is **niet direct weer een nieuwe interpreter op bestaande simulatoroutput**, maar eerst een **simulatoruitbreiding** voor gegevens die nog niet in de keten zitten.
+De eerstvolgende implementatie-story is **NMEA 0183 Fase 3 – Sentence-specifieke interpreters**.
 
-### Eerstvolgende kandidaat-uitbreidingen
+### Voorbereiding
 
-1. **Snelheid door water**
-2. **Watertemperatuur**
+Beantwoord de openstaande ontwerpvragen vóór implementatie van de eerste Fase 3 slice (zie sectie 15 en `.docs/epics/nmea0183-support.md`):
+- `Protocol` als string, enum of aparte tabel?
+- `VHW` – gecombineerde of opgesplitste interpretatie?
+- Checksum-fout gedrag in interpreters (afwijzen of loggen)?
 
-Dat betekent waarschijnlijk deze volgorde:
+### Aanpak per slice (prioriteitsvolgorde)
 
-### Stap A – simulatoruitbreiding
-- `BoatState` uitbreiden waar nodig
-- scenario-startwaarden aanvullen
-- payloadbuilder uitbreiden
-- relevante PGN-specificatie toevoegen of actualiseren
-- simulatoroutput laten meesturen
+1. **VHW** – Speed Through Water + Magnetic Heading
+2. **DBT / DPT** – Diepte
+3. **MTW** – Watertemperatuur
+4. **MWV** – Wind
+5. **HDT / HDM** – Heading
+6. **RMC / GGA** – Positie + Motion
 
-### Stap B – parser/interpreter/opslag
-Pas daarna per nieuw berichttype weer verticale slices toevoegen:
-- parsermapping
-- interpreter
-- measurement entity
-- EF-configuratie
-- DbSet
-- service
-- flow-koppeling
-- DI
-- migratie
+### Per slice
+- Nieuwe interpreter-service (bijv. `VhwMessageInterpreterService`)
+- Interpreter ontvangt `Nmea0183ParseResultDto`, produceert bestaand interpretatie-DTO
+- Measurement-opslag via bestaande services en entities
+- Aanroep vanuit `NetworkMessageService` na succesvolle Fase 2 parse
+- DI registratie
+- Geen simulator-aanpassingen
 
-### Mogelijke latere stap
-- expliciete **schijnbare wind** als aparte slice, maar alleen correct en expliciet volgens NMEA 2000-semantiek
+### Mogelijke latere stappen
+- Simulator NMEA 0183 output via instellingen
+- TCP-ondersteuning (YDEN-03 poort 1456)
+- Expliciete **schijnbare wind** als aparte slice
 
 ---
 
@@ -514,7 +523,7 @@ Na Copilot-output:
 
 ## 14. Samenvatting in één alinea
 
-BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). Fase 1 (ingest foundation) is geïmplementeerd. De eerstvolgende implementatie-story is **NMEA 0183 Fase 2 – Parser laag**: `Nmea0183ParserService` in `BootManager.Application` voor sentence-type herkenning en veldextractie.
+BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). Fase 1 (ingest foundation) en Fase 2 (parserlaag) zijn geïmplementeerd. De eerstvolgende implementatie-story is **NMEA 0183 Fase 3 – Sentence-specifieke interpreters**: per sentence-type (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) een verticale slice bouwen op basis van `Nmea0183ParseResultDto`.
 
 ---
 
@@ -527,8 +536,8 @@ BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NM
 | Fase | Inhoud | Status |
 |------|--------|--------|
 | **1 – Foundation** | Tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag | ✅ Geïmplementeerd |
-| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning en veldextractie | ← Eerstvolgende story |
-| **3 – Interpreters** | Per sentence-type een verticale slice (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) | Gepland |
+| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning, veldextractie, checksum-validatie | ✅ Geïmplementeerd |
+| **3 – Interpreters** | Per sentence-type een verticale slice (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) | ← Eerstvolgende story |
 | **Later** | Simulator NMEA 0183 output via settings; TCP ondersteuning | Buiten scope |
 
 **Vaste principes voor deze epic:**
@@ -544,7 +553,7 @@ BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NM
 - `VHW` – gecombineerde of opgesplitste interpretatie?
 - `RMC` versus `GGA` als primaire positiebron?
 - Conflict-resolutie bij dubbele metingen van NMEA2000 en NMEA 0183?
-- Checksum-validatie verplicht in Fase 2 of Fase 3?
+- Checksum-fout in Fase 3: afwijzen of alleen loggen? (Fase 2: optioneel, alleen gelogd)
 - `MWV` windtype (werkelijk/schijnbaar) vastleggen in `WindMeasurement`?
 
 Zie volledig: `.docs/epics/nmea0183-support.md`, `.docs/extraInfo/yden-03.md` en `.docs/features/nmea0183-parser-interpreter-architecture.md`

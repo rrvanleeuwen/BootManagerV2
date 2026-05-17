@@ -1,6 +1,7 @@
 using BootManager.Application.NetworkMessages.DTOs;
 using BootManager.Application.NetworkMessageParsing.DTOs;
 using BootManager.Application.NetworkMessageParsing.Services;
+using BootManager.Application.NetworkMessageParsing.DTOs;
 using BootManager.Application.NetworkMessageInterpretation.Contracts;
 using BootManager.Application.NetworkMessageInterpretation.DTOs;
 using BootManager.Application.BatteryMeasurements.DTOs;
@@ -39,6 +40,7 @@ public class NetworkMessageService : INetworkMessageService
 {
     private readonly IRepository<NetworkMessage> _repo;
     private readonly INetworkMessageParserService _parserService;
+    private readonly INmea0183ParserService _nmea0183ParserService;
     private readonly INetworkMessageInterpreter<BatteryMessageInterpretationDto> _batteryInterpreter;
     private readonly IBatteryMeasurementService _batteryMeasurementService;
     private readonly INetworkMessageInterpreter<DepthMessageInterpretationDto> _depthInterpreter;
@@ -63,6 +65,7 @@ public class NetworkMessageService : INetworkMessageService
     public NetworkMessageService(
         IRepository<NetworkMessage> repo,
         INetworkMessageParserService parserService,
+        INmea0183ParserService nmea0183ParserService,
         INetworkMessageInterpreter<BatteryMessageInterpretationDto> batteryInterpreter,
         IBatteryMeasurementService batteryMeasurementService,
         INetworkMessageInterpreter<DepthMessageInterpretationDto> depthInterpreter,
@@ -83,6 +86,7 @@ public class NetworkMessageService : INetworkMessageService
     {
         _repo = repo;
         _parserService = parserService;
+        _nmea0183ParserService = nmea0183ParserService;
         _batteryInterpreter = batteryInterpreter;
         _batteryMeasurementService = batteryMeasurementService;
         _depthInterpreter = depthInterpreter;
@@ -164,6 +168,41 @@ public class NetworkMessageService : INetworkMessageService
                     ex,
                     "Onverwachte fout bij parsing van netwerkbericht MessageId={MessageId}",
                     request.MessageId);
+            }
+        }
+
+        // NMEA 0183 parsing: wordt uitgevoerd als protocol NMEA0183 is.
+        // Raw opslag wordt nooit geblokkeerd door parse-fouten.
+        if (string.Equals(request.Protocol, "NMEA0183", StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(request.RawLine))
+        {
+            try
+            {
+                var nmea0183Result = _nmea0183ParserService.Parse(request.RawLine);
+
+                if (nmea0183Result.IsSuccess)
+                {
+                    _logger.LogInformation(
+                        "NMEA 0183 sentence geparset: Talker={Talker}, Type={Type}, Velden={FieldCount}",
+                        nmea0183Result.TalkerPrefix,
+                        nmea0183Result.SentenceType,
+                        nmea0183Result.Fields.Count);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "NMEA 0183 sentence niet herkend: RawLine={RawLine}, Fout={Error}",
+                        request.RawLine,
+                        nmea0183Result.ErrorMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Parse-fouten blokkeren geen raw opslag.
+                _logger.LogWarning(
+                    ex,
+                    "Onverwachte fout bij NMEA 0183 parsing van sentence: {RawLine}",
+                    request.RawLine);
             }
         }
 

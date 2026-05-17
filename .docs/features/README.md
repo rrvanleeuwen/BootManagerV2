@@ -226,8 +226,8 @@ All slices follow non-fatal error handling:
 - [ ] **Extended Heading Fields** - Deviation, Variation, Reference type
 - [ ] **NMEA 0183 Support** – Parallelle inputstroom voor NMEA 0183 sentences (gefaseerd, zie epic)
   - Fase 1 ✅: tweede UDP listener in Ingest, protocol tagging, raw opslag
-  - Fase 2: `Nmea0183ParserService` voor sentence-type herkenning ← *eerstvolgende story*
-  - Fase 3: per sentence-type een verticale slice (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW)
+  - Fase 2 ✅: `Nmea0183ParserService` voor sentence-type herkenning, veldextractie en checksum-validatie
+  - Fase 3: per sentence-type een verticale slice (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) ← *eerstvolgende story*
   - Aanleiding: YDEN-03 gateway zendt NMEA 0183 uit op UDP poort 2000 en 10110
   - Zie: [../epics/nmea0183-support.md](../epics/nmea0183-support.md), [../extraInfo/yden-03.md](../extraInfo/yden-03.md) en [nmea0183-parser-interpreter-architecture.md](nmea0183-parser-interpreter-architecture.md)
 - [ ] **Magnetic Declination** - Integration with Heading/Position
