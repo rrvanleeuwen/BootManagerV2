@@ -54,12 +54,15 @@ Het veld `Protocol` blijft op `NetworkMessages` staan.
 Het toevoegen van `Protocol` aan alle measurement entities is een **expliciete latere ontwerpkeuze**,
 niet automatisch nu ingevoerd.
 
-### Simulator kiest later via settings
+### Simulator outputmodus
 
-De simulator krijgt later een instelling om te kiezen welk outputformaat wordt gebruikt:
-- `NMEA2000` (huidige standaard)
-- `NMEA0183` (nieuw te implementeren)
-- Eventueel later: `Both` (buiten scope eerste codefase)
+De simulator ondersteunt drie configureerbare outputmodi via `Simulator:OutputMode` in `appsettings.json`:
+- `NMEA2000` – bestaande NMEA2000-achtige raw output (standaard)
+- `NMEA0183` – NMEA 0183 sentences voor alle fase 3a-3c types
+- `Both` – beide stromen tegelijk; scenario-consistent maar niet exact tick-gesynchroniseerd
+
+Geïmplementeerd in de simulator NMEA 0183 output story (2026-05-18).
+Zie `docs/bootmanager_codex_handoff.md` sectie 16 voor startcommando's.
 
 ### Schrijven naar NMEA2000 is buiten scope
 
@@ -216,7 +219,7 @@ Per NMEA 0183 sentence-type een verticale slice toevoegen, analoog aan de bestaa
 - Ongeldige RMC-status of GGA-fixkwaliteit levert geen meting op; raw opslag intact.
 - Bestaande Fase 3a/3b-interpreters en NMEA2000-gedrag zijn intact.
 
-**Volgende stap:** Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c – verifieer dat RMC, GGA, VHW, MTW, MWV, DBT/DPT, HDT/HDM sentences live worden ontvangen, geparset, geïnterpreteerd en opgeslagen.
+**Volgende stap:** ~~Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c~~ → **Simulator NMEA 0183 output geïmplementeerd ✅ (2026-05-18)**. Eerstvolgende actie: runtime/SQLite acceptatietest uitvoeren via de nieuwe simulator NMEA0183-modus.
 
 Kandidaat-sentences (volgorde op basis van prioriteit):
 
@@ -234,10 +237,9 @@ significant andere semantiek heeft, wordt een aparte entity overwogen.
 
 ---
 
-### Mogelijke latere fase – Simulator NMEA 0183 output
+### Simulator NMEA 0183 output ✅ *Geïmplementeerd – 2026-05-18*
 
-- Simulator kan via instellingen NMEA 0183 sentences genereren.
-- Gebruik voor testing en integratie zonder echte hardware.
+De simulator ondersteunt `NMEA0183`- en `Both`-modus. Alle fase 3a-3c sentence-types worden gegenereerd met correcte XOR-checksum. Zie `docs/bootmanager_codex_handoff.md` sectie 16.
 
 ---
 
@@ -253,7 +255,7 @@ Zie ook: [nmea0183-parser-interpreter-architecture.md](./../features/nmea0183-pa
 | `VHW` – gecombineerde of opgesplitste interpretatie? | Open |
 | `RMC` versus `GGA` – welke heeft prioriteit als primaire positiebron? | Open |
 | TCP-ondersteuning (YDEN-03 poort 1456) | Buiten scope Fase 2/3 |
-| Simulator `Both`-modus | Buiten scope Fase 2/3 |
+| Simulator `Both`-modus | ✅ Geïmplementeerd (2026-05-18) |
 | Conflict-resolutie NMEA2000 versus NMEA 0183 bij dubbele metingen | Open |
 | Checksum-validatie verplicht in Fase 2 of pas Fase 3? | Besloten: optioneel in Fase 2 (geïmplementeerd), verplicht in Fase 3 |
 | `MWV` windmeting: onderscheid werkelijk/schijnbaar in `WindMeasurement` | Open |

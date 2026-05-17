@@ -518,7 +518,7 @@ Na Copilot-output:
 
 ## 14. Samenvatting in één alinea
 
-BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM) en Fase 3c (RMC/GGA positie + motion) zijn geïmplementeerd. De eerstvolgende story is **Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c**.
+BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM), Fase 3c (RMC/GGA positie + motion) en de simulator NMEA 0183 output zijn geïmplementeerd. De eerstvolgende actie is het uitvoeren van de **runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c** via de nieuwe simulator NMEA0183-modus.
 
 ---
 
@@ -535,8 +535,9 @@ BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NM
 | **3a – Interpreters** | VHW, MTW, DBT/DPT | ✅ Geïmplementeerd |
 | **3b – Interpreters** | MWV, HDT/HDM | ✅ Geïmplementeerd |
 | **3c – Interpreters** | RMC/GGA positie + motion | ✅ Geïmplementeerd |
-| **Volgende stap** | Runtime/SQLite acceptatietest fase 3a-3c | ← Eerstvolgende story |
-| **Later** | Simulator NMEA 0183 output via settings; TCP ondersteuning | Buiten scope |
+| **Simulator NMEA 0183** | Configureerbare NMEA 0183 output in Tools.Simulator | ✅ Geïmplementeerd (2026-05-18) |
+| **Eerstvolgende actie** | Runtime/SQLite acceptatietest fase 3a-3c uitvoeren | ← Uitvoerbaar via simulator NMEA0183-modus |
+| **Later** | TCP ondersteuning | Buiten scope |
 
 **Vaste principes voor deze epic:**
 - Bestaande NMEA2000 slices blijven intact.
@@ -553,5 +554,81 @@ BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NM
 - Conflict-resolutie bij dubbele metingen van NMEA2000 en NMEA 0183?
 - Checksum-fout in Fase 3: afwijzen of alleen loggen? (Fase 2: optioneel, alleen gelogd)
 - `MWV` windtype (werkelijk/schijnbaar) vastleggen in `WindMeasurement`?
+
+Zie volledig: `.docs/epics/nmea0183-support.md`, `.docs/extraInfo/yden-03.md` en `.docs/features/nmea0183-parser-interpreter-architecture.md`
+
+---
+
+## 16. Simulator NMEA 0183 output – geïmplementeerd (2026-05-18)
+
+De simulator ondersteunt nu configureerbare NMEA 0183 output naast de bestaande NMEA2000-achtige output.
+
+### Nieuwe configuratieopties (`Simulator` sectie in appsettings.json)
+
+| Optie | Standaard | Beschrijving |
+|-------|-----------|--------------|
+| `OutputMode` | `NMEA2000` | `NMEA2000`, `NMEA0183` of `Both` |
+| `Nmea0183TargetIp` | `127.0.0.1` | UDP-doeladres voor NMEA 0183 sentences |
+| `Nmea0183TargetPort` | `10110` | UDP-doelpoort (passend bij Ingest NMEA0183 listener) |
+| `IncludeNegativeTestSentences` | `false` | Stuurt ook ongeldige/negatieve testvarianten mee |
+
+### NMEA 0183 sentence-types per tick
+
+| Sentence | Verwachte measurement |
+|----------|-----------------------|
+| `IIVHW`  | SpeedThroughWaterMeasurement |
+| `IIMTW`  | WaterTemperatureMeasurement |
+| `IIDBT`  | DepthMeasurement |
+| `IIMWV` (status A) | WindMeasurement |
+| `IIHDT`  | HeadingMeasurement |
+| `IIRMC` (status A) | PositionMeasurement + MotionMeasurement |
+| `IIGGA` (fix 1) | PositionMeasurement |
+
+### Negatieve testvarianten (alleen bij `IncludeNegativeTestSentences: true`)
+
+| Sentence | Verwacht gedrag |
+|----------|-----------------|
+| `IIMWV` status V | Raw opslag, geen WindMeasurement |
+| `IIRMC` status V | Raw opslag, geen Position- of MotionMeasurement |
+| `IIGGA` fix 0 | Raw opslag, geen PositionMeasurement |
+| `IIVHW` ongeldige checksum | Raw opslag, geen SpeedThroughWaterMeasurement |
+
+### Opmerking: `OutputMode=Both`
+
+Bij `OutputMode=Both` worden zowel `SimulationService` (NMEA2000) als `Nmea0183SimulationService` (NMEA0183) als afzonderlijke BackgroundServices geregistreerd. Beide initialiseren hun eigen runtime-state vanuit hetzelfde scenario. De waarden zijn daardoor **scenario-consistent** (zelfde startpositie, snelheid, koers, enz.), maar de twee stromen zijn **niet exact tick-gesynchroniseerd**: elke service heeft zijn eigen tick-loop en random variaties. Dit is voldoende voor functionele end-to-end tests, maar niet geschikt als exacte datasynchronisatie vereist is.
+
+### Simulator starten in NMEA 0183 modus
+
+```bash
+# Optie 1: appsettings.json aanpassen (OutputMode: "NMEA0183")
+cd src/BootManager.Tools.Ingest && dotnet run
+cd src/BootManager.Tools.Simulator && dotnet run
+
+# Optie 2: via environment override
+cd src/BootManager.Tools.Simulator
+dotnet run -- --Simulator:OutputMode=NMEA0183
+
+# Optie 3: Both (NMEA2000 + NMEA0183 tegelijk; scenario-consistent, niet exact gesynchroniseerd)
+dotnet run -- --Simulator:OutputMode=Both
+
+# Met negatieve testvarianten
+dotnet run -- --Simulator:OutputMode=NMEA0183 --Simulator:IncludeNegativeTestSentences=true
+```
+
+### Nieuwe bestanden
+
+- `src/BootManager.Tools.Simulator/Options/SimulatorOptions.cs` – uitgebreid met `OutputMode`, `Nmea0183TargetIp`, `Nmea0183TargetPort`, `IncludeNegativeTestSentences`
+- `src/BootManager.Tools.Simulator/appsettings.json` – nieuwe opties toegevoegd
+- `src/BootManager.Tools.Simulator/NMEA0183/Nmea0183SentenceBuilder.cs` – nieuw: checksum-helper en alle sentence-builders
+- `src/BootManager.Tools.Simulator/Services/Nmea0183SimulationService.cs` – nieuw: BackgroundService
+- `src/BootManager.Tools.Simulator/Program.cs` – conditionele service-registratie op basis van `OutputMode`
+
+### Buildresultaat
+
+`dotnet build` geslaagd; bestaande SYSLIB0053 warnings in AesGcmEncryptionService zijn niet gerelateerd.
+
+### Eerstvolgende stap
+
+Runtime/SQLite acceptatietest uitvoeren: start BootManager.Web + Ingest + Simulator in NMEA0183-modus en verifieer via SQLite dat alle measurements worden opgeslagen. Zie sectie 15 (handoff) en `.docs/epics/nmea0183-support.md` voor context en verwachte tabelinhoud.
 
 Zie volledig: `.docs/epics/nmea0183-support.md`, `.docs/extraInfo/yden-03.md` en `.docs/features/nmea0183-parser-interpreter-architecture.md`
