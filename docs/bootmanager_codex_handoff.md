@@ -653,3 +653,87 @@ Als later blijkt dat TCP toch nodig is, kan dit alsnog als aparte transportstory
 - Protocoltraceerbaarheid op measurement entities
 
 Zie volledig: `.docs/epics/nmea0183-support.md`, `.docs/extraInfo/yden-03.md` en `.docs/features/nmea0183-parser-interpreter-architecture.md`
+
+---
+
+## Capture logging in BootManager.Tools.Ingest
+
+### Doel
+
+Tijdens de echte boot-test kunnen we ruwe YDEN-data vastleggen voor analyse achteraf. Ingest schrijft per ontvangen regel direct een NDJSON-record naar een timestamped logbestand, vóór de API-post wordt uitgevoerd. Daardoor blijft de raw data beschikbaar, ook als de Web API traag is, hangt of tijdelijk niet bereikbaar is.
+
+### Configuratie (`appsettings.json`)
+
+Standaard is capture logging **uitgeschakeld**. Zet `Enabled` op `true` vóór de boot-test:
+
+```json
+"Ingest": {
+  "CaptureLogging": {
+    "Enabled": true,
+    "Directory": "logs/ingest-capture",
+    "FilePrefix": "ingest-capture"
+  }
+}
+```
+
+- `Enabled`: `false` (standaard) – geen bestand wordt aangemaakt.
+- `Directory`: relatief aan de werkdirectory van het Ingest-proces, of absoluut zoals `C:\\tmp\\logs\\ingest-capture`.
+- `FilePrefix`: voorvoegsel van de bestandsnaam; het volledige bestandsnaam-formaat is `{FilePrefix}-yyyyMMdd-HHmmss.ndjson`.
+
+### Logformaat (NDJSON)
+
+Één JSON-object per regel:
+
+```json
+// NMEA 2000 voorbeeld
+{
+  "receivedAtUtc": "2026-05-17T19:30:12.000Z",
+  "remoteEndpoint": "192.168.1.100:2000",
+  "detectedProtocol": "NMEA2000",
+  "rawLine": "19:30:12.000 R 0A1B2C3D AA BB CC",
+  "messageId": "0A1B2C3D",
+  "payloadHex": "AA BB CC",
+  "apiPostSucceeded": null,
+  "apiStatusCode": null,
+  "errorMessage": null
+}
+
+// NMEA 0183 voorbeeld
+{
+  "receivedAtUtc": "2026-05-17T19:30:13.000Z",
+  "remoteEndpoint": "192.168.1.100:10110",
+  "detectedProtocol": "NMEA0183",
+  "rawLine": "$GPRMC,193013,A,5230.000,N,00456.000,E,0.0,0.0,170526,,*1A",
+  "messageId": null,
+  "payloadHex": null,
+  "apiPostSucceeded": null,
+  "apiStatusCode": null,
+  "errorMessage": null
+}
+```
+
+- De raw capture wordt bewust **vóór** de API-post geschreven; API-velden zijn daarom altijd `null`.
+- NMEA 0183 records: `messageId = null`, `payloadHex = null`.
+- Capture logging fouten blokkeren de ingest-flow nooit.
+- `IngestCaptureLogger` gebruikt `AutoFlush = true`, zodat elke regel direct naar schijf wordt geschreven zonder afhankelijkheid van expliciete flush-aanroepen.
+
+### Boot-test procedure
+
+1. Start `BootManager.Web` (API + SQLite).
+2. Zet in `src/BootManager.Tools.Ingest/appsettings.json`: `CaptureLogging.Enabled = true`.
+3. Kies de YDEN UDP-poort: `10110` (aanbevolen) of `2000` (alternatief).
+4. Start `BootManager.Tools.Ingest`.
+5. Ingest logt bij start welk capture logbestand wordt gebruikt.
+6. Na de test: stop Ingest en Web.
+
+### Mee te nemen na de boot-test
+
+- Capture logbestand(en) in `logs/ingest-capture/` (NDJSON)
+- `BootManager.Web/bootmanager.db` (SQLite)
+
+### Nieuwe bestanden (capture logging)
+
+- `src/BootManager.Tools.Ingest/Options/CaptureLoggingOptions.cs` – configuratie-opties
+- `src/BootManager.Tools.Ingest/Models/CaptureRecord.cs` – NDJSON-record model
+- `src/BootManager.Tools.Ingest/Services/IIngestCaptureLogger.cs` – interface
+- `src/BootManager.Tools.Ingest/Services/IngestCaptureLogger.cs` – implementatie
