@@ -304,10 +304,15 @@ Open vraag: welke wordt als primaire bron behandeld als beide beschikbaar zijn?
 De YDEN-03 biedt ook TCP-output (poort 1456).
 TCP-ondersteuning is buiten scope voor Fase 2/3 maar blijft een mogelijke latere uitbreiding.
 
-### 6. Simulator `Both`-modus
+### 6. Simulator outputmodus
 
-De simulator kan later via instellingen zowel NMEA2000 als NMEA 0183 genereren.
-Dit is buiten scope voor Fase 2/3.
+De simulator ondersteunt drie configureerbare outputmodi via `Simulator:OutputMode` in `appsettings.json`:
+- `NMEA2000` – bestaande NMEA2000-achtige raw output (standaard)
+- `NMEA0183` – NMEA 0183 sentences voor alle fase 3a-3c types
+- `Both` – beide stromen tegelijk, elk met eigen runtime state vanuit hetzelfde scenario
+
+Bij `Both` zijn de waarden **scenario-consistent** maar **niet exact tick-gesynchroniseerd**;
+elke stream heeft zijn eigen tick-loop en random variaties. Geïmplementeerd in de simulator NMEA 0183 output story (2026-05-18).
 
 ### 7. Conflict-resolutie NMEA2000 versus NMEA 0183
 
@@ -330,38 +335,24 @@ De huidige NMEA2000 winddata wordt behandeld als werkelijke wind.
 
 ---
 
-## Eerstvolgende implementatie-story (Fase 3)
+## Status Fase 3 – Geïmplementeerd
 
-> **Story:** Implementeer sentence-specifieke NMEA 0183 interpreters en measurement-opslag
+Alle sentence-specifieke interpreters zijn geïmplementeerd (Fase 3a t/m 3c, 2026-05-17):
 
-**Voorbereiding:**
-- Beantwoord openstaande ontwerpvragen (zie sectie Open ontwerpvragen) vóór implementatie per slice.
-- Gebruik `Nmea0183ParseResultDto` als input voor alle Fase 3 interpreters.
+| Sentence | Meetwaarde(n) | Doelentity | Status |
+|----------|---------------|------------|--------|
+| `VHW` | Speed Through Water + Heading | `SpeedThroughWaterMeasurement` | ✅ |
+| `DBT` / `DPT` | Diepte | `DepthMeasurement` | ✅ |
+| `MTW` | Watertemperatuur | `WaterTemperatureMeasurement` | ✅ |
+| `MWV` | Windsnelheid + Windhoek | `WindMeasurement` | ✅ |
+| `HDT` / `HDM` | Heading True/Magnetic | `HeadingMeasurement` | ✅ |
+| `RMC` | Positie + COG/SOG | `PositionMeasurement` + `MotionMeasurement` | ✅ |
+| `GGA` | Positie | `PositionMeasurement` | ✅ |
 
-**Scope (per sentence-type, één story per slice):**
-- Nieuwe interpreter-service per sentence-type (bijv. `VhwMessageInterpreterService`).
-- Interpreter produceert bestaande interpretatie-DTO's (`SpeedThroughWaterInterpretationDto`, etc.).
-- Measurement-opslag via bestaande measurement services en entities.
-- `NetworkMessageService` roept Fase 3 interpreters aan na succesvolle NMEA 0183 parse.
-- Geen EF migrations tenzij expliciete nieuwe velden vereist zijn.
-- Geen simulator-aanpassingen in Fase 3.
+## Eerstvolgende stap
 
-**Prioriteringsvolgorde:**
-
-| Prioriteit | Sentence | Meetwaarde(n) | Doelentity |
-|-----------|----------|---------------|------------|
-| 1 | `VHW` | Speed Through Water + Magnetic Heading | `SpeedThroughWaterMeasurement` / `HeadingMeasurement` |
-| 1 | `DBT` / `DPT` | Diepte | `DepthMeasurement` |
-| 1 | `MTW` | Watertemperatuur | `WaterTemperatureMeasurement` |
-| 2 | `MWV` | Windsnelheid + Windhoek | `WindMeasurement` |
-| 2 | `HDT` / `HDM` | Heading True/Magnetic | `HeadingMeasurement` |
-| 3 | `RMC` / `GGA` | Positie, COG, SOG | `PositionMeasurement` / `MotionMeasurement` |
-
-**Acceptatiecriteria per slice:**
-- Raw NMEA 0183 sentence met bekende code leidt tot opgeslagen measurement.
-- Ongeldige sentences blokkeren raw opslag niet.
-- Bestaande NMEA2000 flow blijft intact.
-- Build slaagt zonder fouten.
+Runtime/SQLite acceptatietest uitvoeren via de simulator in `NMEA0183`-modus.
+Zie `docs/bootmanager_codex_handoff.md` sectie 16 voor startcommando's en verwachte tabelinhoud.
 
 ---
 

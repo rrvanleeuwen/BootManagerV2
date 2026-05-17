@@ -9,14 +9,25 @@ var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         services.Configure<SimulatorOptions>(context.Configuration.GetSection("Simulator"));
-        services.AddHostedService<SimulationService>();
+
+        var modeStr = context.Configuration["Simulator:OutputMode"] ?? "NMEA2000";
+        if (!Enum.TryParse<SimulatorOutputMode>(modeStr, ignoreCase: true, out var mode))
+            mode = SimulatorOutputMode.NMEA2000;
+
+        if (mode == SimulatorOutputMode.NMEA2000 || mode == SimulatorOutputMode.Both)
+            services.AddHostedService<SimulationService>();
+
+        if (mode == SimulatorOutputMode.NMEA0183 || mode == SimulatorOutputMode.Both)
+            services.AddHostedService<Nmea0183SimulationService>();
     });
 
 var host = builder.Build();
 
 var config = host.Services.GetRequiredService<IConfiguration>();
+var outputMode = config["Simulator:OutputMode"] ?? "NMEA2000";
 Console.WriteLine("BootManager.Tools.Simulator starting...");
 Console.WriteLine($"Environment: {Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}");
 Console.WriteLine($"Active scenario: {config["Simulator:Scenario"]}");
+Console.WriteLine($"Output mode: {outputMode}");
 
 await host.RunAsync();
