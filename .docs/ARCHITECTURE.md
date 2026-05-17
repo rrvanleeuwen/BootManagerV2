@@ -162,10 +162,42 @@ Het `Protocol`-veld op measurement entities is een expliciete latere ontwerpkeuz
 
 | Fase | Inhoud |
 |------|--------|
-| **1 – Foundation** | Tweede UDP listener in Ingest, protocol tagging, raw NMEA 0183 opslag |
-| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning |
+| **1 – Foundation** ✅ | Tweede UDP listener in Ingest, protocol tagging, raw NMEA 0183 opslag |
+| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning en veldextractie |
 | **3 – Interpreters** | Per sentence-type: VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW |
 | **Later** | Simulator NMEA 0183 output via settings |
+
+### Parser/Interpreter scheiding voor NMEA 0183
+
+Conform het bestaande NMEA2000-principe:
+
+- **`Nmea0183ParserService` (technisch):** Herkent sentence-type, valideert structuur, extraheert velden.
+- **Sentence-specifieke InterpreterService (semantisch):** Leidt meetwaarden af en produceert een `InterpretationDto`.
+
+`NetworkMessageService` routeert op basis van `Protocol`:
+
+```
+NetworkMessageService
+    ├─ Protocol == NMEA2000 → NetworkMessageParserService → type-specifieke interpreter
+    └─ Protocol == NMEA0183 → Nmea0183ParserService → sentence-specifieke interpreter
+```
+
+### Sentence-prioriteiten (Fase 3)
+
+| Prioriteit | Sentence | Entity |
+|-----------|----------|--------|
+| 1 | `VHW` | `SpeedThroughWaterMeasurement` + `HeadingMeasurement` |
+| 1 | `DBT` / `DPT` | `DepthMeasurement` |
+| 1 | `MTW` | `WaterTemperatureMeasurement` |
+| 2 | `MWV` | `WindMeasurement` |
+| 2 | `HDT` / `HDM` | `HeadingMeasurement` |
+| 3 | `RMC` | `PositionMeasurement` + `MotionMeasurement` |
+| 3 | `GGA` | `PositionMeasurement` |
+
+### Ontwerpdocument
+
+Zie voor volledig architectuurontwerp (open vragen, entity-mappings, interpreter-overzicht):
+[.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)
 
 ---
 

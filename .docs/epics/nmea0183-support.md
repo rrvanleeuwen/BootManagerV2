@@ -101,14 +101,29 @@ Dit is een mogelijk toekomstig onderwerp (versie 2/3).
 
 ---
 
-### Fase 2 – NMEA 0183 Parser/Interpreter laag
+### Fase 2 – NMEA 0183 Parser laag
 
 **Doel:** Aparte parser- en interpreterlijn voor NMEA 0183 sentences toevoegen aan `BootManager.Application`.
 
 **Scope:**
-- `Nmea0183ParserService` (sentence-type herkenning, veldextractie).
-- Integratie in `NetworkMessageService` op basis van protocol-tag.
-- Nog geen measurement-opslag per sensortype verplicht in deze fase.
+- `Nmea0183ParserService` in `BootManager.Application` (feature-map: `Nmea0183`):
+  - Ontvangt raw sentence-string uit `NetworkMessage.RawData`.
+  - Valideert structuur (optioneel: checksum-validatie).
+  - Herkent sentence-type door talker-prefix te negeren en sentence-code te extraheren.
+  - Extraheert kommagescheiden velden als string-array.
+  - Retourneert generiek parse-resultaat of `null` voor onbekende sentences.
+- `NetworkMessageService` roept `Nmea0183ParserService` aan als `Protocol == NMEA0183`.
+- Onbekende of onparseerbare sentences worden gelogd; raw opslag is al geborgd in Fase 1.
+- Nog geen measurement-opslag per sensortype in deze fase.
+
+**Acceptatiecriteria:**
+- Een raw `NMEA0183`-bericht met een bekende sentence-code (bijv. `VHW`) wordt correct herkend en geveldextraheerd.
+- Een onbekende sentence-code wordt gelogd en niet verder verwerkt.
+- Bestaande NMEA2000-flow blijft ongewijzigd.
+- Build slaagt zonder fouten.
+
+**Ontwerpdetails:**
+Zie: [.docs/features/nmea0183-parser-interpreter-architecture.md](./../features/nmea0183-parser-interpreter-architecture.md)
 
 ---
 
@@ -136,6 +151,25 @@ significant andere semantiek heeft, wordt een aparte entity overwogen.
 
 - Simulator kan via instellingen NMEA 0183 sentences genereren.
 - Gebruik voor testing en integratie zonder echte hardware.
+
+---
+
+## Open ontwerpvragen
+
+De volgende vragen staan nog open en moeten worden beantwoord vóór of tijdens Fase 3-implementatie.
+Zie ook: [nmea0183-parser-interpreter-architecture.md](./../features/nmea0183-parser-interpreter-architecture.md)
+
+| Vraag | Status |
+|-------|--------|
+| `Protocol` als string, enum of aparte tabel? | Open |
+| `Protocol` toevoegen aan measurement entities? | Open |
+| `VHW` – gecombineerde of opgesplitste interpretatie? | Open |
+| `RMC` versus `GGA` – welke heeft prioriteit als primaire positiebron? | Open |
+| TCP-ondersteuning (YDEN-03 poort 1456) | Buiten scope Fase 2/3 |
+| Simulator `Both`-modus | Buiten scope Fase 2/3 |
+| Conflict-resolutie NMEA2000 versus NMEA 0183 bij dubbele metingen | Open |
+| Checksum-validatie verplicht in Fase 2 of pas Fase 3? | Open |
+| `MWV` windmeting: onderscheid werkelijk/schijnbaar in `WindMeasurement` | Open |
 
 ---
 
