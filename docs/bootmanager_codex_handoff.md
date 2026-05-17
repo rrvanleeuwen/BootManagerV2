@@ -437,33 +437,21 @@ NMEA 0183 status:
 - Fase 3a: VHW, MTW, DBT/DPT interpreters ✅
 - Fase 3b: MWV, HDT/HDM interpreters ✅
 - Fase 3c: RMC/GGA positie + motion ✅
+- Simulator NMEA 0183 output (`OutputMode=NMEA0183/Both`) ✅
+- Runtime/SQLite acceptatietest fase 3a-3c ✅ (2026-05-18, handmatig)
 
 ---
 
 ## 11. Volgende logische stap
 
-De eerstvolgende implementatie-story is **Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c** – verifieer dat RMC, GGA, VHW, MTW, MWV, DBT/DPT en HDT/HDM sentences live worden ontvangen, geparset, geïnterpreteerd en opgeslagen.
+~~Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c~~ ✅ Afgerond (2026-05-18, handmatig).
 
-### Aanpak per slice (prioriteitsvolgorde)
+De eerstvolgende story is **TCP-ondersteuning voor YDEN-03 poort 1456**.
+UDP NMEA 0183 is end-to-end bewezen; TCP is het resterende transportkanaal van de YDEN-03.
 
-1. ~~**VHW** – Speed Through Water~~ ✅ (Fase 3a)
-2. ~~**DBT / DPT** – Diepte~~ ✅ (Fase 3a)
-3. ~~**MTW** – Watertemperatuur~~ ✅ (Fase 3a)
-4. ~~**MWV** – Wind~~ ✅ (Fase 3b)
-5. ~~**HDT / HDM** – Heading~~ ✅ (Fase 3b)
-6. ~~**RMC / GGA** – Positie + Motion~~ ✅ (Fase 3c)
-
-### Per slice
-- Nieuwe interpreter-service (bijv. `Nmea0183RmcInterpreterService`)
-- Interpreter ontvangt `Nmea0183ParseResultDto`, produceert bestaand interpretatie-DTO
-- Measurement-opslag via bestaande services en entities
-- Aanroep vanuit `NetworkMessageService` na succesvolle Fase 2 parse
-- DI registratie
-- Geen simulator-aanpassingen
-
-### Mogelijke latere stappen
-- Simulator NMEA 0183 output via instellingen
-- TCP-ondersteuning (YDEN-03 poort 1456)
+### Daarna (mogelijke latere stappen)
+- Conflict/deduplicatiebeleid tussen NMEA2000 en NMEA0183 measurements
+- Protocoltraceerbaarheid op measurement entities (`Protocol`-veld)
 - Expliciete **schijnbare wind** als aparte slice
 
 ---
@@ -518,7 +506,7 @@ Na Copilot-output:
 
 ## 14. Samenvatting in één alinea
 
-BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM), Fase 3c (RMC/GGA positie + motion) en de simulator NMEA 0183 output zijn geïmplementeerd. De eerstvolgende actie is het uitvoeren van de **runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c** via de nieuwe simulator NMEA0183-modus.
+Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM), Fase 3c (RMC/GGA positie + motion), simulator NMEA 0183 output en de runtime/SQLite acceptatietest fase 3a-3c zijn afgerond. De eerstvolgende story is **TCP-ondersteuning voor YDEN-03 poort 1456**.
 
 ---
 
@@ -536,8 +524,8 @@ BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NM
 | **3b – Interpreters** | MWV, HDT/HDM | ✅ Geïmplementeerd |
 | **3c – Interpreters** | RMC/GGA positie + motion | ✅ Geïmplementeerd |
 | **Simulator NMEA 0183** | Configureerbare NMEA 0183 output in Tools.Simulator | ✅ Geïmplementeerd (2026-05-18) |
-| **Eerstvolgende actie** | Runtime/SQLite acceptatietest fase 3a-3c uitvoeren | ← Uitvoerbaar via simulator NMEA0183-modus |
-| **Later** | TCP ondersteuning | Buiten scope |
+| **Runtime/SQLite acceptatietest** | Handmatige end-to-end test fase 3a-3c via simulator NMEA0183-modus | ✅ Uitgevoerd (2026-05-18) |
+| **Eerstvolgende story** | TCP-ondersteuning YDEN-03 poort 1456 | ← Volgende stap |
 
 **Vaste principes voor deze epic:**
 - Bestaande NMEA2000 slices blijven intact.
@@ -627,8 +615,30 @@ dotnet run -- --Simulator:OutputMode=NMEA0183 --Simulator:IncludeNegativeTestSen
 
 `dotnet build` geslaagd; bestaande SYSLIB0053 warnings in AesGcmEncryptionService zijn niet gerelateerd.
 
-### Eerstvolgende stap
+### Runtime/SQLite acceptatietest – uitgevoerd (2026-05-18, handmatig)
 
-Runtime/SQLite acceptatietest uitvoeren: start BootManager.Web + Ingest + Simulator in NMEA0183-modus en verifieer via SQLite dat alle measurements worden opgeslagen. Zie sectie 15 (handoff) en `.docs/epics/nmea0183-support.md` voor context en verwachte tabelinhoud.
+Test uitgevoerd via `BootManager.Tools.Simulator` met `Simulator:OutputMode=NMEA0183`, samen met draaiende Ingest en BootManager.Web.
+
+**Positieve resultaten (measurements opgeslagen):**
+- `NetworkMessages` – raw NMEA0183 berichten zichtbaar met `Protocol = 'NMEA0183'`
+- `SpeedThroughWaterMeasurements` – via VHW
+- `WaterTemperatureMeasurements` – via MTW
+- `DepthMeasurements` – via DBT
+- `WindMeasurements` – via MWV (status A)
+- `HeadingMeasurements` – via HDT
+- `PositionMeasurements` – via RMC (status A) en GGA (fix > 0)
+- `MotionMeasurements` – via RMC (status A)
+
+**Negatieve varianten gecontroleerd (raw opslag intact, geen measurement):**
+- MWV status V → geen WindMeasurement
+- RMC status V → geen Position- of MotionMeasurement
+- GGA fixkwaliteit 0 → geen PositionMeasurement
+- VHW met ongeldige checksum → geen SpeedThroughWaterMeasurement
+
+Dit was een handmatige runtime/SQLite test, geen geautomatiseerde integratietest.
+
+### Eerstvolgende story
+
+TCP-ondersteuning voor YDEN-03 poort 1456: UDP NMEA 0183 is end-to-end bewezen; TCP is het resterende transportkanaal.
 
 Zie volledig: `.docs/epics/nmea0183-support.md`, `.docs/extraInfo/yden-03.md` en `.docs/features/nmea0183-parser-interpreter-architecture.md`

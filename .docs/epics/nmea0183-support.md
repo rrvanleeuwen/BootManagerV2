@@ -219,7 +219,7 @@ Per NMEA 0183 sentence-type een verticale slice toevoegen, analoog aan de bestaa
 - Ongeldige RMC-status of GGA-fixkwaliteit levert geen meting op; raw opslag intact.
 - Bestaande Fase 3a/3b-interpreters en NMEA2000-gedrag zijn intact.
 
-**Volgende stap:** ~~Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c~~ → **Simulator NMEA 0183 output geïmplementeerd ✅ (2026-05-18)**. Eerstvolgende actie: runtime/SQLite acceptatietest uitvoeren via de nieuwe simulator NMEA0183-modus.
+**Status:** ~~Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c~~ ✅ Afgerond (2026-05-18, handmatig via simulator NMEA0183-modus). Eerstvolgende story: **TCP-ondersteuning YDEN-03 poort 1456**.
 
 Kandidaat-sentences (volgorde op basis van prioriteit):
 
@@ -254,7 +254,7 @@ Zie ook: [nmea0183-parser-interpreter-architecture.md](./../features/nmea0183-pa
 | `Protocol` toevoegen aan measurement entities? | Open |
 | `VHW` – gecombineerde of opgesplitste interpretatie? | Open |
 | `RMC` versus `GGA` – welke heeft prioriteit als primaire positiebron? | Open |
-| TCP-ondersteuning (YDEN-03 poort 1456) | Buiten scope Fase 2/3 |
+| TCP-ondersteuning (YDEN-03 poort 1456) | ← Eerstvolgende story |
 | Simulator `Both`-modus | ✅ Geïmplementeerd (2026-05-18) |
 | Conflict-resolutie NMEA2000 versus NMEA 0183 bij dubbele metingen | Open |
 | Checksum-validatie verplicht in Fase 2 of pas Fase 3? | Besloten: optioneel in Fase 2 (geïmplementeerd), verplicht in Fase 3 |
