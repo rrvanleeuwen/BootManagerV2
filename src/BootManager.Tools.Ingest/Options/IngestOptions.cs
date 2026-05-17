@@ -41,4 +41,10 @@ public class IngestOptions
     /// Relatief endpoint voor NetworkMessages API (bijv. /api/networkmessages).
     /// </summary>
     public string NetworkMessagesEndpoint { get; set; } = "/api/networkmessages";
+
+    /// <summary>
+    /// Configuratie voor optionele raw capture logging.
+    /// Standaard uitgeschakeld. Zet <see cref="CaptureLoggingOptions.Enabled"/> op <c>true</c> voor een boot-test.
+    /// </summary>
+    public CaptureLoggingOptions CaptureLogging { get; set; } = new();
 }

@@ -63,7 +63,10 @@ BootManager/
 │   └── Models/                          # BoatState, simulation data
 │
 ├── BootManager.Tools.Ingest/            # Data import tool
-│   └── Program.cs                       # Reads lines, sends to API
+│   ├── Models/                          # ReceivedNetworkLine, CaptureRecord
+│   ├── Options/                         # IngestOptions, CaptureLoggingOptions
+│   ├── Services/                        # IngestService, IngestCaptureLogger
+│   └── appsettings.json                 # Configuratie incl. CaptureLogging (standaard disabled)
 │
 ├── .docs/                               # Documentation
 │   ├── ARCHITECTURE.md                  # System design overview
@@ -439,6 +442,34 @@ protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 - `CancellationToken` parameter on public async methods
 - Prefer `async Task` (no `Fire and forget`)
 
+## Capture Logging (BootManager.Tools.Ingest)
+
+Ingest ondersteunt optionele raw capture logging voor boot-testen. Per ontvangen UDP-regel wordt een NDJSON-record weggeschreven naar een timestamped bestand, vóór de API-post plaatsvindt.
+
+### Inschakelen
+
+Pas `appsettings.json` aan in `src/BootManager.Tools.Ingest/`:
+
+```json
+"CaptureLogging": {
+  "Enabled": true,
+  "Directory": "logs/ingest-capture",
+  "FilePrefix": "ingest-capture"
+}
+```
+
+- `Enabled: false` (standaard) – geen bestand wordt aangemaakt.
+- `Directory` mag relatief of absoluut zijn (bijv. `C:\\tmp\\logs`).
+- Bestandsnaam: `{FilePrefix}-yyyyMMdd-HHmmss.ndjson`.
+- Fouten bij het schrijven worden alleen gelogd; de ingest-flow wordt nooit geblokkeerd.
+
+### Na de boot-test mee te nemen
+
+- Capture logbestand(en) uit de geconfigureerde `Directory`
+- `BootManager.Web/bootmanager.db` (SQLite)
+
+---
+
 ## Common Issues & Solutions
 
 ### "DbContext could not be created"
@@ -491,4 +522,4 @@ dotnet ef database update --project BootManager.Infrastructure
 
 ---
 
-**Last Updated:** 2026-03-27
+**Last Updated:** 2026-05-18

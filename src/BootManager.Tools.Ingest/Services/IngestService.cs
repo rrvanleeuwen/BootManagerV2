@@ -21,6 +21,7 @@ public class IngestService : BackgroundService
     private readonly IOptions<IngestOptions> _options;
     private readonly ILogger<IngestService> _logger;
     private readonly HttpClient _httpClient;
+    private readonly IIngestCaptureLogger _captureLogger;
     private UdpClient? _udpClient;
 
     /// <summary>
@@ -29,11 +30,13 @@ public class IngestService : BackgroundService
     /// <param name="options">De ingest-opties uit configuratie.</param>
     /// <param name="logger">Logger-instantie.</param>
     /// <param name="httpClient">HttpClient voor API-communicatie.</param>
-    public IngestService(IOptions<IngestOptions> options, ILogger<IngestService> logger, HttpClient httpClient)
+    /// <param name="captureLogger">Optionele capture logger voor raw NDJSON-logging.</param>
+    public IngestService(IOptions<IngestOptions> options, ILogger<IngestService> logger, HttpClient httpClient, IIngestCaptureLogger captureLogger)
     {
         _options = options;
         _logger = logger;
         _httpClient = httpClient;
+        _captureLogger = captureLogger;
     }
 
     /// <summary>
@@ -46,6 +49,8 @@ public class IngestService : BackgroundService
         _logger.LogInformation("IngestService is starting...");
         _logger.LogInformation("Configured to listen on {Address}:{Port}", 
             _options.Value.ListenAddress, _options.Value.ListenPort);
+
+        await _captureLogger.InitializeAsync();
 
         try
         {
@@ -105,7 +110,26 @@ public class IngestService : BackgroundService
                     foreach (var line in rawLines)
                     {
                         var parsed = ParseNetworkLine(line, source);
-                        var success = await SendToApiAsync(parsed, stoppingToken);
+
+                        // Capture raw data before API posting, so field logs survive API hangs/failures.
+                        if (_captureLogger.IsEnabled)
+                        {
+                            var record = new CaptureRecord
+                            {
+                                ReceivedAtUtc = parsed.ReceivedAtUtc,
+                                RemoteEndpoint = source,
+                                DetectedProtocol = parsed.Protocol,
+                                RawLine = parsed.RawLine,
+                                MessageId = string.IsNullOrEmpty(parsed.MessageId) ? null : parsed.MessageId,
+                                PayloadHex = string.IsNullOrEmpty(parsed.PayloadHex) ? null : parsed.PayloadHex,
+                                ApiPostSucceeded = null,
+                                ApiStatusCode = null,
+                                ErrorMessage = null
+                            };
+                            await _captureLogger.WriteAsync(record);
+                        }
+
+                        var (success, _, _) = await SendToApiWithDetailsAsync(parsed, stoppingToken);
 
                         if (success)
                         {
@@ -145,16 +169,16 @@ public class IngestService : BackgroundService
     }
 
     /// <summary>
-    /// Verzendt een geparste netwerkregel naar de BootManager.Web API.
+    /// Verzendt een geparste netwerkregel naar de BootManager.Web API
+    /// en retourneert succes, HTTP-statuscode en eventuele foutmelding.
     /// </summary>
     /// <param name="line">De geparste netwerkregel.</param>
     /// <param name="cancellationToken">Cancellation token voor de HTTP-request.</param>
-    /// <returns>True als de request succesvol was, false otherwise.</returns>
-    private async Task<bool> SendToApiAsync(ReceivedNetworkLine line, CancellationToken cancellationToken)
+    /// <returns>Tuple met success-vlag, optionele statuscode en optionele foutmelding.</returns>
+    private async Task<(bool success, int? statusCode, string? errorMessage)> SendToApiWithDetailsAsync(ReceivedNetworkLine line, CancellationToken cancellationToken)
     {
         try
         {
-            // Bouw de request-DTO op op basis van het interne model
             var request = new
             {
                 receivedAtUtc = line.ReceivedAtUtc,
@@ -172,26 +196,28 @@ public class IngestService : BackgroundService
                 "application/json");
 
             var response = await _httpClient.PostAsync(url, content, cancellationToken);
+            var statusCode = (int)response.StatusCode;
 
             if (response.IsSuccessStatusCode)
             {
-                return true;
+                return (true, statusCode, null);
             }
 
+            var errorMessage = $"API returned status {response.StatusCode}";
             _logger.LogWarning("API returned status {StatusCode} for message {MessageId}", 
                 response.StatusCode, line.MessageId ?? "unknown");
-            return false;
+            return (false, statusCode, errorMessage);
         }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "HTTP request failed for message {MessageId}", 
                 line.MessageId ?? "unknown");
-            return false;
+            return (false, null, ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error sending to API");
-            return false;
+            return (false, null, ex.Message);
         }
     }
 
