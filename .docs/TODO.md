@@ -41,10 +41,14 @@
   - Variation storage (declination)
   - Reference type tracking (True vs. Magnetic)
 
-- [ ] **NMEA 0183 Support**
-  - Legacy sentence parsing (`$HEHDT`, `$HEHDM`, etc.)
-  - Parallel interpreter for 0183-format messages
-  - Protocol auto-detection
+- [ ] **NMEA 0183 Support** *(epic – gefaseerd)*
+  - **Aanleiding:** YDEN-03 gateway zendt NMEA 2000-data als NMEA 0183 sentences uit via UDP (poort 2000 en 10110) en TCP (poort 1456).
+  - **Fase 1 – Foundation:** tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag
+  - **Fase 2 – Parser laag:** `Nmea0183ParserService` in Application voor sentence-type herkenning
+  - **Fase 3 – Interpreters:** per sentence-type (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) een verticale slice
+  - Bestaande NMEA2000 slices blijven intact
+  - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
+  - Zie: [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md)
 
 - [ ] **Logging & Diagnostics**
   - Serilog integration with structured logging
@@ -99,6 +103,20 @@
 5. **Heading payload incomplete** - Deviation/Variation/Reference fields available but not decoded
 
 ## Recent Changes
+
+### 2026-05-17: NMEA 0183 Epic – Documentatie
+
+**Toegevoegd:**
+- `.docs/epics/nmea0183-support.md` – volledig epicdocument met gefaseerde aanpak
+- `.docs/extraInfo/yden-03.md` – YDEN-03 gateway configuratie en context
+
+**Bijgewerkt:**
+- `.docs/ARCHITECTURE.md` – NMEA 0183 sectie toegevoegd (parallelle flow, protocol tagging, fasering)
+- `.docs/TODO.md` – NMEA 0183 backlog-item uitgebreid
+- `.docs/features/README.md` – NMEA 0183 epic en YDEN-03 context toegevoegd
+- `docs/bootmanager_codex_handoff.md` – hardwarecontext en NMEA 0183 epic opgenomen
+
+**Status:** Documentatie bijgewerkt, geen codewijzigingen
 
 ### 2026-03-27: Heading Slice Implementation
 

@@ -118,6 +118,57 @@ All measurement services use **generic `IRepository<T>`** → `EfRepository<T>`:
 - **Parser errors** don't block raw message storage
 - **Interpreter errors** don't block database persistence
 
+## NMEA 0183 Support (Epic)
+
+### Aanleiding
+
+De fysieke boot gebruikt een **YDEN-03 gateway** die NMEA 2000-busdata omzet naar NMEA 0183 sentences via UDP/TCP.
+In de huidige YDEN-03-configuratie worden sentences verzonden op UDP-poort 2000 en 10110, en TCP-poort 1456.
+BootManager moet daardoor NMEA 0183 sentences kunnen ontvangen en verwerken.
+
+Zie: [.docs/extraInfo/yden-03.md](extraInfo/yden-03.md) en [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md)
+
+### Parallelle input
+
+NMEA 0183 wordt als **parallelle inputstroom** naast de bestaande NMEA2000-keten ondersteund.
+De bestaande verticale slices blijven intact.
+
+### Data Flow: NMEA 0183 → Storage
+
+```
+YDEN-03 (UDP poort 2000 / 10110)
+      ↓
+   Ingest Tool (tweede UDP listener, NMEA0183 endpoint)
+      ↓
+BootManager.Web API (CreateNetworkMessage, Protocol=NMEA0183)
+      ↓
+NetworkMessageService (raw sentence opgeslagen)
+      ↓
+[Fase 2] Nmea0183ParserService (sentence-type herkenning)
+      ↓
+[Fase 3] Sentence-specifieke Interpreter Service
+      └─ → Type-specifieke Measurement Service → Database
+```
+
+Onbekende of niet-parsebare sentences worden raw opgeslagen en niet verder verwerkt.
+Raw opslag is altijd leidend.
+
+### Protocol tagging
+
+`NetworkMessage` krijgt een `Protocol`-veld (`NMEA2000` / `NMEA0183`).
+Het `Protocol`-veld op measurement entities is een expliciete latere ontwerpkeuze, niet nu automatisch ingevoerd.
+
+### Gefaseerde uitwerking
+
+| Fase | Inhoud |
+|------|--------|
+| **1 – Foundation** | Tweede UDP listener in Ingest, protocol tagging, raw NMEA 0183 opslag |
+| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning |
+| **3 – Interpreters** | Per sentence-type: VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW |
+| **Later** | Simulator NMEA 0183 output via settings |
+
+---
+
 ## Future Extensions
 
 ### Heading Slice Extensibility
@@ -147,4 +198,4 @@ To add a new PGN:
 
 ---
 
-*Last updated: 2026-03-27 (Heading slice implementation)*
+*Last updated: 2026-05-17 (NMEA 0183 epic toegevoegd)*
