@@ -155,6 +155,33 @@ Belangrijk onderscheid:
 - **raw opslag** blijft bestaan, ook als parser/interpreter later faalt
 - parserclassificatie en interpretatie zijn een aparte laag bovenop raw opslag
 
+### Hardwaresituatie op de echte boot
+
+De fysieke boot gebruikt een **YDEN-03 gateway** om NMEA 2000-busdata naar het netwerk te brengen.
+In de huidige YDEN-03-configuratie wordt de output als **NMEA 0183 sentences** verzonden via:
+- UDP poort 2000
+- UDP poort 10110
+- TCP poort 1456
+
+Dit betekent dat verbinding met de echte boot NMEA 0183 inputverwerking vereist.
+Zie: `.docs/extraInfo/yden-03.md` en `.docs/epics/nmea0183-support.md`.
+
+### Toekomstige flow: NMEA 0183 (parallel)
+
+```
+YDEN-03 (UDP poort 2000 / 10110)
+      ↓
+   Ingest Tool (tweede UDP listener, NMEA0183 endpoint)
+      ↓
+BootManager.Web API (CreateNetworkMessage, Protocol=NMEA0183)
+      ↓
+NetworkMessageService (raw sentence opgeslagen)
+      ↓
+[Fase 2] Nmea0183ParserService
+      ↓
+[Fase 3] Sentence-specifieke Interpreter → Measurement Service → Database
+```
+
 ---
 
 ## 5. Simulatorafspraken
@@ -487,4 +514,28 @@ Na Copilot-output:
 
 ## 14. Samenvatting in één alinea
 
-BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position en Heading. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De eerstvolgende logische stap is simulatoruitbreiding voor snelheid door water en watertemperatuur, gevolgd door nieuwe verticale slices voor verwerking en opslag.
+BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). De eerstvolgende implementatie-story is **NMEA 0183 Ingest Foundation**: tweede UDP listener, protocol tagging en raw NMEA 0183 opslag.
+
+---
+
+## 15. NMEA 0183 Epic – samenvatting
+
+**Aanleiding:** De YDEN-03 gateway op de echte boot zendt NMEA 2000-data als NMEA 0183 sentences via UDP poort 2000 en 10110.
+
+**Gefaseerde aanpak:**
+
+| Fase | Inhoud |
+|------|--------|
+| **1 – Foundation** | Tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag |
+| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning |
+| **3 – Interpreters** | Per sentence-type een verticale slice (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) |
+| **Later** | Simulator NMEA 0183 output via settings; TCP ondersteuning |
+
+**Vaste principes voor deze epic:**
+- Bestaande NMEA2000 slices blijven intact.
+- Raw opslag altijd leidend; ook onbekende sentences worden opgeslagen.
+- `Protocol`-veld blijft op `NetworkMessages`; uitbreiden naar measurement entities is latere keuze.
+- Ingest hoeft het YDEN-03 IP-adres niet te kennen; luisteren op `0.0.0.0` volstaat.
+- Schrijven naar NMEA2000 of de YDEN-03 is buiten scope.
+
+Zie volledig: `.docs/epics/nmea0183-support.md` en `.docs/extraInfo/yden-03.md`
