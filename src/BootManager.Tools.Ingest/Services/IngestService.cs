@@ -207,10 +207,10 @@ public class IngestService : BackgroundService
             ReceivedAtUtc = DateTime.UtcNow,
             RawLine = line,
             Source = "Simulator",
-            Protocol = "YdenRawLike"
+            Protocol = "NMEA2000"
         };
 
-        // Eenvoudige parsing: splits op spaties
+        // Eenvoudige parsing
         var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length >= 3)

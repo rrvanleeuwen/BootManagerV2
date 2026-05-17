@@ -1,7 +1,7 @@
 # Epic: NMEA 0183 Support
 
 **Datum:** 2026-05-17  
-**Status:** In ontwerp – nog geen code
+**Status:** Fase 1 geïmplementeerd
 
 ---
 
@@ -70,18 +70,30 @@ Dit is een mogelijk toekomstig onderwerp (versie 2/3).
 
 ## Gefaseerde aanpak
 
-### Fase 1 – NMEA 0183 Ingest Foundation *(eerstvolgende implementatie-story)*
+### Fase 1 – NMEA 0183 Ingest Foundation ✅ *Geïmplementeerd – 2026-05-17*
 
 **Doel:** NMEA 0183 sentences ontvangen, protocol taggen en raw opslaan.
 
 **Scope:**
-- Tweede configureerbare UDP listener toevoegen aan Ingest (naast bestaande NMEA2000 listener).
+- Tweede configureerbare UDP listener (`Nmea0183IngestService`) toegevoegd aan Ingest naast de bestaande NMEA2000 listener.
 - Protocol tagging op `NetworkMessage` – onderscheid `NMEA2000` / `NMEA0183`.
-- Raw NMEA 0183 sentences opslaan in de bestaande `NetworkMessages`-tabel.
+- Raw NMEA 0183 sentences opgeslagen in de bestaande `NetworkMessages`-tabel.
 - Geen verplichte semantische measurement-opslag in deze fase.
 - Onbekende of niet-parsebare NMEA 0183 sentences worden raw opgeslagen en niet verder verwerkt.
+- TCP is buiten scope gebleven in deze fase.
 
-**Acceptatiecriteria:**
+**Poortkeuze:**
+- NMEA2000/raw-like: `127.0.0.1:2000` (bestaand, ongewijzigd)
+- NMEA0183: `0.0.0.0:10110` (nieuw, configureerbaar)
+
+**Gewijzigde bestanden:**
+- `src/BootManager.Tools.Ingest/Options/IngestOptions.cs` – `Nmea0183ListenerOptions` sub-object toegevoegd
+- `src/BootManager.Tools.Ingest/Services/Nmea0183IngestService.cs` – nieuw: UDP listener voor NMEA 0183
+- `src/BootManager.Tools.Ingest/Services/IngestService.cs` – protocol-tag gewijzigd van `YdenRawLike` naar `NMEA2000`
+- `src/BootManager.Tools.Ingest/appsettings.json` – NMEA 0183 endpoint toegevoegd
+- `src/BootManager.Tools.Ingest/Program.cs` – `Nmea0183IngestService` geregistreerd
+
+**Acceptatiecriteria (voldaan):**
 - Ingest luistert op twee configureerbare UDP endpoints.
 - Ontvangen NMEA 0183 sentences komen raw terecht in de `NetworkMessages`-tabel.
 - Protocol-tagging is zichtbaar in opgeslagen berichten.
