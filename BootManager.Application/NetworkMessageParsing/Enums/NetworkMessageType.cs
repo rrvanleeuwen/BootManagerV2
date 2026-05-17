@@ -44,5 +44,10 @@ public enum NetworkMessageType
     /// <summary>
     /// Snelheid door water (PGN 128259 - Speed Through Water).
     /// </summary>
-    SpeedThroughWater = 7
+    SpeedThroughWater = 7,
+
+    /// <summary>
+    /// Watertemperatuur (PGN 130312 - Temperature, Water).
+    /// </summary>
+    WaterTemperature = 8
 }

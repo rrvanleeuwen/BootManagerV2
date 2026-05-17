@@ -17,6 +17,8 @@ using BootManager.Application.HeadingMeasurements.DTOs;
 using BootManager.Application.HeadingMeasurements.Services;
 using BootManager.Application.SpeedThroughWaterMeasurements.DTOs;
 using BootManager.Application.SpeedThroughWaterMeasurements.Services;
+using BootManager.Application.WaterTemperatureMeasurements.DTOs;
+using BootManager.Application.WaterTemperatureMeasurements.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -51,6 +53,8 @@ public class NetworkMessageService : INetworkMessageService
     private readonly IHeadingMeasurementService _headingMeasurementService;
     private readonly INetworkMessageInterpreter<SpeedThroughWaterMessageInterpretationDto> _speedThroughWaterInterpreter;
     private readonly ISpeedThroughWaterMeasurementService _speedThroughWaterMeasurementService;
+    private readonly INetworkMessageInterpreter<WaterTemperatureMessageInterpretationDto> _waterTemperatureInterpreter;
+    private readonly IWaterTemperatureMeasurementService _waterTemperatureMeasurementService;
     private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
@@ -73,6 +77,8 @@ public class NetworkMessageService : INetworkMessageService
         IHeadingMeasurementService headingMeasurementService,
         INetworkMessageInterpreter<SpeedThroughWaterMessageInterpretationDto> speedThroughWaterInterpreter,
         ISpeedThroughWaterMeasurementService speedThroughWaterMeasurementService,
+        INetworkMessageInterpreter<WaterTemperatureMessageInterpretationDto> waterTemperatureInterpreter,
+        IWaterTemperatureMeasurementService waterTemperatureMeasurementService,
         ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
@@ -91,6 +97,8 @@ public class NetworkMessageService : INetworkMessageService
         _headingMeasurementService = headingMeasurementService;
         _speedThroughWaterInterpreter = speedThroughWaterInterpreter;
         _speedThroughWaterMeasurementService = speedThroughWaterMeasurementService;
+        _waterTemperatureInterpreter = waterTemperatureInterpreter;
+        _waterTemperatureMeasurementService = waterTemperatureMeasurementService;
         _logger = logger;
     }
 
@@ -139,6 +147,7 @@ public class NetworkMessageService : INetworkMessageService
                     await TryInterpretAndSaveWindMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveHeadingMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveSpeedThroughWaterMessageAsync(parseResult, request, ct);
+                    await TryInterpretAndSaveWaterTemperatureMessageAsync(parseResult, request, ct);
                 }
                 else
                 {
@@ -641,6 +650,75 @@ public class NetworkMessageService : INetworkMessageService
             _logger.LogWarning(
                 ex,
                 "Onverwachte fout bij SpeedThroughWater-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert semantische WaterTemperature-interpretatie uit te voeren op een technisch parse-resultaat
+    /// en persisteert het resultaat als een WaterTemperatureMeasurement.
+    /// Fouten blokkeren niet de bestaande raw opslag.
+    /// </summary>
+    /// <param name="parseResult">Het technische parse-resultaat.</param>
+    /// <param name="request">De originele netwerkbericht-request voor metadata.</param>
+    /// <param name="ct">Cancellation token.</param>
+    private async Task TryInterpretAndSaveWaterTemperatureMessageAsync(
+        NetworkMessageParseResultDto parseResult,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_waterTemperatureInterpreter.CanInterpret(parseResult))
+            {
+                return;
+            }
+
+            var interpretation = _waterTemperatureInterpreter.Interpret(parseResult);
+
+            if (interpretation.IsSuccess && interpretation.TemperatureKelvin.HasValue && interpretation.TemperatureCelsius.HasValue)
+            {
+                _logger.LogInformation(
+                    "WaterTemperature-interpretatie geslaagd: TemperatureKelvin={K} K ({C} °C)",
+                    interpretation.TemperatureKelvin,
+                    interpretation.TemperatureCelsius);
+
+                // Persisteer afgeleide watertemperatuur-meting
+                try
+                {
+                    var temperatureDto = new CreateWaterTemperatureMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        TemperatureInstance = interpretation.TemperatureInstance,
+                        TemperatureKelvin = interpretation.TemperatureKelvin.Value,
+                        TemperatureCelsius = interpretation.TemperatureCelsius.Value
+                    };
+
+                    await _waterTemperatureMeasurementService.SaveAsync(temperatureDto, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Opslag-fouten blokkeren geen raw opslag. Log compact.
+                    _logger.LogWarning(
+                        ex,
+                        "Watertemperatuur-meting-opslag mislukt voor MessageId={MessageId}",
+                        request.MessageId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "WaterTemperature-interpretatie mislukt: {Error}",
+                    interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Interpretatie-fouten blokkeren geen raw opslag.
+            _logger.LogWarning(
+                ex,
+                "Onverwachte fout bij WaterTemperature-interpretatie");
         }
     }
 
