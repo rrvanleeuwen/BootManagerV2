@@ -1,7 +1,6 @@
 using BootManager.Application.NetworkMessages.DTOs;
 using BootManager.Application.NetworkMessageParsing.DTOs;
 using BootManager.Application.NetworkMessageParsing.Services;
-using BootManager.Application.NetworkMessageParsing.DTOs;
 using BootManager.Application.NetworkMessageInterpretation.Contracts;
 using BootManager.Application.NetworkMessageInterpretation.DTOs;
 using BootManager.Application.BatteryMeasurements.DTOs;
@@ -57,6 +56,10 @@ public class NetworkMessageService : INetworkMessageService
     private readonly ISpeedThroughWaterMeasurementService _speedThroughWaterMeasurementService;
     private readonly INetworkMessageInterpreter<WaterTemperatureMessageInterpretationDto> _waterTemperatureInterpreter;
     private readonly IWaterTemperatureMeasurementService _waterTemperatureMeasurementService;
+    // NMEA 0183 Fase 3a interpreters
+    private readonly INmea0183MessageInterpreter<SpeedThroughWaterMessageInterpretationDto> _nmea0183VhwInterpreter;
+    private readonly INmea0183MessageInterpreter<WaterTemperatureMessageInterpretationDto> _nmea0183MtwInterpreter;
+    private readonly INmea0183MessageInterpreter<DepthMessageInterpretationDto> _nmea0183DbtDptInterpreter;
     private readonly ILogger<NetworkMessageService> _logger;
 
     /// <summary>
@@ -82,6 +85,9 @@ public class NetworkMessageService : INetworkMessageService
         ISpeedThroughWaterMeasurementService speedThroughWaterMeasurementService,
         INetworkMessageInterpreter<WaterTemperatureMessageInterpretationDto> waterTemperatureInterpreter,
         IWaterTemperatureMeasurementService waterTemperatureMeasurementService,
+        INmea0183MessageInterpreter<SpeedThroughWaterMessageInterpretationDto> nmea0183VhwInterpreter,
+        INmea0183MessageInterpreter<WaterTemperatureMessageInterpretationDto> nmea0183MtwInterpreter,
+        INmea0183MessageInterpreter<DepthMessageInterpretationDto> nmea0183DbtDptInterpreter,
         ILogger<NetworkMessageService> logger)
     {
         _repo = repo;
@@ -103,6 +109,9 @@ public class NetworkMessageService : INetworkMessageService
         _speedThroughWaterMeasurementService = speedThroughWaterMeasurementService;
         _waterTemperatureInterpreter = waterTemperatureInterpreter;
         _waterTemperatureMeasurementService = waterTemperatureMeasurementService;
+        _nmea0183VhwInterpreter = nmea0183VhwInterpreter;
+        _nmea0183MtwInterpreter = nmea0183MtwInterpreter;
+        _nmea0183DbtDptInterpreter = nmea0183DbtDptInterpreter;
         _logger = logger;
     }
 
@@ -187,6 +196,11 @@ public class NetworkMessageService : INetworkMessageService
                         nmea0183Result.TalkerPrefix,
                         nmea0183Result.SentenceType,
                         nmea0183Result.Fields.Count);
+
+                    // Fase 3a: sentence-specifieke interpretatie en meting-opslag
+                    await TryInterpretAndSaveNmea0183VhwAsync(nmea0183Result, request, ct);
+                    await TryInterpretAndSaveNmea0183MtwAsync(nmea0183Result, request, ct);
+                    await TryInterpretAndSaveNmea0183DbtDptAsync(nmea0183Result, request, ct);
                 }
                 else
                 {
@@ -758,6 +772,159 @@ public class NetworkMessageService : INetworkMessageService
             _logger.LogWarning(
                 ex,
                 "Onverwachte fout bij WaterTemperature-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert NMEA 0183 VHW-sentence te interpreteren en op te slaan als SpeedThroughWaterMeasurement.
+    /// Fouten blokkeren niet de raw opslag.
+    /// </summary>
+    private async Task TryInterpretAndSaveNmea0183VhwAsync(
+        Nmea0183ParseResultDto nmea0183Result,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_nmea0183VhwInterpreter.CanInterpret(nmea0183Result))
+                return;
+
+            var interpretation = _nmea0183VhwInterpreter.Interpret(nmea0183Result);
+
+            if (interpretation.IsSuccess && interpretation.SpeedMetersPerSecond.HasValue && interpretation.SpeedKnots.HasValue)
+            {
+                _logger.LogInformation(
+                    "NMEA0183 VHW-interpretatie geslaagd: Speed={SpeedMps} m/s ({SpeedKnots} kn)",
+                    interpretation.SpeedMetersPerSecond,
+                    interpretation.SpeedKnots);
+
+                try
+                {
+                    var dto = new CreateSpeedThroughWaterMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        SpeedMetersPerSecond = interpretation.SpeedMetersPerSecond.Value,
+                        SpeedKnots = interpretation.SpeedKnots.Value,
+                        SpeedWaterReferenceType = interpretation.SpeedWaterReferenceType
+                    };
+                    await _speedThroughWaterMeasurementService.SaveAsync(dto, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "NMEA0183 VHW-opslag mislukt voor RawLine={RawLine}", request.RawLine);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("NMEA0183 VHW-interpretatie mislukt: {Error}", interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 VHW-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert NMEA 0183 MTW-sentence te interpreteren en op te slaan als WaterTemperatureMeasurement.
+    /// Fouten blokkeren niet de raw opslag.
+    /// </summary>
+    private async Task TryInterpretAndSaveNmea0183MtwAsync(
+        Nmea0183ParseResultDto nmea0183Result,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_nmea0183MtwInterpreter.CanInterpret(nmea0183Result))
+                return;
+
+            var interpretation = _nmea0183MtwInterpreter.Interpret(nmea0183Result);
+
+            if (interpretation.IsSuccess && interpretation.TemperatureKelvin.HasValue && interpretation.TemperatureCelsius.HasValue)
+            {
+                _logger.LogInformation(
+                    "NMEA0183 MTW-interpretatie geslaagd: {C} °C ({K} K)",
+                    interpretation.TemperatureCelsius,
+                    interpretation.TemperatureKelvin);
+
+                try
+                {
+                    var dto = new CreateWaterTemperatureMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        TemperatureInstance = interpretation.TemperatureInstance,
+                        TemperatureKelvin = interpretation.TemperatureKelvin.Value,
+                        TemperatureCelsius = interpretation.TemperatureCelsius.Value
+                    };
+                    await _waterTemperatureMeasurementService.SaveAsync(dto, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "NMEA0183 MTW-opslag mislukt voor RawLine={RawLine}", request.RawLine);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("NMEA0183 MTW-interpretatie mislukt: {Error}", interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 MTW-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Probeert NMEA 0183 DBT/DPT-sentence te interpreteren en op te slaan als DepthMeasurement.
+    /// Fouten blokkeren niet de raw opslag.
+    /// </summary>
+    private async Task TryInterpretAndSaveNmea0183DbtDptAsync(
+        Nmea0183ParseResultDto nmea0183Result,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_nmea0183DbtDptInterpreter.CanInterpret(nmea0183Result))
+                return;
+
+            var interpretation = _nmea0183DbtDptInterpreter.Interpret(nmea0183Result);
+
+            if (interpretation.IsSuccess && interpretation.DepthMeters.HasValue)
+            {
+                _logger.LogInformation(
+                    "NMEA0183 DBT/DPT-interpretatie geslaagd: {Depth} m",
+                    interpretation.DepthMeters);
+
+                try
+                {
+                    var dto = new CreateDepthMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        DepthMeters = interpretation.DepthMeters.Value
+                    };
+                    await _depthMeasurementService.SaveAsync(dto, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "NMEA0183 DBT/DPT-opslag mislukt voor RawLine={RawLine}", request.RawLine);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("NMEA0183 DBT/DPT-interpretatie mislukt: {Error}", interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Onverwachte fout bij NMEA0183 DBT/DPT-interpretatie");
         }
     }
 

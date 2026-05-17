@@ -1,7 +1,7 @@
 # NMEA 0183 Parser/Interpreter Architectuur
 
 **Datum:** 2026-05-17  
-**Status:** Fase 2 geïmplementeerd – Fase 3 voorbereiding  
+**Status:** Fase 2 en Fase 3a geïmplementeerd – Fase 3b volgende stap  
 **Epic:** [nmea0183-support.md](../epics/nmea0183-support.md)
 
 ---
@@ -39,6 +39,21 @@ De volgende klassen zijn toegevoegd aan `BootManager.Application`:
 - `INmea0183ParserService` – interface
 - `Nmea0183ParserService` – implementatie: talker-prefix herkenning, veldextractie, XOR-checksum validatie (optioneel)
 - `NetworkMessageService` roept `Nmea0183ParserService` aan als `Protocol == "NMEA0183"` – parse-fouten blokkeren raw opslag niet
+
+### Fase 3a – Geïmplementeerd (2026-05-17)
+
+Sentence-specifieke interpreters voor VHW, MTW en DBT/DPT toegevoegd aan `BootManager.Application`:
+
+- `INmea0183MessageInterpreter<T>` – generiek interface voor NMEA 0183 sentence-interpreters (accepteert `Nmea0183ParseResultDto`)
+- `Nmea0183VhwInterpreterService` – VHW → `SpeedThroughWaterMessageInterpretationDto` (knoten als primaire bron, fallback km/h; opgeslagen in m/s + knoten)
+- `Nmea0183MtwInterpreterService` – MTW → `WaterTemperatureMessageInterpretationDto` (Celsius parse, Kelvin afgeleid via +273.15)
+- `Nmea0183DbtDptInterpreterService` – DBT/DPT → `DepthMessageInterpretationDto` (meters prefereren; voor DBT fallback voet → meter; DPT veld [0] direct in meters)
+- `NetworkMessageService` roept de drie interpreters sequentieel aan na geslaagde NMEA0183-parse – fouten per interpreter blokkeren raw opslag niet
+- DI-registraties toegevoegd in `DependencyInjection.cs`
+
+### Fase 3b – Volgende stap
+
+MWV (wind speed + angle) en HDT/HDM (heading) sentence-interpreters toevoegen, analoog aan de Fase 3a-aanpak.
 
 ### Bestaande NMEA2000 slices – onaangetast
 
