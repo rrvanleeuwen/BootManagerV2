@@ -446,12 +446,13 @@ NMEA 0183 status:
 
 ~~Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c~~ ✅ Afgerond (2026-05-18, handmatig).
 
-De eerstvolgende story is **TCP-ondersteuning voor YDEN-03 poort 1456**.
-UDP NMEA 0183 is end-to-end bewezen; TCP is het resterende transportkanaal van de YDEN-03.
+TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig **niet nodig**.
+De TCP-poort lijkt bedoeld voor de eigen YDEN-software; BootManager gebruikt de bewezen UDP NMEA 0183 route.
 
-### Daarna (mogelijke latere stappen)
+### Mogelijke volgende stappen
 - Conflict/deduplicatiebeleid tussen NMEA2000 en NMEA0183 measurements
 - Protocoltraceerbaarheid op measurement entities (`Protocol`-veld)
+- Echte boot UDP-test met YDEN-03 op poort 2000/10110
 - Expliciete **schijnbare wind** als aparte slice
 
 ---
@@ -506,7 +507,7 @@ Na Copilot-output:
 
 ## 14. Samenvatting in één alinea
 
-Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM), Fase 3c (RMC/GGA positie + motion), simulator NMEA 0183 output en de runtime/SQLite acceptatietest fase 3a-3c zijn afgerond. De eerstvolgende story is **TCP-ondersteuning voor YDEN-03 poort 1456**.
+Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM), Fase 3c (RMC/GGA positie + motion), simulator NMEA 0183 output en de runtime/SQLite acceptatietest fase 3a-3c zijn afgerond. TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig niet nodig; BootManager richt zich op de bewezen UDP NMEA 0183 route. Een logische volgende stap is echte boot UDP-test of ontwerpkeuze rond conflict/deduplicatie en protocoltraceerbaarheid.
 
 ---
 
@@ -525,7 +526,8 @@ Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase
 | **3c – Interpreters** | RMC/GGA positie + motion | ✅ Geïmplementeerd |
 | **Simulator NMEA 0183** | Configureerbare NMEA 0183 output in Tools.Simulator | ✅ Geïmplementeerd (2026-05-18) |
 | **Runtime/SQLite acceptatietest** | Handmatige end-to-end test fase 3a-3c via simulator NMEA0183-modus | ✅ Uitgevoerd (2026-05-18) |
-| **Eerstvolgende story** | TCP-ondersteuning YDEN-03 poort 1456 | ← Volgende stap |
+| **TCP YDEN-03** | Poort 1456 lijkt bedoeld voor YDEN-software; voorlopig niet nodig | Geparkeerd |
+| **Mogelijke volgende stap** | Echte boot UDP-test, conflict/deduplicatie of protocoltraceerbaarheid | Te kiezen |
 
 **Vaste principes voor deze epic:**
 - Bestaande NMEA2000 slices blijven intact.
@@ -637,8 +639,16 @@ Test uitgevoerd via `BootManager.Tools.Simulator` met `Simulator:OutputMode=NMEA
 
 Dit was een handmatige runtime/SQLite test, geen geautomatiseerde integratietest.
 
-### Eerstvolgende story
+### TCP-status
 
-TCP-ondersteuning voor YDEN-03 poort 1456: UDP NMEA 0183 is end-to-end bewezen; TCP is het resterende transportkanaal.
+TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig geparkeerd.
+De huidige BootManager-flow gebruikt UDP NMEA 0183 via poort 2000/10110.
+Als later blijkt dat TCP toch nodig is, kan dit alsnog als aparte transportstory worden opgepakt.
+
+### Mogelijke volgende story
+
+- Echte boot UDP-test met YDEN-03
+- Conflict/deduplicatiebeleid tussen NMEA2000 en NMEA0183
+- Protocoltraceerbaarheid op measurement entities
 
 Zie volledig: `.docs/epics/nmea0183-support.md`, `.docs/extraInfo/yden-03.md` en `.docs/features/nmea0183-parser-interpreter-architecture.md`
