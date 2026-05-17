@@ -95,6 +95,33 @@ public static class NMEA2000PgnSpecification
     public const uint PGN_BATTERY = 127508;
 
     /// <summary>
+    /// PGN 128259: Speed, Water Referenced (Speed Through Water)
+    /// 
+    /// Simulatie-payload-layout (4 bytes):
+    /// - Byte 0: SID (Sequence ID, 0-255)
+    /// - Bytes 1-2: Snelheid door water in 0,01 m/s (uint16, little-endian)
+    ///              Conversie van knoten: knoten * 1852 / 3600 * 100 = knoten * 51,444
+    /// - Byte 3: Speed Water Reference Type (0x00 = Paddle wheel)
+    /// 
+    /// Opmerking: STW wijkt licht af van SOG door stroming en golfslag.
+    /// </summary>
+    public const uint PGN_SPEED_THROUGH_WATER = 128259;
+
+    /// <summary>
+    /// PGN 130312: Temperature, Rapid Update (Water Temperature)
+    /// 
+    /// Simulatie-payload-layout (4 bytes):
+    /// - Byte 0: SID (Sequence ID, 0-255)
+    /// - Byte 1: Temperature Instance (0x00 = Sea/Water Temperature)
+    /// - Bytes 2-3: Temperatuur in 0,01 Kelvin (uint16, little-endian)
+    ///              Conversie van Celsius: (Celsius + 273.15) * 100
+    ///              Bereik: 0 K tot 655,35 K
+    /// 
+    /// Opmerking: Temperatuur varieert langzaam en realistisch in UpdateState.
+    /// </summary>
+    public const uint PGN_WATER_TEMPERATURE = 130312;
+
+    /// <summary>
     /// Hulpfunctie om graden naar NMEA 2000-achtige radialen (1e-4 rad eenheden) te converteren.
     /// </summary>
     public static ushort DegreesToNMEA2000Radians(double degrees)

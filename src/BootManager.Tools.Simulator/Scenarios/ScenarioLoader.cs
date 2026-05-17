@@ -50,7 +50,11 @@ public class ScenarioLoader
             StartWindAngleDeg = 45.0,
             StartDepthMeters = 3.5,
             StartBatteryVoltage = 12.6,
-            StartBatterySoc = 85.0
+            StartBatterySoc = 85.0,
+            // STW ligt iets lager dan SOG door stroming en golfslag
+            StartSpeedThroughWaterKnots = 5.3,
+            // Gemiddelde IJsselmeer-watertemperatuur in het vaarseizoen
+            StartWaterTemperatureCelsius = 17.5
         };
     }
 }
