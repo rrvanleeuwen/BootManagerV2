@@ -24,12 +24,13 @@ Geen codewijzigingen in dit document; het dient als ontwerp- en besluitdocument 
 
 ## Context: wat er al is
 
-### Fase 1 – Geïmplementeerd
+### Fase 1 – Geïmplementeerd (herzien: gecombineerde listener)
 
-- `Nmea0183IngestService` luistert op UDP `0.0.0.0:10110` en stuurt raw sentences door naar `BootManager.Web`.
-- `NetworkMessage.Protocol` wordt getagd als `NMEA0183`.
+- `IngestService` luistert op één gecombineerd UDP endpoint (`Ingest:ListenAddress`/`Ingest:ListenPort`, standaard `0.0.0.0:10110`).
+- Protocoldetectie op regelinhoud: regels die beginnen met `$` → `Protocol = "NMEA0183"`, overige regels → `Protocol = "NMEA2000"`.
 - Raw sentences worden opgeslagen in de `NetworkMessages`-tabel.
-- De bestaande NMEA2000-flow op `127.0.0.1:2000` is ongewijzigd.
+- `Nmea0183IngestService` is verwijderd; de aparte NMEA0183 listener is geïntegreerd in `IngestService`.
+- Aanbevolen poort: `10110`. Alternatief: `2000`. Niet tegelijk op beide luisteren om dubbele YDEN-opslag te voorkomen.
 
 ### Fase 2 – Geïmplementeerd (2026-05-17)
 
@@ -307,8 +308,8 @@ TCP-ondersteuning is buiten scope voor Fase 2/3 maar blijft een mogelijke latere
 ### 6. Simulator outputmodus
 
 De simulator ondersteunt drie configureerbare outputmodi via `Simulator:OutputMode` in `appsettings.json`:
-- `NMEA2000` – bestaande NMEA2000-achtige raw output (standaard)
-- `NMEA0183` – NMEA 0183 sentences voor alle fase 3a-3c types
+- `NMEA0183` – NMEA 0183 sentences voor alle fase 3a-3c types (standaard; sluit aan op de echte YDEN-03 UDP-route)
+- `NMEA2000` – NMEA2000-achtige raw output (expliciete override)
 - `Both` – beide stromen tegelijk, elk met eigen runtime state vanuit hetzelfde scenario
 
 Bij `Both` zijn de waarden **scenario-consistent** maar **niet exact tick-gesynchroniseerd**;

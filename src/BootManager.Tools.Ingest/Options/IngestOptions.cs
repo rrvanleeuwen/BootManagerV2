@@ -1,24 +1,26 @@
 namespace BootManager.Tools.Ingest.Options;
 
 /// <summary>
-/// Opties/configuratie voor de ingest-service (UDP-listeners en API-instellingen).
+/// Opties/configuratie voor de ingest-service.
+/// Er is één gecombineerde UDP-listener die zowel NMEA 0183 als NMEA 2000/raw-like regels verwerkt.
+/// Protocoldetectie vindt plaats op basis van de regelinhoud: regels die beginnen met '$' zijn NMEA 0183.
 /// </summary>
 public class IngestOptions
 {
     /// <summary>
-    /// IP-adres waarop de NMEA2000/raw-like UDP-listener luistert.
+    /// IP-adres waarop de gecombineerde UDP-listener luistert.
+    /// Gebruik "0.0.0.0" om op alle interfaces te luisteren.
+    /// Standaard: "0.0.0.0" (aanbevolen).
     /// </summary>
-    public string ListenAddress { get; set; } = "127.0.0.1";
+    public string ListenAddress { get; set; } = "0.0.0.0";
 
     /// <summary>
-    /// Poort waarop de NMEA2000/raw-like UDP-listener luistert.
+    /// Poort waarop de gecombineerde UDP-listener luistert.
+    /// Standaard: 10110 (aanbevolen NMEA 0183 UDP-poort).
+    /// Alternatief: 2000 als de YDEN op die poort is geconfigureerd.
+    /// Luister niet tegelijk op 2000 én 10110 om dubbele YDEN-verwerking te voorkomen.
     /// </summary>
-    public int ListenPort { get; set; } = 2000;
-
-    /// <summary>
-    /// Instellingen voor de NMEA 0183 UDP-listener.
-    /// </summary>
-    public Nmea0183ListenerOptions Nmea0183 { get; set; } = new();
+    public int ListenPort { get; set; } = 10110;
 
     /// <summary>
     /// Maximale grootte van de interne berichtenwachtrij.
@@ -39,27 +41,4 @@ public class IngestOptions
     /// Relatief endpoint voor NetworkMessages API (bijv. /api/networkmessages).
     /// </summary>
     public string NetworkMessagesEndpoint { get; set; } = "/api/networkmessages";
-}
-
-/// <summary>
-/// Opties voor de NMEA 0183 UDP-listener.
-/// </summary>
-public class Nmea0183ListenerOptions
-{
-    /// <summary>
-    /// IP-adres waarop de NMEA 0183 UDP-listener luistert.
-    /// Gebruik "0.0.0.0" om op alle interfaces te luisteren.
-    /// </summary>
-    public string ListenAddress { get; set; } = "0.0.0.0";
-
-    /// <summary>
-    /// Poort waarop de NMEA 0183 UDP-listener luistert.
-    /// Standaard NMEA 0183 UDP-poort is 10110.
-    /// </summary>
-    public int ListenPort { get; set; } = 10110;
-
-    /// <summary>
-    /// Geeft aan of de NMEA 0183 listener actief is.
-    /// </summary>
-    public bool Enabled { get; set; } = true;
 }

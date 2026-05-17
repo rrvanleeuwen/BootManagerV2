@@ -11,9 +11,10 @@ using BootManager.Tools.Ingest.Options;
 namespace BootManager.Tools.Ingest.Services;
 
 /// <summary>
-/// Background service voor ingest van netwerkgegevens.
-/// Deze service luistert naar UDP-berichten, parseert deze in interne modellen
-/// en verzendt ze via HTTP POST naar de BootManager.Web API.
+/// Background service voor ingest van netwerkgegevens via één gecombineerde UDP-listener.
+/// Detecteert per ontvangen regel het protocol op basis van regelinhoud:
+/// regels die beginnen met '$' worden behandeld als NMEA 0183, overige regels als NMEA 2000/raw.
+/// Verzendt alle regels via HTTP POST naar de BootManager.Web API.
 /// </summary>
 public class IngestService : BackgroundService
 {
@@ -89,6 +90,7 @@ public class IngestService : BackgroundService
             try
             {
                 var result = await _udpClient!.ReceiveAsync(stoppingToken);
+                var source = result.RemoteEndPoint.ToString();
                 var receivedData = Encoding.UTF8.GetString(result.Buffer);
 
                 // Verwerk de ontvangen data in losse regels
@@ -99,10 +101,10 @@ public class IngestService : BackgroundService
                     int successCount = 0;
                     var failedMessageIds = new List<string>();
 
-                    // Parse en verstuur elke regel
+                    // Parse en verstuur elke regel; detecteer protocol op basis van inhoud
                     foreach (var line in rawLines)
                     {
-                        var parsed = ParseNetworkLine(line);
+                        var parsed = ParseNetworkLine(line, source);
                         var success = await SendToApiAsync(parsed, stoppingToken);
 
                         if (success)
@@ -195,18 +197,34 @@ public class IngestService : BackgroundService
 
     /// <summary>
     /// Parseert een ontvangen regelstring naar een <see cref="ReceivedNetworkLine"/> model.
-    /// Verwacht formaat: HH:mm:ss.fff R 0A1B2C3D AA BB CC ...
+    /// Regels die beginnen met '$' worden herkend als NMEA 0183 sentences en raw opgeslagen.
+    /// Overige regels worden geparseerd als NMEA 2000/raw-like simulatorregel.
+    /// Verwacht formaat voor NMEA 2000: HH:mm:ss.fff R 0A1B2C3D AA BB CC ...
     /// Waarbij: 0A1B2C3D de MessageId is en AA BB CC ... de PayloadHex.
     /// </summary>
     /// <param name="line">De ontvangen regelstring.</param>
+    /// <param name="source">Het remote endpoint van de afzender.</param>
     /// <returns>Een gevuld of partieel gevuld <see cref="ReceivedNetworkLine"/> model.</returns>
-    private static ReceivedNetworkLine ParseNetworkLine(string line)
+    private static ReceivedNetworkLine ParseNetworkLine(string line, string source)
     {
+        // NMEA 0183 sentence: begint met '$', raw opslaan zonder verdere parsing
+        if (line.StartsWith('$'))
+        {
+            return new ReceivedNetworkLine
+            {
+                ReceivedAtUtc = DateTime.UtcNow,
+                RawLine = line,
+                Source = source,
+                Protocol = "NMEA0183"
+            };
+        }
+
+        // NMEA 2000 / raw-like simulatorregel
         var model = new ReceivedNetworkLine
         {
             ReceivedAtUtc = DateTime.UtcNow,
             RawLine = line,
-            Source = "Simulator",
+            Source = source,
             Protocol = "NMEA2000"
         };
 
@@ -216,7 +234,7 @@ public class IngestService : BackgroundService
         if (parts.Length >= 3)
         {
             // Verwacht: [0] = HH:mm:ss.fff, [1] = R, [2] = 0A1B2C3D, [3+] = AA BB CC ...
-            
+
             // Haal MessageId (3e element, typisch device ID in hex)
             if (parts.Length > 2)
             {
