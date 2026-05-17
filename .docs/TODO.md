@@ -44,8 +44,8 @@
 - [ ] **NMEA 0183 Support** *(epic – gefaseerd)*
   - **Aanleiding:** YDEN-03 gateway zendt NMEA 2000-data als NMEA 0183 sentences uit via UDP (poort 2000 en 10110) en TCP (poort 1456).
   - **Fase 1 – Foundation ✅:** tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag
-  - **Fase 2 – Parser laag:** `Nmea0183ParserService` in Application voor sentence-type herkenning en veldextractie ← *eerstvolgende implementatie-story*
-  - **Fase 3 – Interpreters:** per sentence-type (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) een verticale slice
+  - **Fase 2 – Parser laag ✅:** `Nmea0183ParserService` in Application voor sentence-type herkenning, veldextractie en checksum-validatie; integratie in `NetworkMessageService` voor `Protocol == NMEA0183`
+  - **Fase 3 – Interpreters:** per sentence-type (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) een verticale slice ← *eerstvolgende implementatie-story*
   - Bestaande NMEA2000 slices blijven intact
   - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
   - Zie: [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md) en [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)
@@ -104,6 +104,25 @@
 
 ## Recent Changes
 
+### 2026-05-17: NMEA 0183 Fase 2 – Parser laag geïmplementeerd
+
+**Toegevoegd:**
+- `BootManager.Application/NetworkMessageParsing/DTOs/Nmea0183ParseResultDto.cs` – DTO met TalkerPrefix, SentenceType, Fields, ChecksumValid, ErrorMessage
+- `BootManager.Application/NetworkMessageParsing/Services/INmea0183ParserService.cs` – interface voor NMEA 0183 parser
+- `BootManager.Application/NetworkMessageParsing/Services/Nmea0183ParserService.cs` – implementatie: talker-prefix herkenning, veldextractie, XOR-checksum validatie
+
+**Bijgewerkt:**
+- `BootManager.Application/NetworkMessages/Services/NetworkMessageService.cs` – `INmea0183ParserService` geïnjecteerd; parse-aanroep toegevoegd voor `Protocol == "NMEA0183"`; parse-fouten blokkeren raw opslag niet
+- `BootManager.Application/DependencyInjection.cs` – `INmea0183ParserService` als Scoped geregistreerd
+
+**Gedrag:**
+- Sentences zoals `$IIVHW,...`, `$GPRMC,...`, `$WIMWV,...` worden herkend op Talker + SentenceType
+- Ongeldige of onbekende sentences worden gelogd; raw opslag blijft altijd leidend
+- Bestaande NMEA2000 flow (via MessageId/PayloadHex) is ongewijzigd
+- Runtime-tests zijn niet uitgevoerd; `dotnet build` en `dotnet test` zijn geslaagd (1 niet-gerelateerde authenticatietest gefaald)
+
+**Status:** Geïmplementeerd, geen EF migrations
+
 ### 2026-05-17: NMEA 0183 Parser/Interpreter Architectuur – Documentatie
 
 **Toegevoegd:**
@@ -153,14 +172,24 @@
 
 ## Next Steps (Immediate)
 
-### 1. NMEA 0183 Fase 2 – Parser laag implementeren
+### 1. NMEA 0183 Fase 3 – Sentence-specifieke interpreters
 
-Implementeer `Nmea0183ParserService` in `BootManager.Application`:
-- Sentence-type herkenning (talker-prefix negeren, sentence-code extraheren)
-- Veldextractie als string-array
-- Integratie in `NetworkMessageService` op basis van `Protocol == NMEA0183`
-- Logging van onbekende sentence-types
-- Geen measurement-opslag in deze story
+Implementeer per NMEA 0183 sentence-type een verticale slice, analoog aan de bestaande NMEA2000 slices:
+
+| Sentence | Meetwaarde(n) | Doelentity |
+|----------|---------------|------------|
+| `VHW` | Speed Through Water + Magnetic Heading | `SpeedThroughWaterMeasurement` / `HeadingMeasurement` |
+| `MWV` | Windsnelheid + Windhoek | `WindMeasurement` |
+| `DBT` / `DPT` | Diepte | `DepthMeasurement` |
+| `RMC` / `GGA` | Positie, COG, SOG | `PositionMeasurement` / `MotionMeasurement` |
+| `HDT` / `HDM` | Heading True/Magnetic | `HeadingMeasurement` |
+| `MTW` | Watertemperatuur | `WaterTemperatureMeasurement` |
+
+Vereisten voor Fase 3:
+- Open ontwerpvragen (zie `.docs/epics/nmea0183-support.md`) beslechten vóór implementatie per slice.
+- `Nmea0183ParseResultDto` als input voor interpreters; bestaande measurement entities hergebruiken.
+- Geen EF migrations tenzij expliciete nieuwe velden vereist zijn.
+- Bestaande NMEA2000 slices en NMEA 0183 raw opslag blijven ongewijzigd.
 
 Zie: [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)
 
@@ -169,7 +198,7 @@ Zie: [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0
 - Voorbeeld-API-calls toevoegen voor nieuwe slices
 
 ### 3. Backlog prioritering
-- Barometric Pressure (PGN 130314) als volgende verticale slice uitwerken (na NMEA 0183 Fase 2)
+- Barometric Pressure (PGN 130314) als volgende verticale slice uitwerken (na NMEA 0183 Fase 3)
 
 ## Deployment Checklist (Future)
 

@@ -35,6 +35,9 @@ public static class DependencyInjection
         // Registratie van NetworkMessageParser service
         services.AddScoped<INetworkMessageParserService, NetworkMessageParserService>();
 
+        // Registratie van NMEA 0183 parser service
+        services.AddScoped<INmea0183ParserService, Nmea0183ParserService>();
+
         // Registratie van netwerkbericht-interpreters
         // Dit zijn stateless application services die semantische interpretatie uitvoeren
         // bovenop technische parse-resultaten. Transient is geschikt omdat geen state nodig is.

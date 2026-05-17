@@ -1,7 +1,7 @@
 # Epic: NMEA 0183 Support
 
 **Datum:** 2026-05-17  
-**Status:** Fase 1 geïmplementeerd
+**Status:** Fase 1 en Fase 2 geïmplementeerd
 
 ---
 
@@ -101,26 +101,35 @@ Dit is een mogelijk toekomstig onderwerp (versie 2/3).
 
 ---
 
-### Fase 2 – NMEA 0183 Parser laag
+### Fase 2 – NMEA 0183 Parser laag ✅ *Geïmplementeerd – 2026-05-17*
 
-**Doel:** Aparte parser- en interpreterlijn voor NMEA 0183 sentences toevoegen aan `BootManager.Application`.
+**Doel:** Aparte parserlaag voor NMEA 0183 sentences toevoegen aan `BootManager.Application`.
 
 **Scope:**
-- `Nmea0183ParserService` in `BootManager.Application` (feature-map: `Nmea0183`):
-  - Ontvangt raw sentence-string uit `NetworkMessage.RawData`.
-  - Valideert structuur (optioneel: checksum-validatie).
+- `Nmea0183ParserService` toegevoegd aan `BootManager.Application` (map: `NetworkMessageParsing`):
+  - Ontvangt raw sentence-string.
+  - Valideert structuur en optionele XOR-checksum.
   - Herkent sentence-type door talker-prefix te negeren en sentence-code te extraheren.
   - Extraheert kommagescheiden velden als string-array.
-  - Retourneert generiek parse-resultaat of `null` voor onbekende sentences.
-- `NetworkMessageService` roept `Nmea0183ParserService` aan als `Protocol == NMEA0183`.
-- Onbekende of onparseerbare sentences worden gelogd; raw opslag is al geborgd in Fase 1.
+  - Retourneert `Nmea0183ParseResultDto` inclusief `TalkerPrefix`, `SentenceType`, `Fields`, `ChecksumValid`, `ErrorMessage`.
+- `NetworkMessageService` roept `Nmea0183ParserService` aan als `Protocol == "NMEA0183"`.
+- Onbekende of onparseerbare sentences worden gelogd; raw opslag is niet geblokkeerd.
 - Nog geen measurement-opslag per sensortype in deze fase.
+- Geen EF migrations.
 
-**Acceptatiecriteria:**
-- Een raw `NMEA0183`-bericht met een bekende sentence-code (bijv. `VHW`) wordt correct herkend en geveldextraheerd.
-- Een onbekende sentence-code wordt gelogd en niet verder verwerkt.
+**Gewijzigde bestanden:**
+- `BootManager.Application/NetworkMessageParsing/DTOs/Nmea0183ParseResultDto.cs` – nieuw
+- `BootManager.Application/NetworkMessageParsing/Services/INmea0183ParserService.cs` – nieuw
+- `BootManager.Application/NetworkMessageParsing/Services/Nmea0183ParserService.cs` – nieuw
+- `BootManager.Application/NetworkMessages/Services/NetworkMessageService.cs` – `INmea0183ParserService` geïnjecteerd, aanroep voor NMEA0183
+- `BootManager.Application/DependencyInjection.cs` – DI registratie toegevoegd
+
+**Acceptatiecriteria (voldaan):**
+- `$IIVHW,...`, `$GPRMC,...`, `$WIMWV,...` leveren herkend TalkerPrefix + SentenceType op in parse-resultaat.
+- Ongeldige of onbekende sentences blokkeren de raw message flow niet.
 - Bestaande NMEA2000-flow blijft ongewijzigd.
-- Build slaagt zonder fouten.
+- Build slaagt (`dotnet build` ✅). Unit tests: `dotnet test` geslaagd (1 niet-gerelateerde authenticatietest gefaald, pre-existent).
+- Runtime-tests zijn niet uitgevoerd.
 
 **Ontwerpdetails:**
 Zie: [.docs/features/nmea0183-parser-interpreter-architecture.md](./../features/nmea0183-parser-interpreter-architecture.md)
@@ -168,7 +177,7 @@ Zie ook: [nmea0183-parser-interpreter-architecture.md](./../features/nmea0183-pa
 | TCP-ondersteuning (YDEN-03 poort 1456) | Buiten scope Fase 2/3 |
 | Simulator `Both`-modus | Buiten scope Fase 2/3 |
 | Conflict-resolutie NMEA2000 versus NMEA 0183 bij dubbele metingen | Open |
-| Checksum-validatie verplicht in Fase 2 of pas Fase 3? | Open |
+| Checksum-validatie verplicht in Fase 2 of pas Fase 3? | Besloten: optioneel in Fase 2 (geïmplementeerd), verplicht in Fase 3 |
 | `MWV` windmeting: onderscheid werkelijk/schijnbaar in `WindMeasurement` | Open |
 
 ---

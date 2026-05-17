@@ -1,7 +1,7 @@
 # NMEA 0183 Parser/Interpreter Architectuur
 
 **Datum:** 2026-05-17  
-**Status:** Ontwerp – Fase 2/3 voorbereiding  
+**Status:** Fase 2 geïmplementeerd – Fase 3 voorbereiding  
 **Epic:** [nmea0183-support.md](../epics/nmea0183-support.md)
 
 ---
@@ -30,6 +30,15 @@ Geen codewijzigingen in dit document; het dient als ontwerp- en besluitdocument 
 - `NetworkMessage.Protocol` wordt getagd als `NMEA0183`.
 - Raw sentences worden opgeslagen in de `NetworkMessages`-tabel.
 - De bestaande NMEA2000-flow op `127.0.0.1:2000` is ongewijzigd.
+
+### Fase 2 – Geïmplementeerd (2026-05-17)
+
+De volgende klassen zijn toegevoegd aan `BootManager.Application`:
+
+- `Nmea0183ParseResultDto` – technisch parse-resultaat met `TalkerPrefix`, `SentenceType`, `Fields`, `ChecksumValid`, `ErrorMessage`
+- `INmea0183ParserService` – interface
+- `Nmea0183ParserService` – implementatie: talker-prefix herkenning, veldextractie, XOR-checksum validatie (optioneel)
+- `NetworkMessageService` roept `Nmea0183ParserService` aan als `Protocol == "NMEA0183"` – parse-fouten blokkeren raw opslag niet
 
 ### Bestaande NMEA2000 slices – onaangetast
 
@@ -163,23 +172,34 @@ De volgende volgorde geldt op basis van praktisch nut voor de boot:
 
 ---
 
-## Nmea0183ParserService – verantwoordelijkheden
+## Nmea0183ParserService – geïmplementeerde verantwoordelijkheden
 
-De `Nmea0183ParserService` (te implementeren in `BootManager.Application`) heeft de volgende taken:
+De `Nmea0183ParserService` (geïmplementeerd in `BootManager.Application/NetworkMessageParsing/Services`) voert de volgende taken uit:
 
-1. **Ontvangst van raw sentence** als string uit het `NetworkMessage.RawData`-veld.
-2. **Checksum-validatie** (optioneel in Fase 2, verplicht in Fase 3).
-3. **Sentence-type herkenning:** talker-prefix negeren (bijv. `II`, `GP`, `HE`), sentence-code extraheren (bijv. `VHW`, `RMC`).
-4. **Veldextractie:** kommagescheiden velden als string-array beschikbaar stellen.
-5. **Routering:** op basis van sentence-code wordt de juiste interpreter aangeroepen.
-6. **Fallback:** onbekende sentence-types worden genegeerd (raw is al opgeslagen).
+1. **Ontvangst van raw sentence** als string.
+2. **Structuurvalidatie:** sentence moet beginnen met `$`.
+3. **Checksum-validatie** (optioneel – aanwezig als `*HH` suffix; gevalideerd via XOR).
+4. **Sentence-type herkenning:** talker-prefix negeren (bijv. `II`, `GP`, `HE`), sentence-code extraheren (bijv. `VHW`, `RMC`).
+5. **Veldextractie:** kommagescheiden velden als `IReadOnlyList<string>` beschikbaar stellen.
+6. **Fallback:** onbekende of onparseerbare sentence-types leveren `IsSuccess = false` op; raw opslag blijft leidend.
 
-Beoogde interface (indicatief, ter besluitvorming bij implementatie):
+Geïmplementeerde interface:
 
 ```csharp
-// Geeft null terug als sentence onbekend of onparseerbaar is
-INmea0183ParseResult? Parse(string rawSentence);
+public interface INmea0183ParserService
+{
+    Nmea0183ParseResultDto Parse(string rawSentence);
+}
 ```
+
+`Nmea0183ParseResultDto` bevat:
+- `bool IsSuccess`
+- `string RawSentence`
+- `string TalkerPrefix`
+- `string SentenceType`
+- `IReadOnlyList<string> Fields`
+- `bool? ChecksumValid`
+- `string ErrorMessage`
 
 ---
 
@@ -262,7 +282,8 @@ het opslaan van alle waarden met een timestamp en eventueel het `Protocol`-veld?
 ### 8. Checksum-validatie
 
 NMEA 0183 sentences bevatten een optioneel checksum-veld (`*HH`).
-Open vraag: is checksum-validatie verplicht in Fase 2 (parser) of pas in Fase 3 (per interpreter)?
+**Besloten:** checksum-validatie is geïmplementeerd als optioneel in Fase 2 (aanwezig indien `*HH` aanwezig is).
+Open vraag voor Fase 3: moet een ontbrekende of foute checksum een sentence afwijzen of alleen loggen?
 
 ### 9. Windmeting: werkelijk vs. schijnbaar
 
@@ -272,25 +293,37 @@ De huidige NMEA2000 winddata wordt behandeld als werkelijke wind.
 
 ---
 
-## Eerstvolgende implementatie-story (Fase 2)
+## Eerstvolgende implementatie-story (Fase 3)
 
-> **Story:** Implementeer `Nmea0183ParserService` in `BootManager.Application`
+> **Story:** Implementeer sentence-specifieke NMEA 0183 interpreters en measurement-opslag
 
-**Scope:**
-- Nieuwe service `Nmea0183ParserService` in `BootManager.Application` (feature-map: `Nmea0183`).
-- Service herkent sentence-type op basis van `NetworkMessage.RawData`.
-- Service extraheert velden als string-array.
-- Service retourneert een generiek parse-resultaat of `null` voor onbekende sentences.
-- `NetworkMessageService` roept `Nmea0183ParserService` aan als `Protocol == NMEA0183`.
-- Geen measurement-opslag in deze story; alleen parsing en logging.
-- Checksum-validatie optioneel in deze fase.
-- Geen simulator-aanpassingen.
-- Geen migrations.
+**Voorbereiding:**
+- Beantwoord openstaande ontwerpvragen (zie sectie Open ontwerpvragen) vóór implementatie per slice.
+- Gebruik `Nmea0183ParseResultDto` als input voor alle Fase 3 interpreters.
 
-**Acceptatiecriteria:**
-- Een raw `NMEA0183`-bericht met een bekende sentence-code (bijv. `VHW`) wordt correct herkend en geveldextraheerd.
-- Een onbekende sentence-code wordt gelogd en niet verder verwerkt.
-- Bestaande NMEA2000-flow blijft ongewijzigd.
+**Scope (per sentence-type, één story per slice):**
+- Nieuwe interpreter-service per sentence-type (bijv. `VhwMessageInterpreterService`).
+- Interpreter produceert bestaande interpretatie-DTO's (`SpeedThroughWaterInterpretationDto`, etc.).
+- Measurement-opslag via bestaande measurement services en entities.
+- `NetworkMessageService` roept Fase 3 interpreters aan na succesvolle NMEA 0183 parse.
+- Geen EF migrations tenzij expliciete nieuwe velden vereist zijn.
+- Geen simulator-aanpassingen in Fase 3.
+
+**Prioriteringsvolgorde:**
+
+| Prioriteit | Sentence | Meetwaarde(n) | Doelentity |
+|-----------|----------|---------------|------------|
+| 1 | `VHW` | Speed Through Water + Magnetic Heading | `SpeedThroughWaterMeasurement` / `HeadingMeasurement` |
+| 1 | `DBT` / `DPT` | Diepte | `DepthMeasurement` |
+| 1 | `MTW` | Watertemperatuur | `WaterTemperatureMeasurement` |
+| 2 | `MWV` | Windsnelheid + Windhoek | `WindMeasurement` |
+| 2 | `HDT` / `HDM` | Heading True/Magnetic | `HeadingMeasurement` |
+| 3 | `RMC` / `GGA` | Positie, COG, SOG | `PositionMeasurement` / `MotionMeasurement` |
+
+**Acceptatiecriteria per slice:**
+- Raw NMEA 0183 sentence met bekende code leidt tot opgeslagen measurement.
+- Ongeldige sentences blokkeren raw opslag niet.
+- Bestaande NMEA2000 flow blijft intact.
 - Build slaagt zonder fouten.
 
 ---
