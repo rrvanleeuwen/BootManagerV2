@@ -59,6 +59,10 @@ public static class DependencyInjection
         services.AddTransient<INmea0183MessageInterpreter<WindMessageInterpretationDto>, Nmea0183MwvInterpreterService>();
         services.AddTransient<INmea0183MessageInterpreter<HeadingMessageInterpretationDto>, Nmea0183HdtHdmInterpreterService>();
 
+        // Registratie van NMEA 0183 Fase 3c interpreters
+        services.AddTransient<INmea0183MessageInterpreter<Nmea0183RmcInterpretationDto>, Nmea0183RmcInterpreterService>();
+        services.AddTransient<INmea0183MessageInterpreter<PositionMessageInterpretationDto>, Nmea0183GgaInterpreterService>();
+
         // Registratie van BatteryMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IBatteryMeasurementService, BatteryMeasurementService>();
 
