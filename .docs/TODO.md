@@ -43,12 +43,12 @@
 
 - [ ] **NMEA 0183 Support** *(epic – gefaseerd)*
   - **Aanleiding:** YDEN-03 gateway zendt NMEA 2000-data als NMEA 0183 sentences uit via UDP (poort 2000 en 10110) en TCP (poort 1456).
-  - **Fase 1 – Foundation:** tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag
-  - **Fase 2 – Parser laag:** `Nmea0183ParserService` in Application voor sentence-type herkenning
+  - **Fase 1 – Foundation ✅:** tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag
+  - **Fase 2 – Parser laag:** `Nmea0183ParserService` in Application voor sentence-type herkenning en veldextractie ← *eerstvolgende implementatie-story*
   - **Fase 3 – Interpreters:** per sentence-type (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) een verticale slice
   - Bestaande NMEA2000 slices blijven intact
   - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
-  - Zie: [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md)
+  - Zie: [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md) en [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)
 
 - [ ] **Logging & Diagnostics**
   - Serilog integration with structured logging
@@ -104,6 +104,20 @@
 
 ## Recent Changes
 
+### 2026-05-17: NMEA 0183 Parser/Interpreter Architectuur – Documentatie
+
+**Toegevoegd:**
+- `.docs/features/nmea0183-parser-interpreter-architecture.md` – gedetailleerd ontwerpdocument voor Fase 2/3: parser/interpreter-aanpak, sentence-prioriteiten, entity-mappings, vaststaande keuzes en open ontwerpvragen
+
+**Bijgewerkt:**
+- `.docs/epics/nmea0183-support.md` – Fase 2 uitgebreid met scope, acceptatiecriteria en link naar architectuurdoc; sectie open ontwerpvragen toegevoegd
+- `.docs/ARCHITECTURE.md` – Fase 1 als done gemarkeerd, parser/interpreter routeringschema toegevoegd, sentence-prioriteitstabel, link naar ontwerpdoc
+- `.docs/TODO.md` – Fase 1 als done gemarkeerd, Fase 2 als eerstvolgende implementatie-story aangeduid
+- `.docs/features/README.md` – verwijzing naar nmea0183-parser-interpreter-architecture.md toegevoegd
+- `docs/bootmanager_codex_handoff.md` – eerstvolgende story en open vragen bijgewerkt
+
+**Status:** Documentatie bijgewerkt, geen codewijzigingen
+
 ### 2026-05-17: NMEA 0183 Epic – Documentatie
 
 **Toegevoegd:**
@@ -139,13 +153,23 @@
 
 ## Next Steps (Immediate)
 
-### 1. Documentatie
+### 1. NMEA 0183 Fase 2 – Parser laag implementeren
+
+Implementeer `Nmea0183ParserService` in `BootManager.Application`:
+- Sentence-type herkenning (talker-prefix negeren, sentence-code extraheren)
+- Veldextractie als string-array
+- Integratie in `NetworkMessageService` op basis van `Protocol == NMEA0183`
+- Logging van onbekende sentence-types
+- Geen measurement-opslag in deze story
+
+Zie: [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)
+
+### 2. Documentatie
 - API docs bijwerken als Swagger wordt toegevoegd
 - Voorbeeld-API-calls toevoegen voor nieuwe slices
 
-### 2. Backlog prioritering
-- Barometric Pressure (PGN 130314) als volgende verticale slice uitwerken
-- NMEA 0183 Support evalueren als toekomstige uitbreiding
+### 3. Backlog prioritering
+- Barometric Pressure (PGN 130314) als volgende verticale slice uitwerken (na NMEA 0183 Fase 2)
 
 ## Deployment Checklist (Future)
 

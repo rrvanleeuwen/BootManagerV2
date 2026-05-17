@@ -514,7 +514,7 @@ Na Copilot-output:
 
 ## 14. Samenvatting in één alinea
 
-BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). De eerstvolgende implementatie-story is **NMEA 0183 Ingest Foundation**: tweede UDP listener, protocol tagging en raw NMEA 0183 opslag.
+BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NMEA2000-achtige bootdata. De huidige keten Simulator → Ingest → Web → Parser → Interpreter → Measurement Service → SQLite werkt voor Battery, Depth, Wind, Motion, Position, Heading, Speed Through Water en Water Temperature. Tools schrijven niet direct naar de database, parser en interpreter blijven strikt gescheiden, Ingest en controllers blijven dun, en simulator-aanpassingen zijn toegestaan als de simulatie anders te ver van echte data afwijkt. Huidige wind is werkelijke wind. De fysieke boot gebruikt een YDEN-03 gateway die NMEA 0183 sentences uitzendt op UDP poort 2000 en 10110 – dit vereist een parallelle NMEA 0183 inputstroom, uitgewerkt in de NMEA 0183 epic (`.docs/epics/nmea0183-support.md`). Fase 1 (ingest foundation) is geïmplementeerd. De eerstvolgende implementatie-story is **NMEA 0183 Fase 2 – Parser laag**: `Nmea0183ParserService` in `BootManager.Application` voor sentence-type herkenning en veldextractie.
 
 ---
 
@@ -524,12 +524,12 @@ BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NM
 
 **Gefaseerde aanpak:**
 
-| Fase | Inhoud |
-|------|--------|
-| **1 – Foundation** | Tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag |
-| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning |
-| **3 – Interpreters** | Per sentence-type een verticale slice (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) |
-| **Later** | Simulator NMEA 0183 output via settings; TCP ondersteuning |
+| Fase | Inhoud | Status |
+|------|--------|--------|
+| **1 – Foundation** | Tweede UDP listener in Ingest, protocol tagging op `NetworkMessage`, raw NMEA 0183 opslag | ✅ Geïmplementeerd |
+| **2 – Parser laag** | `Nmea0183ParserService` in Application, sentence-type herkenning en veldextractie | ← Eerstvolgende story |
+| **3 – Interpreters** | Per sentence-type een verticale slice (VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM, MTW) | Gepland |
+| **Later** | Simulator NMEA 0183 output via settings; TCP ondersteuning | Buiten scope |
 
 **Vaste principes voor deze epic:**
 - Bestaande NMEA2000 slices blijven intact.
@@ -538,4 +538,13 @@ BootManager is een .NET 8 oplossing met een verticale-slice architectuur voor NM
 - Ingest hoeft het YDEN-03 IP-adres niet te kennen; luisteren op `0.0.0.0` volstaat.
 - Schrijven naar NMEA2000 of de YDEN-03 is buiten scope.
 
-Zie volledig: `.docs/epics/nmea0183-support.md` en `.docs/extraInfo/yden-03.md`
+**Open ontwerpvragen (te beslissen vóór of tijdens Fase 3):**
+- `Protocol` als string, enum of aparte tabel?
+- `Protocol` toevoegen aan measurement entities voor traceerbaarheid?
+- `VHW` – gecombineerde of opgesplitste interpretatie?
+- `RMC` versus `GGA` als primaire positiebron?
+- Conflict-resolutie bij dubbele metingen van NMEA2000 en NMEA 0183?
+- Checksum-validatie verplicht in Fase 2 of Fase 3?
+- `MWV` windtype (werkelijk/schijnbaar) vastleggen in `WindMeasurement`?
+
+Zie volledig: `.docs/epics/nmea0183-support.md`, `.docs/extraInfo/yden-03.md` en `.docs/features/nmea0183-parser-interpreter-architecture.md`
