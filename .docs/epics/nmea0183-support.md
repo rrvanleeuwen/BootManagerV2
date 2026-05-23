@@ -373,6 +373,11 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 - Voor operationele logging is meestal niet elke ruwe regel nodig als periodieke parsing succesvol is.
 - Raw data is waardevol voor diagnose, maar kan op termijn te veel opslag innemen.
 
+**Status 2026-05-23**
+- Het fundament voor gebruikersconfiguratie is gelegd: operationele instellingen worden via `/settings` in de database opgeslagen.
+- Beschikbare instellingen: luisteradres, primaire en alternatieve poort, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.
+- `BootManager.Tools.Ingest` gebruikt deze database-instellingen nog niet; appsettings blijft nu nog de runtimebron voor de tool.
+
 **Mogelijke instelling**
 - `High` – verwerk/bewaar metingen met ongeveer 1 seconde interval.
 - `Medium` – verwerk/bewaar metingen met ongeveer 10 seconden interval.
@@ -384,13 +389,14 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 - Moet raw data altijd tijdelijk bewaard worden en pas later opgeschoond worden?
 - Wanneer mag raw data verwijderd worden: alleen als parsing in hetzelfde tijdvenster succesvol was?
 - Moeten onbekende of niet-geparseerde sentence-types langer bewaard blijven voor diagnose?
-- Wordt de instelling beheerd door de eindgebruiker in de UI, via appsettings, of beide?
+- Wordt de instelling beheerd door de eindgebruiker in de UI, via appsettings, of beide? UI/database is leidend voor gebruikersconfiguratie; appsettings blijft fallback/default voor losse tools.
 - Hoe voorkomen we dat sampling belangrijke events of foutcondities wegfiltert?
 
 **Voorlopig principe**
 - Raw opslag blijft tijdens ontwikkeling en diagnose leidend.
 - Automatisch verwijderen van raw data mag pas nadat er een expliciet retentiebeleid, gebruikersinstelling en herstel/diagnosepad is ontworpen.
-- Deze story is toekomstig werk en valt buiten de huidige YDEN-03 ingest/parser fixes.
+- Vervolgstap: Ingest haalt operationele instellingen bij startup op bij `BootManager.Web`, met appsettings als fallback wanneer Web niet bereikbaar is.
+- Daarna kan de gekozen raw opslagmodus en het sample-interval daadwerkelijk worden toegepast in de opslagpipeline.
 
 ---
 
