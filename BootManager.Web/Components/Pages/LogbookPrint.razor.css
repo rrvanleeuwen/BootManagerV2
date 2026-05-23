@@ -1,0 +1,78 @@
+/* ── Schermweergave ─────────────────────────────────────────── */
+
+.logbook-print-table th,
+.logbook-print-table td {
+    font-size: 0.78rem;
+    padding: 0.2rem 0.35rem;
+    vertical-align: top;
+}
+
+.summary-table th,
+.summary-table td {
+    font-size: 0.80rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.print-header h4 {
+    font-size: 1.1rem;
+}
+
+/* ── Printmodus ─────────────────────────────────────────────── */
+
+@media print {
+    /* Verberg navigatieknoppen */
+    .no-print {
+        display: none !important;
+    }
+
+    /* Basispagina */
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 9pt;
+    }
+
+    /* Tabelranden */
+    .table-bordered th,
+    .table-bordered td {
+        border: 1px solid #000 !important;
+    }
+
+    /* Donkere thead omzetten naar zwart-wit */
+    .table-dark th {
+        background-color: #333 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .table-light th {
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Compacte tabelcellen */
+    .logbook-print-table th,
+    .logbook-print-table td {
+        font-size: 7.5pt;
+        padding: 1px 3px;
+    }
+
+    .summary-table th,
+    .summary-table td {
+        font-size: 8pt;
+        padding: 1px 3px;
+    }
+
+    /* Geen page-break binnen een tabelrij */
+    tr {
+        page-break-inside: avoid;
+    }
+
+    /* A4 landscape past beter voor de brede logboektabel */
+    @page {
+        size: A4 landscape;
+        margin: 1cm;
+    }
+}
