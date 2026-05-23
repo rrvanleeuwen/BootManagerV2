@@ -23,8 +23,9 @@
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
   - **Referentie:** bestaand logboekvoorbeeld in `.docs/extraInfo/LogboekVoorbeeld.png`.
   - **Doel:** reisgegevens, uurregels, automatische meetdatasamenvatting, detaildata en handmatige opmerkingen in logboekvorm tonen.
-  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties en read-only detailpagina per logboekregel zijn geïmplementeerd.
+  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel en browser-printweergave zijn geïmplementeerd.
   - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont read-only samples en samenvattingen voor positie, COG/SOG, heading, wind, diepte en watertemperatuur binnen het tijdvak van de logregel.
+  - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 - [ ] **Authentication & Authorization**
@@ -199,12 +200,13 @@ De basis voor het eindgebruikerslogboek is geïmplementeerd:
 - Handmatige invoer voor opmerkingen/zeilvoering en basisvelden.
 - Meetdatasuggesties op basis van bestaande measurements.
 - Read-only detailpagina per logboekregel met samples en samenvattingen.
+- Browser-printweergave per reis zonder app-menu/topbar in de afdruk.
 
 Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 ### 2. Later
 
-- Print/PDF-layout.
+- Server-side PDF-generatie.
 - Bijlagen uploaden.
 - Query API enhancements voor meetdata over tijdvakken.
 

@@ -278,3 +278,28 @@ Start met Story 1, Story 2 en een eenvoudige basis van Story 3.
 | Lat. | `PositionMeasurement.Latitude` | Laatste of begin/eind binnen tijdvak |
 | Long. | `PositionMeasurement.Longitude` | Laatste of begin/eind binnen tijdvak |
 
+
+---
+
+## Story 8 — Printvriendelijke Weergave (2026-05-23)
+
+### Status
+Geïmplementeerd als browser-printvriendelijke HTML/CSS weergave.
+
+### Wat is gebouwd
+- Printpagina op /logbook/trips/{tripId}/print (LogbookPrint.razor).
+- Printpagina gebruikt een eigen PrintLayout zonder app-menu/topbar, zodat alleen logboekinhoud wordt geprint.
+- Toont reis-header (reis, datum, boot, van, naar, bemanning), reis-samenvatting (vertrek, aankomst, logstand start, gelogde mijlen, motor uren start/eind, brandstof, totaal vaaruren) en logboekregels in compacte tabel.
+- Knop 🖨 Afdrukweergave op /logbook bij geselecteerde reis (opent in nieuw tabblad).
+- Terug naar logboek knop en Afdrukken knop (roept window.print() aan).
+- Terug/afdruk-knoppen worden niet afgedrukt via @media print.
+- Layout A4 landscape via @page CSS.
+- Lokale boordtijd via BoordtijdHelper; intern UTC ongewijzigd.
+- Ontbrekende velden tonen leeg of —, geen crash.
+
+### Bewust buiten scope
+- Server-side PDF-generatie (geen externe PDF-library).
+- Print/PDF loopt via browser print.
+- Detaildata (/logbook/entries/{id}/details) wordt niet standaard geprint.
+- Bijlagen uploaden.
+

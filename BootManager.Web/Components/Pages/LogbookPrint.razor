@@ -1,0 +1,155 @@
+@page "/logbook/trips/{TripId:int}/print"
+@layout BootManager.Web.Components.Layout.PrintLayout
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Logbook.DTOs
+@using BootManager.Application.Logbook.Services
+@using BootManager.Web.Helpers
+@inject ILogbookService LogbookService
+@inject IJSRuntime JS
+
+<PageTitle>Logboek afdruk</PageTitle>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else if (_trip == null)
+{
+    <p class="text-danger">Reis niet gevonden.</p>
+    <a href="/logbook" class="btn btn-sm btn-outline-secondary no-print">← Terug naar logboek</a>
+}
+else
+{
+    <!-- Knoppen (niet afdrukken) -->
+    <div class="logbook-print-actions no-print mb-3 d-flex gap-2">
+        <a href="/logbook" class="btn btn-sm btn-outline-secondary">← Terug naar logboek</a>
+        <button class="btn btn-sm btn-primary" @onclick="Print">🖨 Afdrukken</button>
+    </div>
+
+    <!-- Reis-header -->
+    <div class="print-header mb-3">
+        <h4 class="mb-1">Scheepsdagboek — @_trip.Name</h4>
+        <div class="row g-1 small">
+            <div class="col-auto"><strong>Datum:</strong> @BoordtijdHelper.NaarLokaal(_trip.DepartureUtc).ToString("dd-MM-yyyy")</div>
+            @if (!string.IsNullOrWhiteSpace(_trip.VesselName))
+            {
+                <div class="col-auto ms-3"><strong>Boot:</strong> @_trip.VesselName</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_trip.DeparturePort))
+            {
+                <div class="col-auto ms-3"><strong>Van:</strong> @_trip.DeparturePort</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_trip.DestinationPort))
+            {
+                <div class="col-auto ms-3"><strong>Naar:</strong> @_trip.DestinationPort</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_trip.Crew))
+            {
+                <div class="col-auto ms-3"><strong>Bemanning:</strong> @_trip.Crew</div>
+            }
+        </div>
+    </div>
+
+    <!-- Reis-samenvatting -->
+    <div class="print-summary mb-3">
+        <table class="table table-sm table-bordered summary-table">
+            <thead class="table-light">
+                <tr>
+                    <th>Vertrek</th>
+                    <th>Aankomst</th>
+                    <th>Logstand start</th>
+                    <th>Gelogde mijlen</th>
+                    <th>Motor uren start</th>
+                    <th>Motor uren eind</th>
+                    <th>Brandstof</th>
+                    <th>Totaal vaaruren</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>@BoordtijdHelper.NaarLokaal(_trip.DepartureUtc).ToString("dd-MM-yyyy HH:mm")</td>
+                    <td>@(_trip.ArrivalUtc.HasValue ? BoordtijdHelper.NaarLokaal(_trip.ArrivalUtc.Value).ToString("dd-MM-yyyy HH:mm") : "—")</td>
+                    <td>@(_trip.LogstandStart.HasValue ? _trip.LogstandStart.Value.ToString("F1") + " nm" : "—")</td>
+                    <td>@(_trip.LoggedMiles.HasValue ? _trip.LoggedMiles.Value.ToString("F1") + " nm" : "—")</td>
+                    <td>@(_trip.EngineHoursStart.HasValue ? _trip.EngineHoursStart.Value.ToString("F1") : "—")</td>
+                    <td>@(_trip.EngineHoursEnd.HasValue ? _trip.EngineHoursEnd.Value.ToString("F1") : "—")</td>
+                    <td>@(_trip.Fuel ?? "—")</td>
+                    <td>@(_trip.TotalSailingHours.HasValue ? _trip.TotalSailingHours.Value.ToString("F1") + " u" : "—")</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Logboekregels -->
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered logbook-print-table">
+            <thead class="table-dark">
+                <tr>
+                    <th>Tijd</th>
+                    <th>Baro</th>
+                    <th>Log</th>
+                    <th>Koers</th>
+                    <th>Positie / zeilvoering / opmerkingen</th>
+                    <th>Bijlagen</th>
+                    <th>Wind</th>
+                    <th>GPS</th>
+                    <th>Lat.</th>
+                    <th>Long.</th>
+                    <th>Gem. SOG</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var entry in _entries)
+                {
+                    <tr>
+                        <td class="text-nowrap">@BoordtijdHelper.NaarLokaal(entry.EntryTimeUtc).ToString("HH:mm")</td>
+                        <td>@(entry.BaroPressure.HasValue ? entry.BaroPressure.Value.ToString("F1") : "")</td>
+                        <td>@(entry.LogValue.HasValue ? entry.LogValue.Value.ToString("F1") : "")</td>
+                        <td>@(entry.Course.HasValue ? entry.Course.Value + "°" : "")</td>
+                        <td>@(entry.Remarks ?? "")</td>
+                        <td>—</td>
+                        <td>@(entry.WindDescription ?? "")</td>
+                        <td>@(entry.GpsStatus ?? "")</td>
+                        <td class="text-nowrap">@FormatCoord(entry.Latitude)</td>
+                        <td class="text-nowrap">@FormatCoord(entry.Longitude)</td>
+                        <td>@(entry.AverageSogKnots.HasValue ? entry.AverageSogKnots.Value.ToString("F1") + " kn" : "")</td>
+                    </tr>
+                }
+                @if (!_entries.Any())
+                {
+                    <tr><td colspan="11" class="text-muted text-center">Geen logboekregels.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_trip.Notes))
+    {
+        <div class="mt-2 small"><strong>Notities:</strong> @_trip.Notes</div>
+    }
+}
+
+@code {
+    [Parameter] public int TripId { get; set; }
+
+    private LogbookTripDto? _trip;
+    private IReadOnlyList<LogbookEntryDto> _entries = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _trip = await LogbookService.GetTripAsync(TripId);
+        if (_trip != null)
+            _entries = await LogbookService.GetEntriesAsync(TripId);
+        _loading = false;
+    }
+
+    private async Task Print()
+    {
+        await JS.InvokeVoidAsync("window.print");
+    }
+
+    /// <summary>Formatteert een decimale gradenwaarde compact naar 5 decimalen.</summary>
+    private static string FormatCoord(double? value)
+        => value.HasValue ? value.Value.ToString("F5") : "";
+}

@@ -1,0 +1,14 @@
+@inherits LayoutComponentBase
+
+<main class="print-layout">
+    @Body
+</main>
+
+<style>
+    @@media print {
+        .logbook-print-actions,
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>

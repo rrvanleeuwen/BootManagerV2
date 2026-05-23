@@ -1,0 +1,9 @@
+.print-layout {
+    padding: 1rem;
+}
+
+@media print {
+    .print-layout {
+        padding: 0;
+    }
+}
