@@ -64,6 +64,11 @@ public class LogbookEntry
     public double? Longitude { get; private set; }
 
     /// <summary>
+    /// Gemiddelde snelheid over grond (SOG) in knopen over de logperiode. Null indien niet beschikbaar.
+    /// </summary>
+    public decimal? AverageSogKnots { get; private set; }
+
+    /// <summary>
     /// Tijdstempel (UTC) waarop de regel is aangemaakt.
     /// </summary>
     public DateTime CreatedAtUtc { get; private set; }
@@ -96,7 +101,8 @@ public class LogbookEntry
         string? windDescription = null,
         string? gpsStatus = null,
         double? latitude = null,
-        double? longitude = null)
+        double? longitude = null,
+        decimal? averageSogKnots = null)
     {
         LogbookTripId = logbookTripId;
         EntryTimeUtc = entryTimeUtc;
@@ -108,6 +114,7 @@ public class LogbookEntry
         GpsStatus = gpsStatus;
         Latitude = latitude;
         Longitude = longitude;
+        AverageSogKnots = averageSogKnots;
         CreatedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = DateTime.UtcNow;
     }
@@ -124,7 +131,8 @@ public class LogbookEntry
         string? windDescription,
         string? gpsStatus,
         double? latitude,
-        double? longitude)
+        double? longitude,
+        decimal? averageSogKnots)
     {
         EntryTimeUtc = entryTimeUtc;
         BaroPressure = baroPressure;
@@ -135,6 +143,7 @@ public class LogbookEntry
         GpsStatus = gpsStatus;
         Latitude = latitude;
         Longitude = longitude;
+        AverageSogKnots = averageSogKnots;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }

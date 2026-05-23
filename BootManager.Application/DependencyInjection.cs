@@ -91,6 +91,9 @@ public static class DependencyInjection
         // Registratie van Logboek application-service
         services.AddScoped<ILogbookService, LogbookService>();
 
+        // Registratie van Logboek meetdata-suggestie service
+        services.AddScoped<ILogbookMeasurementSuggestionService, LogbookMeasurementSuggestionService>();
+
         return services;
     }
 }
