@@ -40,7 +40,7 @@ blijven intact en ongewijzigd.
 - Ingest hoeft geen YDEN-IP te kennen. Luisteren op `0.0.0.0` of een configureerbaar lokaal adres volstaat.
 - De remote endpoint mag als `Source` worden vastgelegd op het `NetworkMessage`.
 - Ingest heeft **één gecombineerde UDP listener** op een configureerbaar endpoint (`Ingest:ListenAddress`/`Ingest:ListenPort`).
-  - Protocoldetectie vindt plaats op basis van regelinhoud: regels die beginnen met `$` zijn NMEA 0183, overige regels zijn NMEA 2000/raw-like.
+  - Protocoldetectie vindt plaats op basis van regelinhoud: regels die beginnen met `$` of `!` zijn NMEA 0183, overige regels zijn NMEA 2000/raw-like.
   - Dit voorkomt dubbele verwerking wanneer de YDEN dezelfde data op meerdere UDP-poorten uitzendt.
   - Aanbevolen poort: `10110` (standaard NMEA 0183 UDP-poort). Alternatief: `2000` als de YDEN op die poort is geconfigureerd.
   - Luister **niet** tegelijk op `2000` én `10110` om dubbele YDEN-opslag te voorkomen.
@@ -81,7 +81,7 @@ Dit is een mogelijk toekomstig onderwerp (versie 2/3).
 
 **Scope:**
 - Één gecombineerde UDP listener (`IngestService`) verwerkt zowel NMEA 2000/raw-like als NMEA 0183 regels.
-- Protocoldetectie op regelinhoud: regels die beginnen met `$` → `NMEA0183`, overig → `NMEA2000`.
+- Protocoldetectie op regelinhoud: regels die beginnen met `$` of `!` → `NMEA0183`, overig → `NMEA2000`.
 - Raw NMEA 0183 sentences opgeslagen in de bestaande `NetworkMessages`-tabel.
 - Geen verplichte semantische measurement-opslag in deze fase.
 - Onbekende of niet-parsebare NMEA 0183 sentences worden raw opgeslagen en niet verder verwerkt.
@@ -101,7 +101,7 @@ Dit is een mogelijk toekomstig onderwerp (versie 2/3).
 
 **Acceptatiecriteria (voldaan):**
 - Ingest luistert op één configureerbaar UDP endpoint.
-- NMEA 0183 sentences (beginnen met `$`) worden als `Protocol = "NMEA0183"` doorgestuurd.
+- NMEA 0183 sentences (beginnen met `$` of `!`) worden als `Protocol = "NMEA0183"` doorgestuurd.
 - NMEA 2000/raw-like regels worden als `Protocol = "NMEA2000"` doorgestuurd.
 - Geen dubbele verwerking van YDEN-output.
 
@@ -248,13 +248,15 @@ De simulator ondersteunt `NMEA0183`- en `Both`-modus. Alle fase 3a-3c sentence-t
 
 ## Nieuwe user stories na echte boot-test – 2026-05-23
 
-De echte YDEN-03 capture `ingest-capture-20260523-093220.ndjson` bevestigt dat UDP ontvangst en raw opslag werken, maar toont ook drie concrete gaten:
+De echte YDEN-03 capture `ingest-capture-20260523-093220.ndjson` bevestigde dat UDP ontvangst en raw opslag werken, maar toonde ook drie concrete gaten:
 
 - AIS sentences met `!AIVDM` / `!AIVDO` worden foutief als `NMEA2000` gelabeld.
 - NMEA 0183-derived measurements worden niet opgeslagen omdat NMEA 0183 requests geen bruikbare `MessageId` hebben.
 - De simulator mist nog echte YDEN-achtige variatie zoals AIS `!` sentences, `YD` talker-prefixen en extra raw-only sentences.
 
-### Story 1 – Correcte NMEA 0183 protocolherkenning voor `$` en `!`
+Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest herkent `$` en `!` als NMEA 0183, de parser accepteert AIS-startteken `!`, NMEA 0183 krijgt een stabiele sentence-id als `MessageId`, en de simulator heeft een `YDEN03`-profiel. Story 5 (capture replay) is bewust geparkeerd.
+
+### Story 1 – Correcte NMEA 0183 protocolherkenning voor `$` en `!` ✅
 
 **Als** ontwikkelaar/operator  
 **wil ik** dat Ingest zowel `$...` als `!...` sentences als NMEA 0183 herkent  
@@ -272,7 +274,7 @@ De echte YDEN-03 capture `ingest-capture-20260523-093220.ndjson` bevestigt dat U
 - Unit tests dekken `$`, `!` en raw-like regels.
 - Replay of nieuwe boot-test toont geen `!AIVDM` / `!AIVDO` records meer met `Protocol = "NMEA2000"`.
 
-### Story 2 – NMEA 0183 parser accepteert AIS-startteken `!`
+### Story 2 – NMEA 0183 parser accepteert AIS-startteken `!` ✅
 
 **Als** systeem  
 **wil ik** NMEA 0183 sentences kunnen parsen die met `$` of `!` beginnen  
@@ -291,7 +293,7 @@ De echte YDEN-03 capture `ingest-capture-20260523-093220.ndjson` bevestigt dat U
 - Een sentence zonder `$` of `!` wordt afgewezen.
 - Bestaande NMEA 0183 parser/interpreter tests blijven slagen.
 
-### Story 3 – Bruikbare `MessageId` voor NMEA 0183-derived measurements
+### Story 3 – Bruikbare `MessageId` voor NMEA 0183-derived measurements ✅
 
 **Als** ontwikkelaar  
 **wil ik** dat NMEA 0183 berichten een stabiele `MessageId` krijgen  
@@ -316,7 +318,7 @@ De echte YDEN-03 capture `ingest-capture-20260523-093220.ndjson` bevestigt dat U
 - `VHW` slaat `SpeedThroughWaterMeasurements` op.
 - Geen `DepthMeasurements` worden verwacht zolang de bron geen `DBT` of `DPT` stuurt.
 
-### Story 4 – Simulator realistischer maken op basis van echte YDEN-capture
+### Story 4 – Simulator realistischer maken op basis van echte YDEN-capture ✅
 
 **Als** ontwikkelaar die niet op de boot is  
 **wil ik** dat de simulator representatieve YDEN-achtige NMEA 0183 output kan genereren  
@@ -325,10 +327,11 @@ De echte YDEN-03 capture `ingest-capture-20260523-093220.ndjson` bevestigt dat U
 **Scope**
 - Simulator behoudt de bestaande `NMEA0183` en `Both` modes.
 - Voeg een configureerbare realistische modus toe, bijvoorbeeld `Simulator:Nmea0183Profile=YDEN03`.
-- In de YDEN03-modus gebruikt de simulator minimaal:
+- In de YDEN03-modus gebruikt de simulator nu:
   - `YD` talker-prefixen voor bestaande navigatie/wind/heading/temperatuur sentences.
   - AIS-achtige `!AIVDM` en `!AIVDO` sentences met geldige checksum als raw-only NMEA 0183 verkeer.
-  - Extra YDEN-achtige raw-only sentences uit de capture, zoals `ZDA`, `MWD`, `XDR`, `MDA`, `VTG`, `GSA`, `GSV`, `GLL`, `ROT`, `VLW`, `VWR`, `VWT`, `VDR`, `MXPGN` en `PCDIN`, voor zover praktisch.
+  - Extra YDEN-achtige raw-only sentences: `ZDA`, `MWD`, `XDR`, `MDA` en `VTG`.
+  - Negatieve testvarianten wanneer `Simulator:IncludeNegativeTestSentences=true`: MWV status `V`, RMC status `V`, GGA fixkwaliteit `0` en VHW met ongeldige checksum.
 - Semantische AIS-decoding is buiten scope; raw opslag en parseracceptatie zijn voldoende.
 
 **Acceptatiecriteria**

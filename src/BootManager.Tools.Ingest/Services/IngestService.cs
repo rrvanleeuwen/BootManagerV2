@@ -13,7 +13,7 @@ namespace BootManager.Tools.Ingest.Services;
 /// <summary>
 /// Background service voor ingest van netwerkgegevens via één gecombineerde UDP-listener.
 /// Detecteert per ontvangen regel het protocol op basis van regelinhoud:
-/// regels die beginnen met '$' worden behandeld als NMEA 0183, overige regels als NMEA 2000/raw.
+/// regels die beginnen met '$' of '!' worden behandeld als NMEA 0183, overige regels als NMEA 2000/raw.
 /// Verzendt alle regels via HTTP POST naar de BootManager.Web API.
 /// </summary>
 public class IngestService : BackgroundService
@@ -223,7 +223,7 @@ public class IngestService : BackgroundService
 
     /// <summary>
     /// Parseert een ontvangen regelstring naar een <see cref="ReceivedNetworkLine"/> model.
-    /// Regels die beginnen met '$' worden herkend als NMEA 0183 sentences en raw opgeslagen.
+    /// Regels die beginnen met '$' of '!' worden herkend als NMEA 0183 sentences en raw opgeslagen.
     /// Overige regels worden geparseerd als NMEA 2000/raw-like simulatorregel.
     /// Verwacht formaat voor NMEA 2000: HH:mm:ss.fff R 0A1B2C3D AA BB CC ...
     /// Waarbij: 0A1B2C3D de MessageId is en AA BB CC ... de PayloadHex.

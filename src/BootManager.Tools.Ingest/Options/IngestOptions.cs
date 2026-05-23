@@ -3,7 +3,7 @@ namespace BootManager.Tools.Ingest.Options;
 /// <summary>
 /// Opties/configuratie voor de ingest-service.
 /// Er is één gecombineerde UDP-listener die zowel NMEA 0183 als NMEA 2000/raw-like regels verwerkt.
-/// Protocoldetectie vindt plaats op basis van de regelinhoud: regels die beginnen met '$' zijn NMEA 0183.
+/// Protocoldetectie vindt plaats op basis van de regelinhoud: regels die beginnen met '$' of '!' zijn NMEA 0183.
 /// </summary>
 public class IngestOptions
 {
