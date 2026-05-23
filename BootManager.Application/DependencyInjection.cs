@@ -94,6 +94,9 @@ public static class DependencyInjection
         // Registratie van Logboek meetdata-suggestie service
         services.AddScoped<ILogbookMeasurementSuggestionService, LogbookMeasurementSuggestionService>();
 
+        // Registratie van Logboek-regel detail service
+        services.AddScoped<ILogbookEntryDetailService, LogbookEntryDetailService>();
+
         return services;
     }
 }

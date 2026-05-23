@@ -83,7 +83,7 @@ De hoofdweergave toont bij voorkeur een logboekregel per uur of per handmatig aa
 
 ### Detaildata blijft beschikbaar
 
-Onder een uurregel kan de gebruiker details openen. Die detailweergave toont automatische samples binnen het tijdvak, bijvoorbeeld elke 10 seconden of elke minuut.
+Vanuit een logboekregel kan de gebruiker een aparte read-only detailpagina openen. Die detailweergave toont automatische samples binnen het tijdvak van de regel, zonder de compacte logboektabel te vergroten.
 
 ### Automatisch versus handmatig
 
@@ -155,16 +155,36 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 
 ### Story 5 - Detailweergave per logboekregel
 
+**Datum implementatie:** 2026-05-23
+
 **Als** gebruiker  
-**wil ik** een logboekregel kunnen openklappen  
-**zodat** ik de onderliggende meetdata van dat uur kan bekijken.
+**wil ik** de onderliggende meetdata van een logboekregel bekijken op een aparte read-only detailpagina  
+**zodat** ik inzicht heb in wat er tijdens dat tijdvak is gemeten.
+
+**Implementatiekeuzes**
+
+- Aparte read-only detailpagina op route `/logbook/entries/{entryId:int}/details` (geen openklap in de tabel).
+- Op /logbook staat bij elke logboekregel een "Details"-knop die naar de detailpagina navigeert.
+- De detailpagina is volledig alleen-lezen; opgeslagen LogbookEntry-waarden worden niet gewijzigd.
+- Periode-afbakening: start = EntryTimeUtc van de vorige logboekregel in dezelfde reis; als die er niet is: DepartureUtc van de reis; einde = EntryTimeUtc van de gekozen logboekregel.
+- Als geen geldige startperiode bepaald kan worden, toont de pagina een nette lege weergave zonder fout.
+- Data ná de gekozen logboektijd wordt nooit getoond.
+- SOG wordt getoond in knopen.
+- Diepte wordt getoond in meters.
+- Alle tijden in de UI zijn lokale boordtijd (via BoordtijdHelper); intern blijft alles UTC.
+- Samplestrategie: maximaal 50 records per meettype, gesorteerd op tijd. Bij meer dan 50 records wordt uniform gesampleld (elke N-de record).
+- Application-service: `ILogbookEntryDetailService` / `LogbookEntryDetailService` in `BootManager.Application`.
+- DTOs: `LogbookEntryDetailDto`, `LogbookDetailSummaryDto<T>` en meettype-specifieke sample-DTOs.
 
 **Acceptatiecriteria**
 
-- Elke logboekregel kan worden opengeklapt.
-- Detail toont samples binnen het tijdvak, bijvoorbeeld elke 10 seconden.
-- Detail toont minimaal tijd, positie, COG/SOG, heading, wind, diepte en watertemperatuur indien beschikbaar.
-- Detail toont ook een samenvatting per waarde: eerste, laatste, gemiddelde of laatste bekende waarde.
+- Elke logboekregel heeft een Details-knop die naar de detailpagina gaat.
+- Detailpagina toont reisnaam, logboektijd (lokaal), en periode start/eind (lokaal).
+- Detailpagina toont samenvatting (eerste, laatste, gemiddelde waar van toepassing) voor: positie, COG/SOG, heading, wind, diepte, watertemperatuur.
+- Sampletabellen tonen beschikbare meetrecords binnen het tijdvak (max 50).
+- Ontbrekende meettypen geven geen crash, maar tonen "Geen data".
+- "Terug naar logboek"-knop navigeert terug naar /logbook.
+- `dotnet build` slaagt.
 
 ### Story 6 - Automatisch samenvatten per tijdvak
 
