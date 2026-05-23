@@ -1,9 +1,11 @@
 using BootManager.Application;
 using BootManager.Application.Authentication.DTOs;
 using BootManager.Application.Authentication.Services;
+using BootManager.Application.OperationalSettings.Services;
 using BootManager.Infrastructure;
 using BootManager.Infrastructure.Persistence;
 using BootManager.Web.Components;
+using BootManager.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -93,6 +95,22 @@ builder.Services.AddScoped(sp =>
     var nav = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
     return new HttpClient { BaseAddress = new Uri(nav.BaseUri) };
 });
+
+// Register IngestControlClient as a singleton for communicating with Ingest control API
+builder.Services.AddSingleton<IIngestControlClient>(sp =>
+{
+    // Haal control API URL uit configuratie, fallback naar localhost
+    var config = sp.GetRequiredService<IConfiguration>();
+    var controlApiUrl = config["Ingest:ControlApi:BaseUrl"] ?? "http://127.0.0.1:5010";
+
+    // Initialiseer de client met een aparte HttpClient
+    var httpClient = new HttpClient();
+    var logger = sp.GetRequiredService<ILogger<BootManager.Web.Services.IngestControlClient>>();
+    return new BootManager.Web.Services.IngestControlClient(httpClient, logger, controlApiUrl);
+});
+
+// Register OperationalSettingsWithReloadService (voor UI en controller)
+builder.Services.AddScoped<IOperationalSettingsWithReloadService, OperationalSettingsWithReloadService>();
 
 var app = builder.Build();
 

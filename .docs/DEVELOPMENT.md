@@ -592,3 +592,124 @@ GET /api/operationalsettings/ingest
 - Het endpoint `GET /api/operationalsettings/ingest` is voorlopig anoniem bereikbaar.
   **TODO:** endpoint beveiligen met API key of netwerk-restrictie in een volgende iteratie.
 
+## Ingest Control API & Live Settings Reload (2026-05-23)
+
+De `BootManager.Tools.Ingest` tool biedt een lokale control API waarmee Web settings live opnieuw kan laden zonder het Ingest-proces te herstarten.
+
+### Architecture
+
+**Ingest-zijde:**
+- `IngestControlServer` (HttpListener-gebaseerd): minimale HTTP-server op localhost
+- `IIngestRuntimeSettings` + `IngestRuntimeSettings`: thread-safe runtime settings container
+- `IIngestSamplingPolicy.Update()`: live updates van RawStorageMode en interval
+
+**Web-zijde:**
+- `IngestControlClient`: client-service voor control API aanroepen
+- `OperationalSettingsController` POST endpoint: save instellingen + trigger reload
+
+### Configuration
+
+**Ingest (appsettings.json):**
+```json
+{
+  "Ingest": {
+    "ControlApi": {
+      "Enabled": true,
+      "ListenAddress": "127.0.0.1",
+      "ListenPort": 5010
+    }
+  }
+}
+```
+
+**Web (appsettings.json):**
+```json
+{
+  "Ingest": {
+    "ControlApi": {
+      "BaseUrl": "http://127.0.0.1:5010"
+    }
+  }
+}
+```
+
+### Control API Endpoints
+
+#### `GET /status`
+
+Geeft huidige runtime-instellingen terug.
+
+**Response (200 OK):**
+```json
+{
+  "running": true,
+  "apiBaseUrl": "http://localhost:5046",
+  "rawStorageMode": "Sampled",
+  "defaultSampleIntervalSeconds": 15,
+  "captureLoggingEnabled": false,
+  "listenAddress": "0.0.0.0",
+  "listenPort": 10110,
+  "listenAddressRestartRequired": false,
+  "listenPortRestartRequired": false
+}
+```
+
+#### `POST /reload-settings`
+
+Haalt settings opnieuw op van Web en past veilige instellingen live toe.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Settings reloaded successfully.",
+  "appliedFields": ["ApiBaseUrl", "RawStorageMode", "DefaultSampleIntervalSeconds"],
+  "restartRequiredFields": []
+}
+```
+
+**Response (503 Service Unavailable):**
+```json
+{
+  "success": false,
+  "message": "Failed to fetch settings from BootManager.Web"
+}
+```
+
+### Live-Updateable Settings
+
+- **ApiBaseUrl**: wijzigt adres voor toekomstige API-calls direct
+- **RawStorageMode**: wijzigt sampling-gedrag direct met state reset
+- **DefaultSampleIntervalSeconds**: wijzigt sample-interval direct
+
+### Restart-Required Settings
+
+- **ListenAddress**: UDP listener moet opnieuw binden
+- **ListenPort**: UDP listener moet opnieuw binden
+- **CaptureLoggingEnabled**: capture logger is niet dynamisch aanpasbaar (TODO: implementeren in toekomst)
+
+### Thread-Safety
+
+- Runtime settings zijn met lock beschermd tegen gelijktijdige toegang
+- UDP message-loop en reload kunnen parallel plaatsvinden
+- Sampling policy updates zijn atomair: mode-wijzigingen triggeren state reset
+
+### Web Settings Flow
+
+1. Gebruiker vult instellingen in op `/settings` UI
+2. POST `/api/operationalsettings` slaat settings in DB op
+3. Controller roept `IngestControlClient.ReloadSettingsAsync()` aan
+4. Ingest control server verwerkt reload: haalt Web-settings op, appliceert veilige settings
+5. Web toont resultaat: settings toegepast, UDP-herstart vereist, of Ingest niet bereikbaar
+
+### Security
+
+- Control API bindt standaard **alleen op 127.0.0.1** → geen externe toegang zonder configuratie-wijziging
+- Binding op 0.0.0.0 is **expliciet ontraden** in code comments
+- Toekomstig: API key of OAuth2 als remote access nodig wordt
+
+### Testing
+
+- Unit tests valideren thread-safety van runtime settings (concurrent writes)
+- Unit tests valideren live updates van sampling policy (mode/interval changes)
+- Integratietests (TODO) voor Web ↔ Ingest control flow

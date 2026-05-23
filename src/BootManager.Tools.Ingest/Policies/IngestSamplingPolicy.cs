@@ -17,8 +17,8 @@ namespace BootManager.Tools.Ingest.Policies;
 /// </summary>
 public class IngestSamplingPolicy : IIngestSamplingPolicy
 {
-    private readonly RawStorageMode _rawStorageMode;
-    private readonly int _sampleIntervalSeconds;
+    private RawStorageMode _rawStorageMode;
+    private int _sampleIntervalSeconds;
     private readonly ILogger<IngestSamplingPolicy> _logger;
 
     /// <summary>
@@ -143,6 +143,41 @@ public class IngestSamplingPolicy : IIngestSamplingPolicy
         lock (_lockObject)
         {
             _lastMessageTimes.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Update de sampling policy met nieuwe RawStorageMode en interval.
+    /// Dit kan veilig worden aangeroepen terwijl berichten worden verwerkt (thread-safe).
+    /// </summary>
+    /// <param name="newMode">De nieuwe RawStorageMode.</param>
+    /// <param name="newIntervalSeconds">Het nieuwe sample-interval in seconden. Fallback naar 10 als &lt;= 0.</param>
+    public void Update(RawStorageMode newMode, int newIntervalSeconds)
+    {
+        lock (_lockObject)
+        {
+            var oldMode = _rawStorageMode;
+            var oldInterval = _sampleIntervalSeconds;
+
+            _rawStorageMode = newMode;
+            _sampleIntervalSeconds = newIntervalSeconds <= 0 ? 10 : newIntervalSeconds;
+
+            // Wis timing-state bij mode-wijziging voor schone start
+            if (_rawStorageMode != oldMode)
+            {
+                _lastMessageTimes.Clear();
+                _logger.LogInformation(
+                    "RawStorageMode updated from {OldMode} to {NewMode}. Timing state reset.",
+                    oldMode, newMode);
+            }
+
+            // Log interval-wijziging
+            if (_sampleIntervalSeconds != oldInterval)
+            {
+                _logger.LogInformation(
+                    "DefaultSampleIntervalSeconds updated from {OldInterval} to {NewInterval}.",
+                    oldInterval, _sampleIntervalSeconds);
+            }
         }
     }
 }

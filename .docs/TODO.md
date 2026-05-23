@@ -30,6 +30,19 @@
     - Stream key is `Protocol:MessageId` (genormaliseerd). Capture logging onafhankelijk van sampling.
     - Bij interval ≤ 0 wordt fallback naar 10 seconden met waarschuwing.
     - Unit tests dekken alle modes en edge cases.
+  - **Status 2026-05-23 (slice 4 - Ingest Control API & Settings Reload):** Live settings reload zonder procesrestart geïmplementeerd:
+    - **Ingest control server:** HttpListener-gebaseerde minimale API op localhost (127.0.0.1:5010 standaard, configureerbaar).
+    - **Endpoints:**
+      - `GET /status`: geeft huidige runtime settings + restart-required flags voor UDP listener.
+      - `POST /reload-settings`: haalt settings opnieuw op, appliceert veilige settings live (ApiBaseUrl, RawStorageMode, DefaultSampleIntervalSeconds), rapporteert restart-required voor ListenAddress/ListenPort/CaptureLoggingEnabled.
+    - **Runtime settings service:** IIngestRuntimeSettings + IngestRuntimeSettings voor thread-safe live updates.
+    - **Sampling policy updates:** IIngestSamplingPolicy.Update(mode, interval) voor live RawStorageMode en interval wijzigingen met state reset bij mode-wijziging.
+    - **Web-side client:** IngestControlClient om control API aan te roepen.
+    - **Settings endpoint:** POST /api/operationalsettings naast GET; appliceert settings en verzendt reload-commando naar Ingest via control client.
+    - **UI feedback:** duidelijke melding van applied fields, restart-required fields en connection status (unreachable).
+    - **Thread-safety:** UDP loop en reload kunnen gelijktijdig plaatsvinden via lock-based runtime settings.
+    - **Security:** control API bindt standaard alleen op 127.0.0.1; geen binding op 0.0.0.0.
+    - Unit tests valideren runtime settings thread-safety en live policy updates.
   - **Vervolg:** post-parse raw-retentie toepassen (Web moet succesvol parsen rapporteren).
 
 - [ ] **Digitaal Logboek** *(epic – UI richting eindgebruiker)*

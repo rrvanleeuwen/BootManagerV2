@@ -2,11 +2,13 @@
 @using System.Net.Http.Json
 @using BootManager.Application.OperationalSettings.DTOs
 @using BootManager.Application.OperationalSettings.Services
+@using BootManager.Web.Services
 @using BootManager.Core.Enums
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject BootManager.Application.Authentication.Services.IOwnerSettingsService SettingsService
 @inject IOperationalSettingsService OperationalSettingsService
+@inject IOperationalSettingsWithReloadService OperationalSettingsWithReloadService
 
 <h3>Instellingen</h3>
 
@@ -116,8 +118,25 @@
 
                 <button type="submit" class="btn btn-primary" disabled="@_opsBusy">@(_opsBusy ? "Bezig..." : "Opslaan")</button>
             </EditForm>
-            @if (!string.IsNullOrEmpty(_opsError)) { <div class="text-danger mt-2">@_opsError</div> }
-            @if (_opsSuccess) { <div class="text-success mt-2">Instellingen opgeslagen.</div> }
+            @if (!string.IsNullOrEmpty(_opsError)) 
+            { 
+                <div class="alert alert-danger mt-2">@_opsError</div> 
+            }
+            @if (_opsSuccess) 
+            { 
+                <div class="alert alert-success mt-2">@(_opsSuccessMessage ?? "Instellingen opgeslagen.")</div> 
+            }
+            @if (!string.IsNullOrEmpty(_opsReloadMessage))
+            {
+                @if (_opsReloadMessage.Contains("Let op:") || _opsReloadMessage.Contains("niet bereikbaar"))
+                {
+                    <div class="alert alert-warning mt-2">@_opsReloadMessage</div>
+                }
+                else
+                {
+                    <div class="alert alert-info mt-2">@_opsReloadMessage</div>
+                }
+            }
         }
     </div>
 </div>
@@ -212,6 +231,8 @@
     private bool _opsBusy;
     private string? _opsError;
     private bool _opsSuccess;
+    private string? _opsSuccessMessage;
+    private string? _opsReloadMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -223,14 +244,32 @@
         _opsBusy = true;
         _opsError = null;
         _opsSuccess = false;
+        _opsSuccessMessage = null;
+        _opsReloadMessage = null;
+
         try
         {
-            await OperationalSettingsService.SaveAsync(_opsModel!);
-            _opsSuccess = true;
+            var response = await OperationalSettingsWithReloadService.SaveAndReloadAsync(_opsModel!);
+
+            // Toon feedback
+            if (response.SettingsSaved)
+            {
+                _opsSuccess = true;
+                _opsSuccessMessage = response.SaveMessage ?? "Instellingen opgeslagen.";
+                _opsReloadMessage = response.IngestReloadMessage;
+            }
+            else
+            {
+                _opsError = "Instellingen konden niet worden opgeslagen.";
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            _opsError = $"Validatie-fout: {ex.Message}";
         }
         catch (Exception ex)
         {
-            _opsError = ex.Message;
+            _opsError = $"Fout: {ex.Message}";
         }
         finally
         {
