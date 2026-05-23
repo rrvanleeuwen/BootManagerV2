@@ -19,6 +19,13 @@
 
 #### High Priority
 
+- [ ] **Digitaal Logboek** *(epic – UI richting eindgebruiker)*
+  - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
+  - **Referentie:** bestaand logboekvoorbeeld in `.docs/extraInfo/LogboekVoorbeeld.png`.
+  - **Doel:** reisgegevens, uurregels, automatische meetdatasamenvatting en handmatige opmerkingen in logboekvorm tonen.
+  - **Eerste slice:** `LogbookTrip`, `LogbookEntry`, `/logbook` pagina, compacte tabel met kolommen uit het voorbeeld en basis automatische waarden uit bestaande measurements.
+  - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
+
 - [ ] **Authentication & Authorization**
   - JWT-based API authentication
   - Role-based access control (Admin, User, Viewer)
@@ -181,33 +188,24 @@
 
 ## Next Steps (Immediate)
 
-### 1. NMEA 0183 Fase 3 – Sentence-specifieke interpreters
+### 1. Digitaal Logboek – eerste implementatie-slice
 
-Implementeer per NMEA 0183 sentence-type een verticale slice, analoog aan de bestaande NMEA2000 slices:
+Implementeer de basis voor het eindgebruikerslogboek:
 
-| Sentence | Meetwaarde(n) | Doelentity |
-|----------|---------------|------------|
-| `VHW` | Speed Through Water + Magnetic Heading | `SpeedThroughWaterMeasurement` / `HeadingMeasurement` |
-| `MWV` | Windsnelheid + Windhoek | `WindMeasurement` |
-| `DBT` / `DPT` | Diepte | `DepthMeasurement` |
-| `RMC` / `GGA` | Positie, COG, SOG | `PositionMeasurement` / `MotionMeasurement` |
-| `HDT` / `HDM` | Heading True/Magnetic | `HeadingMeasurement` |
-| `MTW` | Watertemperatuur | `WaterTemperatureMeasurement` |
+- `LogbookTrip` entity voor reis-header en reis-samenvatting.
+- `LogbookEntry` entity voor logboekregels per uur/event.
+- `/logbook` Blazor-pagina met kolommen uit `.docs/extraInfo/LogboekVoorbeeld.png`.
+- Handmatige invoer voor opmerkingen/zeilvoering en basisvelden.
+- Eerste automatische vulling uit bestaande measurements waar beschikbaar.
 
-Vereisten voor Fase 3:
-- Open ontwerpvragen (zie `.docs/epics/nmea0183-support.md`) beslechten vóór implementatie per slice.
-- `Nmea0183ParseResultDto` als input voor interpreters; bestaande measurement entities hergebruiken.
-- Geen EF migrations tenzij expliciete nieuwe velden vereist zijn.
-- Bestaande NMEA2000 slices en NMEA 0183 raw opslag blijven ongewijzigd.
+Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
-Zie: [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)
+### 2. Later
 
-### 2. Documentatie
-- API docs bijwerken als Swagger wordt toegevoegd
-- Voorbeeld-API-calls toevoegen voor nieuwe slices
-
-### 3. Backlog prioritering
-- Barometric Pressure (PGN 130314) als volgende verticale slice uitwerken (na NMEA 0183 Fase 3)
+- Logboek-detailweergave met 10-seconden samples.
+- Print/PDF-layout.
+- Bijlagen uploaden.
+- Query API enhancements voor meetdata over tijdvakken.
 
 ## Deployment Checklist (Future)
 
@@ -235,5 +233,5 @@ Zie: [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0
 
 ---
 
-**Last Updated:** 2026-05-17  
+**Last Updated:** 2026-05-23  
 **Maintained By:** Development Team
