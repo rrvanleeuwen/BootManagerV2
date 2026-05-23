@@ -2,6 +2,11 @@
 
 Complete documentation of all implemented vertical slices in BootManager.
 
+For planned feature epics, see:
+
+- [NMEA 0183 support](../epics/nmea0183-support.md)
+- [Digitaal logboek](../epics/digital-logbook.md)
+
 ## Overview Table
 
 | Slice | PGN | Entity | Status | Spec Link |
@@ -251,5 +256,5 @@ All slices follow non-fatal error handling:
 
 ---
 
-**Last Updated:** 2026-05-17  
+**Last Updated:** 2026-05-23  
 **Maintenance:** Keep in sync with codebase as new slices are added
