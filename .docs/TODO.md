@@ -22,8 +22,9 @@
 - [ ] **Digitaal Logboek** *(epic – UI richting eindgebruiker)*
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
   - **Referentie:** bestaand logboekvoorbeeld in `.docs/extraInfo/LogboekVoorbeeld.png`.
-  - **Doel:** reisgegevens, uurregels, automatische meetdatasamenvatting en handmatige opmerkingen in logboekvorm tonen.
-  - **Eerste slice:** `LogbookTrip`, `LogbookEntry`, `/logbook` pagina, compacte tabel met kolommen uit het voorbeeld en basis automatische waarden uit bestaande measurements.
+  - **Doel:** reisgegevens, uurregels, automatische meetdatasamenvatting, detaildata en handmatige opmerkingen in logboekvorm tonen.
+  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties en read-only detailpagina per logboekregel zijn geïmplementeerd.
+  - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont read-only samples en samenvattingen voor positie, COG/SOG, heading, wind, diepte en watertemperatuur binnen het tijdvak van de logregel.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 - [ ] **Authentication & Authorization**
@@ -188,21 +189,21 @@
 
 ## Next Steps (Immediate)
 
-### 1. Digitaal Logboek – eerste implementatie-slice
+### 1. Digitaal Logboek – vervolgslices
 
-Implementeer de basis voor het eindgebruikerslogboek:
+De basis voor het eindgebruikerslogboek is geïmplementeerd:
 
 - `LogbookTrip` entity voor reis-header en reis-samenvatting.
 - `LogbookEntry` entity voor logboekregels per uur/event.
 - `/logbook` Blazor-pagina met kolommen uit `.docs/extraInfo/LogboekVoorbeeld.png`.
 - Handmatige invoer voor opmerkingen/zeilvoering en basisvelden.
-- Eerste automatische vulling uit bestaande measurements waar beschikbaar.
+- Meetdatasuggesties op basis van bestaande measurements.
+- Read-only detailpagina per logboekregel met samples en samenvattingen.
 
 Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 ### 2. Later
 
-- Logboek-detailweergave met 10-seconden samples.
 - Print/PDF-layout.
 - Bijlagen uploaden.
 - Query API enhancements voor meetdata over tijdvakken.

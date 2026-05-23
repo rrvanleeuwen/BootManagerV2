@@ -1,0 +1,360 @@
+@page "/logbook/entries/{EntryId:int}/details"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Logbook.DTOs
+@using BootManager.Application.Logbook.Services
+@using BootManager.Web.Helpers
+@inject ILogbookEntryDetailService DetailService
+@inject NavigationManager Navigation
+
+<div class="d-flex align-items-center mb-3 gap-2">
+    <button class="btn btn-sm btn-outline-secondary" @onclick="TerugNaarLogboek">← Terug naar logboek</button>
+    <h2 class="mb-0">Logboekregel details</h2>
+</div>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else if (_detail == null)
+{
+    <div class="alert alert-warning">Logboekregel niet gevonden.</div>
+}
+else
+{
+    <!-- Context -->
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Context</div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <span class="text-muted small">Reis</span>
+                    <div>@_detail.TripName</div>
+                </div>
+                <div class="col-md-4">
+                    <span class="text-muted small">Logboektijd (lokaal)</span>
+                    <div>@BoordtijdHelper.NaarLokaal(_detail.EntryTimeUtc).ToString("dd-MM-yyyy HH:mm")</div>
+                </div>
+                <div class="col-md-4">
+                    <span class="text-muted small">Detailperiode (lokaal)</span>
+                    <div>
+                        @if (_detail.PeriodStartUtc.HasValue)
+                        {
+                            @BoordtijdHelper.NaarLokaal(_detail.PeriodStartUtc.Value).ToString("dd-MM-yyyy HH:mm")
+                            <span class="mx-1">→</span>
+                            @BoordtijdHelper.NaarLokaal(_detail.PeriodEndUtc).ToString("dd-MM-yyyy HH:mm")
+                        }
+                        else
+                        {
+                            <span class="text-muted">Geen periode beschikbaar</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!_detail.PeriodStartUtc.HasValue)
+    {
+        <div class="alert alert-info">Geen geldige startperiode beschikbaar voor deze logboekregel.</div>
+    }
+    else
+    {
+        <!-- Samenvatting per meettype -->
+        <div class="row g-3 mb-4">
+            <!-- Positie -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">Positie</div>
+                    <div class="card-body">
+                        @if (_detail.Positie == null)
+                        {
+                            <span class="text-muted">Geen data</span>
+                        }
+                        else
+                        {
+                            <table class="table table-sm mb-0">
+                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@FormatPositie(_detail.Positie.Eerste)</td></tr>
+                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@FormatPositie(_detail.Positie.Laatste)</td></tr>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- COG / SOG -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">COG / SOG</div>
+                    <div class="card-body">
+                        @if (_detail.Beweging == null)
+                        {
+                            <span class="text-muted">Geen data</span>
+                        }
+                        else
+                        {
+                            <table class="table table-sm mb-0">
+                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@FormatBeweging(_detail.Beweging.Eerste)</td></tr>
+                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@FormatBeweging(_detail.Beweging.Laatste)</td></tr>
+                                <tr><th class="text-muted small fw-normal">Gem. SOG</th><td>@(_detail.Beweging.Gemiddelde ?? "-")</td></tr>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heading -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">Heading</div>
+                    <div class="card-body">
+                        @if (_detail.Heading == null)
+                        {
+                            <span class="text-muted">Geen data</span>
+                        }
+                        else
+                        {
+                            <table class="table table-sm mb-0">
+                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@(_detail.Heading.Eerste?.HeadingDegrees.ToString("F0") + "°" ?? "-")</td></tr>
+                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@(_detail.Heading.Laatste?.HeadingDegrees.ToString("F0") + "°" ?? "-")</td></tr>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wind -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">Wind</div>
+                    <div class="card-body">
+                        @if (_detail.Wind == null)
+                        {
+                            <span class="text-muted">Geen data</span>
+                        }
+                        else
+                        {
+                            <table class="table table-sm mb-0">
+                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@FormatWind(_detail.Wind.Eerste)</td></tr>
+                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@FormatWind(_detail.Wind.Laatste)</td></tr>
+                                <tr><th class="text-muted small fw-normal">Gem. wind</th><td>@(_detail.Wind.Gemiddelde ?? "-")</td></tr>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diepte -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">Diepte</div>
+                    <div class="card-body">
+                        @if (_detail.Diepte == null)
+                        {
+                            <span class="text-muted">Geen data</span>
+                        }
+                        else
+                        {
+                            <table class="table table-sm mb-0">
+                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@(_detail.Diepte.Eerste?.DepthMeters.ToString("F1") + " m" ?? "-")</td></tr>
+                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@(_detail.Diepte.Laatste?.DepthMeters.ToString("F1") + " m" ?? "-")</td></tr>
+                                <tr><th class="text-muted small fw-normal">Gemiddeld</th><td>@(_detail.Diepte.Gemiddelde ?? "-")</td></tr>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Watertemperatuur -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">Watertemperatuur</div>
+                    <div class="card-body">
+                        @if (_detail.WaterTemperatuur == null)
+                        {
+                            <span class="text-muted">Geen data</span>
+                        }
+                        else
+                        {
+                            <table class="table table-sm mb-0">
+                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@(_detail.WaterTemperatuur.Eerste?.TemperatuurCelsius.ToString("F1") + " °C" ?? "-")</td></tr>
+                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@(_detail.WaterTemperatuur.Laatste?.TemperatuurCelsius.ToString("F1") + " °C" ?? "-")</td></tr>
+                                <tr><th class="text-muted small fw-normal">Gemiddeld</th><td>@(_detail.WaterTemperatuur.Gemiddelde ?? "-")</td></tr>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sampletabellen -->
+        @if (_detail.Positie?.Samples.Count > 0)
+        {
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Positie — samples (@_detail.Positie.Samples.Count)</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light"><tr><th>Tijd (lokaal)</th><th>Lat.</th><th>Long.</th></tr></thead>
+                            <tbody>
+                                @foreach (var s in _detail.Positie.Samples)
+                                {
+                                    <tr>
+                                        <td>@BoordtijdHelper.NaarLokaal(s.TijdUtc).ToString("HH:mm:ss")</td>
+                                        <td>@s.Latitude.ToString("F5")</td>
+                                        <td>@s.Longitude.ToString("F5")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_detail.Beweging?.Samples.Count > 0)
+        {
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">COG/SOG — samples (@_detail.Beweging.Samples.Count)</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light"><tr><th>Tijd (lokaal)</th><th>COG</th><th>SOG</th></tr></thead>
+                            <tbody>
+                                @foreach (var s in _detail.Beweging.Samples)
+                                {
+                                    <tr>
+                                        <td>@BoordtijdHelper.NaarLokaal(s.TijdUtc).ToString("HH:mm:ss")</td>
+                                        <td>@s.CogDegrees.ToString("F1")°</td>
+                                        <td>@s.SogKnots.ToString("F1") kn</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_detail.Heading?.Samples.Count > 0)
+        {
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Heading — samples (@_detail.Heading.Samples.Count)</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light"><tr><th>Tijd (lokaal)</th><th>Heading</th></tr></thead>
+                            <tbody>
+                                @foreach (var s in _detail.Heading.Samples)
+                                {
+                                    <tr>
+                                        <td>@BoordtijdHelper.NaarLokaal(s.TijdUtc).ToString("HH:mm:ss")</td>
+                                        <td>@s.HeadingDegrees.ToString("F1")°</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_detail.Wind?.Samples.Count > 0)
+        {
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Wind — samples (@_detail.Wind.Samples.Count)</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light"><tr><th>Tijd (lokaal)</th><th>Hoek</th><th>Snelheid</th></tr></thead>
+                            <tbody>
+                                @foreach (var s in _detail.Wind.Samples)
+                                {
+                                    <tr>
+                                        <td>@BoordtijdHelper.NaarLokaal(s.TijdUtc).ToString("HH:mm:ss")</td>
+                                        <td>@s.WindAngleDegrees.ToString("F0")°</td>
+                                        <td>@s.WindSpeedKnots.ToString("F1") kn</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_detail.Diepte?.Samples.Count > 0)
+        {
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Diepte — samples (@_detail.Diepte.Samples.Count)</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light"><tr><th>Tijd (lokaal)</th><th>Diepte</th></tr></thead>
+                            <tbody>
+                                @foreach (var s in _detail.Diepte.Samples)
+                                {
+                                    <tr>
+                                        <td>@BoordtijdHelper.NaarLokaal(s.TijdUtc).ToString("HH:mm:ss")</td>
+                                        <td>@s.DepthMeters.ToString("F1") m</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_detail.WaterTemperatuur?.Samples.Count > 0)
+        {
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Watertemperatuur — samples (@_detail.WaterTemperatuur.Samples.Count)</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light"><tr><th>Tijd (lokaal)</th><th>Temperatuur</th></tr></thead>
+                            <tbody>
+                                @foreach (var s in _detail.WaterTemperatuur.Samples)
+                                {
+                                    <tr>
+                                        <td>@BoordtijdHelper.NaarLokaal(s.TijdUtc).ToString("HH:mm:ss")</td>
+                                        <td>@s.TemperatuurCelsius.ToString("F1") °C</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    <div class="mt-3">
+        <button class="btn btn-outline-secondary" @onclick="TerugNaarLogboek">← Terug naar logboek</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int EntryId { get; set; }
+
+    private bool _loading = true;
+    private LogbookEntryDetailDto? _detail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _detail = await DetailService.GetEntryDetailAsync(EntryId);
+        _loading = false;
+    }
+
+    private void TerugNaarLogboek() => Navigation.NavigateTo("/logbook");
+
+    private string FormatPositie(LogbookPositionSampleDto? p)
+        => p == null ? "-" : $"{p.Latitude:F5}, {p.Longitude:F5}";
+
+    private string FormatBeweging(LogbookMotionSampleDto? m)
+        => m == null ? "-" : $"{m.CogDegrees:F1}° / {m.SogKnots:F1} kn";
+
+    private string FormatWind(LogbookWindSampleDto? w)
+        => w == null ? "-" : $"{w.WindAngleDegrees:F0}° {w.WindSpeedKnots:F1} kn";
+}

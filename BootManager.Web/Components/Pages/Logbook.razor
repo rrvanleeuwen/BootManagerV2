@@ -179,7 +179,10 @@ else
                                         <td>@(entry.Latitude.HasValue ? entry.Latitude.Value.ToString("F4") : "")</td>
                                         <td>@(entry.Longitude.HasValue ? entry.Longitude.Value.ToString("F4") : "")</td>
                                         <td>@(entry.AverageSogKnots.HasValue ? entry.AverageSogKnots.Value.ToString("F1") + " kn" : "")</td>
-                                        <td><button class="btn btn-xs btn-outline-secondary" @onclick="() => BewerkenRegel(entry)">✎</button></td>
+                                        <td>
+                                            <a class="btn btn-xs btn-outline-info" href="/logbook/entries/@entry.Id/details">Details</a>
+                                            <button class="btn btn-xs btn-outline-secondary" @onclick="() => BewerkenRegel(entry)">✎</button>
+                                        </td>
                                     </tr>
                                 }
                             }
