@@ -55,6 +55,36 @@ public class LogbookTrip
     public string? Notes { get; private set; }
 
     /// <summary>
+    /// Logstand bij aanvang van de reis (nm).
+    /// </summary>
+    public decimal? LogstandStart { get; private set; }
+
+    /// <summary>
+    /// Gelogde mijlen tijdens de reis (nm).
+    /// </summary>
+    public decimal? LoggedMiles { get; private set; }
+
+    /// <summary>
+    /// Motorurenstand bij aanvang van de reis.
+    /// </summary>
+    public decimal? EngineHoursStart { get; private set; }
+
+    /// <summary>
+    /// Motorurenstand aan het einde van de reis.
+    /// </summary>
+    public decimal? EngineHoursEnd { get; private set; }
+
+    /// <summary>
+    /// Brandstof (bijv. "&lt;0.5 tank" of "45 L").
+    /// </summary>
+    public string? Fuel { get; private set; }
+
+    /// <summary>
+    /// Totaal vaaruren van de reis.
+    /// </summary>
+    public decimal? TotalSailingHours { get; private set; }
+
+    /// <summary>
     /// Tijdstempel (UTC) waarop de reis is aangemaakt.
     /// </summary>
     public DateTime CreatedAtUtc { get; private set; }
@@ -85,7 +115,13 @@ public class LogbookTrip
         string? destinationPort = null,
         string? vesselName = null,
         string? crew = null,
-        string? notes = null)
+        string? notes = null,
+        decimal? logstandStart = null,
+        decimal? loggedMiles = null,
+        decimal? engineHoursStart = null,
+        decimal? engineHoursEnd = null,
+        string? fuel = null,
+        decimal? totalSailingHours = null)
     {
         Name = name;
         DepartureUtc = departureUtc;
@@ -95,6 +131,12 @@ public class LogbookTrip
         VesselName = vesselName;
         Crew = crew;
         Notes = notes;
+        LogstandStart = logstandStart;
+        LoggedMiles = loggedMiles;
+        EngineHoursStart = engineHoursStart;
+        EngineHoursEnd = engineHoursEnd;
+        Fuel = fuel;
+        TotalSailingHours = totalSailingHours;
         CreatedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = DateTime.UtcNow;
     }
@@ -110,7 +152,13 @@ public class LogbookTrip
         string? destinationPort,
         string? vesselName,
         string? crew,
-        string? notes)
+        string? notes,
+        decimal? logstandStart,
+        decimal? loggedMiles,
+        decimal? engineHoursStart,
+        decimal? engineHoursEnd,
+        string? fuel,
+        decimal? totalSailingHours)
     {
         Name = name;
         DepartureUtc = departureUtc;
@@ -120,6 +168,12 @@ public class LogbookTrip
         VesselName = vesselName;
         Crew = crew;
         Notes = notes;
+        LogstandStart = logstandStart;
+        LoggedMiles = loggedMiles;
+        EngineHoursStart = engineHoursStart;
+        EngineHoursEnd = engineHoursEnd;
+        Fuel = fuel;
+        TotalSailingHours = totalSailingHours;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }
