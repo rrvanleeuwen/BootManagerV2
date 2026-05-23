@@ -1,0 +1,439 @@
+@page "/logbook"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Logbook.DTOs
+@using BootManager.Application.Logbook.Services
+@inject ILogbookService LogbookService
+
+<h2 class="mb-3">Scheepsdagboek</h2>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else
+{
+    <!-- Reisselectie en reisformulier -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Reis</span>
+            <button class="btn btn-sm btn-outline-primary" @onclick="NieuweReis">+ Nieuwe reis</button>
+        </div>
+        <div class="card-body">
+            @if (_trips.Count > 0)
+            {
+                <div class="mb-2">
+                    <label class="form-label">Selecteer reis</label>
+                    <select class="form-select form-select-sm" @onchange="OnTripSelected">
+                        <option value="">— kies een reis —</option>
+                        @foreach (var t in _trips)
+                        {
+                            <option value="@t.Id" selected="@(_selectedTrip?.Id == t.Id)">@t.Name (@t.DepartureUtc.ToString("dd-MM-yyyy"))</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            @if (_tripForm != null)
+            {
+                <EditForm Model="_tripForm" OnValidSubmit="OpslaanReis">
+                    <DataAnnotationsValidator />
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Reisnaam *</label>
+                            <InputText class="form-control form-control-sm" @bind-Value="_tripForm.Name" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Vertrek (UTC)</label>
+                            <InputDate class="form-control form-control-sm" @bind-Value="_tripForm.DepartureUtc" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Aankomst (UTC)</label>
+                            <InputDate class="form-control form-control-sm" @bind-Value="_tripForm.ArrivalUtcInput" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Vertrekhaven</label>
+                            <InputText class="form-control form-control-sm" @bind-Value="_tripForm.DeparturePort" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Bestemming</label>
+                            <InputText class="form-control form-control-sm" @bind-Value="_tripForm.DestinationPort" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Vaartuig</label>
+                            <InputText class="form-control form-control-sm" @bind-Value="_tripForm.VesselName" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Bemanning</label>
+                            <InputText class="form-control form-control-sm" @bind-Value="_tripForm.Crew" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notities</label>
+                            <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="_tripForm.Notes" />
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <button type="submit" class="btn btn-sm btn-primary">Opslaan</button>
+                        @if (_tripSaved)
+                        {
+                            <span class="text-success ms-2">✓ Opgeslagen</span>
+                        }
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+
+    <!-- Logboektabel -->
+    @if (_selectedTrip != null)
+    {
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Logboekregels — @_selectedTrip.Name</span>
+                <button class="btn btn-sm btn-outline-success" @onclick="NieuweRegel">+ Nieuwe regel</button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-hover mb-0 logbook-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Tijd (UTC)</th>
+                                <th>Baro</th>
+                                <th>Log</th>
+                                <th>Koers</th>
+                                <th>Positie / zeilvoering / opmerkingen</th>
+                                <th>Bijlagen</th>
+                                <th>Wind</th>
+                                <th>GPS</th>
+                                <th>Lat.</th>
+                                <th>Long.</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var entry in _entries)
+                            {
+                                @if (_editingEntryId == entry.Id && _entryForm != null)
+                                {
+                                    <!-- Bewerkingsrij -->
+                                    <tr class="table-warning">
+                                        <td><InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_entryForm.EntryTimeUtcInput" /></td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.BaroPressure" /></td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.LogValue" /></td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Course" /></td>
+                                        <td><InputText class="form-control form-control-sm" @bind-Value="_entryForm.Remarks" /></td>
+                                        <td><span class="text-muted small">—</span></td>
+                                        <td><InputText class="form-control form-control-sm" @bind-Value="_entryForm.WindDescription" /></td>
+                                        <td><InputText class="form-control form-control-sm" @bind-Value="_entryForm.GpsStatus" /></td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Latitude" /></td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Longitude" /></td>
+                                        <td>
+                                            <button class="btn btn-xs btn-success" @onclick="() => OpslaanRegel(entry.Id)">✓</button>
+                                            <button class="btn btn-xs btn-secondary" @onclick="AnnuleerBewerking">✕</button>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td>@entry.EntryTimeUtc.ToString("HH:mm")</td>
+                                        <td>@(entry.BaroPressure.HasValue ? entry.BaroPressure.Value.ToString("F1") : "")</td>
+                                        <td>@(entry.LogValue.HasValue ? entry.LogValue.Value.ToString("F1") : "")</td>
+                                        <td>@(entry.Course.HasValue ? entry.Course.Value.ToString() + "°" : "")</td>
+                                        <td>@entry.Remarks</td>
+                                        <td><span class="text-muted small">—</span></td>
+                                        <td>@entry.WindDescription</td>
+                                        <td>@entry.GpsStatus</td>
+                                        <td>@(entry.Latitude.HasValue ? entry.Latitude.Value.ToString("F4") : "")</td>
+                                        <td>@(entry.Longitude.HasValue ? entry.Longitude.Value.ToString("F4") : "")</td>
+                                        <td><button class="btn btn-xs btn-outline-secondary" @onclick="() => BewerkenRegel(entry)">✎</button></td>
+                                    </tr>
+                                }
+                            }
+
+                            @if (_newEntryForm != null)
+                            {
+                                <!-- Nieuwe-regelrij onderaan -->
+                                <tr class="table-success">
+                                    <td><InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_newEntryForm.EntryTimeUtcInput" /></td>
+                                    <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.BaroPressure" /></td>
+                                    <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.LogValue" /></td>
+                                    <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Course" /></td>
+                                    <td><InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.Remarks" /></td>
+                                    <td><span class="text-muted small">—</span></td>
+                                    <td><InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.WindDescription" /></td>
+                                    <td><InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.GpsStatus" /></td>
+                                    <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Latitude" /></td>
+                                    <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Longitude" /></td>
+                                    <td>
+                                        <button class="btn btn-xs btn-success" @onclick="OpslaanNieuweRegel">✓</button>
+                                        <button class="btn btn-xs btn-secondary" @onclick="() => _newEntryForm = null">✕</button>
+                                    </td>
+                                </tr>
+                            }
+
+                            @if (!_entries.Any() && _newEntryForm == null)
+                            {
+                                <tr><td colspan="11" class="text-center text-muted">Nog geen logboekregels. Klik op "+ Nieuwe regel" om te beginnen.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@if (!string.IsNullOrEmpty(_foutmelding))
+{
+    <div class="alert alert-danger mt-3">@_foutmelding</div>
+}
+
+@code {
+    private bool _loading = true;
+    private string? _foutmelding;
+    private bool _tripSaved;
+
+    private List<LogbookTripDto> _trips = new();
+    private LogbookTripDto? _selectedTrip;
+    private TripFormModel? _tripForm;
+
+    private List<LogbookEntryDto> _entries = new();
+    private int? _editingEntryId;
+    private EntryFormModel? _entryForm;
+    private EntryFormModel? _newEntryForm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _trips = (await LogbookService.GetAllTripsAsync()).ToList();
+            if (_trips.Count > 0)
+            {
+                await SelecteerReis(_trips[0]);
+            }
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Fout bij laden: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnTripSelected(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id))
+        {
+            var trip = _trips.FirstOrDefault(t => t.Id == id);
+            if (trip != null) await SelecteerReis(trip);
+        }
+    }
+
+    private async Task SelecteerReis(LogbookTripDto trip)
+    {
+        _selectedTrip = trip;
+        _tripForm = new TripFormModel(trip);
+        _entries = (await LogbookService.GetEntriesAsync(trip.Id)).ToList();
+        _editingEntryId = null;
+        _entryForm = null;
+        _newEntryForm = null;
+        _tripSaved = false;
+    }
+
+    private void NieuweReis()
+    {
+        _selectedTrip = null;
+        _entries = new();
+        _tripForm = new TripFormModel();
+        _tripSaved = false;
+    }
+
+    private async Task OpslaanReis()
+    {
+        if (_tripForm == null) return;
+        try
+        {
+            var dto = _tripForm.ToCreateDto();
+            if (_selectedTrip == null)
+            {
+                var created = await LogbookService.CreateTripAsync(dto);
+                _trips.Insert(0, created);
+                _selectedTrip = created;
+                _tripForm = new TripFormModel(created);
+            }
+            else
+            {
+                await LogbookService.UpdateTripAsync(_selectedTrip.Id, dto);
+                var updated = await LogbookService.GetTripAsync(_selectedTrip.Id);
+                if (updated != null)
+                {
+                    var idx = _trips.FindIndex(t => t.Id == updated.Id);
+                    if (idx >= 0) _trips[idx] = updated;
+                    _selectedTrip = updated;
+                }
+            }
+            _tripSaved = true;
+            _foutmelding = null;
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Opslaan mislukt: {ex.Message}";
+        }
+    }
+
+    private void NieuweRegel()
+    {
+        _newEntryForm = new EntryFormModel();
+        _editingEntryId = null;
+        _entryForm = null;
+    }
+
+    private async Task OpslaanNieuweRegel()
+    {
+        if (_newEntryForm == null || _selectedTrip == null) return;
+        try
+        {
+            var entry = await LogbookService.CreateEntryAsync(_selectedTrip.Id, _newEntryForm.ToDto());
+            _entries.Add(entry);
+            _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
+            _newEntryForm = null;
+            _foutmelding = null;
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Opslaan mislukt: {ex.Message}";
+        }
+    }
+
+    private void BewerkenRegel(LogbookEntryDto entry)
+    {
+        _editingEntryId = entry.Id;
+        _entryForm = new EntryFormModel(entry);
+        _newEntryForm = null;
+    }
+
+    private async Task OpslaanRegel(int entryId)
+    {
+        if (_entryForm == null) return;
+        try
+        {
+            await LogbookService.UpdateEntryAsync(entryId, _entryForm.ToDto());
+            var updated = _entries.FirstOrDefault(e => e.Id == entryId);
+            if (updated != null)
+            {
+                var idx = _entries.IndexOf(updated);
+                var dto = _entryForm.ToDto();
+                _entries[idx] = new LogbookEntryDto
+                {
+                    Id = entryId,
+                    LogbookTripId = updated.LogbookTripId,
+                    EntryTimeUtc = dto.EntryTimeUtc,
+                    BaroPressure = dto.BaroPressure,
+                    LogValue = dto.LogValue,
+                    Course = dto.Course,
+                    Remarks = dto.Remarks,
+                    WindDescription = dto.WindDescription,
+                    GpsStatus = dto.GpsStatus,
+                    Latitude = dto.Latitude,
+                    Longitude = dto.Longitude,
+                    UpdatedAtUtc = DateTime.UtcNow
+                };
+                _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
+            }
+            _editingEntryId = null;
+            _entryForm = null;
+            _foutmelding = null;
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Opslaan mislukt: {ex.Message}";
+        }
+    }
+
+    private void AnnuleerBewerking()
+    {
+        _editingEntryId = null;
+        _entryForm = null;
+    }
+
+    // --- Formuliermodellen ---
+
+    private class TripFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public DateTime DepartureUtc { get; set; } = DateTime.UtcNow.Date;
+        public DateTime? ArrivalUtcInput { get; set; }
+        public string? DeparturePort { get; set; }
+        public string? DestinationPort { get; set; }
+        public string? VesselName { get; set; }
+        public string? Crew { get; set; }
+        public string? Notes { get; set; }
+
+        public TripFormModel() { }
+        public TripFormModel(LogbookTripDto dto)
+        {
+            Name = dto.Name;
+            DepartureUtc = dto.DepartureUtc;
+            ArrivalUtcInput = dto.ArrivalUtc;
+            DeparturePort = dto.DeparturePort;
+            DestinationPort = dto.DestinationPort;
+            VesselName = dto.VesselName;
+            Crew = dto.Crew;
+            Notes = dto.Notes;
+        }
+
+        public CreateLogbookTripDto ToCreateDto() => new()
+        {
+            Name = Name,
+            DepartureUtc = DepartureUtc,
+            ArrivalUtc = ArrivalUtcInput,
+            DeparturePort = DeparturePort,
+            DestinationPort = DestinationPort,
+            VesselName = VesselName,
+            Crew = Crew,
+            Notes = Notes
+        };
+    }
+
+    private class EntryFormModel
+    {
+        public DateTime EntryTimeUtcInput { get; set; } = DateTime.UtcNow;
+        public decimal? BaroPressure { get; set; }
+        public decimal? LogValue { get; set; }
+        public int? Course { get; set; }
+        public string? Remarks { get; set; }
+        public string? WindDescription { get; set; }
+        public string? GpsStatus { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+
+        public EntryFormModel() { }
+        public EntryFormModel(LogbookEntryDto dto)
+        {
+            EntryTimeUtcInput = dto.EntryTimeUtc;
+            BaroPressure = dto.BaroPressure;
+            LogValue = dto.LogValue;
+            Course = dto.Course;
+            Remarks = dto.Remarks;
+            WindDescription = dto.WindDescription;
+            GpsStatus = dto.GpsStatus;
+            Latitude = dto.Latitude;
+            Longitude = dto.Longitude;
+        }
+
+        public SaveLogbookEntryDto ToDto() => new()
+        {
+            EntryTimeUtc = EntryTimeUtcInput,
+            BaroPressure = BaroPressure,
+            LogValue = LogValue,
+            Course = Course,
+            Remarks = Remarks,
+            WindDescription = WindDescription,
+            GpsStatus = GpsStatus,
+            Latitude = Latitude,
+            Longitude = Longitude
+        };
+    }
+}

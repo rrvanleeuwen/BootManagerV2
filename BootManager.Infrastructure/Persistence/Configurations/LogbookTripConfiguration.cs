@@ -1,0 +1,39 @@
+using BootManager.Core.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace BootManager.Infrastructure.Persistence.Configurations;
+
+/// <summary>
+/// EF Core-configuratie voor de <see cref="LogbookTrip"/>-entiteit.
+/// </summary>
+public class LogbookTripConfiguration : IEntityTypeConfiguration<LogbookTrip>
+{
+    /// <summary>
+    /// Configureert tabelnaam, keys, verplichting en veldgrootten.
+    /// </summary>
+    public void Configure(EntityTypeBuilder<LogbookTrip> b)
+    {
+        b.ToTable("LogbookTrips");
+        b.HasKey(x => x.Id);
+
+        b.Property(x => x.Name).IsRequired().HasMaxLength(256);
+        b.Property(x => x.DepartureUtc).IsRequired();
+        b.Property(x => x.ArrivalUtc);
+        b.Property(x => x.DeparturePort).HasMaxLength(128);
+        b.Property(x => x.DestinationPort).HasMaxLength(128);
+        b.Property(x => x.VesselName).HasMaxLength(128);
+        b.Property(x => x.Crew).HasMaxLength(512);
+        b.Property(x => x.Notes).HasMaxLength(2048);
+        b.Property(x => x.CreatedAtUtc).IsRequired();
+        b.Property(x => x.UpdatedAtUtc).IsRequired();
+
+        // Één-op-veel relatie: reis heeft meerdere logboekregels
+        b.HasMany(x => x.Entries)
+            .WithOne(e => e.Trip)
+            .HasForeignKey(e => e.LogbookTripId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasIndex(x => x.DepartureUtc).IsUnique(false);
+    }
+}

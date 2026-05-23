@@ -54,6 +54,16 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<WaterTemperatureMeasurement> WaterTemperatureMeasurements => Set<WaterTemperatureMeasurement>();
 
+    /// <summary>
+    /// DbSet voor logboek-reizen.
+    /// </summary>
+    public DbSet<LogbookTrip> LogbookTrips => Set<LogbookTrip>();
+
+    /// <summary>
+    /// DbSet voor logboekregels.
+    /// </summary>
+    public DbSet<LogbookEntry> LogbookEntries => Set<LogbookEntry>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
@@ -66,5 +76,7 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.HeadingMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SpeedThroughWaterMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.WaterTemperatureMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.LogbookTripConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.LogbookEntryConfiguration());
     }
 }
