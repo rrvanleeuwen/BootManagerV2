@@ -227,6 +227,8 @@ Start met Story 1, Story 2 en een eenvoudige basis van Story 3.
 - Bijlagen uploaden.
 - Print/PDF-export.
 - Volledige 10-seconden detailweergave.
+- Volledige reis-samenvattingvelden uit het voorbeeldlogboek, zoals motoruren, brandstof, gelogde mijlen en totaal vaaruren.
+- Automatische vulling uit bestaande measurements; de eerste foundation mag handmatige velden en placeholders leveren.
 - Deduplicatie of conflictbeleid tussen meerdere meetbronnen.
 - AIS-semantiek.
 
@@ -235,7 +237,7 @@ Start met Story 1, Story 2 en een eenvoudige basis van Story 3.
 - Gebruiker kan een reis aanmaken en opnieuw openen.
 - Gebruiker ziet een logboektabel met de kolommen uit het voorbeeld.
 - Gebruiker kan per regel opmerkingen/zeilvoering invullen en bewaren.
-- Pagina kan bestaande meetdata gebruiken om tijd, koers, wind en positie te tonen waar beschikbaar.
+- Pagina is voorbereid om bestaande meetdata te gebruiken; daadwerkelijke automatische vulling mag in een vervolgslice.
 - Ontbrekende meetdata veroorzaakt lege cellen, geen foutmelding.
 - `dotnet build` slaagt.
 

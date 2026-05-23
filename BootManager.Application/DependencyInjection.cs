@@ -1,4 +1,5 @@
 using BootManager.Application.Authentication.Services;
+using BootManager.Application.Logbook.Services;
 using BootManager.Application.OwnerRegistration.Services;
 using BootManager.Application.NetworkMessages.Services;
 using BootManager.Application.NetworkMessageParsing.Services;
@@ -86,6 +87,9 @@ public static class DependencyInjection
 
         // Registratie van WaterTemperatureMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IWaterTemperatureMeasurementService, WaterTemperatureMeasurementService>();
+
+        // Registratie van Logboek application-service
+        services.AddScoped<ILogbookService, LogbookService>();
 
         return services;
     }
