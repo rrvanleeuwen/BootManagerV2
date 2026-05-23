@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using BootManager.Tools.Ingest.Options;
 using BootManager.Tools.Ingest.Services;
+using BootManager.Tools.Ingest.Policies;
+using BootManager.Core.Enums;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -31,6 +33,14 @@ var builder = Host.CreateDefaultBuilder(args)
 
         // Registreer HttpClient voor API-calls
         services.AddHttpClient<IngestService>();
+
+        // Registreer sampling policy als singleton
+        services.AddSingleton<IIngestSamplingPolicy>(provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<IngestOptions>>().Value;
+            var logger = provider.GetRequiredService<ILogger<IngestSamplingPolicy>>();
+            return new IngestSamplingPolicy(options.RawStorageMode, options.DefaultSampleIntervalSeconds, logger);
+        });
 
         services.AddHostedService<IngestService>();
     });
@@ -61,13 +71,24 @@ if (remoteSettings is not null)
     ingestOptions.ApiBaseUrl = remoteSettings.ApiBaseUrl;
     ingestOptions.CaptureLogging.Enabled = remoteSettings.CaptureLoggingEnabled;
 
-    // rawStorageMode en defaultSampleIntervalSeconds worden gelogd maar nog niet toegepast
+    // Parse RawStorageMode van string naar enum
+    if (Enum.TryParse<RawStorageMode>(remoteSettings.RawStorageMode, ignoreCase: true, out var parsedMode))
+    {
+        ingestOptions.RawStorageMode = parsedMode;
+    }
+    else
+    {
+        logger.LogWarning(
+            "Could not parse RawStorageMode '{Mode}' from remote settings; using fallback All.",
+            remoteSettings.RawStorageMode);
+        ingestOptions.RawStorageMode = RawStorageMode.All;
+    }
+
+    ingestOptions.DefaultSampleIntervalSeconds = remoteSettings.DefaultSampleIntervalSeconds;
+
     logger.LogInformation(
-        "Runtime-instellingen overschreven vanuit BootManager.Web: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}, CaptureLoggingEnabled={CaptureLoggingEnabled}.",
-        ingestOptions.ListenAddress, ingestOptions.ListenPort, ingestOptions.ApiBaseUrl, ingestOptions.CaptureLogging.Enabled);
-    logger.LogInformation(
-        "RawStorageMode={RawStorageMode} en DefaultSampleIntervalSeconds={DefaultSampleIntervalSeconds} ontvangen maar nog niet toegepast (volgende slice).",
-        remoteSettings.RawStorageMode, remoteSettings.DefaultSampleIntervalSeconds);
+        "Runtime-instellingen overschreven vanuit BootManager.Web: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}, CaptureLoggingEnabled={CaptureLoggingEnabled}, RawStorageMode={RawStorageMode}, DefaultSampleIntervalSeconds={SampleInterval}.",
+        ingestOptions.ListenAddress, ingestOptions.ListenPort, ingestOptions.ApiBaseUrl, ingestOptions.CaptureLogging.Enabled, ingestOptions.RawStorageMode, ingestOptions.DefaultSampleIntervalSeconds);
     logger.LogInformation("Configuratiebron: BootManager.Web (database).");
 }
 else
@@ -75,6 +96,9 @@ else
     logger.LogWarning(
         "Operationele instellingen konden niet worden opgehaald bij BootManager.Web. Ingest draait met appsettings als fallback.");
     logger.LogInformation("Configuratiebron: appsettings.json (fallback).");
+    logger.LogInformation(
+        "RawStorageMode={RawStorageMode}, DefaultSampleIntervalSeconds={SampleInterval}.",
+        ingestOptions.RawStorageMode, ingestOptions.DefaultSampleIntervalSeconds);
 }
 
 Console.WriteLine($"Listen address: {ingestOptions.ListenAddress}");

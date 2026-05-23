@@ -22,8 +22,15 @@
 - [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
   - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.
   - **Status 2026-05-23 (slice 2):** Ingest haalt bij startup operationele instellingen op via `GET /api/operationalsettings/ingest`. appsettings.json blijft fallback als Web niet bereikbaar is. Settings worden niet live herladen tijdens runtime.
-  - **Nog niet toegepast:** `RawStorageMode` en `DefaultSampleIntervalSeconds` worden opgehaald en gelogd, maar nog niet gebruikt.
-  - **Vervolg:** sampling/raw-retentie toepassen op opslag van raw berichten en derived measurements.
+  - **Status 2026-05-23 (slice 3):** `RawStorageMode` en `DefaultSampleIntervalSeconds` zijn volledig toegepast:
+    - `IIngestSamplingPolicy` en `IngestSamplingPolicy` implementeren per-stream-key sampling.
+    - `RawStorageMode.All`: alle berichten naar API/database (bestaand gedrag).
+    - `RawStorageMode.Sampled`: maximaal 1 bericht per stream key per interval.
+    - `RawStorageMode.OffAfterSuccessfulParse`: voorlopig gelijk aan Sampled; post-parse cleanup volgt later.
+    - Stream key is `Protocol:MessageId` (genormaliseerd). Capture logging onafhankelijk van sampling.
+    - Bij interval ≤ 0 wordt fallback naar 10 seconden met waarschuwing.
+    - Unit tests dekken alle modes en edge cases.
+  - **Vervolg:** post-parse raw-retentie toepassen (Web moet succesvol parsen rapporteren).
 
 - [ ] **Digitaal Logboek** *(epic – UI richting eindgebruiker)*
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.

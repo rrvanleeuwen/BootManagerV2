@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BootManager.Tools.Ingest.Models;
 using BootManager.Tools.Ingest.Options;
+using BootManager.Tools.Ingest.Policies;
 
 namespace BootManager.Tools.Ingest.Services;
 
@@ -14,7 +15,7 @@ namespace BootManager.Tools.Ingest.Services;
 /// Background service voor ingest van netwerkgegevens via één gecombineerde UDP-listener.
 /// Detecteert per ontvangen regel het protocol op basis van regelinhoud:
 /// regels die beginnen met '$' of '!' worden behandeld als NMEA 0183, overige regels als NMEA 2000/raw.
-/// Verzendt alle regels via HTTP POST naar de BootManager.Web API.
+/// Verzendt regels via HTTP POST naar de BootManager.Web API, met optionele sampling.
 /// </summary>
 public class IngestService : BackgroundService
 {
@@ -22,6 +23,7 @@ public class IngestService : BackgroundService
     private readonly ILogger<IngestService> _logger;
     private readonly HttpClient _httpClient;
     private readonly IIngestCaptureLogger _captureLogger;
+    private readonly IIngestSamplingPolicy _samplingPolicy;
     private UdpClient? _udpClient;
 
     /// <summary>
@@ -31,12 +33,14 @@ public class IngestService : BackgroundService
     /// <param name="logger">Logger-instantie.</param>
     /// <param name="httpClient">HttpClient voor API-communicatie.</param>
     /// <param name="captureLogger">Optionele capture logger voor raw NDJSON-logging.</param>
-    public IngestService(IOptions<IngestOptions> options, ILogger<IngestService> logger, HttpClient httpClient, IIngestCaptureLogger captureLogger)
+    /// <param name="samplingPolicy">Sampling policy voor berichten.</param>
+    public IngestService(IOptions<IngestOptions> options, ILogger<IngestService> logger, HttpClient httpClient, IIngestCaptureLogger captureLogger, IIngestSamplingPolicy samplingPolicy)
     {
         _options = options;
         _logger = logger;
         _httpClient = httpClient;
         _captureLogger = captureLogger;
+        _samplingPolicy = samplingPolicy;
     }
 
     /// <summary>
@@ -127,6 +131,14 @@ public class IngestService : BackgroundService
                                 ErrorMessage = null
                             };
                             await _captureLogger.WriteAsync(record);
+                        }
+
+                        // Controleer sampling policy: alleen versturen als bericht doorgelaten mag worden
+                        if (!_samplingPolicy.ShouldProcessMessage(parsed.Protocol, parsed.MessageId))
+                        {
+                            _logger.LogDebug("Message sampled out: Protocol={Protocol}, MessageId={MessageId}", 
+                                parsed.Protocol, parsed.MessageId ?? "unknown");
+                            continue;
                         }
 
                         var (success, _, _) = await SendToApiWithDetailsAsync(parsed, stoppingToken);

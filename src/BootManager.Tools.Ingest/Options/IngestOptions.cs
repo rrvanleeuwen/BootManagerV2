@@ -1,5 +1,7 @@
 namespace BootManager.Tools.Ingest.Options;
 
+using BootManager.Core.Enums;
+
 /// <summary>
 /// Opties/configuratie voor de ingest-service.
 /// Er is één gecombineerde UDP-listener die zowel NMEA 0183 als NMEA 2000/raw-like regels verwerkt.
@@ -47,4 +49,21 @@ public class IngestOptions
     /// Standaard uitgeschakeld. Zet <see cref="CaptureLoggingOptions.Enabled"/> op <c>true</c> voor een boot-test.
     /// </summary>
     public CaptureLoggingOptions CaptureLogging { get; set; } = new();
+
+    /// <summary>
+    /// Bepaalt hoe ruwe NMEA-berichten naar de API/database worden opgeslagen.
+    /// - <see cref="RawStorageMode.All"/>: Alle ontvangen berichten worden gepost (huidig gedrag).
+    /// - <see cref="RawStorageMode.Sampled"/>: Maximaal één bericht per stream key per <see cref="DefaultSampleIntervalSeconds"/>.
+    /// - <see cref="RawStorageMode.OffAfterSuccessfulParse"/>: Tijdelijk als Sampled; echte post-parse raw-retentie in volgende slice.
+    /// Standaard: <see cref="RawStorageMode.All"/>.
+    /// </summary>
+    public RawStorageMode RawStorageMode { get; set; } = RawStorageMode.All;
+
+    /// <summary>
+    /// Standaard sample-interval in seconden voor <see cref="RawStorageMode.Sampled"/> en <see cref="RawStorageMode.OffAfterSuccessfulParse"/>.
+    /// Bepaalt minimale tijd tussen opeenvolgende berichten per stream key die naar de API worden gepost.
+    /// Als waarde &lt;= 0, wordt fallback naar 10 seconden en een waarschuwing gelogd.
+    /// Standaard: 10 seconden.
+    /// </summary>
+    public int DefaultSampleIntervalSeconds { get; set; } = 10;
 }

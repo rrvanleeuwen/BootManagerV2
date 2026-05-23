@@ -450,31 +450,77 @@ Ingest ondersteunt optionele raw capture logging voor boot-testen. Per ontvangen
 
 Status 2026-05-23: BootManager.Web heeft een sectie **Operationele instellingen** op `/settings`. Deze instellingen worden in de database opgeslagen en bevatten luisteradres, primaire en alternatieve poort, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.
 
-Belangrijk: `BootManager.Tools.Ingest` gebruikt deze database-instellingen nog niet. Voor de huidige runtime blijft `src/BootManager.Tools.Ingest/appsettings.json` leidend. Een vervolgslice laat Ingest bij startup de database-instellingen ophalen via BootManager.Web, met appsettings als fallback wanneer Web niet bereikbaar is.
+**Sampling policy (toegepast 2026-05-23):**
+
+BootManager.Tools.Ingest haalt bij startup de database-instellingen op via BootManager.Web (`GET /api/operationalsettings/ingest`), met appsettings.json als fallback wanneer Web niet bereikbaar is. De volgende instellingen worden toegepast:
+
+#### RawStorageMode
+
+Bepaalt hoe ruwe netwerkberichten worden gepost naar de API/database:
+
+- **All (standaard):** Alle ontvangen berichten worden gepost. Dit is het huidige gedrag.
+- **Sampled:** Maximaal één bericht per stream key (`Protocol:MessageId`) per `DefaultSampleIntervalSeconds`.
+  - Voorbeeld: Bij interval=10 kan `NMEA0183:YDGGA` 1x per 10s door, maar `NMEA0183:YDHDM` onafhankelijk.
+  - Doel: Een boottocht van 5-6 uur slaat niet tientallen berichten per seconde op; periodieke meetdata volstaat.
+  - Overgeslagen berichten: Niet gepost naar API, geen NetworkMessage gemaakt, geen derived measurement.
+- **OffAfterSuccessfulParse (voorzichtig):** Voorlopig identiek aan Sampled.
+  - Echte post-parse raw-retentie (verwijdering na succesvolle parsing) volgt in volgende slice.
+  - Web API rapporteert momenteel niet of parsing is geslaagd; daarom veilig als Sampled gedaan.
+
+#### DefaultSampleIntervalSeconds
+
+Sample-interval in seconden voor `Sampled` en `OffAfterSuccessfulParse`.
+
+- Standaard: 10 seconden.
+- Defensieve validatie: Als ≤ 0, fallback naar 10 seconden met waarschuwing.
+- Wordt genegeerd als `RawStorageMode = All`.
+
+#### Capture logging onafhankelijk
+
+Capture logging (`CaptureLoggingEnabled` in database) werkt onafhankelijk van database-sampling:
+
+- Alle ontvangen UDP-regels kunnen worden gelogd (diagnose).
+- Sampling beperkt API-posts, niet capture logging.
+- Dit maakt diagnose van overgeslagen berichten mogelijk.
 
 ### Inschakelen
 
 Pas `appsettings.json` aan in `src/BootManager.Tools.Ingest/`:
 
 ```json
-"CaptureLogging": {
-  "Enabled": true,
-  "Directory": "logs/ingest-capture",
-  "FilePrefix": "ingest-capture"
+{
+  "Ingest": {
+    "ListenAddress": "0.0.0.0",
+    "ListenPort": 10110,
+    "MaxQueueSize": 1000,
+    "BatchSize": 10,
+    "ApiBaseUrl": "http://localhost:5046",
+    "NetworkMessagesEndpoint": "/api/networkmessages",
+    "RawStorageMode": "All",
+    "DefaultSampleIntervalSeconds": 10,
+    "CaptureLogging": {
+      "Enabled": true,
+      "Directory": "logs/ingest-capture",
+      "FilePrefix": "ingest-capture"
+    }
+  }
 }
 ```
 
-- `Enabled: false` (standaard) – geen bestand wordt aangemaakt.
-- `Directory` mag relatief of absoluut zijn (bijv. `C:\\tmp\\logs`).
+- `RawStorageMode`: "All", "Sampled", of "OffAfterSuccessfulParse" (case-insensitive).
+- `DefaultSampleIntervalSeconds`: positief integer; fallback 10 als ≤ 0.
+- `CaptureLogging.Enabled: false` (standaard) – geen bestand wordt aangemaakt.
+- `CaptureLogging.Directory` mag relatief of absoluut zijn (bijv. `C:\\tmp\\logs`).
 - Bestandsnaam: `{FilePrefix}-yyyyMMdd-HHmmss.ndjson`.
 - Fouten bij het schrijven worden alleen gelogd; de ingest-flow wordt nooit geblokkeerd.
 
+Bij startup loggt Ingest welke modus actief is en wat het sample-interval is. Als remote-instellingen worden opgehaald, wordt dit ook gelogd.
+
 ### Na de boot-test mee te nemen
 
-- Capture logbestand(en) uit de geconfigureerde `Directory`
+- Capture logbestand(en) uit de geconfigureerde `Directory` (als ingeschakeld)
 - `BootManager.Web/bootmanager.db` (SQLite)
 
----
 
 ## Common Issues & Solutions
 

@@ -438,7 +438,7 @@ worden raw opgeslagen in `NetworkMessages` en kunnen later alsnog verwerkt worde
 ---
 
 *Aangemaakt: 2026-05-17*  
-*Bijgewerkt: 2026-05-23 — Ingest startup koppeling aan BootManager.Web operationele instellingen toegevoegd (Fase 4).*
+*Bijgewerkt: 2026-05-23 — Ingest startup koppeling aan BootManager.Web operationele instellingen toegevoegd (Fase 4); RawStorageMode sampling policy toegepast (Fase 5).*
 
 ---
 
@@ -471,4 +471,95 @@ worden raw opgeslagen in `NetworkMessages` en kunnen later alsnog verwerkt worde
 - Geen raw storage mode toepassen.
 - Geen database writes vanuit Ingest.
 - Geen background polling.
+
+---
+
+## Fase 5: RawStorageMode sampling policy toepassen (2026-05-23)
+
+**Branch:** `feature/apply-ingest-sampling-policy`
+
+### Wat is geïmplementeerd
+
+- `IIngestSamplingPolicy` interface: beslissing `ShouldProcessMessage(protocol, messageId) → bool` per berichten-flow.
+- `IngestSamplingPolicy` implementatie:
+  - **All mode:** Alle berichten doorlaten (huidig gedrag behouden).
+  - **Sampled mode:** Per stream key (`Protocol:MessageId`, genormaliseerd) maximaal 1 bericht per `DefaultSampleIntervalSeconds`.
+  - **OffAfterSuccessfulParse mode:** Voorlopig identiek aan Sampled; echte post-parse cleanup volgt later.
+  - Thread-safe per-stream-key timing met `Dictionary<string, DateTime>`.
+  - Defensieve interval-validatie: `≤ 0` → fallback 10 seconden met waarschuwing.
+  - `Reset()` methode voor testing.
+- `IngestOptions` uitgebreid met:
+  - `RawStorageMode` (enum, standaard `All`)
+  - `DefaultSampleIntervalSeconds` (int, standaard 10)
+- `IngestService` aangepast:
+  - `IIngestSamplingPolicy` constructor-injection.
+  - `ShouldProcessMessage()` controle vóór `SendToApiWithDetailsAsync()`.
+  - Capture logging onafhankelijk van sampling (diagnose blijft altijd werkend).
+- `Program.cs` uitgebreid:
+  - Enum-parsing van remote `RawStorageMode` (case-insensitive).
+  - Fallback naar `All` bij ongeldige waarde.
+  - Volledige logging van actieve mode en interval bij startup.
+  - Bij `OffAfterSuccessfulParse`: expliciete opmerking dat dit voorlopig als Sampled gedaan wordt.
+- Unit tests: 11 tests in `IngestSamplingPolicyTests` dekken:
+  - All mode: alles doorgelaten.
+  - Sampled mode: eerste bericht door, volgende geblokkeerd, na interval weer door.
+  - Stream key isolation per MessageId en Protocol.
+  - Null/empty MessageId handling.
+  - OffAfterSuccessfulParse gedrag.
+  - Interval fallback.
+  - MessageId normalization (case-insensitive).
+  - Reset functie.
+
+### Gedrag
+
+| Mode | Gedrag | Doel |
+|---|---|---|
+| **All** | Alle berichten → API/database | Geen sampling; volledige diagnose-opslag |
+| **Sampled** | Per stream key ≤ 1 bericht per interval → API | 5-6u boot stroom beheerbaar; belangrijk beperken |
+| **OffAfterSuccessfulParse** | Zoals Sampled (voorlopig) | Voorzichtige voorbereiding; post-parse cleanup later |
+
+### Stream key
+
+Format: `{Protocol}:{MessageId}` (MessageId genormaliseerd uppercase).
+
+Voorbeelden:
+- `NMEA0183:YDGGA` (positie via NMEA 0183)
+- `NMEA0183:YDHDM` (heading via NMEA 0183)
+- `NMEA0183:AIVDM` (AIS via NMEA 0183)
+- `NMEA0183:Unknown` (NMEA 0183 zonder herkenbare MessageId)
+- `NMEA2000:01F80403` (Motion via NMEA 2000)
+
+### Capture logging onafhankelijk
+
+- `CaptureLoggingEnabled` in database bepaalt of NDJSON capture-logging actief is.
+- Capture logging **werkt onafhankelijk van sampling**.
+- Overgeslagen berichten kunnen dus via capture-log gediagnosticeerd worden.
+- Dit maakt debugging van sampling-beleid mogelijk.
+
+### Logging bij startup
+
+Ingest logt nu:
+```
+RawStorageMode set to Sampled; sample interval is 10 seconds.
+RawStorageMode set to OffAfterSuccessfulParse; treating as Sampled for now. True post-parse raw-retention not yet supported (will be implemented in future slice).
+```
+
+### Niet gedaan in deze slice
+
+- Post-parse raw-retention (verwijdering na succesvolle Web-parsing).
+- Database writes vanuit Ingest sampling.
+- Live-herconfiguratie van policy (settings worden alleen bij startup geladen).
+- Automatische database-cleanup.
+
+### Acceptatiecriteria (volledig)
+
+- ✅ `dotnet build` slaagt.
+- ✅ `dotnet test` slaagt; 11 nieuwe tests, alle groen.
+- ✅ IngestService logt bij startup welke RawStorageMode en interval actief zijn.
+- ✅ Bij `RawStorageMode=All` blijft huidig gedrag intact.
+- ✅ Bij `RawStorageMode=Sampled` wordt aantal posts naar `/api/networkmessages` beperkt per stream key.
+- ✅ Verschillende berichttypes verdringen elkaar niet (aparte stream keys).
+- ✅ Capture logging blijft onafhankelijk werkend.
+- ✅ `OffAfterSuccessfulParse` veilig en duidelijk als Sampled geïmplementeerd.
+- ✅ Geen capture logs, testdata of lokale databasebestanden in commit.
 
