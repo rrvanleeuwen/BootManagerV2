@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BootManager.Tools.Simulator.Models;
 using BootManager.Tools.Simulator.NMEA0183;
+using BootManager.Tools.Simulator.NMEA0183.Yden03;
 using BootManager.Tools.Simulator.Options;
 using BootManager.Tools.Simulator.Scenarios;
 using Microsoft.Extensions.Hosting;
@@ -81,6 +82,7 @@ public class Nmea0183SimulationService : BackgroundService
         Console.WriteLine($"[NMEA0183] Simulator gestart: Scenario={_options.Scenario} " +
                           $"Target={_options.Nmea0183TargetIp}:{_options.Nmea0183TargetPort} " +
                           $"IntervalMs={_options.IntervalMs} " +
+                          $"Profile={_options.Nmea0183Profile} " +
                           $"IncludeNegative={_options.IncludeNegativeTestSentences}");
         Console.WriteLine("[NMEA0183] Sentence-types: VHW, MTW, DBT, MWV, HDT, RMC, GGA" +
                           (_options.IncludeNegativeTestSentences ? " + negatieve varianten (MWV-V, RMC-V, GGA-fix0, VHW-badcs)" : string.Empty));
@@ -92,7 +94,15 @@ public class Nmea0183SimulationService : BackgroundService
             var before = DateTime.UtcNow;
             UpdateState(_options.IntervalMs);
 
-            var sentences = BuildNmea0183Sentences(_state);
+            IEnumerable<string> sentences;
+            if (_options.Nmea0183Profile == Options.Nmea0183Profile.YDEN03)
+            {
+                sentences = Nmea0183Yden03Generator.BuildSentences(_state, _options.IncludeNegativeTestSentences);
+            }
+            else
+            {
+                sentences = BuildNmea0183Sentences(_state);
+            }
 
             foreach (var sentence in sentences)
             {

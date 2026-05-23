@@ -44,7 +44,7 @@ public static class Nmea0183SentenceBuilder
         var absLat = Math.Abs(lat);
         var degrees = (int)absLat;
         var minutes = (absLat - degrees) * 60.0;
-        return ($"{degrees:D2}{minutes:F4}", hemi);
+        return ($"{degrees:D2}{minutes.ToString("F4", CultureInfo.InvariantCulture)}", hemi);
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ public static class Nmea0183SentenceBuilder
         var absLon = Math.Abs(lon);
         var degrees = (int)absLon;
         var minutes = (absLon - degrees) * 60.0;
-        return ($"{degrees:D3}{minutes:F4}", hemi);
+        return ($"{degrees:D3}{minutes.ToString("F4", CultureInfo.InvariantCulture)}", hemi);
     }
 
     // -------------------------------------------------------------------------
