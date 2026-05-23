@@ -231,10 +231,10 @@ public class IngestService : BackgroundService
     /// <param name="line">De ontvangen regelstring.</param>
     /// <param name="source">Het remote endpoint van de afzender.</param>
     /// <returns>Een gevuld of partieel gevuld <see cref="ReceivedNetworkLine"/> model.</returns>
-    private static ReceivedNetworkLine ParseNetworkLine(string line, string source)
+    internal static ReceivedNetworkLine ParseNetworkLine(string line, string source)
     {
-        // NMEA 0183 sentence: begint met '$', raw opslaan zonder verdere parsing
-        if (line.StartsWith('$'))
+        // NMEA 0183 sentence: begint met '$' of '!' (AIS sentences gebruiken vaak '!'), raw opslaan zonder verdere parsing
+        if (line.StartsWith('$') || line.StartsWith('!'))
         {
             return new ReceivedNetworkLine
             {

@@ -246,6 +246,119 @@ De simulator ondersteunt `NMEA0183`- en `Both`-modus. Alle fase 3a-3c sentence-t
 
 ---
 
+## Nieuwe user stories na echte boot-test – 2026-05-23
+
+De echte YDEN-03 capture `ingest-capture-20260523-093220.ndjson` bevestigt dat UDP ontvangst en raw opslag werken, maar toont ook drie concrete gaten:
+
+- AIS sentences met `!AIVDM` / `!AIVDO` worden foutief als `NMEA2000` gelabeld.
+- NMEA 0183-derived measurements worden niet opgeslagen omdat NMEA 0183 requests geen bruikbare `MessageId` hebben.
+- De simulator mist nog echte YDEN-achtige variatie zoals AIS `!` sentences, `YD` talker-prefixen en extra raw-only sentences.
+
+### Story 1 – Correcte NMEA 0183 protocolherkenning voor `$` en `!`
+
+**Als** ontwikkelaar/operator  
+**wil ik** dat Ingest zowel `$...` als `!...` sentences als NMEA 0183 herkent  
+**zodat** echte YDEN-03 output inclusief AIS niet meer in de NMEA2000/raw-like keten terechtkomt.
+
+**Scope**
+- `IngestService` protocolherkenning uitbreiden: regels met `$` of `!` zijn `Protocol = "NMEA0183"`.
+- Raw simulator/NMEA2000-regels zonder `$` of `!` blijven `Protocol = "NMEA2000"`.
+- Capture logging blijft hetzelfde NDJSON-formaat gebruiken.
+
+**Acceptatiecriteria**
+- `$YDGGA,...` wordt als `NMEA0183` doorgestuurd.
+- `!AIVDM,...` en `!AIVDO,...` worden als `NMEA0183` doorgestuurd.
+- Een bestaande raw-like simulatorregel blijft `NMEA2000`.
+- Unit tests dekken `$`, `!` en raw-like regels.
+- Replay of nieuwe boot-test toont geen `!AIVDM` / `!AIVDO` records meer met `Protocol = "NMEA2000"`.
+
+### Story 2 – NMEA 0183 parser accepteert AIS-startteken `!`
+
+**Als** systeem  
+**wil ik** NMEA 0183 sentences kunnen parsen die met `$` of `!` beginnen  
+**zodat** AIS en andere `!`-sentences technisch correct als NMEA 0183 verwerkt kunnen worden.
+
+**Scope**
+- `Nmea0183ParserService` accepteert `$` en `!` als geldig startteken.
+- Checksumberekening blijft XOR over de body tussen startteken en `*`.
+- Talker/type extractie blijft gelijk: `!AIVDM` -> talker `AI`, type `VDM`.
+- Deze story decodeert AIS payloads nog niet semantisch.
+
+**Acceptatiecriteria**
+- `$YDGGA,...*HH` parsed succesvol als talker `YD`, type `GGA`.
+- `!AIVDM,...*HH` parsed succesvol als talker `AI`, type `VDM`.
+- Ongeldige checksum blijft `ChecksumValid = false`.
+- Een sentence zonder `$` of `!` wordt afgewezen.
+- Bestaande NMEA 0183 parser/interpreter tests blijven slagen.
+
+### Story 3 – Bruikbare `MessageId` voor NMEA 0183-derived measurements
+
+**Als** ontwikkelaar  
+**wil ik** dat NMEA 0183 berichten een stabiele `MessageId` krijgen  
+**zodat** afgeleide measurements kunnen worden opgeslagen zonder de bestaande measurementvalidatie te versoepelen.
+
+**Scope**
+- Ingest of Application bepaalt voor NMEA 0183 een `MessageId` uit sentence-id.
+- Voorbeelden:
+  - `$YDGGA,...` -> `YDGGA`
+  - `$YDMWV,...` -> `YDMWV`
+  - `!AIVDM,...` -> `AIVDM`
+- `PayloadHex` blijft `null` voor NMEA 0183.
+- Measurement services blijven een niet-lege `MessageId` eisen.
+
+**Acceptatiecriteria**
+- Nieuwe `NetworkMessages` voor NMEA 0183 hebben een niet-lege `MessageId`.
+- `GGA`/`RMC` slaan `PositionMeasurements` op.
+- `RMC` slaat `MotionMeasurements` op.
+- `MWV` slaat `WindMeasurements` op.
+- `HDT`/`HDM` slaan `HeadingMeasurements` op.
+- `MTW` slaat `WaterTemperatureMeasurements` op.
+- `VHW` slaat `SpeedThroughWaterMeasurements` op.
+- Geen `DepthMeasurements` worden verwacht zolang de bron geen `DBT` of `DPT` stuurt.
+
+### Story 4 – Simulator realistischer maken op basis van echte YDEN-capture
+
+**Als** ontwikkelaar die niet op de boot is  
+**wil ik** dat de simulator representatieve YDEN-achtige NMEA 0183 output kan genereren  
+**zodat** ingest, parser en SQLite-verwerking lokaal dezelfde randgevallen testen als aan boord.
+
+**Scope**
+- Simulator behoudt de bestaande `NMEA0183` en `Both` modes.
+- Voeg een configureerbare realistische modus toe, bijvoorbeeld `Simulator:Nmea0183Profile=YDEN03`.
+- In de YDEN03-modus gebruikt de simulator minimaal:
+  - `YD` talker-prefixen voor bestaande navigatie/wind/heading/temperatuur sentences.
+  - AIS-achtige `!AIVDM` en `!AIVDO` sentences met geldige checksum als raw-only NMEA 0183 verkeer.
+  - Extra YDEN-achtige raw-only sentences uit de capture, zoals `ZDA`, `MWD`, `XDR`, `MDA`, `VTG`, `GSA`, `GSV`, `GLL`, `ROT`, `VLW`, `VWR`, `VWT`, `VDR`, `MXPGN` en `PCDIN`, voor zover praktisch.
+- Semantische AIS-decoding is buiten scope; raw opslag en parseracceptatie zijn voldoende.
+
+**Acceptatiecriteria**
+- Lokale simulator-output bevat naast de bestaande ondersteunde sentences ook `!AIVDM` / `!AIVDO`.
+- Alle door de simulator gegenereerde `$` en `!` sentences hebben geldige NMEA checksum.
+- Ingest labelt alle simulator `$` en `!` sentences als `NMEA0183`.
+- End-to-end lokale test vult dezelfde measurementtabellen als een echte boot-test voor ondersteunde sentence-types.
+- Raw-only sentences blijven bewaard in `NetworkMessages` zonder de flow te blokkeren.
+
+### Story 5 – Replay-validatie van echte capture naar SQLite
+
+**Als** ontwikkelaar  
+**wil ik** de echte boot-capture opnieuw kunnen afspelen tegen de API  
+**zodat** fixes reproduceerbaar gevalideerd kunnen worden zonder opnieuw op de boot te zijn.
+
+**Scope**
+- Maak een kleine replay-route of toolkeuze voor NDJSON capturebestanden.
+- Replay leest `rawLine`, `receivedAtUtc` en `remoteEndpoint` uit capture records.
+- Replay post naar `/api/networkmessages` met dezelfde protocol- en `MessageId`-logica als Ingest.
+- Replay mag bestaande data dupliceren; deduplicatie is buiten scope.
+
+**Acceptatiecriteria**
+- Replay van `ingest-capture-20260523-093220.ndjson` post alle 863 regels zonder crash.
+- SQLite bevat na replay 863 nieuwe `NetworkMessages`.
+- Alle `!AIVDM` / `!AIVDO` replay-records hebben `Protocol = "NMEA0183"`.
+- Ondersteunde sentence-types leveren nieuwe records in de verwachte measurementtabellen.
+- De replayprocedure is gedocumenteerd met concrete commando's en SQLite-controlequeries.
+
+---
+
 ## Open ontwerpvragen
 
 De volgende vragen staan nog open en moeten worden beantwoord vóór of tijdens Fase 3-implementatie.
