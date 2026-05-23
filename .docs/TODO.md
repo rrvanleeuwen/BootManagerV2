@@ -52,6 +52,7 @@
   - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel en browser-printweergave zijn geïmplementeerd. Akkoordflow (LogbookEntryStatus: Draft/Confirmed) geïmplementeerd op 2026-05-23.
   - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont read-only samples en samenvattingen voor positie, COG/SOG, heading, wind, diepte en watertemperatuur binnen het tijdvak van de logregel.
   - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print.
+  - **Volgende slice:** ontbrekende logmomenten zichtbaar maken in de logboek-UI. Start klein: banner/melding + knop om een `Draft`-regel voor het eerstvolgende gemiste logmoment te maken. Nog geen browser push notifications.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 - [ ] **Authentication & Authorization**

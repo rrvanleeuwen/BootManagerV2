@@ -329,3 +329,39 @@ Geïmplementeerd als browser-printvriendelijke HTML/CSS weergave.
 - Browser notifications bij overschreden loginterval.
 - Automatisch aanmaken van `Draft`-regels via intervaldetectie.
 - Gebruikersinstelling voor loginterval.
+
+---
+
+## Volgende slice: ontbrekende logmomenten zichtbaar maken
+
+**Datum:** 2026-05-23  
+**Status:** Voorstel voor eerstvolgende logboekstap
+
+### Wat bestaat al
+- `Draft`/`Confirmed` akkoordflow voor logboekregels.
+- Badges "Te accorderen" en "Definitief" in `/logbook`.
+- Draft-regels zijn zichtbaar in de werk-UI en worden niet geprint.
+- Handmatige nieuwe regels zijn standaard `Confirmed`.
+- Meetdatasuggesties bestaan al voor een gekozen logboektijdstip.
+- Detailperiode loopt al van vorige logboekregel (of reisvertrek) tot de gekozen regel.
+
+### Gewenste eerstvolgende stap
+
+Maak nog geen volledige browser-notificatie of push notification. Begin met zichtbaar maken dat een logmoment ontbreekt.
+
+Functioneel voorstel:
+- Bepaal per geselecteerde/actieve reis het volgende verwachte logmoment op basis van:
+  - laatste logboekregel, of
+  - vertrek/reisstart als er nog geen regels zijn,
+  - plus een voorlopig vast of later instelbaar loginterval.
+- Als dat moment verstreken is, toon boven het logboek een duidelijke melding/banner.
+- Toon een knop: "Conceptregel maken voor dit logmoment".
+- De knop maakt een `Draft`/Te accorderen logboekregel aan voor dat tijdstip.
+- De gebruiker vult opmerkingen/zeilvoering aan en accordeert bewust.
+- Print blijft ongewijzigd: alleen `Confirmed` regels worden afgedrukt.
+
+### Bewuste scopegrens
+- Nog geen browser push notifications.
+- Nog geen automatisch definitief maken.
+- Nog geen stille bulk-aanmaak van meerdere regels zonder gebruiker.
+- Eventueel ontbrekende meerdere logmomenten mogen eerst als lijst of één eerstvolgend logmoment worden ontworpen.

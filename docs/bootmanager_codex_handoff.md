@@ -450,6 +450,7 @@ TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig **niet nodig**.
 De TCP-poort lijkt bedoeld voor de eigen YDEN-software; BootManager gebruikt de bewezen UDP NMEA 0183 route.
 
 ### Mogelijke volgende stappen
+- Digitaal logboek: ontbrekende logmomenten zichtbaar maken. Er bestaat al `Draft`/`Confirmed`, badges, accorderen, print-filtering en meetdatasuggesties. Volgende slice moet klein blijven: banner/melding voor verlopen logmoment + knop om een `Draft`-regel voor dat logmoment aan te maken. Nog geen browser push notifications.
 - Conflict/deduplicatiebeleid tussen NMEA2000 en NMEA0183 measurements
 - Protocoltraceerbaarheid op measurement entities (`Protocol`-veld)
 - Echte boot UDP-test met YDEN-03 op poort 2000/10110
