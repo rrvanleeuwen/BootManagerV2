@@ -46,7 +46,13 @@ public class LogbookService : ILogbookService
             destinationPort: dto.DestinationPort,
             vesselName: dto.VesselName,
             crew: dto.Crew,
-            notes: dto.Notes);
+            notes: dto.Notes,
+            logstandStart: dto.LogstandStart,
+            loggedMiles: dto.LoggedMiles,
+            engineHoursStart: dto.EngineHoursStart,
+            engineHoursEnd: dto.EngineHoursEnd,
+            fuel: dto.Fuel,
+            totalSailingHours: dto.TotalSailingHours);
 
         await _tripRepo.AddAsync(entity, cancellationToken);
         _logger.LogInformation("Logboek reis aangemaakt met id {TripId}.", entity.Id);
@@ -84,7 +90,13 @@ public class LogbookService : ILogbookService
             destinationPort: dto.DestinationPort,
             vesselName: dto.VesselName,
             crew: dto.Crew,
-            notes: dto.Notes);
+            notes: dto.Notes,
+            logstandStart: dto.LogstandStart,
+            loggedMiles: dto.LoggedMiles,
+            engineHoursStart: dto.EngineHoursStart,
+            engineHoursEnd: dto.EngineHoursEnd,
+            fuel: dto.Fuel,
+            totalSailingHours: dto.TotalSailingHours);
 
         await _tripRepo.UpdateAsync(entity, cancellationToken);
     }
@@ -151,6 +163,12 @@ public class LogbookService : ILogbookService
         VesselName = t.VesselName,
         Crew = t.Crew,
         Notes = t.Notes,
+        LogstandStart = t.LogstandStart,
+        LoggedMiles = t.LoggedMiles,
+        EngineHoursStart = t.EngineHoursStart,
+        EngineHoursEnd = t.EngineHoursEnd,
+        Fuel = t.Fuel,
+        TotalSailingHours = t.TotalSailingHours,
         CreatedAtUtc = t.CreatedAtUtc,
         UpdatedAtUtc = t.UpdatedAtUtc
     };

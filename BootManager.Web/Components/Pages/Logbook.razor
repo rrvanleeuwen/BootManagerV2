@@ -71,6 +71,35 @@ else
                             <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="_tripForm.Notes" />
                         </div>
                     </div>
+
+                    <!-- Reis-samenvatting -->
+                    <div class="mt-3 mb-1 fw-semibold small text-secondary">Reis-samenvatting</div>
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <label class="form-label">Logstand start (nm)</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.LogstandStart" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Gelogde mijlen (nm)</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.LoggedMiles" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Motor uren start</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.EngineHoursStart" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Motor uren eind</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.EngineHoursEnd" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Brandstof</label>
+                            <InputText class="form-control form-control-sm" @bind-Value="_tripForm.Fuel" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Totaal vaaruren</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.TotalSailingHours" />
+                        </div>
+                    </div>
                     <div class="mt-2">
                         <button type="submit" class="btn btn-sm btn-primary">Opslaan</button>
                         @if (_tripSaved)
@@ -370,6 +399,12 @@ else
         public string? VesselName { get; set; }
         public string? Crew { get; set; }
         public string? Notes { get; set; }
+        public decimal? LogstandStart { get; set; }
+        public decimal? LoggedMiles { get; set; }
+        public decimal? EngineHoursStart { get; set; }
+        public decimal? EngineHoursEnd { get; set; }
+        public string? Fuel { get; set; }
+        public decimal? TotalSailingHours { get; set; }
 
         public TripFormModel() { }
         public TripFormModel(LogbookTripDto dto)
@@ -382,6 +417,12 @@ else
             VesselName = dto.VesselName;
             Crew = dto.Crew;
             Notes = dto.Notes;
+            LogstandStart = dto.LogstandStart;
+            LoggedMiles = dto.LoggedMiles;
+            EngineHoursStart = dto.EngineHoursStart;
+            EngineHoursEnd = dto.EngineHoursEnd;
+            Fuel = dto.Fuel;
+            TotalSailingHours = dto.TotalSailingHours;
         }
 
         public CreateLogbookTripDto ToCreateDto() => new()
@@ -393,7 +434,13 @@ else
             DestinationPort = DestinationPort,
             VesselName = VesselName,
             Crew = Crew,
-            Notes = Notes
+            Notes = Notes,
+            LogstandStart = LogstandStart,
+            LoggedMiles = LoggedMiles,
+            EngineHoursStart = EngineHoursStart,
+            EngineHoursEnd = EngineHoursEnd,
+            Fuel = Fuel,
+            TotalSailingHours = TotalSailingHours
         };
     }
 

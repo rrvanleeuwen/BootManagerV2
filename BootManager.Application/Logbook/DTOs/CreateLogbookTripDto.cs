@@ -30,4 +30,22 @@ public class CreateLogbookTripDto
 
     /// <summary>Vrije notities over de reis.</summary>
     public string? Notes { get; set; }
+
+    /// <summary>Logstand bij aanvang van de reis (nm).</summary>
+    public decimal? LogstandStart { get; set; }
+
+    /// <summary>Gelogde mijlen tijdens de reis (nm).</summary>
+    public decimal? LoggedMiles { get; set; }
+
+    /// <summary>Motorurenstand bij aanvang van de reis.</summary>
+    public decimal? EngineHoursStart { get; set; }
+
+    /// <summary>Motorurenstand aan het einde van de reis.</summary>
+    public decimal? EngineHoursEnd { get; set; }
+
+    /// <summary>Brandstof (bijv. "&lt;0.5 tank" of "45 L").</summary>
+    public string? Fuel { get; set; }
+
+    /// <summary>Totaal vaaruren van de reis.</summary>
+    public decimal? TotalSailingHours { get; set; }
 }
