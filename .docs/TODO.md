@@ -54,6 +54,7 @@
   - [ ] Story 3: NMEA0183 krijgt stabiele niet-lege `MessageId` op basis van sentence-id, zodat derived measurements opgeslagen worden
   - [ ] Story 4: Simulator krijgt een YDEN03-achtig profiel met `YD` talker-prefixen, AIS `!AIVDM`/`!AIVDO` en raw-only YDEN-sentences
   - [ ] Story 5: Replay-validatie voor echte NDJSON capture naar API/SQLite
+  - [ ] Future story: configureerbare ingest/sampling-retentie voor langzame bootdata, bijvoorbeeld High = 1s, Medium = 10s, Low = 60s; ruwe niet-geparseerde data kan na succesvolle periodieke parsing optioneel worden opgeschoond
   - Bestaande NMEA2000 slices blijven intact
   - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
   - Zie: [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md) en [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)

@@ -233,7 +233,8 @@ public class IngestService : BackgroundService
     /// <returns>Een gevuld of partieel gevuld <see cref="ReceivedNetworkLine"/> model.</returns>
     internal static ReceivedNetworkLine ParseNetworkLine(string line, string source)
     {
-        // NMEA 0183 sentence: begint met '$' of '!' (AIS sentences gebruiken vaak '!'), raw opslaan zonder verdere parsing
+        // NMEA 0183 sentence: begint met '$' of '!' (AIS sentences gebruiken vaak '!')
+        // Bepaal een stabiele MessageId gebaseerd op de sentence-id (bijv. "$YDGGA,..." -> "YDGGA").
         if (line.StartsWith('$') || line.StartsWith('!'))
         {
             return new ReceivedNetworkLine
@@ -241,7 +242,8 @@ public class IngestService : BackgroundService
                 ReceivedAtUtc = DateTime.UtcNow,
                 RawLine = line,
                 Source = source,
-                Protocol = "NMEA0183"
+                Protocol = "NMEA0183",
+                MessageId = ExtractNmea0183SentenceId(line)
             };
         }
 
@@ -304,5 +306,56 @@ public class IngestService : BackgroundService
         }
 
         return lines;
+    }
+
+    /// <summary>
+    /// Extract the NMEA0183 sentence-id from a raw sentence.
+    /// Example: "$YDGGA,1,2,3*00" -> "YDGGA"; "!AIVDM,1,1,,A,..." -> "AIVDM".
+    /// Returns empty string if extraction fails.
+    /// </summary>
+    private static string ExtractNmea0183SentenceId(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return string.Empty;
+        }
+
+        var s = line.Trim();
+
+        // Must start with '$' or '!'
+        if (!(s.StartsWith('$') || s.StartsWith('!')))
+        {
+            return string.Empty;
+        }
+
+        // Remove leading start character
+        var body = s.Length > 1 ? s[1..] : string.Empty;
+
+        if (string.IsNullOrEmpty(body))
+        {
+            return string.Empty;
+        }
+
+        // Sentence-id ends at first comma or asterisk (checksum) or end of string
+        var commaIndex = body.IndexOf(',');
+        var starIndex = body.IndexOf('*');
+
+        int endIndex = body.Length;
+        if (commaIndex >= 0 && starIndex >= 0)
+        {
+            endIndex = Math.Min(commaIndex, starIndex);
+        }
+        else if (commaIndex >= 0)
+        {
+            endIndex = commaIndex;
+        }
+        else if (starIndex >= 0)
+        {
+            endIndex = starIndex;
+        }
+
+        var sentenceId = body[..endIndex].Trim();
+
+        return string.IsNullOrEmpty(sentenceId) ? string.Empty : sentenceId.ToUpperInvariant();
     }
 }

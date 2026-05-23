@@ -359,6 +359,38 @@ De echte YDEN-03 capture `ingest-capture-20260523-093220.ndjson` bevestigt dat U
 
 ---
 
+### Future Story – Configureerbare sampling en raw-dataretentie
+
+**Als** eindgebruiker/operator  
+**wil ik** kunnen instellen hoe vaak BootManager metingen uit de continue netwerkstroom verwerkt  
+**zodat** de database beheersbaar blijft zonder relevante bootstatus te verliezen.
+
+**Aanleiding**
+- De boot beweegt langzaam, terwijl de YDEN-03 veel berichten per seconde kan sturen.
+- Voor operationele logging is meestal niet elke ruwe regel nodig als periodieke parsing succesvol is.
+- Raw data is waardevol voor diagnose, maar kan op termijn te veel opslag innemen.
+
+**Mogelijke instelling**
+- `High` – verwerk/bewaar metingen met ongeveer 1 seconde interval.
+- `Medium` – verwerk/bewaar metingen met ongeveer 10 seconden interval.
+- `Low` – verwerk/bewaar metingen met ongeveer 60 seconden interval.
+- Exacte semantiek later ontwerpen: per sentence-type, per meetwaarde, of globaal.
+
+**Ontwerpvragen**
+- Geldt sampling voor raw ingest, derived measurements, of beide?
+- Moet raw data altijd tijdelijk bewaard worden en pas later opgeschoond worden?
+- Wanneer mag raw data verwijderd worden: alleen als parsing in hetzelfde tijdvenster succesvol was?
+- Moeten onbekende of niet-geparseerde sentence-types langer bewaard blijven voor diagnose?
+- Wordt de instelling beheerd door de eindgebruiker in de UI, via appsettings, of beide?
+- Hoe voorkomen we dat sampling belangrijke events of foutcondities wegfiltert?
+
+**Voorlopig principe**
+- Raw opslag blijft tijdens ontwikkeling en diagnose leidend.
+- Automatisch verwijderen van raw data mag pas nadat er een expliciet retentiebeleid, gebruikersinstelling en herstel/diagnosepad is ontworpen.
+- Deze story is toekomstig werk en valt buiten de huidige YDEN-03 ingest/parser fixes.
+
+---
+
 ## Open ontwerpvragen
 
 De volgende vragen staan nog open en moeten worden beantwoord vóór of tijdens Fase 3-implementatie.

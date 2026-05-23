@@ -15,6 +15,7 @@ public class IngestServiceProtocolDetectionTests
 
         Assert.Equal("NMEA0183", res.Protocol);
         Assert.Equal(line, res.RawLine);
+        Assert.Equal("YDGGA", res.MessageId);
     }
 
     [Fact]
@@ -25,6 +26,18 @@ public class IngestServiceProtocolDetectionTests
 
         Assert.Equal("NMEA0183", res.Protocol);
         Assert.Equal(line, res.RawLine);
+        Assert.Equal("AIVDM", res.MessageId);
+    }
+
+    [Fact]
+    public void ParseNetworkLine_ShouldExtract_AivdoMessageId()
+    {
+        var line = "!AIVDO,1,1,,A,13aIC@PP00PJ5;tN?JGf4?vf26nQ,0*57";
+        var res = IngestService.ParseNetworkLine(line, "127.0.0.1:10110");
+
+        Assert.Equal("NMEA0183", res.Protocol);
+        Assert.Equal(line, res.RawLine);
+        Assert.Equal("AIVDO", res.MessageId);
     }
 
     [Fact]
