@@ -21,9 +21,9 @@
 
 - [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
   - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.
-  - **Belangrijk:** deze instellingen worden nu persistent in de database opgeslagen, maar `BootManager.Tools.Ingest` gebruikt ze nog niet.
-  - **Vervolg:** Ingest moet bij startup instellingen ophalen bij `BootManager.Web`, met `appsettings.json` als fallback.
-  - **Daarna:** sampling/raw-retentie toepassen op opslag van raw berichten en derived measurements.
+  - **Status 2026-05-23 (slice 2):** Ingest haalt bij startup operationele instellingen op via `GET /api/operationalsettings/ingest`. appsettings.json blijft fallback als Web niet bereikbaar is. Settings worden niet live herladen tijdens runtime.
+  - **Nog niet toegepast:** `RawStorageMode` en `DefaultSampleIntervalSeconds` worden opgehaald en gelogd, maar nog niet gebruikt.
+  - **Vervolg:** sampling/raw-retentie toepassen op opslag van raw berichten en derived measurements.
 
 - [ ] **Digitaal Logboek** *(epic – UI richting eindgebruiker)*
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
@@ -212,7 +212,6 @@ Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 ### 2. Later
 
-- Ingest operational settings ophalen bij startup, met appsettings fallback.
 - Sampling/raw-retentiebeleid toepassen op database-opslag.
 - Server-side PDF-generatie.
 - Bijlagen uploaden.
