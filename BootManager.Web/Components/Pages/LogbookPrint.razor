@@ -3,6 +3,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
+@using BootManager.Core.Enums
 @using BootManager.Web.Helpers
 @inject ILogbookService LogbookService
 @inject IJSRuntime JS
@@ -140,7 +141,9 @@ else
     {
         _trip = await LogbookService.GetTripAsync(TripId);
         if (_trip != null)
-            _entries = await LogbookService.GetEntriesAsync(TripId);
+            _entries = (await LogbookService.GetEntriesAsync(TripId))
+                .Where(e => e.Status == LogbookEntryStatus.Confirmed)
+                .ToList();
         _loading = false;
     }
 

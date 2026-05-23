@@ -303,3 +303,29 @@ Geïmplementeerd als browser-printvriendelijke HTML/CSS weergave.
 - Detaildata (/logbook/entries/{id}/details) wordt niet standaard geprint.
 - Bijlagen uploaden.
 
+---
+
+## Slice: Akkoordflow (LogbookEntryStatus)
+
+**Datum:** 2026-05-23  
+**Branch:** feature/logbook-entry-status
+
+### Wijzigingen
+- `LogbookEntryStatus` enum (`Draft`, `Confirmed`) toegevoegd in `BootManager.Core.Enums`.
+- `LogbookEntry` entiteit uitgebreid met `Status` property (default `Confirmed`) en `Confirm()` methode.
+- `LogbookEntryDto` uitgebreid met `Status`.
+- `ILogbookService` uitgebreid met `ConfirmEntryAsync(int entryId)`.
+- EF Core configuratie bijgewerkt; migratie `AddLogbookEntryStatus` toegevoegd (database default = 1 = Confirmed).
+- `/logbook`: statuskolom met badge "Te accorderen" (oranje) of "Definitief" (groen); Draft-rijen lichtgeel gemarkeerd; knop "✓ Accorderen" zichtbaar voor Draft-regels.
+- `/logbook/trips/{id}/print`: filtert automatisch conceptregels uit — alleen Confirmed regels worden afgedrukt.
+
+### Productregels vastgelegd
+- Alleen `Confirmed`/Definitief regels staan in de printweergave (officieel document).
+- `Draft`/Te accorderen regels blijven zichtbaar in de werk-UI (`/logbook`).
+- Nieuwe handmatige regels zijn standaard `Confirmed`.
+- Bestaande regels krijgen na migratie database-default `Confirmed`.
+
+### Vervolgstappen (buiten scope deze slice)
+- Browser notifications bij overschreden loginterval.
+- Automatisch aanmaken van `Draft`-regels via intervaldetectie.
+- Gebruikersinstelling voor loginterval.

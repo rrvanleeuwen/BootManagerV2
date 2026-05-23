@@ -44,4 +44,9 @@ public interface ILogbookService
     /// Werkt een bestaande logboekregel bij.
     /// </summary>
     Task UpdateEntryAsync(int entryId, SaveLogbookEntryDto dto, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Accordeert een logboekregel: status wordt Confirmed. Heeft geen effect als de regel al Confirmed is.
+    /// </summary>
+    Task ConfirmEntryAsync(int entryId, CancellationToken cancellationToken = default);
 }
