@@ -27,7 +27,7 @@ Geen codewijzigingen in dit document; het dient als ontwerp- en besluitdocument 
 ### Fase 1 – Geïmplementeerd (herzien: gecombineerde listener)
 
 - `IngestService` luistert op één gecombineerd UDP endpoint (`Ingest:ListenAddress`/`Ingest:ListenPort`, standaard `0.0.0.0:10110`).
-- Protocoldetectie op regelinhoud: regels die beginnen met `$` → `Protocol = "NMEA0183"`, overige regels → `Protocol = "NMEA2000"`.
+- Protocoldetectie op regelinhoud: regels die beginnen met `$` of `!` → `Protocol = "NMEA0183"`, overige regels → `Protocol = "NMEA2000"`.
 - Raw sentences worden opgeslagen in de `NetworkMessages`-tabel.
 - `Nmea0183IngestService` is verwijderd; de aparte NMEA0183 listener is geïntegreerd in `IngestService`.
 - Aanbevolen poort: `10110`. Alternatief: `2000`. Niet tegelijk op beide luisteren om dubbele YDEN-opslag te voorkomen.
@@ -215,7 +215,7 @@ De volgende volgorde geldt op basis van praktisch nut voor de boot:
 De `Nmea0183ParserService` (geïmplementeerd in `BootManager.Application/NetworkMessageParsing/Services`) voert de volgende taken uit:
 
 1. **Ontvangst van raw sentence** als string.
-2. **Structuurvalidatie:** sentence moet beginnen met `$`.
+2. **Structuurvalidatie:** sentence moet beginnen met `$` of `!`.
 3. **Checksum-validatie** (optioneel – aanwezig als `*HH` suffix; gevalideerd via XOR).
 4. **Sentence-type herkenning:** talker-prefix negeren (bijv. `II`, `GP`, `HE`), sentence-code extraheren (bijv. `VHW`, `RMC`).
 5. **Veldextractie:** kommagescheiden velden als `IReadOnlyList<string>` beschikbaar stellen.

@@ -142,7 +142,7 @@ public class Nmea0183ParserService : INmea0183ParserService
 
     /// <summary>
     /// Valideert de XOR-checksum van een NMEA 0183 sentence.
-    /// De checksum wordt berekend over de tekens tussen '$' en '*'.
+    /// De checksum wordt berekend over de tekens tussen het startteken ('$' of '!') en '*'.
     /// </summary>
     private static bool ValidateChecksum(string sentence, string checksumHex)
     {
@@ -167,7 +167,7 @@ public class Nmea0183ParserService : INmea0183ParserService
         => ComputeRawChecksum(sentence).ToString("X2");
 
     /// <summary>
-    /// Berekent de XOR-checksum over tekens tussen '$' en '*'.
+    /// Berekent de XOR-checksum over tekens tussen het startteken ('$' of '!') en '*'.
     /// </summary>
     private static byte ComputeRawChecksum(string sentence)
     {
