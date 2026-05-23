@@ -29,5 +29,9 @@ Console.WriteLine("BootManager.Tools.Simulator starting...");
 Console.WriteLine($"Environment: {Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}");
 Console.WriteLine($"Active scenario: {config["Simulator:Scenario"]}");
 Console.WriteLine($"Output mode: {outputMode}");
+// Diagnostic: show raw config value for Nmea0183Profile and the bound enum value
+Console.WriteLine($"Raw config Simulator:Nmea0183Profile: {config["Simulator:Nmea0183Profile"]}");
+var boundOptions = host.Services.GetService<Microsoft.Extensions.Options.IOptions<SimulatorOptions>>()?.Value;
+Console.WriteLine($"Bound SimulatorOptions.Nmea0183Profile: {boundOptions?.Nmea0183Profile}");
 
 await host.RunAsync();

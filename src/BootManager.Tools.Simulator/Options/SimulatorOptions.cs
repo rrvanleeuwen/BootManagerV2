@@ -1,6 +1,18 @@
 namespace BootManager.Tools.Simulator.Options;
 
 /// <summary>
+/// Beschrijft beschikbare NMEA0183-profielen voor de simulator.
+/// </summary>
+public enum Nmea0183Profile
+{
+    /// <summary>Behoudt bestaand gedrag (talker "II").</summary>
+    Default,
+
+    /// <summary>YDEN03-achtig profiel: YD-talkers, extra raw-only sentences en AIS raw-achtige regels.</summary>
+    YDEN03
+}
+
+/// <summary>
 /// Bepaalt welke outputmodus de simulator gebruikt.
 /// </summary>
 public enum SimulatorOutputMode
@@ -59,4 +71,10 @@ public class SimulatorOptions
     /// Deze veroorzaken raw opslag maar geen measurement-opslag.
     /// </summary>
     public bool IncludeNegativeTestSentences { get; set; } = false;
+
+    /// <summary>
+    /// Selecteert een NMEA0183 profiel dat bepaalt hoe NMEA0183-sentences gegenereerd worden.
+    /// Default behoudt bestaand gedrag; YDEN03 zorgt voor YD-talker-prefixen en extra raw-only sentences.
+    /// </summary>
+    public Nmea0183Profile Nmea0183Profile { get; set; } = Nmea0183Profile.Default;
 }
