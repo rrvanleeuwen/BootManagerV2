@@ -71,6 +71,18 @@
 
 #### Medium Priority
 
+- [ ] **Raspberry Pi/Docker deployment & veilige shutdown**
+  - **Aanleiding 2026-05-23:** BootManager moet later op een Raspberry Pi in Docker kunnen draaien. Bij direct stroomloos maken kan een Raspberry Pi/SD-kaart en SQLite-database corrupt raken.
+  - **Doel:** Docker deployment ontwerpen met correcte netwerkkeuzes voor UDP ingest, persistente volumes voor database/logs en een veilige afsluitflow.
+  - **Aandachtspunten:**
+    - UDP-poorten correct mappen of bewust `host networking` gebruiken.
+    - Web en Ingest praten binnen Docker niet vanzelf via `localhost`; gebruik service names/netwerkconfiguratie of host networking.
+    - SQLite/database en capture logs moeten op persistente volumes staan.
+    - Ingest/Web moeten netjes reageren op container shutdown (`SIGTERM`) en open writes afsluiten.
+    - Control API blijft intern/lokaal bereikbaar, niet publiek.
+  - **Latere UI-story:** owner/admin knop "Systeem afsluiten" met bevestiging. Web mag niet rechtstreeks vrije shell-commando's uitvoeren; gebruik een beperkte lokale helper/service die Docker/OS veilig afsluit.
+  - **Gebruikersmelding:** "Wacht tot de Raspberry Pi volledig uit is voordat je de stroom loshaalt."
+
 - [ ] **Extended Heading Fields**
   - Deviation storage (magnetic correction)
   - Variation storage (declination)
@@ -240,6 +252,10 @@ Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 ## Deployment Checklist (Future)
 
 - [ ] Production database setup (not SQLite)
+- [ ] Raspberry Pi Docker deployment ontwerp
+- [ ] Persistent volumes voor database en logs
+- [ ] UDP ingest netwerkkeuze: port mapping versus host networking
+- [ ] Veilige shutdown-flow voor Raspberry Pi vanuit UI/helper-service
 - [ ] Authentication implementation
 - [ ] Rate limiting & API security
 - [ ] Monitoring & alerting

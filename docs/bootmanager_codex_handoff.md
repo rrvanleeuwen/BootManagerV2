@@ -455,6 +455,19 @@ De TCP-poort lijkt bedoeld voor de eigen YDEN-software; BootManager gebruikt de 
 - Echte boot UDP-test met YDEN-03 op poort 2000/10110
 - Expliciete **schijnbare wind** als aparte slice
 
+### Later: Raspberry Pi/Docker deployment en veilige shutdown
+
+BootManager moet later op een Raspberry Pi in Docker kunnen draaien. Dit is haalbaar, maar moet bewust ontworpen worden:
+
+- UDP ingest vereist expliciete Docker-netwerkkeuze: poorten mappen of `host networking`.
+- Web en Ingest kunnen in containers niet vanzelf via `localhost` met elkaar praten; gebruik service names, gedeeld Docker-netwerk of host networking.
+- SQLite/database en capture logs moeten op persistente volumes staan.
+- Containers moeten netjes reageren op `SIGTERM`, zodat writes en logs correct afsluiten.
+- De Ingest control API blijft intern/lokaal bereikbaar en mag niet publiek op het bootnetwerk hangen.
+- Omdat een Raspberry Pi/SD-kaart niet goed tegen hard uitschakelen kan, is een latere owner/admin UI-story gewenst: "Systeem veilig afsluiten".
+- Die UI-knop moet via een beperkte lokale helper/service werken, niet via vrije shell-commando's vanuit Web.
+- De gebruiker moet melding krijgen dat de stroom pas los mag als de Raspberry Pi volledig uit is.
+
 ---
 
 ## 12. Wat Codex expliciet moet bewaken
@@ -472,6 +485,8 @@ Codex moet bij toekomstige stappen actief bewaken:
 9. **Zijn huidige windgegevens nog steeds werkelijke wind?**
 10. **Is een stap klein genoeg om veilig te reviewen en testen?**
 11. **Is dit een logisch commit/push-moment of nog niet?**
+12. **Raakt dit toekomstige Raspberry Pi/Docker deployment?**
+    Bewaak dan UDP-netwerkkeuzes, persistente volumes, graceful shutdown en het vermijden van hard power-off risico's.
 
 ---
 
