@@ -34,6 +34,19 @@ var builder = Host.CreateDefaultBuilder(args)
         // Registreer HttpClient voor API-calls
         services.AddHttpClient<IngestService>();
 
+        // Registreer runtime settings als singleton (thread-safe, live updateable)
+        services.AddSingleton<IIngestRuntimeSettings>(provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<IngestOptions>>().Value;
+            return new IngestRuntimeSettings(
+                options.ApiBaseUrl,
+                options.RawStorageMode,
+                options.DefaultSampleIntervalSeconds,
+                options.CaptureLogging.Enabled,
+                options.ListenAddress,
+                options.ListenPort);
+        });
+
         // Registreer sampling policy als singleton
         services.AddSingleton<IIngestSamplingPolicy>(provider =>
         {
@@ -43,6 +56,9 @@ var builder = Host.CreateDefaultBuilder(args)
         });
 
         services.AddHostedService<IngestService>();
+
+        // Registreer control server als hosted service (start/stop with host)
+        services.AddHostedService<IngestControlServer>();
     });
 
 var host = builder.Build();
@@ -59,36 +75,41 @@ logger.LogInformation(
     "Configuratie geladen uit appsettings: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}.",
     ingestOptions.ListenAddress, ingestOptions.ListenPort, ingestOptions.ApiBaseUrl);
 
+// Haal runtime settings op (singleton geinitialiseerd met appsettings)
+var runtimeSettings = host.Services.GetRequiredService<IIngestRuntimeSettings>();
+var samplingPolicy = host.Services.GetRequiredService<IIngestSamplingPolicy>();
+
 // Probeer operationele instellingen op te halen bij BootManager.Web
 var settingsClient = host.Services.GetRequiredService<IOperationalSettingsClientService>();
 var remoteSettings = await settingsClient.TryGetSettingsAsync(ingestOptions.ApiBaseUrl);
 
 if (remoteSettings is not null)
 {
-    // Pas runtime-opties aan met de database/Web-instellingen
-    ingestOptions.ListenAddress = remoteSettings.ListenAddress;
-    ingestOptions.ListenPort = remoteSettings.ListenPort;
-    ingestOptions.ApiBaseUrl = remoteSettings.ApiBaseUrl;
-    ingestOptions.CaptureLogging.Enabled = remoteSettings.CaptureLoggingEnabled;
+    // Update runtime-instellingen met de database/Web-instellingen
+    // Let op: ListenAddress en ListenPort worden NIET live aangepast; die hebben herstart nodig
+    runtimeSettings.ApiBaseUrl = remoteSettings.ApiBaseUrl;
+    runtimeSettings.CaptureLoggingEnabled = remoteSettings.CaptureLoggingEnabled;
 
     // Parse RawStorageMode van string naar enum
     if (Enum.TryParse<RawStorageMode>(remoteSettings.RawStorageMode, ignoreCase: true, out var parsedMode))
     {
-        ingestOptions.RawStorageMode = parsedMode;
+        runtimeSettings.RawStorageMode = parsedMode;
     }
     else
     {
         logger.LogWarning(
             "Could not parse RawStorageMode '{Mode}' from remote settings; using fallback All.",
             remoteSettings.RawStorageMode);
-        ingestOptions.RawStorageMode = RawStorageMode.All;
+        runtimeSettings.RawStorageMode = RawStorageMode.All;
     }
 
-    ingestOptions.DefaultSampleIntervalSeconds = remoteSettings.DefaultSampleIntervalSeconds;
+    // Update sampling policy met nieuwe mode/interval
+    samplingPolicy.Update(runtimeSettings.RawStorageMode, remoteSettings.DefaultSampleIntervalSeconds);
+    runtimeSettings.DefaultSampleIntervalSeconds = remoteSettings.DefaultSampleIntervalSeconds;
 
     logger.LogInformation(
         "Runtime-instellingen overschreven vanuit BootManager.Web: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}, CaptureLoggingEnabled={CaptureLoggingEnabled}, RawStorageMode={RawStorageMode}, DefaultSampleIntervalSeconds={SampleInterval}.",
-        ingestOptions.ListenAddress, ingestOptions.ListenPort, ingestOptions.ApiBaseUrl, ingestOptions.CaptureLogging.Enabled, ingestOptions.RawStorageMode, ingestOptions.DefaultSampleIntervalSeconds);
+        ingestOptions.ListenAddress, ingestOptions.ListenPort, runtimeSettings.ApiBaseUrl, runtimeSettings.CaptureLoggingEnabled, runtimeSettings.RawStorageMode, runtimeSettings.DefaultSampleIntervalSeconds);
     logger.LogInformation("Configuratiebron: BootManager.Web (database).");
 }
 else
@@ -98,11 +119,11 @@ else
     logger.LogInformation("Configuratiebron: appsettings.json (fallback).");
     logger.LogInformation(
         "RawStorageMode={RawStorageMode}, DefaultSampleIntervalSeconds={SampleInterval}.",
-        ingestOptions.RawStorageMode, ingestOptions.DefaultSampleIntervalSeconds);
+        runtimeSettings.RawStorageMode, runtimeSettings.DefaultSampleIntervalSeconds);
 }
 
 Console.WriteLine($"Listen address: {ingestOptions.ListenAddress}");
 Console.WriteLine($"Listen port: {ingestOptions.ListenPort}");
-Console.WriteLine($"API Base URL: {ingestOptions.ApiBaseUrl}");
+Console.WriteLine($"API Base URL: {runtimeSettings.ApiBaseUrl}");
 
 await host.RunAsync();

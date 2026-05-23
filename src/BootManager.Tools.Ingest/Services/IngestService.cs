@@ -24,6 +24,7 @@ public class IngestService : BackgroundService
     private readonly HttpClient _httpClient;
     private readonly IIngestCaptureLogger _captureLogger;
     private readonly IIngestSamplingPolicy _samplingPolicy;
+    private readonly IIngestRuntimeSettings _runtimeSettings;
     private UdpClient? _udpClient;
 
     /// <summary>
@@ -34,13 +35,21 @@ public class IngestService : BackgroundService
     /// <param name="httpClient">HttpClient voor API-communicatie.</param>
     /// <param name="captureLogger">Optionele capture logger voor raw NDJSON-logging.</param>
     /// <param name="samplingPolicy">Sampling policy voor berichten.</param>
-    public IngestService(IOptions<IngestOptions> options, ILogger<IngestService> logger, HttpClient httpClient, IIngestCaptureLogger captureLogger, IIngestSamplingPolicy samplingPolicy)
+    /// <param name="runtimeSettings">Runtime settings die live kunnen worden bijgewerkt.</param>
+    public IngestService(
+        IOptions<IngestOptions> options,
+        ILogger<IngestService> logger,
+        HttpClient httpClient,
+        IIngestCaptureLogger captureLogger,
+        IIngestSamplingPolicy samplingPolicy,
+        IIngestRuntimeSettings runtimeSettings)
     {
         _options = options;
         _logger = logger;
         _httpClient = httpClient;
         _captureLogger = captureLogger;
         _samplingPolicy = samplingPolicy;
+        _runtimeSettings = runtimeSettings;
     }
 
     /// <summary>
@@ -183,6 +192,7 @@ public class IngestService : BackgroundService
     /// <summary>
     /// Verzendt een geparste netwerkregel naar de BootManager.Web API
     /// en retourneert succes, HTTP-statuscode en eventuele foutmelding.
+    /// Gebruikt runtime ApiBaseUrl zodat wijzigingen van reload-settings direct van kracht zijn.
     /// </summary>
     /// <param name="line">De geparste netwerkregel.</param>
     /// <param name="cancellationToken">Cancellation token voor de HTTP-request.</param>
@@ -201,7 +211,9 @@ public class IngestService : BackgroundService
                 payloadHex = string.IsNullOrEmpty(line.PayloadHex) ? null : line.PayloadHex
             };
 
-            var url = $"{_options.Value.ApiBaseUrl}{_options.Value.NetworkMessagesEndpoint}";
+            // Gebruik runtime ApiBaseUrl (kan live worden bijgewerkt)
+            var apiBaseUrl = _runtimeSettings.ApiBaseUrl;
+            var url = $"{apiBaseUrl}{_options.Value.NetworkMessagesEndpoint}";
             var content = new StringContent(
                 JsonSerializer.Serialize(request),
                 Encoding.UTF8,

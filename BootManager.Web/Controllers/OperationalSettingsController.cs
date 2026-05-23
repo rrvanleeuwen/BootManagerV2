@@ -1,26 +1,32 @@
 using BootManager.Application.OperationalSettings.DTOs;
 using BootManager.Application.OperationalSettings.Services;
+using BootManager.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BootManager.Web.Controllers;
 
 /// <summary>
-/// API-controller voor het ophalen van operationele instellingen.
+/// API-controller voor het ophalen en bijwerken van operationele instellingen.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class OperationalSettingsController : ControllerBase
 {
     private readonly IOperationalSettingsService _operationalSettingsService;
+    private readonly IOperationalSettingsWithReloadService _settingsWithReloadService;
 
     /// <summary>
     /// Initialiseert een nieuwe instantie van <see cref="OperationalSettingsController"/>.
     /// </summary>
     /// <param name="operationalSettingsService">De application-service voor operationele instellingen.</param>
-    public OperationalSettingsController(IOperationalSettingsService operationalSettingsService)
+    /// <param name="settingsWithReloadService">Service voor opslaan met Ingest reload.</param>
+    public OperationalSettingsController(
+        IOperationalSettingsService operationalSettingsService,
+        IOperationalSettingsWithReloadService settingsWithReloadService)
     {
         _operationalSettingsService = operationalSettingsService;
+        _settingsWithReloadService = settingsWithReloadService;
     }
 
     /// <summary>
@@ -49,5 +55,45 @@ public class OperationalSettingsController : ControllerBase
         };
 
         return Ok(dto);
+    }
+
+    /// <summary>
+    /// Geeft alle operationele instellingen terug.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Alle operationele instellingen.</returns>
+    [HttpGet]
+    [Authorize]
+    public async Task<ActionResult<OperationalSettingsDto>> GetSettings(CancellationToken ct)
+    {
+        var settings = await _operationalSettingsService.GetAsync(ct);
+        return Ok(settings);
+    }
+
+    /// <summary>
+    /// Slaat operationele instellingen op en verzendt een reload-commando naar Ingest.
+    /// </summary>
+    /// <param name="dto">De nieuwe instellingen.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Status van de save-operatie en Ingest reload.</returns>
+    [HttpPost]
+    [Authorize]
+    public async Task<ActionResult<SaveOperationalSettingsResponse>> SaveSettings(
+        OperationalSettingsDto dto,
+        CancellationToken ct)
+    {
+        try
+        {
+            var response = await _settingsWithReloadService.SaveAndReloadAsync(dto, ct);
+            return Ok(response);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = "Fout bij opslaan instellingen.", details = ex.Message });
+        }
     }
 }

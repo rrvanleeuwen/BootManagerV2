@@ -1,5 +1,7 @@
 namespace BootManager.Tools.Ingest.Policies;
 
+using BootManager.Core.Enums;
+
 /// <summary>
 /// Interface voor het sampling-beleid van ruwe netwerkberichten.
 /// Bepaalt of een ontvangen bericht moet worden doorgelaten naar de API
@@ -22,4 +24,13 @@ public interface IIngestSamplingPolicy
     /// Bruikbaar voor testing of als de policy moet worden vernieuwd.
     /// </summary>
     void Reset();
+
+    /// <summary>
+    /// Update de sampling policy met nieuwe RawStorageMode en interval.
+    /// Dit kan veilig worden aangeroepen terwijl berichten worden verwerkt (thread-safe).
+    /// </summary>
+    /// <param name="newMode">De nieuwe RawStorageMode.</param>
+    /// <param name="newIntervalSeconds">Het nieuwe sample-interval in seconden. Fallback naar 10 als &lt;= 0.</param>
+    void Update(RawStorageMode newMode, int newIntervalSeconds);
 }
+

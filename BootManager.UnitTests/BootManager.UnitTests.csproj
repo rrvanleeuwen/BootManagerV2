@@ -20,6 +20,7 @@
     <ProjectReference Include="..\BootManager.Application\BootManager.Application.csproj" />
     <ProjectReference Include="..\BootManager.Core\BootManager.Core.csproj" />
     <ProjectReference Include="..\src\BootManager.Tools.Ingest\BootManager.Tools.Ingest.csproj" />
+    <ProjectReference Include="..\BootManager.Web\BootManager.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>

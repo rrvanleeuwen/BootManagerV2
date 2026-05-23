@@ -66,4 +66,36 @@ public class IngestOptions
     /// Standaard: 10 seconden.
     /// </summary>
     public int DefaultSampleIntervalSeconds { get; set; } = 10;
+
+    /// <summary>
+    /// Configuratie voor de lokale control API.
+    /// Dit endpoint stelt Web in staat om Ingest settings opnieuw in te laden zonder procesrestart.
+    /// </summary>
+    public ControlApiOptions ControlApi { get; set; } = new();
+}
+
+/// <summary>
+/// Opties voor de lokale control API in Ingest.
+/// De control API luistert standaard alleen op localhost (127.0.0.1) voor veiligheid.
+/// </summary>
+public class ControlApiOptions
+{
+    /// <summary>
+    /// Schakel de control API in of uit.
+    /// Standaard: true (aanbevolen).
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// IP-adres waarop de control API luistert.
+    /// BELANGRIJK: Bindt standaard alleen op 127.0.0.1 voor veiligheid.
+    /// Wijzig niet naar 0.0.0.0 tenzij je network-beveiliging hebt geconfigureerd.
+    /// </summary>
+    public string ListenAddress { get; set; } = "127.0.0.1";
+
+    /// <summary>
+    /// Poort waarop de control API luistert.
+    /// Standaard: 5010 (configureerbaar via appsettings).
+    /// </summary>
+    public int ListenPort { get; set; } = 5010;
 }
