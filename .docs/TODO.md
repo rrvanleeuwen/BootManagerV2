@@ -48,6 +48,13 @@
   - **Fase 3 – Interpreters ✅:** VHW, MWV, DBT/DPT, RMC/GGA, HDT/HDM en MTW verticale slices
   - **Simulator NMEA 0183 ✅:** standaard NMEA 0183 output via `BootManager.Tools.Simulator`
   - **Runtime/SQLite acceptatietest ✅:** handmatig uitgevoerd via simulator NMEA0183-modus
+  - **Echte boot-test 2026-05-23:** UDP/raw opslag werkt; vervolgstories nodig voor AIS `!`-sentences, NMEA0183 `MessageId`, realistischer simulatorprofiel en capture replay
+  - [ ] Story 1: Ingest herkent `$...` én `!...` als `Protocol = "NMEA0183"`; raw-like simulatorregels blijven `NMEA2000`
+  - [ ] Story 2: `Nmea0183ParserService` accepteert `$` en `!`; `!AIVDM` parsed als talker `AI`, type `VDM`
+  - [ ] Story 3: NMEA0183 krijgt stabiele niet-lege `MessageId` op basis van sentence-id, zodat derived measurements opgeslagen worden
+  - [ ] Story 4: Simulator krijgt een YDEN03-achtig profiel met `YD` talker-prefixen, AIS `!AIVDM`/`!AIVDO` en raw-only YDEN-sentences
+  - [ ] Story 5: Replay-validatie voor echte NDJSON capture naar API/SQLite
+  - [ ] Future story: configureerbare ingest/sampling-retentie voor langzame bootdata, bijvoorbeeld High = 1s, Medium = 10s, Low = 60s; ruwe niet-geparseerde data kan na succesvolle periodieke parsing optioneel worden opgeschoond
   - Bestaande NMEA2000 slices blijven intact
   - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
   - Zie: [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md) en [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)

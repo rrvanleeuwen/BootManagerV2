@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 ///
 /// Voert GEEN semantische interpretatie uit. Dit is een tussenstap voor Fase 3 interpreters.
 /// </summary>
-internal class Nmea0183ParserService : INmea0183ParserService
+public class Nmea0183ParserService : INmea0183ParserService
 {
     private readonly ILogger<Nmea0183ParserService> _logger;
 
@@ -50,16 +50,16 @@ internal class Nmea0183ParserService : INmea0183ParserService
 
         var sentence = rawSentence.Trim();
 
-        // NMEA 0183 sentences beginnen met '$'
-        if (!sentence.StartsWith('$'))
+        // NMEA 0183 sentences beginnen met '$' of '!' (AIS uses '!' for AIVDM/AIVDO)
+        if (!(sentence.StartsWith('$') || sentence.StartsWith('!')))
         {
             result.IsSuccess = false;
-            result.ErrorMessage = $"Sentence begint niet met '$': {sentence}";
-            _logger.LogWarning("Ongeldige NMEA 0183 sentence (geen '$'): {Sentence}", sentence);
+            result.ErrorMessage = $"Sentence begint niet met '$' of '!': {sentence}";
+            _logger.LogWarning("Ongeldige NMEA 0183 sentence (geen '$' of '!'): {Sentence}", sentence);
             return result;
         }
 
-        // Verwijder leading '$'
+        // Verwijder leading start-character ('$' of '!')
         var body = sentence[1..];
 
         // Splits checksum af indien aanwezig (*XX aan het einde)
@@ -117,6 +117,7 @@ internal class Nmea0183ParserService : INmea0183ParserService
         // Checksum validatie
         if (checksumHex != null)
         {
+            // Checksum is computed over the characters between the start character ('$' or '!') and '*'
             result.ChecksumValid = ValidateChecksum(sentence, checksumHex);
             if (result.ChecksumValid == false)
             {
@@ -171,11 +172,12 @@ internal class Nmea0183ParserService : INmea0183ParserService
     private static byte ComputeRawChecksum(string sentence)
     {
         byte xor = 0;
+        // Compute XOR over characters between start char ('$' or '!') and '*'
         var inBody = false;
 
         foreach (var c in sentence)
         {
-            if (c == '$')
+            if (c == '$' || c == '!')
             {
                 inBody = true;
                 continue;
