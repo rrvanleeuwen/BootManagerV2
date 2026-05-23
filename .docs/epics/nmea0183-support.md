@@ -437,4 +437,38 @@ worden raw opgeslagen in `NetworkMessages` en kunnen later alsnog verwerkt worde
 
 ---
 
-*Aangemaakt: 2026-05-17*
+*Aangemaakt: 2026-05-17*  
+*Bijgewerkt: 2026-05-23 — Ingest startup koppeling aan BootManager.Web operationele instellingen toegevoegd (Fase 4).*
+
+---
+
+## Fase 4: Ingest startup koppeling aan Web/database settings (2026-05-23)
+
+**Branch:** `feature/ingest-operational-settings`
+
+### Wat is geïmplementeerd
+
+- Nieuw endpoint `GET /api/operationalsettings/ingest` in `BootManager.Web`.
+  - Geeft `IngestSettingsDto` terug: `ListenAddress`, `ListenPort`, `ApiBaseUrl`, `CaptureLoggingEnabled`, `RawStorageMode`, `DefaultSampleIntervalSeconds`.
+  - Voorlopig anoniem bereikbaar (**TODO:** beveiligen in volgende iteratie).
+- `IngestRemoteSettings` model in Ingest (mirror van de Web API response).
+- `IOperationalSettingsClientService` + `OperationalSettingsClientService` in Ingest.
+  - Timeout: 5 seconden.
+  - Bij failure: waarschuwing loggen en appsettings gebruiken als fallback.
+- `Program.cs` van Ingest haalt bij startup settings op en past ze toe vóór `host.RunAsync()`.
+
+### Gedrag
+
+| Situatie | Gedrag |
+|---|---|
+| Web bereikbaar | Ingest overschrijft `ListenAddress`, `ListenPort`, `ApiBaseUrl`, `CaptureLogging.Enabled` |
+| Web niet bereikbaar | Waarschuwing gelogd; appsettings.json als fallback |
+| `RawStorageMode` / `DefaultSampleIntervalSeconds` | Opgehaald en gelogd, **nog niet toegepast** |
+
+### Niet gedaan in deze slice
+
+- Geen sampling toepassen.
+- Geen raw storage mode toepassen.
+- Geen database writes vanuit Ingest.
+- Geen background polling.
+

@@ -528,4 +528,21 @@ dotnet ef database update --project BootManager.Infrastructure
 
 ---
 
-**Last Updated:** 2026-05-18
+**Last Updated:** 2026-05-23
+
+## Ingest Startup Settings Koppeling (2026-05-23)
+
+Bij startup haalt `BootManager.Tools.Ingest` operationele instellingen op via:
+
+```
+GET /api/operationalsettings/ingest
+```
+
+- Volgorde: eerst appsettings.json inladen, daarna Web-settings proberen op te halen.
+- Als ophalen lukt, worden `ListenAddress`, `ListenPort`, `ApiBaseUrl` en `CaptureLoggingEnabled` overschreven met database-waarden.
+- `RawStorageMode` en `DefaultSampleIntervalSeconds` worden opgehaald en gelogd, maar **nog niet toegepast** (volgende slice).
+- Als Web niet bereikbaar is, logt Ingest een waarschuwing en draait verder op appsettings.
+- Geen polling tijdens runtime; settings zijn startup-only.
+- Het endpoint `GET /api/operationalsettings/ingest` is voorlopig anoniem bereikbaar.
+  **TODO:** endpoint beveiligen met API key of netwerk-restrictie in een volgende iteratie.
+
