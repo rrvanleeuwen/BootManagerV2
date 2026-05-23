@@ -123,7 +123,8 @@ public class LogbookService : ILogbookService
             windDescription: dto.WindDescription,
             gpsStatus: dto.GpsStatus,
             latitude: dto.Latitude,
-            longitude: dto.Longitude);
+            longitude: dto.Longitude,
+            averageSogKnots: dto.AverageSogKnots);
 
         await _entryRepo.AddAsync(entity, cancellationToken);
         _logger.LogInformation("Logboekregel aangemaakt met id {EntryId} voor reis {TripId}.", entity.Id, tripId);
@@ -147,7 +148,8 @@ public class LogbookService : ILogbookService
             windDescription: dto.WindDescription,
             gpsStatus: dto.GpsStatus,
             latitude: dto.Latitude,
-            longitude: dto.Longitude);
+            longitude: dto.Longitude,
+            averageSogKnots: dto.AverageSogKnots);
 
         await _entryRepo.UpdateAsync(entity, cancellationToken);
     }
@@ -186,6 +188,7 @@ public class LogbookService : ILogbookService
         GpsStatus = e.GpsStatus,
         Latitude = e.Latitude,
         Longitude = e.Longitude,
+        AverageSogKnots = e.AverageSogKnots,
         UpdatedAtUtc = e.UpdatedAtUtc
     };
 }

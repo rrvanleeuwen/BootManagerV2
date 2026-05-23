@@ -33,4 +33,7 @@ public class SaveLogbookEntryDto
 
     /// <summary>Lengtegraad (WGS84, decimaal). Null indien niet beschikbaar.</summary>
     public double? Longitude { get; set; }
+
+    /// <summary>Gemiddelde SOG in knopen over de logperiode. Null indien niet beschikbaar.</summary>
+    public decimal? AverageSogKnots { get; set; }
 }

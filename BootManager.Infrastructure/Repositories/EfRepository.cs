@@ -47,6 +47,27 @@ public class EfRepository<T> : IRepository<T> where T : class
 
     public async Task UpdateAsync(T entity, CancellationToken ct = default)
     {
+        // Detach een eventueel al getrackte instantie met dezelfde primary key
+        // om EF tracking conflicts te voorkomen (bijv. na AddAsync in dezelfde scoped DbContext).
+        var keyValues = _db.Model.FindEntityType(typeof(T))!
+            .FindPrimaryKey()!
+            .Properties
+            .Select(p => p.PropertyInfo!.GetValue(entity))
+            .ToArray();
+
+        var tracked = _set.Local.FirstOrDefault(e =>
+        {
+            var trackedKeys = _db.Model.FindEntityType(typeof(T))!
+                .FindPrimaryKey()!
+                .Properties
+                .Select(p => p.PropertyInfo!.GetValue(e))
+                .ToArray();
+            return keyValues.SequenceEqual(trackedKeys);
+        });
+
+        if (tracked != null && !ReferenceEquals(tracked, entity))
+            _db.Entry(tracked).State = EntityState.Detached;
+
         _set.Update(entity);
         await _db.SaveChangesAsync(ct);
     }

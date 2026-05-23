@@ -27,6 +27,7 @@ public class LogbookEntryConfiguration : IEntityTypeConfiguration<LogbookEntry>
         b.Property(x => x.GpsStatus).HasMaxLength(32);
         b.Property(x => x.Latitude);
         b.Property(x => x.Longitude);
+        b.Property(x => x.AverageSogKnots).HasPrecision(7, 3);
         b.Property(x => x.CreatedAtUtc).IsRequired();
         b.Property(x => x.UpdatedAtUtc).IsRequired();
 

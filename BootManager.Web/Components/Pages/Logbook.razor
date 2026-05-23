@@ -2,7 +2,9 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
+@using BootManager.Web.Helpers
 @inject ILogbookService LogbookService
+@inject ILogbookMeasurementSuggestionService SuggestionService
 
 <h2 class="mb-3">Scheepsdagboek</h2>
 
@@ -125,7 +127,7 @@ else
                     <table class="table table-sm table-bordered table-hover mb-0 logbook-table">
                         <thead class="table-dark">
                             <tr>
-                                <th>Tijd (UTC)</th>
+                                <th>Tijd (lokaal)</th>
                                 <th>Baro</th>
                                 <th>Log</th>
                                 <th>Koers</th>
@@ -135,6 +137,7 @@ else
                                 <th>GPS</th>
                                 <th>Lat.</th>
                                 <th>Long.</th>
+                                <th>Gem. SOG</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -145,7 +148,7 @@ else
                                 {
                                     <!-- Bewerkingsrij -->
                                     <tr class="table-warning">
-                                        <td><InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_entryForm.EntryTimeUtcInput" /></td>
+                                        <td><InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_entryForm.EntryTimeLocal" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.BaroPressure" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.LogValue" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Course" /></td>
@@ -155,6 +158,7 @@ else
                                         <td><InputText class="form-control form-control-sm" @bind-Value="_entryForm.GpsStatus" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Latitude" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Longitude" /></td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.AverageSogKnots" /></td>
                                         <td>
                                             <button class="btn btn-xs btn-success" @onclick="() => OpslaanRegel(entry.Id)">✓</button>
                                             <button class="btn btn-xs btn-secondary" @onclick="AnnuleerBewerking">✕</button>
@@ -164,7 +168,7 @@ else
                                 else
                                 {
                                     <tr>
-                                        <td>@entry.EntryTimeUtc.ToString("HH:mm")</td>
+                                        <td>@BoordtijdHelper.NaarLokaal(entry.EntryTimeUtc).ToString("HH:mm")</td>
                                         <td>@(entry.BaroPressure.HasValue ? entry.BaroPressure.Value.ToString("F1") : "")</td>
                                         <td>@(entry.LogValue.HasValue ? entry.LogValue.Value.ToString("F1") : "")</td>
                                         <td>@(entry.Course.HasValue ? entry.Course.Value.ToString() + "°" : "")</td>
@@ -174,6 +178,7 @@ else
                                         <td>@entry.GpsStatus</td>
                                         <td>@(entry.Latitude.HasValue ? entry.Latitude.Value.ToString("F4") : "")</td>
                                         <td>@(entry.Longitude.HasValue ? entry.Longitude.Value.ToString("F4") : "")</td>
+                                        <td>@(entry.AverageSogKnots.HasValue ? entry.AverageSogKnots.Value.ToString("F1") + " kn" : "")</td>
                                         <td><button class="btn btn-xs btn-outline-secondary" @onclick="() => BewerkenRegel(entry)">✎</button></td>
                                     </tr>
                                 }
@@ -183,7 +188,7 @@ else
                             {
                                 <!-- Nieuwe-regelrij onderaan -->
                                 <tr class="table-success">
-                                    <td><InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_newEntryForm.EntryTimeUtcInput" /></td>
+                                    <td><InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_newEntryForm.EntryTimeLocal" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.BaroPressure" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.LogValue" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Course" /></td>
@@ -193,7 +198,9 @@ else
                                     <td><InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.GpsStatus" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Latitude" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Longitude" /></td>
+                                    <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.AverageSogKnots" /></td>
                                     <td>
+                                        <button class="btn btn-xs btn-info" title="Vul met laatste meetdata" @onclick="VulSuggestiesNieuweRegel">⊕</button>
                                         <button class="btn btn-xs btn-success" @onclick="OpslaanNieuweRegel">✓</button>
                                         <button class="btn btn-xs btn-secondary" @onclick="() => _newEntryForm = null">✕</button>
                                     </td>
@@ -202,7 +209,7 @@ else
 
                             @if (!_entries.Any() && _newEntryForm == null)
                             {
-                                <tr><td colspan="11" class="text-center text-muted">Nog geen logboekregels. Klik op "+ Nieuwe regel" om te beginnen.</td></tr>
+                                <tr><td colspan="12" class="text-center text-muted">Nog geen logboekregels. Klik op "+ Nieuwe regel" om te beginnen.</td></tr>
                             }
                         </tbody>
                     </table>
@@ -319,6 +326,31 @@ else
         _entryForm = null;
     }
 
+    private async Task VulSuggestiesNieuweRegel()
+    {
+        if (_newEntryForm == null || _selectedTrip == null) return;
+        try
+        {
+            var suggesties = await SuggestionService.GetSuggestionsAsync(_selectedTrip.Id, BoordtijdHelper.NaarUtc(_newEntryForm.EntryTimeLocal));
+            if (!_newEntryForm.Course.HasValue && suggesties.Course.HasValue)
+                _newEntryForm.Course = suggesties.Course;
+            if (string.IsNullOrWhiteSpace(_newEntryForm.WindDescription) && suggesties.WindDescription != null)
+                _newEntryForm.WindDescription = suggesties.WindDescription;
+            if (string.IsNullOrWhiteSpace(_newEntryForm.GpsStatus) && suggesties.GpsStatus != null)
+                _newEntryForm.GpsStatus = suggesties.GpsStatus;
+            if (!_newEntryForm.Latitude.HasValue && suggesties.Latitude.HasValue)
+                _newEntryForm.Latitude = suggesties.Latitude;
+            if (!_newEntryForm.Longitude.HasValue && suggesties.Longitude.HasValue)
+                _newEntryForm.Longitude = suggesties.Longitude;
+            if (!_newEntryForm.AverageSogKnots.HasValue && suggesties.AverageSogKnots.HasValue)
+                _newEntryForm.AverageSogKnots = suggesties.AverageSogKnots;
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Suggesties ophalen mislukt: {ex.Message}";
+        }
+    }
+
     private async Task OpslaanNieuweRegel()
     {
         if (_newEntryForm == null || _selectedTrip == null) return;
@@ -367,6 +399,7 @@ else
                     GpsStatus = dto.GpsStatus,
                     Latitude = dto.Latitude,
                     Longitude = dto.Longitude,
+                    AverageSogKnots = dto.AverageSogKnots,
                     UpdatedAtUtc = DateTime.UtcNow
                 };
                 _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
@@ -446,7 +479,8 @@ else
 
     private class EntryFormModel
     {
-        public DateTime EntryTimeUtcInput { get; set; } = DateTime.UtcNow;
+        /// <summary>Lokale boordtijd voor weergave en invoer. Wordt bij opslaan naar UTC geconverteerd.</summary>
+        public DateTime EntryTimeLocal { get; set; } = BoordtijdHelper.NaarLokaal(DateTime.UtcNow);
         public decimal? BaroPressure { get; set; }
         public decimal? LogValue { get; set; }
         public int? Course { get; set; }
@@ -455,11 +489,12 @@ else
         public string? GpsStatus { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+        public decimal? AverageSogKnots { get; set; }
 
         public EntryFormModel() { }
         public EntryFormModel(LogbookEntryDto dto)
         {
-            EntryTimeUtcInput = dto.EntryTimeUtc;
+            EntryTimeLocal = BoordtijdHelper.NaarLokaal(dto.EntryTimeUtc);
             BaroPressure = dto.BaroPressure;
             LogValue = dto.LogValue;
             Course = dto.Course;
@@ -468,11 +503,12 @@ else
             GpsStatus = dto.GpsStatus;
             Latitude = dto.Latitude;
             Longitude = dto.Longitude;
+            AverageSogKnots = dto.AverageSogKnots;
         }
 
         public SaveLogbookEntryDto ToDto() => new()
         {
-            EntryTimeUtc = EntryTimeUtcInput,
+            EntryTimeUtc = BoordtijdHelper.NaarUtc(EntryTimeLocal),
             BaroPressure = BaroPressure,
             LogValue = LogValue,
             Course = Course,
@@ -480,7 +516,8 @@ else
             WindDescription = WindDescription,
             GpsStatus = GpsStatus,
             Latitude = Latitude,
-            Longitude = Longitude
+            Longitude = Longitude,
+            AverageSogKnots = AverageSogKnots
         };
     }
 }
