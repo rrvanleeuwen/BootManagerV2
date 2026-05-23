@@ -64,6 +64,11 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<LogbookEntry> LogbookEntries => Set<LogbookEntry>();
 
+    /// <summary>
+    /// DbSet voor operationele instellingen.
+    /// </summary>
+    public DbSet<OperationalSettings> OperationalSettings => Set<OperationalSettings>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
@@ -78,5 +83,6 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.WaterTemperatureMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogbookTripConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogbookEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.OperationalSettingsConfiguration());
     }
 }

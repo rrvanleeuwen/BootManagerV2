@@ -1,8 +1,12 @@
 @page "/settings"
 @using System.Net.Http.Json
+@using BootManager.Application.OperationalSettings.DTOs
+@using BootManager.Application.OperationalSettings.Services
+@using BootManager.Core.Enums
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject BootManager.Application.Authentication.Services.IOwnerSettingsService SettingsService
+@inject IOperationalSettingsService OperationalSettingsService
 
 <h3>Instellingen</h3>
 
@@ -54,6 +58,67 @@
         <button class="btn btn-link text-danger" @onclick="ClearPin">Verwijder pincode</button>
         @if (!string.IsNullOrEmpty(pinError)) { <div class="text-danger">@pinError</div> }
         @if (pinSuccess) { <div class="text-success">Pincode opgeslagen.</div> }
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <h5>Operationele instellingen</h5>
+
+        @if (_opsBusy && _opsModel is null)
+        {
+            <p>Laden...</p>
+        }
+        else if (_opsModel is not null)
+        {
+            <EditForm Model="_opsModel" OnValidSubmit="HandleOpsSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <h6 class="mt-2">Netwerk / Ingest</h6>
+                <div class="mb-2">
+                    <label>Luisteradres</label>
+                    <InputText class="form-control" @bind-Value="_opsModel.ListenAddress" />
+                    <small class="form-text text-muted">IP-adres waarop de ingest-service luistert (bijv. 0.0.0.0).</small>
+                </div>
+                <div class="mb-2">
+                    <label>Luisterpoort</label>
+                    <InputNumber class="form-control" @bind-Value="_opsModel.ListenPort" />
+                </div>
+                <div class="mb-2">
+                    <label>Alternatieve poort <span class="text-muted">(optioneel)</span></label>
+                    <InputNumber class="form-control" @bind-Value="_opsModel.AlternativeListenPort" />
+                </div>
+                <div class="mb-2">
+                    <label>API basis-URL</label>
+                    <InputText class="form-control" @bind-Value="_opsModel.ApiBaseUrl" />
+                    <small class="form-text text-muted">Basis-URL van de BootManager Web API.</small>
+                </div>
+
+                <h6 class="mt-3">Opslag / Sampling</h6>
+                <div class="mb-2">
+                    <label>Raw opslagmodus</label>
+                    <InputSelect class="form-select" @bind-Value="_opsModel.RawStorageMode">
+                        <option value="@RawStorageMode.All">Alles opslaan</option>
+                        <option value="@RawStorageMode.Sampled">Sampling (interval)</option>
+                        <option value="@RawStorageMode.OffAfterSuccessfulParse">Uit na geslaagde parse</option>
+                    </InputSelect>
+                </div>
+                <div class="mb-2">
+                    <label>Standaard sample-interval (seconden)</label>
+                    <InputNumber class="form-control" @bind-Value="_opsModel.DefaultSampleIntervalSeconds" />
+                    <small class="form-text text-muted">Alleen relevant bij modus Sampling (1–3600).</small>
+                </div>
+                <div class="mb-2 form-check">
+                    <InputCheckbox class="form-check-input" @bind-Value="_opsModel.CaptureLoggingEnabled" id="captureLogging" />
+                    <label class="form-check-label" for="captureLogging">Capture logging inschakelen</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" disabled="@_opsBusy">@(_opsBusy ? "Bezig..." : "Opslaan")</button>
+            </EditForm>
+            @if (!string.IsNullOrEmpty(_opsError)) { <div class="text-danger mt-2">@_opsError</div> }
+            @if (_opsSuccess) { <div class="text-success mt-2">Instellingen opgeslagen.</div> }
+        }
     </div>
 </div>
 
@@ -138,6 +203,38 @@
         catch (Exception ex)
         {
             pinError = ex.Message;
+        }
+    }
+
+    // --- Operationele instellingen ---
+
+    private OperationalSettingsDto? _opsModel;
+    private bool _opsBusy;
+    private string? _opsError;
+    private bool _opsSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _opsModel = await OperationalSettingsService.GetAsync();
+    }
+
+    private async Task HandleOpsSubmit()
+    {
+        _opsBusy = true;
+        _opsError = null;
+        _opsSuccess = false;
+        try
+        {
+            await OperationalSettingsService.SaveAsync(_opsModel!);
+            _opsSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            _opsError = ex.Message;
+        }
+        finally
+        {
+            _opsBusy = false;
         }
     }
 }

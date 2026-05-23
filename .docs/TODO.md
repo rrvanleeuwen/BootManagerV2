@@ -19,6 +19,12 @@
 
 #### High Priority
 
+- [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
+  - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.
+  - **Belangrijk:** deze instellingen worden nu persistent in de database opgeslagen, maar `BootManager.Tools.Ingest` gebruikt ze nog niet.
+  - **Vervolg:** Ingest moet bij startup instellingen ophalen bij `BootManager.Web`, met `appsettings.json` als fallback.
+  - **Daarna:** sampling/raw-retentie toepassen op opslag van raw berichten en derived measurements.
+
 - [ ] **Digitaal Logboek** *(epic – UI richting eindgebruiker)*
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
   - **Referentie:** bestaand logboekvoorbeeld in `.docs/extraInfo/LogboekVoorbeeld.png`.
@@ -63,7 +69,7 @@
   - [x] Story 3: NMEA0183 krijgt stabiele niet-lege `MessageId` op basis van sentence-id, zodat derived measurements opgeslagen worden
   - [x] Story 4: Simulator krijgt een YDEN03-achtig profiel met `YD` talker-prefixen, AIS `!AIVDM`/`!AIVDO` en raw-only YDEN-sentences
   - [ ] Story 5: Replay-validatie voor echte NDJSON capture naar API/SQLite
-  - [ ] Future story: configureerbare ingest/sampling-retentie voor langzame bootdata, bijvoorbeeld High = 1s, Medium = 10s, Low = 60s; ruwe niet-geparseerde data kan na succesvolle periodieke parsing optioneel worden opgeschoond
+  - [ ] Future story: Ingest haalt operationele instellingen op uit BootManager.Web en gebruikt die voor configureerbare ingest/sampling-retentie; ruwe niet-geparseerde data kan na succesvolle periodieke parsing optioneel worden opgeschoond
   - Bestaande NMEA2000 slices blijven intact
   - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
   - Zie: [.docs/epics/nmea0183-support.md](epics/nmea0183-support.md) en [.docs/features/nmea0183-parser-interpreter-architecture.md](features/nmea0183-parser-interpreter-architecture.md)
@@ -206,6 +212,8 @@ Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 ### 2. Later
 
+- Ingest operational settings ophalen bij startup, met appsettings fallback.
+- Sampling/raw-retentiebeleid toepassen op database-opslag.
 - Server-side PDF-generatie.
 - Bijlagen uploaden.
 - Query API enhancements voor meetdata over tijdvakken.

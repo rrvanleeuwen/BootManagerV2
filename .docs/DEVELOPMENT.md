@@ -446,6 +446,12 @@ protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 
 Ingest ondersteunt optionele raw capture logging voor boot-testen. Per ontvangen UDP-regel wordt een NDJSON-record weggeschreven naar een timestamped bestand, vóór de API-post plaatsvindt.
 
+### Operationele instellingen via UI/database
+
+Status 2026-05-23: BootManager.Web heeft een sectie **Operationele instellingen** op `/settings`. Deze instellingen worden in de database opgeslagen en bevatten luisteradres, primaire en alternatieve poort, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.
+
+Belangrijk: `BootManager.Tools.Ingest` gebruikt deze database-instellingen nog niet. Voor de huidige runtime blijft `src/BootManager.Tools.Ingest/appsettings.json` leidend. Een vervolgslice laat Ingest bij startup de database-instellingen ophalen via BootManager.Web, met appsettings als fallback wanneer Web niet bereikbaar is.
+
 ### Inschakelen
 
 Pas `appsettings.json` aan in `src/BootManager.Tools.Ingest/`:

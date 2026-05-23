@@ -1,4 +1,5 @@
 using BootManager.Application.Authentication.Services;
+using BootManager.Application.OperationalSettings.Services;
 using BootManager.Application.Logbook.Services;
 using BootManager.Application.OwnerRegistration.Services;
 using BootManager.Application.NetworkMessages.Services;
@@ -96,6 +97,9 @@ public static class DependencyInjection
 
         // Registratie van Logboek-regel detail service
         services.AddScoped<ILogbookEntryDetailService, LogbookEntryDetailService>();
+
+        // Registratie van operationele instellingen service
+        services.AddScoped<IOperationalSettingsService, OperationalSettingsService>();
 
         return services;
     }
