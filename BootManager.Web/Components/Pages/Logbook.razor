@@ -2,6 +2,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
+@using BootManager.Core.Enums
 @using BootManager.Web.Helpers
 @inject ILogbookService LogbookService
 @inject ILogbookMeasurementSuggestionService SuggestionService
@@ -131,6 +132,7 @@ else
                         <thead class="table-dark">
                             <tr>
                                 <th>Tijd (lokaal)</th>
+                                <th>Status</th>
                                 <th>Baro</th>
                                 <th>Log</th>
                                 <th>Koers</th>
@@ -152,6 +154,7 @@ else
                                     <!-- Bewerkingsrij -->
                                     <tr class="table-warning">
                                         <td><InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_entryForm.EntryTimeLocal" /></td>
+                                        <td><span class="text-muted small">—</span></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.BaroPressure" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.LogValue" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Course" /></td>
@@ -170,8 +173,18 @@ else
                                 }
                                 else
                                 {
-                                    <tr>
+                                    <tr class="@(entry.Status == LogbookEntryStatus.Draft ? "table-warning" : "")">
                                         <td>@BoordtijdHelper.NaarLokaal(entry.EntryTimeUtc).ToString("HH:mm")</td>
+                                        <td>
+                                            @if (entry.Status == LogbookEntryStatus.Draft)
+                                            {
+                                                <span class="badge bg-warning text-dark">Te accorderen</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Definitief</span>
+                                            }
+                                        </td>
                                         <td>@(entry.BaroPressure.HasValue ? entry.BaroPressure.Value.ToString("F1") : "")</td>
                                         <td>@(entry.LogValue.HasValue ? entry.LogValue.Value.ToString("F1") : "")</td>
                                         <td>@(entry.Course.HasValue ? entry.Course.Value.ToString() + "°" : "")</td>
@@ -185,6 +198,10 @@ else
                                         <td>
                                             <a class="btn btn-xs btn-outline-info" href="/logbook/entries/@entry.Id/details">Details</a>
                                             <button class="btn btn-xs btn-outline-secondary" @onclick="() => BewerkenRegel(entry)">✎</button>
+                                            @if (entry.Status == LogbookEntryStatus.Draft)
+                                            {
+                                                <button class="btn btn-xs btn-outline-success" @onclick="() => AccorderenRegel(entry.Id)">✓ Accorderen</button>
+                                            }
                                         </td>
                                     </tr>
                                 }
@@ -195,6 +212,7 @@ else
                                 <!-- Nieuwe-regelrij onderaan -->
                                 <tr class="table-success">
                                     <td><InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_newEntryForm.EntryTimeLocal" /></td>
+                                    <td><span class="text-muted small">—</span></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.BaroPressure" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.LogValue" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Course" /></td>
@@ -215,7 +233,7 @@ else
 
                             @if (!_entries.Any() && _newEntryForm == null)
                             {
-                                <tr><td colspan="12" class="text-center text-muted">Nog geen logboekregels. Klik op "+ Nieuwe regel" om te beginnen.</td></tr>
+                                <tr><td colspan="13" class="text-center text-muted">Nog geen logboekregels. Klik op "+&nbsp;Nieuwe regel" om te beginnen.</td></tr>
                             }
                         </tbody>
                     </table>
@@ -406,6 +424,7 @@ else
                     Latitude = dto.Latitude,
                     Longitude = dto.Longitude,
                     AverageSogKnots = dto.AverageSogKnots,
+                    Status = updated.Status,
                     UpdatedAtUtc = DateTime.UtcNow
                 };
                 _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
@@ -424,6 +443,41 @@ else
     {
         _editingEntryId = null;
         _entryForm = null;
+    }
+
+    private async Task AccorderenRegel(int entryId)
+    {
+        try
+        {
+            await LogbookService.ConfirmEntryAsync(entryId);
+            var idx = _entries.FindIndex(e => e.Id == entryId);
+            if (idx >= 0)
+            {
+                var e = _entries[idx];
+                _entries[idx] = new LogbookEntryDto
+                {
+                    Id = e.Id,
+                    LogbookTripId = e.LogbookTripId,
+                    EntryTimeUtc = e.EntryTimeUtc,
+                    BaroPressure = e.BaroPressure,
+                    LogValue = e.LogValue,
+                    Course = e.Course,
+                    Remarks = e.Remarks,
+                    WindDescription = e.WindDescription,
+                    GpsStatus = e.GpsStatus,
+                    Latitude = e.Latitude,
+                    Longitude = e.Longitude,
+                    AverageSogKnots = e.AverageSogKnots,
+                    Status = LogbookEntryStatus.Confirmed,
+                    UpdatedAtUtc = DateTime.UtcNow
+                };
+            }
+            _foutmelding = null;
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Accorderen mislukt: {ex.Message}";
+        }
     }
 
     // --- Formuliermodellen ---

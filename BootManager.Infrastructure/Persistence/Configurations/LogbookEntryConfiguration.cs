@@ -1,4 +1,5 @@
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -28,6 +29,11 @@ public class LogbookEntryConfiguration : IEntityTypeConfiguration<LogbookEntry>
         b.Property(x => x.Latitude);
         b.Property(x => x.Longitude);
         b.Property(x => x.AverageSogKnots).HasPrecision(7, 3);
+        b.Property(x => x.Status)
+            .IsRequired()
+            .HasDefaultValue(LogbookEntryStatus.Confirmed)
+            .HasConversion<int>()
+            .HasSentinel((LogbookEntryStatus)(-1));
         b.Property(x => x.CreatedAtUtc).IsRequired();
         b.Property(x => x.UpdatedAtUtc).IsRequired();
 

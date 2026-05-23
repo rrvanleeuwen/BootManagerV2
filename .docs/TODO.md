@@ -23,7 +23,7 @@
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
   - **Referentie:** bestaand logboekvoorbeeld in `.docs/extraInfo/LogboekVoorbeeld.png`.
   - **Doel:** reisgegevens, uurregels, automatische meetdatasamenvatting, detaildata en handmatige opmerkingen in logboekvorm tonen.
-  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel en browser-printweergave zijn geïmplementeerd.
+  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel en browser-printweergave zijn geïmplementeerd. Akkoordflow (LogbookEntryStatus: Draft/Confirmed) geïmplementeerd op 2026-05-23.
   - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont read-only samples en samenvattingen voor positie, COG/SOG, heading, wind, diepte en watertemperatuur binnen het tijdvak van de logregel.
   - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)

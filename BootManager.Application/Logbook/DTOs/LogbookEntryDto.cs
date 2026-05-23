@@ -1,4 +1,5 @@
 using System;
+using BootManager.Core.Enums;
 
 namespace BootManager.Application.Logbook.DTOs;
 
@@ -42,6 +43,9 @@ public class LogbookEntryDto
 
     /// <summary>Gemiddelde SOG in knopen over de logperiode. Null indien niet beschikbaar.</summary>
     public decimal? AverageSogKnots { get; set; }
+
+    /// <summary>Status van de logboekregel in de akkoordflow.</summary>
+    public LogbookEntryStatus Status { get; set; }
 
     /// <summary>Tijdstempel (UTC) van de laatste wijziging.</summary>
     public DateTime UpdatedAtUtc { get; set; }

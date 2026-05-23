@@ -154,6 +154,17 @@ public class LogbookService : ILogbookService
         await _entryRepo.UpdateAsync(entity, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task ConfirmEntryAsync(int entryId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _entryRepo.SingleOrDefaultAsync(e => e.Id == entryId, cancellationToken)
+            ?? throw new InvalidOperationException($"Logboekregel met id {entryId} niet gevonden.");
+
+        entity.Confirm();
+        await _entryRepo.UpdateAsync(entity, cancellationToken);
+        _logger.LogInformation("Logboekregel {EntryId} geaccordeerd.", entryId);
+    }
+
     private static LogbookTripDto MapTrip(LogbookTrip t) => new()
     {
         Id = t.Id,
@@ -189,6 +200,7 @@ public class LogbookService : ILogbookService
         Latitude = e.Latitude,
         Longitude = e.Longitude,
         AverageSogKnots = e.AverageSogKnots,
+        Status = e.Status,
         UpdatedAtUtc = e.UpdatedAtUtc
     };
 }

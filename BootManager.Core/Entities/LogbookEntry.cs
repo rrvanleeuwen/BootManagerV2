@@ -1,4 +1,5 @@
 using System;
+using BootManager.Core.Enums;
 
 namespace BootManager.Core.Entities;
 
@@ -69,6 +70,11 @@ public class LogbookEntry
     public decimal? AverageSogKnots { get; private set; }
 
     /// <summary>
+    /// Status van de logboekregel in de akkoordflow.
+    /// </summary>
+    public LogbookEntryStatus Status { get; private set; }
+
+    /// <summary>
     /// Tijdstempel (UTC) waarop de regel is aangemaakt.
     /// </summary>
     public DateTime CreatedAtUtc { get; private set; }
@@ -115,6 +121,7 @@ public class LogbookEntry
         Latitude = latitude;
         Longitude = longitude;
         AverageSogKnots = averageSogKnots;
+        Status = LogbookEntryStatus.Confirmed;
         CreatedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = DateTime.UtcNow;
     }
@@ -144,6 +151,16 @@ public class LogbookEntry
         Latitude = latitude;
         Longitude = longitude;
         AverageSogKnots = averageSogKnots;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Markeert de logboekregel als definitief (Confirmed). Heeft geen effect als de regel al Confirmed is.
+    /// </summary>
+    public void Confirm()
+    {
+        if (Status == LogbookEntryStatus.Confirmed) return;
+        Status = LogbookEntryStatus.Confirmed;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }
