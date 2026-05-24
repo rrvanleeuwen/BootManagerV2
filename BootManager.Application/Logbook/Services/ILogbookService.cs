@@ -60,4 +60,25 @@ public interface ILogbookService
     /// Maakt een Draft-logboekregel aan voor het opgegeven moment met automatische meetdatasuggesties.
     /// </summary>
     Task<LogbookEntryDto> CreateDraftEntryAsync(int tripId, DateTime entryTimeUtc, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Berekent alle gemiste logmomenten voor een reis.
+    /// Retourneert een overzicht met totaal aantal en geordende lijst van gemiste momenten (UTC).
+    /// </summary>
+    Task<MissedLogMomentsDto> GetMissedLogMomentsAsync(int tripId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Maakt meerdere Draft-logboekregels aan voor gemiste logmomenten, maximaal 24 per keer.
+    /// Defensief begrensd: als meer dan 24 gemist zijn, worden alleen de eerste 24 aangemaakt.
+    /// </summary>
+    /// <param name="tripId">Reis-ID.</param>
+    /// <param name="maxCount">Maximaal aantal regels aan te maken (standaard 24).</param>
+    /// <returns>Aantal daadwerkelijk aangemaakte Draft-regels.</returns>
+    Task<int> CreateMultipleDraftEntriesAsync(int tripId, int maxCount = 24, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verwijdert een logboekregel (hard delete). Werkt voor zowel Draft als Confirmed regels.
+    /// </summary>
+    /// <param name="entryId">ID van de te verwijderen regel.</param>
+    Task DeleteEntryAsync(int entryId, CancellationToken cancellationToken = default);
 }

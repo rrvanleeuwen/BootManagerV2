@@ -242,6 +242,102 @@ public class LogbookService : ILogbookService
         UpdatedAtUtc = t.UpdatedAtUtc
     };
 
+    /// <inheritdoc />
+    public async Task<MissedLogMomentsDto> GetMissedLogMomentsAsync(int tripId, CancellationToken cancellationToken = default)
+    {
+        var trip = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
+            ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
+
+        var entries = await _entryRepo.ListAsync(e => e.LogbookTripId == tripId, cancellationToken);
+
+        // Bepaal basis: laatste logboekregel of vertrek
+        DateTime baseTime = entries.Count > 0
+            ? entries.OrderByDescending(e => e.EntryTimeUtc).First().EntryTimeUtc
+            : trip.DepartureUtc;
+
+        // Loginterval: fallback naar 60 als ongeldig
+        int interval = trip.LogIntervalMinutes > 0 ? trip.LogIntervalMinutes : 60;
+
+        // Bereken alle gemiste logmomenten
+        var missedMoments = new List<DateTime>();
+        var currentMoment = baseTime.AddMinutes(interval);
+        var now = DateTime.UtcNow;
+
+        while (currentMoment < now)
+        {
+            missedMoments.Add(currentMoment);
+            currentMoment = currentMoment.AddMinutes(interval);
+        }
+
+        return new MissedLogMomentsDto
+        {
+            TotalCount = missedMoments.Count,
+            MissedMoments = missedMoments.Select(m => new MissedMomentDto { EntryTimeUtc = m }).ToList()
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<int> CreateMultipleDraftEntriesAsync(int tripId, int maxCount = 24, CancellationToken cancellationToken = default)
+    {
+        var trip = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
+            ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
+
+        // Haal gemiste logmomenten op
+        var missedData = await GetMissedLogMomentsAsync(tripId, cancellationToken);
+
+        if (missedData.TotalCount == 0)
+        {
+            _logger.LogInformation("Geen gemiste logmomenten voor reis {TripId}.", tripId);
+            return 0;
+        }
+
+        // Defensief begrenzen tot maxCount
+        var momentsToCreate = missedData.MissedMoments
+            .Take(Math.Min(maxCount, missedData.TotalCount))
+            .ToList();
+
+        int createdCount = 0;
+
+        foreach (var moment in momentsToCreate)
+        {
+            try
+            {
+                // Controleer of er al een regel voor dit moment bestaat (defensieve check)
+                var existingEntry = await _entryRepo.SingleOrDefaultAsync(
+                    e => e.LogbookTripId == tripId && e.EntryTimeUtc == moment.EntryTimeUtc,
+                    cancellationToken);
+
+                if (existingEntry != null)
+                {
+                    _logger.LogWarning("Regel voor {EntryTimeUtc} bestaat al voor reis {TripId}, overgeslagen.", moment.EntryTimeUtc, tripId);
+                    continue;
+                }
+
+                // Maak Draft-entry aan
+                await CreateDraftEntryAsync(tripId, moment.EntryTimeUtc, cancellationToken);
+                createdCount++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fout bij aanmaken Draft-regel voor {EntryTimeUtc} in reis {TripId}.", moment.EntryTimeUtc, tripId);
+                // Ga door met volgende moment
+            }
+        }
+
+        _logger.LogInformation("{CreatedCount} Draft-regels aangemaakt voor reis {TripId}.", createdCount, tripId);
+        return createdCount;
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteEntryAsync(int entryId, CancellationToken cancellationToken = default)
+    {
+        var entry = await _entryRepo.SingleOrDefaultAsync(e => e.Id == entryId, cancellationToken)
+            ?? throw new InvalidOperationException($"Logboekregel met id {entryId} niet gevonden.");
+
+        await _entryRepo.DeleteAsync(entry, cancellationToken);
+        _logger.LogInformation("Logboekregel {EntryId} verwijderd.", entryId);
+    }
+
     private static LogbookEntryDto MapEntry(LogbookEntry e) => new()
     {
         Id = e.Id,

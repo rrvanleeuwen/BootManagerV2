@@ -428,3 +428,90 @@ De detailweergave blijft ongewijzigd en werkt correct:
 
 ### Rationale
 Veiligheid en controleerbaarheid: een lege Draft-regel is beter dan een regel met oude waarden. De gebruiker kan dan bewust kiezen of deze handmatig in te vullen op basis van andere bronnen (papieren logboek, GPS, etc.). De domeinregel zorgt voor consistentie: als de detailtabel leeg is (geen meetdata in periode), mag de overzichtsregel ook geen "oude" waarden tonen.
+
+---
+
+## Slice: Verbeterde Missing Moments en Delete-functionaliteit (2026-05-24)
+
+**Datum:** 2026-05-24
+**Branch:** feature/logbook-missed-moments-list
+**Status:** Geïmplementeerd
+
+### Aanleiding
+In de vorige implementatie toonde de banner slechts het eerstvolgende gemiste logmoment. Voor langere reizen zonder regelmatige logboekinvoer kunnen meerdere logmomenten achterlopen, waardoor het nuttig is een overzicht van meerdere gemiste momenten en gecontroleerde batch-aanmaak van conceptregels toe te voegen.
+
+Daarnaast ontbrak de mogelijkheid om logboekregels te verwijderen, wat nuttig is voor corrigeren van fouten.
+
+### Functionaliteit: Gemiste Logmomenten Overzicht
+
+#### 1. Service-methoden
+`ILogbookService` uitgebreid met:
+
+**`GetMissedLogMomentsAsync(int tripId)`**
+- Retourneert alle logmomenten die verstreken zijn sinds de vorige logboekregel (of DepartureUtc) + LogIntervalMinutes.
+- Berekent tot en met `DateTime.UtcNow`.
+- Retourneert `MissedLogMomentsDto` met `TotalCount` en geordende lijst van `MissedMomentDto`.
+
+**`CreateMultipleDraftEntriesAsync(int tripId, int maxCount = 24)`**
+- Maakt Draft-regels aan voor de N eerste gemiste logmomenten (max 24).
+- Defensief: voorkomt duplicaten door te controleren of een regel voor dat moment al bestaat.
+- Herberekent automatisch na de batch.
+
+**`DeleteEntryAsync(int entryId)`**
+- Hard-delete van logboekregel.
+- Werkt voor zowel Draft als Confirmed regels.
+
+#### 2. DTO's
+Twee nieuwe DTO's in `BootManager.Application.Logbook.DTOs`:
+
+- `MissedMomentDto`: één gemist moment (`EntryTimeUtc`).
+- `MissedLogMomentsDto`: totaal aantal en lijst van momenten.
+
+#### 3. UI-banner
+`/logbook` toont verbeterde banner:
+
+- **Telling:** "⚠ Gemiste logmomenten: N"
+- **Compacte tijdlijst:** eerste 5 momenten in lokale boordtijd, of "HH:mm, HH:mm, ..." format.
+- **Overflow:** "+ M meer" als meer dan 5 gemiste momenten bestaan.
+- **Knop:** "Conceptregels aanmaken" (in plaats van "Conceptregel maken" voor enkelvoudig).
+- **Sluit banner:** mogelijk via ✕, maar herbereken gebeurt na regel-aanmaak.
+
+#### 4. Bulk-aanmaak
+- Klik op "Conceptregels aanmaken" maakt tot 24 Draft-regels aan in één beurt.
+- Na aanmaak herbereken banner automatisch.
+- Als meer dan 24 gemist zijn, blijven de resterende momenten zichtbaar na herberekening.
+- Geen enkel moment resulteert in automatische Confirmed; alle blijven Draft.
+
+#### 5. Verwijderingsknop
+Elke logboekregel in `/logbook` krijgt verwijderknop (🗑):
+
+- Positie: in actiecel naast Details, Bewerken, Accorderen.
+- Bevestigingsdialoog: "Weet u zeker dat u de logboekregel van HH:mm wilt verwijderen?"
+- Na verwijdering: regel verwijderd uit database en UI, banner herberekend.
+- Werkt voor Draft en Confirmed.
+
+#### 6. Migratie
+Geen nieuwe database-migratie nodig; existing `LogbookEntry` tabel ondersteunt al hard-delete.
+
+### Acceptatiecriteria
+- ✓ `dotnet build` slaagt.
+- ✓ Als een reis 1 gemist logmoment heeft, toont banner dat moment en kan daar één Draft-regel voor worden aangemaakt.
+- ✓ Als meerdere gemiste logmomenten bestaan, toont banner telling + compacte tijdlijst (max 5 zichtbaar + "+N meer").
+- ✓ "Conceptregels aanmaken" maakt maximaal 24 Draft-regels aan per klik.
+- ✓ Resterende gemiste momenten (>24) blijven zichtbaar na herberekening.
+- ✓ Geen dubbele regels voor hetzelfde logboektijdstip.
+- ✓ Draft-regels gebruiken veilige periode-data (ongewijzigd van vorige slice).
+- ✓ Na aanmaak blijft `/logbook` lijsten in nieuw→oud sortering.
+- ✓ Printweergave blijft ongewijzigd: Confirmed-only, oud→nieuw sortering.
+- ✓ Handmatige "+ Nieuwe regel" maakt nog steeds Confirmed-regels.
+- ✓ Elke regel heeft verwijderknop met bevestigingsdialoog.
+- ✓ Na verwijdering herbereken banner.
+- ✓ Verwijdering werkt voor Draft en Confirmed.
+- ✓ Print toont verwijderde Confirmed-regels niet meer (automatisch doordat hard-delete uit database is).
+
+### Implementatiedetails
+- **Berekening gemiste momenten:** basis = `EntryTimeUtc` van laatste regel of `DepartureUtc` van reis. Interval = `trip.LogIntervalMinutes` (fallback 60 als ongeldig). Loop tot alle momenten < `DateTime.UtcNow` zijn berekend.
+- **Defensive checks:** Bij bulk-aanmaak controleren of regel voor dat moment al bestaat, om races bij gelijktijdige requests te voorkomen.
+- **Delete**: `EfRepository.DeleteAsync` is aangepast zodat een al getrackte entity met dezelfde primary key wordt gebruikt bij verwijderen. Dit voorkomt EF Core tracking-conflicten in Blazor Server-scenario's.
+- **Logging:** Service logt alle operaties (aanmaken, verwijderen, fouten).
+- **UI-state:** Verwijderknop en modal-overlay blijven eenvoudig (Bootstrap 5 classes, geen externe libraries).

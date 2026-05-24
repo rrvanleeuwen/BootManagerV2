@@ -49,11 +49,11 @@
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
   - **Referentie:** bestaand logboekvoorbeeld in `.docs/extraInfo/LogboekVoorbeeld.png`.
   - **Doel:** reisgegevens, uurregels, automatische meetdatasamenvatting, detaildata en handmatige opmerkingen in logboekvorm tonen.
-  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel, browser-printweergave en akkoordflow (LogbookEntryStatus: Draft/Confirmed) geïmplementeerd. Op 2026-05-24 ontbrekende logmomenten feature toegevoegd (instelbaar loginterval per reis, banner met "Conceptregel maken"-knop).
+  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel, browser-printweergave, akkoordflow (LogbookEntryStatus: Draft/Confirmed), en ontbrekende logmomenten feature (banner met overzicht en bulk-aanmaak tot 24 Draft-regels) geïmplementeerd op 2026-05-24. Delete-functionaliteit per regel toegevoegd.
   - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont read-only samples en samenvattingen voor positie, COG/SOG, heading, wind, diepte en watertemperatuur binnen het tijdvak van de logregel.
-  - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print.
-  - **Huidige missing-moments-feature:** banner boven logboektabel als volgende logmoment verstreken; knop om Draft-regel aan te maken voor dat moment met automatische meetdatasuggesties.
-  - **Volgende slice:** gerelateerde features als batch-aanmaak of detailweergave verbeteren.
+  - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print. Alleen Confirmed-regels worden afgedrukt.
+  - **Huidige missing-moments-feature (2026-05-24):** banner boven logboektabel toont totaalaantal gemiste logmomenten en compacte lijst (max 5 zichtbaar + "+ meer"); knop "Conceptregels aanmaken" maakt tot 24 Draft-regels in één beurt aan met automatische meetdatasuggesties (alleen periode-data); herberekening van banner na batch. Delete-knop (🗑) per regel met bevestigingsdialoog; na verwijdering herbereken banner.
+  - **Volgende slice:** gerelateerde features als detailweergave verbeteren of browser push notifications.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 - [ ] **Authentication & Authorization**
