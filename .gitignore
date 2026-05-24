@@ -39,6 +39,7 @@ packages/
 
 # Publish / artifacts
 publish/
+.publish/
 artifacts/
 
 # ASP.NET Scaffolding
