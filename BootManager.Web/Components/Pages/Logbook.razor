@@ -123,15 +123,32 @@ else
     @if (_selectedTrip != null)
     {
         <!-- Banner voor vermiste logmomenten -->
-        @if (_nextExpectedLogMoment.HasValue && _nextExpectedLogMoment.Value < DateTime.UtcNow)
+        @if (_missedLogMoments != null && _missedLogMoments.TotalCount > 0)
         {
             <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
-                <strong>⚠ Vermist logmoment:</strong>
-                Verwacht om @BoordtijdHelper.NaarLokaal(_nextExpectedLogMoment.Value).ToString("HH:mm") (lokaal).
-                <button type="button" class="btn btn-sm btn-warning ms-2" @onclick="MaakDraftRegel">
-                    Conceptregel maken
+                <strong>⚠ Gemiste logmomenten:</strong>
+                <span class="ms-1">@_missedLogMoments.TotalCount</span>
+
+                @if (_missedLogMoments.MissedMoments.Count > 0)
+                {
+                    <span class="ms-1">(@string.Join(", ", _missedLogMoments.MissedMoments.Take(5).Select(m => BoordtijdHelper.NaarLokaal(m.EntryTimeUtc).ToString("HH:mm"))))</span>
+                    @if (_missedLogMoments.MissedMoments.Count > 5)
+                    {
+                        <span class="ms-1">+ @(_missedLogMoments.MissedMoments.Count - 5) meer</span>
+                    }
+                }
+
+                <button type="button" class="btn btn-sm btn-warning ms-2" @onclick="MaakMultipleDraftRegels" disabled="@_creatingDraftEntries">
+                    @if (_creatingDraftEntries)
+                    {
+                        <span>Aanmaken…</span>
+                    }
+                    else
+                    {
+                        <span>Conceptregels aanmaken</span>
+                    }
                 </button>
-                <button type="button" class="btn-close" @onclick="() => _nextExpectedLogMoment = null"></button>
+                <button type="button" class="btn-close" @onclick="() => _missedLogMoments = null"></button>
             </div>
         }
 
@@ -219,6 +236,7 @@ else
                                             {
                                                 <button class="btn btn-xs btn-outline-success" @onclick="() => AccorderenRegel(entry.Id)">✓ Accorderen</button>
                                             }
+                                            <button class="btn btn-xs btn-outline-danger" @onclick="() => VerwijderRegel(entry)" title="Verwijderen">🗑</button>
                                         </td>
                                     </tr>
                                 }
@@ -265,6 +283,29 @@ else
     <div class="alert alert-danger mt-3">@_foutmelding</div>
 }
 
+<!-- Verwijderingsbevestigingsmodaal -->
+@if (_entryIdToDelete.HasValue)
+{
+    <div class="modal d-block" style="background-color: rgba(0,0,0,0.5);" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Regel verwijderen</h5>
+                    <button type="button" class="btn-close" @onclick="AnnuleerVerwijdering"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Weet u zeker dat u de logboekregel van <strong>@_entryTimeToDelete</strong> wilt verwijderen?</p>
+                    <p class="text-muted small">Dit kan niet ongedaan worden gemaakt.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="AnnuleerVerwijdering">Annuleren</button>
+                    <button type="button" class="btn btn-danger" @onclick="BevestigVerwijdering">Verwijderen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool _loading = true;
     private string? _foutmelding;
@@ -279,8 +320,13 @@ else
     private EntryFormModel? _entryForm;
     private EntryFormModel? _newEntryForm;
 
-    private DateTime? _nextExpectedLogMoment;
-    private bool _checkingLogMoment;
+    private MissedLogMomentsDto? _missedLogMoments;
+    private bool _creatingDraftEntries;
+    private bool _checkingMissedMoments;
+
+    // Variabelen voor verwijderingsbevestiging
+    private int? _entryIdToDelete;
+    private string? _entryTimeToDelete;
 
     protected override async Task OnInitializedAsync()
     {
@@ -507,19 +553,19 @@ else
 
     private async Task BerekenVolgendeLogmoment()
     {
-        if (_selectedTrip == null || _checkingLogMoment) return;
+        if (_selectedTrip == null || _checkingMissedMoments) return;
         try
         {
-            _checkingLogMoment = true;
-            _nextExpectedLogMoment = await LogbookService.GetNextExpectedLogMomentAsync(_selectedTrip.Id);
+            _checkingMissedMoments = true;
+            _missedLogMoments = await LogbookService.GetMissedLogMomentsAsync(_selectedTrip.Id);
         }
         catch (Exception ex)
         {
-            _foutmelding = $"Fout bij berekening logmoment: {ex.Message}";
+            _foutmelding = $"Fout bij berekening gemiste logmomenten: {ex.Message}";
         }
         finally
         {
-            _checkingLogMoment = false;
+            _checkingMissedMoments = false;
         }
     }
 
@@ -532,23 +578,68 @@ else
         return _entries.AsEnumerable().Reverse();
     }
 
-    private async Task MaakDraftRegel()
+    private async Task MaakMultipleDraftRegels()
     {
-        if (_selectedTrip == null || !_nextExpectedLogMoment.HasValue) return;
+        if (_selectedTrip == null) return;
         try
         {
-            var entry = await LogbookService.CreateDraftEntryAsync(_selectedTrip.Id, _nextExpectedLogMoment.Value);
-            _entries.Add(entry);
-            _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
-            _foutmelding = null;
-            // Herbereken het volgende verwachte logmoment meteen, zodat eventuele volgende
-            // verlopen logmomenten direct zichtbaar blijven in de banner.
+            _creatingDraftEntries = true;
+            var createdCount = await LogbookService.CreateMultipleDraftEntriesAsync(_selectedTrip.Id, 24);
+
+            // Herlaad de entries
+            _entries = (await LogbookService.GetEntriesAsync(_selectedTrip.Id)).ToList();
+
+            // Herbereken gemiste logmomenten
             await BerekenVolgendeLogmoment();
+
+            _foutmelding = null;
         }
         catch (Exception ex)
         {
-            _foutmelding = $"Aanmaken Draft-regel mislukt: {ex.Message}";
+            _foutmelding = $"Aanmaken Draft-regels mislukt: {ex.Message}";
         }
+        finally
+        {
+            _creatingDraftEntries = false;
+        }
+    }
+
+    private void VerwijderRegel(LogbookEntryDto entry)
+    {
+        _entryIdToDelete = entry.Id;
+        _entryTimeToDelete = BoordtijdHelper.NaarLokaal(entry.EntryTimeUtc).ToString("HH:mm");
+    }
+
+    private async Task BevestigVerwijdering()
+    {
+        if (_entryIdToDelete == null || _selectedTrip == null) return;
+        try
+        {
+            await LogbookService.DeleteEntryAsync(_entryIdToDelete.Value);
+
+            // Verwijder uit lokale lijst
+            _entries = _entries.Where(e => e.Id != _entryIdToDelete.Value).ToList();
+
+            // Herbereken gemiste logmomenten
+            await BerekenVolgendeLogmoment();
+
+            _foutmelding = null;
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Verwijdering mislukt: {ex.Message}";
+        }
+        finally
+        {
+            _entryIdToDelete = null;
+            _entryTimeToDelete = null;
+        }
+    }
+
+    private void AnnuleerVerwijdering()
+    {
+        _entryIdToDelete = null;
+        _entryTimeToDelete = null;
     }
 
     // --- Formuliermodellen ---

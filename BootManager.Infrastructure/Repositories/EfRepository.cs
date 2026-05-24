@@ -74,7 +74,23 @@ public class EfRepository<T> : IRepository<T> where T : class
 
     public async Task DeleteAsync(T entity, CancellationToken ct = default)
     {
-        _set.Remove(entity);
+        var keyValues = _db.Model.FindEntityType(typeof(T))!
+            .FindPrimaryKey()!
+            .Properties
+            .Select(p => p.PropertyInfo!.GetValue(entity))
+            .ToArray();
+
+        var tracked = _set.Local.FirstOrDefault(e =>
+        {
+            var trackedKeys = _db.Model.FindEntityType(typeof(T))!
+                .FindPrimaryKey()!
+                .Properties
+                .Select(p => p.PropertyInfo!.GetValue(e))
+                .ToArray();
+            return keyValues.SequenceEqual(trackedKeys);
+        });
+
+        _set.Remove(tracked ?? entity);
         await _db.SaveChangesAsync(ct);
     }
 }
