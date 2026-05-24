@@ -1,4 +1,6 @@
 using BootManager.Core.Interfaces;
+using BootManager.Application.Logbook.Services;
+using BootManager.Infrastructure.Logbook;
 using BootManager.Infrastructure.Persistence;
 using BootManager.Infrastructure.Repositories;
 using BootManager.Infrastructure.Security;
@@ -17,6 +19,7 @@ public static class DependencyInjection
 
         // Generieke repository
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+        services.AddScoped<ILogbookEntryDeletionService, LogbookEntryDeletionService>();
 
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IEncryptionService>(_ =>
