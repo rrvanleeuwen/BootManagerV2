@@ -29,15 +29,6 @@ public class LogbookEntryDetailDto
     /// <summary>Eindtijd (UTC) van de detailperiode (gelijk aan EntryTimeUtc).</summary>
     public DateTime PeriodEndUtc { get; set; }
 
-    /// <summary>Bronmeting voor koers (Heading of Motion). Toont welke meting is gebruikt bij Draft-regel-aanmaak.</summary>
-    public LogbookSourceMeasurementDto? CourseBron { get; set; }
-
-    /// <summary>Bronmeting voor wind. Toont welke meting is gebruikt bij Draft-regel-aanmaak.</summary>
-    public LogbookSourceMeasurementDto? WindBron { get; set; }
-
-    /// <summary>Bronmeting voor positie/GPS. Toont welke meting is gebruikt bij Draft-regel-aanmaak.</summary>
-    public LogbookSourceMeasurementDto? PositieBron { get; set; }
-
     /// <summary>Samenvatting van positie binnen de periode.</summary>
     public LogbookDetailSummaryDto<LogbookPositionSampleDto>? Positie { get; set; }
 
@@ -88,25 +79,6 @@ public class LogbookSavedEntryValuesDto
 
     /// <summary>Gemiddelde snelheid over grond (SOG) in knopen.</summary>
     public decimal? AverageSogKnots { get; set; }
-}
-
-/// <summary>
-/// Informatie over de bronmeting van een bepaalde waarde (koers, wind, positie).
-/// Dit helpt te zien waar een automatisch voorgestelde waarde vandaan komt.
-/// </summary>
-public class LogbookSourceMeasurementDto
-{
-    /// <summary>Type bron: "Heading", "Motion", "Wind", "Position".</summary>
-    public string SourceType { get; set; } = string.Empty;
-
-    /// <summary>Waarde van de meting (bijv. "045°" voor koers).</summary>
-    public string Value { get; set; } = string.Empty;
-
-    /// <summary>Tijdstempel (UTC) van wanneer de meting is gedaan.</summary>
-    public DateTime MeasuredAtUtc { get; set; }
-
-    /// <summary>True als deze meting VÓÓr de start van het logtijdvak valt.</summary>
-    public bool IsOutsidePeriod { get; set; }
 }
 
 /// <summary>

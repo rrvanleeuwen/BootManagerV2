@@ -515,3 +515,131 @@ Geen nieuwe database-migratie nodig; existing `LogbookEntry` tabel ondersteunt a
 - **Delete**: `EfRepository.DeleteAsync` is aangepast zodat een al getrackte entity met dezelfde primary key wordt gebruikt bij verwijderen. Dit voorkomt EF Core tracking-conflicten in Blazor Server-scenario's.
 - **Logging:** Service logt alle operaties (aanmaken, verwijderen, fouten).
 - **UI-state:** Verwijderknop en modal-overlay blijven eenvoudig (Bootstrap 5 classes, geen externe libraries).
+
+---
+
+## Slice: Detailpagina Herontwerp als Accordeerhulpmiddel (2026-05-24)
+
+**Datum:** 2026-05-24
+**Branch:** feature/logbook-detail-approval-view
+**Status:** Geïmplementeerd
+
+### Aanleiding
+De bestaande detailpagina (`/logbook/entries/{entryId:int}/details`) was ontworpen als read-only samenvattingsscherm met oude bronmetingen die vóór het logtijdvak lagen. Dit conflicteerde met de nieuwe domeinregel dat Draft-regels voor gemiste logmomenten **alleen meetdata binnen hun eigen logtijdvak** gebruiken, geen oude "laatst bekende" waarden.
+
+De pagina is nu herontworpen als een **accordeerhulpmiddel** voor gebruikers om snel te bepalen:
+1. Of een logregel compleet is ingevuld.
+2. Welke meetdata beschikbaar is in het logtijdvak.
+3. Of handmatige aanvulling nodig is voordat accordering kan plaatsvinden.
+
+### Functionaliteit
+
+#### 1. Context-header (compact)
+Bovenaan de pagina:
+- Terug-knop naar `/logbook`
+- Titel: "Logboekregel accordering"
+- Reisnaam
+- Status badge: "Concept" (geel) of "Akkoord" (groen)
+- Logboektijd (lokaal, dd-MM-yyyy HH:mm)
+- **Logtijdvak (lokaal):** bereik getoond als "HH:mm — HH:mm" (lokaal boordtijd)
+
+#### 2. Waarschuwingen
+Twee waarschuwingen kunnen verschijnen:
+
+**Geen geldige startperiode:**
+Getoond als alert wanneer `PeriodStartUtc` null is. Tekst: "Waarschuwing: Geen geldige startperiode beschikbaar. Controleer de logboekgegevens."
+
+**Geen meetdata in logtijdvak:**
+Getoond als alert-info wanneer `PeriodStartUtc` beschikbaar is maar alle samplecounts (Positie, Beweging, Heading, Wind, Diepte, WaterTemperatuur) gelijk zijn aan 0. Tekst: "Geen meetdata in dit logtijdvak. Vul deze logregel handmatig aan voordat u deze accordeert."
+
+#### 3. Logregelwaarden (vervangen "Opgeslagen logregelwaarden")
+Nieuwe compacte layout toont **alle** velden inclusief lege waarden:
+
+- **Barometer:** waarde of "Nog niet ingevuld"
+- **Log:** waarde of "Nog niet ingevuld"
+- **Koers:** waarde of "Nog niet ingevuld"
+- **Gem. SOG:** waarde of "Nog niet ingevuld"
+- **Wind:** waarde of "Nog niet ingevuld"
+- **GPS-status:** waarde of "Nog niet ingevuld"
+- **Breedtegraad:** waarde of "Nog niet ingevuld"
+- **Lengtegraad:** waarde of "Nog niet ingevuld"
+- **Opmerkingen:** enkel als ingevuld
+
+Doel: gebruiker ziet onmiddellijk wat er is ingevuld en wat nog ontbreekt.
+
+#### 4. Meetdata in dit logtijdvak (overzicht per type)
+Compacte 6-kolom grid met samplecounts:
+
+- **Positie-samples:** aantal
+- **COG/SOG-samples:** aantal
+- **Heading-samples:** aantal
+- **Wind-samples:** aantal
+- **Diepte-samples:** aantal
+- **Watertemperatuur-samples:** aantal
+
+Tekst en getal grote font voor snelle scan.
+
+#### 5. Sampletabellen (secundair)
+Onder kopje "Samples", alleen getoond als samples beschikbaar zijn:
+
+Per meettype een tabel (als `Samples.Count > 0`):
+- **Positie:** Tijd (lokaal), Lat., Long.
+- **COG/SOG:** Tijd (lokaal), COG, SOG
+- **Heading:** Tijd (lokaal), Heading
+- **Wind:** Tijd (lokaal), Hoek, Snelheid
+- **Diepte:** Tijd (lokaal), Diepte
+- **Watertemperatuur:** Tijd (lokaal), Temperatuur
+
+#### 6. Verwijderde elementen
+**Bronmetingen voor automatische suggesties** sectie volledig verwijderd. Dit betrof `CourseBron`, `WindBron`, `PositieBron` DTOs en bijbehorende service-logica:
+- `LogbookSourceMeasurementDto` klasse
+- `LogbookEntryDetailDto.CourseBron`, `.WindBron`, `.PositieBron` properties
+- Service-methodes: `BepaalCourseSourceAsync()`, `BepaalWindSourceAsync()`, `BepaalPositieSourceAsync()`
+
+Reden: Deze toonden uitsluitend punt-in-tijd metingen vóór/op het logmoment, veelal buiten het logtijdvak. De nieuwe domeinregel schrijft voor dat Draft-regels **geen** waarden buiten hun eigen logtijdvak kunnen gebruiken.
+
+### Implementatiewijzigingen
+
+#### DTO Cleanup
+**BootManager.Application/Logbook/DTOs/LogbookEntryDetailDto.cs:**
+- Verwijderde properties: `CourseBron`, `WindBron`, `PositieBron`
+- Verwijderde klasse: `LogbookSourceMeasurementDto`
+- Behouden: `SavedValues`, `PeriodStartUtc`, `PeriodEndUtc`, sample-samenvattingen (`Positie`, `Beweging`, `Heading`, `Wind`, `Diepte`, `WaterTemperatuur`)
+
+#### Service Cleanup
+**BootManager.Application/Logbook/Services/LogbookEntryDetailService.cs:**
+- Verwijderde private methods: `BepaalCourseSourceAsync()`, `BepaalWindSourceAsync()`, `BepaalPositieSourceAsync()`
+- `GetEntryDetailAsync()` veroorzaakt geen aanroepen meer naar deze methodes; de DTO-properties kunnen niet meer worden gevuld
+
+#### UI Herontwerp
+**BootManager.Web/Components/Pages/LogbookEntryDetails.razor:**
+- Gecompleteerde layout: context-header, waarschuwingen, logregelwaarden, meetdata-overzicht, sampletabellen
+- Helper-methods:
+  - `HasNoMeasurementData(LogbookEntryDetailDto detail)` – controleer of alle samplecounts 0 zijn
+  - `GetSampleCount<T>(LogbookDetailSummaryDto<T>? summary)` – retourneer samplecount of 0
+- Geen verwijzingen meer naar `CourseBron`, `WindBron` of `PositieBron`
+
+### Acceptatiecriteria
+- ✓ `dotnet build` slaagt.
+- ✓ Detailpagina toont context-header met reisnaam, logboektijd, logtijdvak lokaal.
+- ✓ Detailpagina toont status badge (Concept/Akkoord).
+- ✓ Waarschuwing "Geen geldige startperiode" verschijnt wanneer `PeriodStartUtc` null is.
+- ✓ Waarschuwing "Geen meetdata in dit logtijdvak" verschijnt wanneer alle samplecounts 0 zijn.
+- ✓ Logregelwaarden sectie toont alle velden (Barometer, Log, Koers, Gem. SOG, Wind, GPS-status, Breedtegraad, Lengtegraad, Opmerkingen).
+- ✓ Lege velden getoond als "Nog niet ingevuld" of "-".
+- ✓ Meetdata-overzicht toont samplecounts per meettype in 6-kolom grid.
+- ✓ Sampletabellen enkel getoond als samples beschikbaar zijn.
+- ✓ Geen referenties meer naar `CourseBron`, `WindBron`, `PositieBron` in DTO, Service of UI.
+- ✓ Geen "Bronmetingen voor automatische suggesties" sectie meer zichtbaar.
+- ✓ Terug-knop en koppelingen naar `/logbook` blijven werkend.
+- ✓ Print-weergave ongewijzigd.
+- ✓ Delete-functionaliteit ongewijzigd.
+- ✓ Draft-aanmaaklogica ongewijzigd; nieuwe regels gebruiken nog steeds alleen periode-data.
+
+### Rationale
+Dit herontwerp verduidelijkt de rol van de detailpagina: ondersteuning bij accordering door:
+1. Snel inzicht in wat is ingevuld (waarden-sectie).
+2. Duidelijke indicatie of meetdata beschikbaar is (overzicht + waarschuwing).
+3. Toegang tot onderliggende samples voor verificatie.
+
+De verwijdering van oude bronmetingen versterkt consistentie: als het logtijdvak geen meetdata bevat, mogen opgeslagen waarden niet worden onderbouwd met metingen buiten het vak.

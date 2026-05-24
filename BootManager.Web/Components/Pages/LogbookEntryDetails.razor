@@ -6,9 +6,9 @@
 @inject ILogbookEntryDetailService DetailService
 @inject NavigationManager Navigation
 
-<div class="d-flex align-items-center mb-3 gap-2">
-    <button class="btn btn-sm btn-outline-secondary" @onclick="TerugNaarLogboek">← Terug naar logboek</button>
-    <h2 class="mb-0">Logboekregel details</h2>
+<div class="mb-4">
+    <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="TerugNaarLogboek">← Terug naar logboek</button>
+    <h1 class="mb-1">Logboekregel accordering</h1>
 </div>
 
 @if (_loading)
@@ -21,308 +21,172 @@ else if (_detail == null)
 }
 else
 {
-    <!-- Context -->
-    <div class="card mb-4">
-        <div class="card-header fw-semibold">Context</div>
+    <!-- Context-header: titel, reis, status, logboektijd, logtijdvak -->
+    <div class="card mb-4 border-secondary">
         <div class="card-body">
-            <div class="row g-2">
-                <div class="col-md-4">
-                    <span class="text-muted small">Reis</span>
-                    <div>@_detail.TripName</div>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <span class="text-muted small">Reisnaam</span>
+                        <div class="h5 mb-0">@_detail.TripName</div>
+                    </div>
+                    <div class="mb-0">
+                        <span class="text-muted small">Status</span>
+                        <div>
+                            @if (_detail.IsDraft)
+                            {
+                                <span class="badge bg-warning text-dark">Concept</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">Akkoord</span>
+                            }
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <span class="text-muted small">Logboektijd (lokaal)</span>
-                    <div>@BoordtijdHelper.NaarLokaal(_detail.EntryTimeUtc).ToString("dd-MM-yyyy HH:mm")</div>
-                </div>
-                <div class="col-md-4">
-                    <span class="text-muted small">Status</span>
-                    <div>@(_detail.IsDraft ? "Concept" : "Akkoord")</div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <span class="text-muted small">Logboektijd (lokaal)</span>
+                        <div class="h5 mb-0">@BoordtijdHelper.NaarLokaal(_detail.EntryTimeUtc).ToString("dd-MM-yyyy HH:mm")</div>
+                    </div>
+                    <div class="mb-0">
+                        <span class="text-muted small">Logtijdvak (lokaal)</span>
+                        <div>
+                            @if (_detail.PeriodStartUtc.HasValue)
+                            {
+                                @BoordtijdHelper.NaarLokaal(_detail.PeriodStartUtc.Value).ToString("HH:mm")
+                                <span class="text-muted">—</span>
+                                @BoordtijdHelper.NaarLokaal(_detail.PeriodEndUtc).ToString("HH:mm")
+                            }
+                            else
+                            {
+                                <span class="text-muted">Onbekend</span>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Opgeslagen logregelwaarden -->
+    <!-- Waarschuwing: geen geldige startperiode -->
+    @if (!_detail.PeriodStartUtc.HasValue)
+    {
+        <div class="alert alert-warning" role="alert">
+            <strong>Waarschuwing:</strong> Geen geldige startperiode beschikbaar. Controleer de logboekgegevens.
+        </div>
+    }
+    else if (HasNoMeasurementData(_detail))
+    {
+        <div class="alert alert-info" role="alert">
+            <strong>Geen meetdata in dit logtijdvak.</strong> Vul deze logregel handmatig aan voordat u deze accordeert.
+        </div>
+    }
+
+    <!-- Logregelwaarden -->
     @if (_detail.SavedValues != null)
     {
         <div class="card mb-4 border-info">
-            <div class="card-header fw-semibold bg-light-info">Opgeslagen logregelwaarden</div>
+            <div class="card-header fw-semibold bg-light-info">Logregelwaarden</div>
             <div class="card-body">
                 <div class="row g-3">
-                    @if (_detail.SavedValues.BaroPressure.HasValue)
-                    {
-                        <div class="col-md-3">
-                            <span class="text-muted small">Barometer</span>
-                            <div>@_detail.SavedValues.BaroPressure.Value.ToString("F1") hPa</div>
-                        </div>
-                    }
-                    @if (_detail.SavedValues.LogValue.HasValue)
-                    {
-                        <div class="col-md-3">
-                            <span class="text-muted small">Log</span>
-                            <div>@_detail.SavedValues.LogValue.Value.ToString("F2") nm</div>
-                        </div>
-                    }
-                    @if (_detail.SavedValues.Course.HasValue)
-                    {
-                        <div class="col-md-3">
-                            <span class="text-muted small">Koers (opgeslagen)</span>
-                            <div>@_detail.SavedValues.Course.Value.ToString("F0")°</div>
-                        </div>
-                    }
-                    @if (_detail.SavedValues.AverageSogKnots.HasValue)
-                    {
-                        <div class="col-md-3">
-                            <span class="text-muted small">Gem. SOG (periode)</span>
-                            <div>@_detail.SavedValues.AverageSogKnots.Value.ToString("F1") kn</div>
-                        </div>
-                    }
-                </div>
-                @if (!string.IsNullOrEmpty(_detail.SavedValues.WindDescription))
-                {
-                    <div class="row g-3 mt-2">
-                        <div class="col-md-3">
-                            <span class="text-muted small">Wind (opgeslagen)</span>
-                            <div>@_detail.SavedValues.WindDescription</div>
-                        </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small">Barometer</span>
+                        <div>@(_detail.SavedValues.BaroPressure.HasValue ? $"{_detail.SavedValues.BaroPressure.Value:F1} hPa" : "Nog niet ingevuld")</div>
                     </div>
-                }
-                @if (_detail.SavedValues.Latitude.HasValue || _detail.SavedValues.Longitude.HasValue)
-                {
-                    <div class="row g-3 mt-2">
-                        @if (_detail.SavedValues.Latitude.HasValue)
-                        {
-                            <div class="col-md-3">
-                                <span class="text-muted small">Breedte (opgeslagen)</span>
-                                <div>@_detail.SavedValues.Latitude.Value.ToString("F5")</div>
-                            </div>
-                        }
-                        @if (_detail.SavedValues.Longitude.HasValue)
-                        {
-                            <div class="col-md-3">
-                                <span class="text-muted small">Lengte (opgeslagen)</span>
-                                <div>@_detail.SavedValues.Longitude.Value.ToString("F5")</div>
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(_detail.SavedValues.GpsStatus))
-                        {
-                            <div class="col-md-3">
-                                <span class="text-muted small">GPS-status</span>
-                                <div>@_detail.SavedValues.GpsStatus</div>
-                            </div>
-                        }
+                    <div class="col-md-3">
+                        <span class="text-muted small">Log</span>
+                        <div>@(_detail.SavedValues.LogValue.HasValue ? $"{_detail.SavedValues.LogValue.Value:F2} nm" : "Nog niet ingevuld")</div>
                     </div>
-                }
-                @if (!string.IsNullOrEmpty(_detail.SavedValues.Remarks))
-                {
-                    <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <span class="text-muted small">Koers</span>
+                        <div>@(_detail.SavedValues.Course.HasValue ? $"{_detail.SavedValues.Course.Value}°" : "Nog niet ingevuld")</div>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small">Gem. SOG</span>
+                        <div>@(_detail.SavedValues.AverageSogKnots.HasValue ? $"{_detail.SavedValues.AverageSogKnots.Value:F1} kn" : "Nog niet ingevuld")</div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <span class="text-muted small">Wind</span>
+                        <div>@(string.IsNullOrEmpty(_detail.SavedValues.WindDescription) ? "Nog niet ingevuld" : _detail.SavedValues.WindDescription)</div>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small">GPS-status</span>
+                        <div>@(string.IsNullOrEmpty(_detail.SavedValues.GpsStatus) ? "Nog niet ingevuld" : _detail.SavedValues.GpsStatus)</div>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small">Breedtegraad</span>
+                        <div>@(_detail.SavedValues.Latitude.HasValue ? $"{_detail.SavedValues.Latitude.Value:F5}" : "Nog niet ingevuld")</div>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small">Lengtegraad</span>
+                        <div>@(_detail.SavedValues.Longitude.HasValue ? $"{_detail.SavedValues.Longitude.Value:F5}" : "Nog niet ingevuld")</div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_detail.SavedValues.Remarks))
+                    {
                         <div class="col-12">
                             <span class="text-muted small">Opmerkingen</span>
                             <div>@_detail.SavedValues.Remarks</div>
                         </div>
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
     }
 
-    <!-- Bronmetingen (punt-in-tijd waarden) -->
-    @if (_detail.CourseBron != null || _detail.WindBron != null || _detail.PositieBron != null)
+    <!-- Meetdata in dit logtijdvak -->
+    @if (_detail.PeriodStartUtc.HasValue)
     {
-        <div class="card mb-4 border-warning">
-            <div class="card-header fw-semibold bg-light-warning">Bronmetingen voor automatische suggesties</div>
+        <div class="card mb-4 border-success">
+            <div class="card-header fw-semibold bg-light-success">Meetdata in dit logtijdvak</div>
             <div class="card-body">
-                <p class="text-muted small mb-3">
-                    Deze bronmetingen zijn gebruikt bij het aanmaken van deze logboekregel (vooral relevant voor Concept-regels).
-                    Als een meting buiten het logtijdvak valt, komt de waarde van eerder in de reis.
-                </p>
                 <div class="row g-3">
-                    @if (_detail.CourseBron != null)
-                    {
-                        <div class="col-md-4">
-                            <span class="text-muted small">Koers (bron)</span>
-                            <div>@_detail.CourseBron.Value</div>
-                            <small class="text-muted">
-                                @_detail.CourseBron.SourceType<br/>
-                                @BoordtijdHelper.NaarLokaal(_detail.CourseBron.MeasuredAtUtc).ToString("HH:mm:ss")
-                                @if (_detail.CourseBron.IsOutsidePeriod)
-                                {
-                                    <span class="badge bg-warning text-dark">vóór logtijdvak</span>
-                                }
-                            </small>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1">@GetSampleCount(_detail.Positie)</div>
+                            <div class="text-muted small">Positie-samples</div>
                         </div>
-                    }
-                    @if (_detail.WindBron != null)
-                    {
-                        <div class="col-md-4">
-                            <span class="text-muted small">Wind (bron)</span>
-                            <div>@_detail.WindBron.Value</div>
-                            <small class="text-muted">
-                                @_detail.WindBron.SourceType<br/>
-                                @BoordtijdHelper.NaarLokaal(_detail.WindBron.MeasuredAtUtc).ToString("HH:mm:ss")
-                                @if (_detail.WindBron.IsOutsidePeriod)
-                                {
-                                    <span class="badge bg-warning text-dark">vóór logtijdvak</span>
-                                }
-                            </small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1">@GetSampleCount(_detail.Beweging)</div>
+                            <div class="text-muted small">COG/SOG-samples</div>
                         </div>
-                    }
-                    @if (_detail.PositieBron != null)
-                    {
-                        <div class="col-md-4">
-                            <span class="text-muted small">Positie (bron)</span>
-                            <div>@_detail.PositieBron.Value</div>
-                            <small class="text-muted">
-                                @_detail.PositieBron.SourceType<br/>
-                                @BoordtijdHelper.NaarLokaal(_detail.PositieBron.MeasuredAtUtc).ToString("HH:mm:ss")
-                                @if (_detail.PositieBron.IsOutsidePeriod)
-                                {
-                                    <span class="badge bg-warning text-dark">vóór logtijdvak</span>
-                                }
-                            </small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1">@GetSampleCount(_detail.Heading)</div>
+                            <div class="text-muted small">Heading-samples</div>
                         </div>
-                    }
-                </div>
-            </div>
-        </div>
-    }
-
-    @if (!_detail.PeriodStartUtc.HasValue)
-    {
-        <div class="alert alert-info">Geen geldige startperiode beschikbaar voor deze logboekregel.</div>
-    }
-    else
-    {
-        <h5 class="mt-4 mb-3">Meetdata in logtijdvak</h5>
-
-        <!-- Samenvatting per meettype -->
-        <div class="row g-3 mb-4">
-            <!-- Positie -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header fw-semibold">Positie</div>
-                    <div class="card-body">
-                        @if (_detail.Positie == null)
-                        {
-                            <span class="text-muted">Geen data</span>
-                        }
-                        else
-                        {
-                            <table class="table table-sm mb-0">
-                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@FormatPositie(_detail.Positie.Eerste)</td></tr>
-                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@FormatPositie(_detail.Positie.Laatste)</td></tr>
-                            </table>
-                        }
                     </div>
-                </div>
-            </div>
 
-            <!-- COG / SOG -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header fw-semibold">COG / SOG</div>
-                    <div class="card-body">
-                        @if (_detail.Beweging == null)
-                        {
-                            <span class="text-muted">Geen data</span>
-                        }
-                        else
-                        {
-                            <table class="table table-sm mb-0">
-                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@FormatBeweging(_detail.Beweging.Eerste)</td></tr>
-                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@FormatBeweging(_detail.Beweging.Laatste)</td></tr>
-                                <tr><th class="text-muted small fw-normal">Gem. SOG</th><td>@(_detail.Beweging.Gemiddelde ?? "-")</td></tr>
-                            </table>
-                        }
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1">@GetSampleCount(_detail.Wind)</div>
+                            <div class="text-muted small">Wind-samples</div>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Heading -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header fw-semibold">Heading</div>
-                    <div class="card-body">
-                        @if (_detail.Heading == null)
-                        {
-                            <span class="text-muted">Geen data</span>
-                        }
-                        else
-                        {
-                            <table class="table table-sm mb-0">
-                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@(_detail.Heading.Eerste?.HeadingDegrees.ToString("F0") + "°" ?? "-")</td></tr>
-                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@(_detail.Heading.Laatste?.HeadingDegrees.ToString("F0") + "°" ?? "-")</td></tr>
-                            </table>
-                        }
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1">@GetSampleCount(_detail.Diepte)</div>
+                            <div class="text-muted small">Diepte-samples</div>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Wind -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header fw-semibold">Wind</div>
-                    <div class="card-body">
-                        @if (_detail.Wind == null)
-                        {
-                            <span class="text-muted">Geen data</span>
-                        }
-                        else
-                        {
-                            <table class="table table-sm mb-0">
-                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@FormatWind(_detail.Wind.Eerste)</td></tr>
-                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@FormatWind(_detail.Wind.Laatste)</td></tr>
-                                <tr><th class="text-muted small fw-normal">Gem. wind</th><td>@(_detail.Wind.Gemiddelde ?? "-")</td></tr>
-                            </table>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <!-- Diepte -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header fw-semibold">Diepte</div>
-                    <div class="card-body">
-                        @if (_detail.Diepte == null)
-                        {
-                            <span class="text-muted">Geen data</span>
-                        }
-                        else
-                        {
-                            <table class="table table-sm mb-0">
-                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@(_detail.Diepte.Eerste?.DepthMeters.ToString("F1") + " m" ?? "-")</td></tr>
-                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@(_detail.Diepte.Laatste?.DepthMeters.ToString("F1") + " m" ?? "-")</td></tr>
-                                <tr><th class="text-muted small fw-normal">Gemiddeld</th><td>@(_detail.Diepte.Gemiddelde ?? "-")</td></tr>
-                            </table>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <!-- Watertemperatuur -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header fw-semibold">Watertemperatuur</div>
-                    <div class="card-body">
-                        @if (_detail.WaterTemperatuur == null)
-                        {
-                            <span class="text-muted">Geen data</span>
-                        }
-                        else
-                        {
-                            <table class="table table-sm mb-0">
-                                <tr><th class="text-muted small fw-normal">Eerste</th><td>@(_detail.WaterTemperatuur.Eerste?.TemperatuurCelsius.ToString("F1") + " °C" ?? "-")</td></tr>
-                                <tr><th class="text-muted small fw-normal">Laatste</th><td>@(_detail.WaterTemperatuur.Laatste?.TemperatuurCelsius.ToString("F1") + " °C" ?? "-")</td></tr>
-                                <tr><th class="text-muted small fw-normal">Gemiddeld</th><td>@(_detail.WaterTemperatuur.Gemiddelde ?? "-")</td></tr>
-                            </table>
-                        }
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 mb-1">@GetSampleCount(_detail.WaterTemperatuur)</div>
+                            <div class="text-muted small">Watertemperatuur-samples</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sampletabellen -->
+        <!-- Sampletabellen (secundair) -->
+        <h5 class="mt-4 mb-3">Samples</h5>
+
         @if (_detail.Positie?.Samples.Count > 0)
         {
             <div class="card mb-3">
@@ -465,7 +329,7 @@ else
         }
     }
 
-    <div class="mt-3">
+    <div class="mt-4">
         <button class="btn btn-outline-secondary" @onclick="TerugNaarLogboek">← Terug naar logboek</button>
     </div>
 }
@@ -485,12 +349,27 @@ else
 
     private void TerugNaarLogboek() => Navigation.NavigateTo("/logbook");
 
-    private string FormatPositie(LogbookPositionSampleDto? p)
-        => p == null ? "-" : $"{p.Latitude:F5}, {p.Longitude:F5}";
+    /// <summary>
+    /// Controleer of er geen meetdata beschikbaar is in het logtijdvak.
+    /// </summary>
+    private bool HasNoMeasurementData(LogbookEntryDetailDto detail)
+    {
+        if (!detail.PeriodStartUtc.HasValue)
+            return false;
 
-    private string FormatBeweging(LogbookMotionSampleDto? m)
-        => m == null ? "-" : $"{m.CogDegrees:F1}° / {m.SogKnots:F1} kn";
+        return GetSampleCount(detail.Positie) == 0 &&
+               GetSampleCount(detail.Beweging) == 0 &&
+               GetSampleCount(detail.Heading) == 0 &&
+               GetSampleCount(detail.Wind) == 0 &&
+               GetSampleCount(detail.Diepte) == 0 &&
+               GetSampleCount(detail.WaterTemperatuur) == 0;
+    }
 
-    private string FormatWind(LogbookWindSampleDto? w)
-        => w == null ? "-" : $"{w.WindAngleDegrees:F0}° {w.WindSpeedKnots:F1} kn";
+    /// <summary>
+    /// Bepaal het aantal samples voor een gegeven samenvatting.
+    /// </summary>
+    private int GetSampleCount<T>(LogbookDetailSummaryDto<T>? summary)
+    {
+        return summary?.Samples.Count ?? 0;
+    }
 }
