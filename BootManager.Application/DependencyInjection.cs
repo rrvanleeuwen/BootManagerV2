@@ -2,6 +2,7 @@ using BootManager.Application.Authentication.Services;
 using BootManager.Application.OperationalSettings.Services;
 using BootManager.Application.Logbook.Services;
 using BootManager.Application.OwnerRegistration.Services;
+using BootManager.Application.VesselProfile.Services;
 using BootManager.Application.NetworkMessages.Services;
 using BootManager.Application.NetworkMessageParsing.Services;
 using BootManager.Application.NetworkMessageInterpretation.Contracts;
@@ -32,6 +33,9 @@ public static class DependencyInjection
         services.AddScoped<IOwnerLoginService, OwnerLoginService>();
         services.AddScoped<IOwnerRecoveryService, OwnerRecoveryService>();
         services.AddScoped<IOwnerSettingsService, OwnerSettingsService>();
+
+        // Registratie van VesselProfile application-service
+        services.AddScoped<IVesselProfileService, VesselProfileService>();
 
         // Registratie van NetworkMessage application-service (gebruik generieke repository)
         services.AddScoped<INetworkMessageService, NetworkMessageService>();

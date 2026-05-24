@@ -10,6 +10,11 @@ public class BootManagerDbContext : DbContext
     public DbSet<OwnerProfile> OwnerProfiles => Set<OwnerProfile>();
 
     /// <summary>
+    /// DbSet voor het bootprofiel (singleton per installatie).
+    /// </summary>
+    public DbSet<VesselProfile> VesselProfiles => Set<VesselProfile>();
+
+    /// <summary>
     /// DbSet voor opgeslagen ruwe netwerkregels.
     /// </summary>
     public DbSet<NetworkMessage> NetworkMessages => Set<NetworkMessage>();
@@ -77,6 +82,7 @@ public class BootManagerDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.VesselProfileConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.NetworkMessageConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.BatteryMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.DepthMeasurementConfiguration());

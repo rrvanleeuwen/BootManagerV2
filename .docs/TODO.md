@@ -105,6 +105,23 @@
     - Handmatig gevalideerd: setup-required owner blijft op `/onboarding`; dashboard/settings/logbook redirecten terug; setup-klaar owner kan normale routes gebruiken
     - Testnotitie: lokale development-database staat na validatie op `PasswordChangeRequired=0`, `OnboardingCompleted=1`; voor US4-test tijdelijk terugzetten naar `1,0` of verse bootstrap database gebruiken
     - Geïmplementeerd: 2026-05-24
+  - [x] **US5 (2026-05-24):** VesselProfile introduceren als datalaag voor onboarding
+    - Nieuwe singleton entity `VesselProfile` voor bootgegevens per installatie (Id, VesselName, HomePort, CallSign, Mmsi, CreatedUtc, UpdatedUtc)
+    - EF Core configuratie met tabel, constraints en index
+    - DTOs: `VesselProfileDto` (output) en `UpdateVesselProfileRequestDto` (input)
+    - Service interface `IVesselProfileService`: `GetOrCreateVesselProfileAsync()` en `UpdateVesselProfileAsync()`
+    - Service implementatie: validates VesselName (verplicht, max 128), HomePort (optioneel, max 128), CallSign (optioneel, max 64), Mmsi (optioneel, max 32)
+    - Singleton semantiek via service logica
+    - DI: service geregistreerd als Scoped
+    - EF migration: `20260524201623_AddVesselProfile.cs` met VesselProfiles tabel
+    - 11 unit tests, alle slagen
+    - Geen UI-wijzigingen
+    - Build slaagt
+    - Handmatig minimaal gevalideerd: Development-start past migratie toe en `VesselProfiles` tabel bestaat in SQLite
+    - Aandachtspunt voor US4: service injecteren, GetOrCreate bij load, Update bij opslag; UI kan dun blijven
+    - Geïmplementeerd: 2026-05-24
+  - [ ] **US4:** Onboardingformulier bouwen met eigenaar-, boot- en wachtwoordgegevens
+  - [ ] **US6:** Documentatie en deployment-config bijwerken
   - Zie: [.docs/epics/first-run-onboarding.md](epics/first-run-onboarding.md)
 
 - [ ] **Authentication & Authorization**

@@ -337,44 +337,98 @@ Acceptatiecriteria:
 - Daarna blijft gebruiker niet in onboarding hangen.
 - `dotnet build` slaagt.
 
-### US5: VesselProfile Introduceren
+### US5: VesselProfile Introduceren ✅ (2026-05-24)
 
-Besluit:
+**Status:** Gereed.
 
-- Nieuwe singleton entity voor bootgegevens.
-- Wordt aangemaakt/gevuld tijdens onboarding.
-- Geen Settings-blok of editpagina voor bootgegevens in deze epic.
-- Boot wijzigen komt later als aparte story.
+Realisatie:
 
-Voorgestelde entity:
+- Nieuwe singleton entity `VesselProfile` voor bootgegevens per installatie.
+- EF Core configuratie met tabel `VesselProfiles`, constraints en index.
+- DTOs:
+  - `VesselProfileDto` (immutable record, alle velden, lees-output).
+  - `UpdateVesselProfileRequestDto` (immutable record, voor updates).
+- Service interface `IVesselProfileService`:
+  - `GetOrCreateVesselProfileAsync()`: haalt bestaand profiel op of maakt leeg profiel aan met standaard bootnaam "Unnamed Vessel".
+  - `UpdateVesselProfileAsync(UpdateVesselProfileRequestDto)`: werkt profiel bij met validatie.
+- Service implementatie `VesselProfileService`:
+  - Validates VesselName: verplicht, max 128 tekens.
+  - Validates HomePort: optioneel, max 128 tekens.
+  - Validates CallSign: optioneel, max 64 tekens.
+  - Validates Mmsi: optioneel, max 32 tekens.
+  - Singleton semantiek: maximaal 1 record per installatie (gehandhaafd via service logica, geen database constraint).
+  - Gebruikt `IRepository<VesselProfile>`, `ISystemClock` en logging.
+- Dependency injection: `IVesselProfileService` geregistreerd als Scoped in `BootManager.Application/DependencyInjection.cs`.
+- EF Core migration: `20260524201623_AddVesselProfile.cs` met VesselProfiles table, alle velden, maxLength constraints en index.
+- Unit tests: 11 tests in `BootManager.UnitTests/VesselProfile/VesselProfileServiceTests.cs`.
+  - Scenario's: auto-create lege profiel, fetch bestaand profiel, update met validatie, optional fields, max length violations, errors.
+  - Alle 11 tests slagen.
 
-```text
-VesselProfile
-- Id Guid
-- VesselName string required max 128
-- HomePort string? max 128
-- CallSign string? max 64
-- Mmsi string? max 32
-- CreatedUtc DateTime
-- UpdatedUtc DateTime?
-```
+**Implementatie details:**
 
-Waarom apart:
+- **BootManager.Core/Entities/VesselProfile.cs** - nieuw
+  - Entity met properties: Id, VesselName, HomePort, CallSign, Mmsi, CreatedUtc, UpdatedUtc.
+  - Factory method `Create()` en `Update()` method.
+  - Volledig Nederlands XML-commentaar.
 
-- `OperationalSettings` is technisch/operationeel.
-- `LogbookTrip` is per reis.
-- `VesselProfile` beschrijft de boot bij deze installatie.
+- **BootManager.Infrastructure/Persistence/Configurations/VesselProfileConfiguration.cs** - nieuw
+  - EF IEntityTypeConfiguration implementatie.
+  - Tabel, keys, property constraints, index.
 
-Acceptatiecriteria:
+- **BootManager.Infrastructure/Persistence/BootManagerDbContext.cs** - aangepast
+  - `DbSet<VesselProfile> VesselProfiles` toegevoegd.
+  - VesselProfileConfiguration geregistreerd in OnModelCreating.
 
-- Nieuwe entity `VesselProfile`.
-- Nieuwe EF configuratie.
-- `DbSet<VesselProfile>`.
-- EF migration.
-- DTO's en service toegevoegd.
-- Onboarding kan vessel profile opslaan.
-- Geen ondersteuning voor meerdere boten.
-- `dotnet build` slaagt.
+- **BootManager.Application/VesselProfile/DTOs/VesselProfileDto.cs** - nieuw
+- **BootManager.Application/VesselProfile/DTOs/UpdateVesselProfileRequestDto.cs** - nieuw
+- **BootManager.Application/VesselProfile/Services/IVesselProfileService.cs** - nieuw
+- **BootManager.Application/VesselProfile/Services/VesselProfileService.cs** - nieuw
+
+- **BootManager.Application/DependencyInjection.cs** - aangepast
+  - `IVesselProfileService` registratie toegevoegd.
+
+- **BootManager.Infrastructure/Migrations/20260524201623_AddVesselProfile.cs** - nieuw
+- **BootManager.Infrastructure/Migrations/20260524201623_AddVesselProfile.Designer.cs** - nieuw (auto-gegenereerd)
+
+- **BootManager.UnitTests/VesselProfile/VesselProfileServiceTests.cs** - nieuw
+  - 11 comprehensive tests: auto-create, fetch, update, validation, optional fields, max lengths, errors.
+
+**Acceptatiecriteria:** allemaal vervuld.
+- ✅ Nieuwe entity `VesselProfile` met alle vereiste velden (Id, VesselName, HomePort, CallSign, Mmsi, CreatedUtc, UpdatedUtc).
+- ✅ Nieuwe EF configuratie met verplichting en max length constraints.
+- ✅ `DbSet<VesselProfile>` in BootManagerDbContext.
+- ✅ EF migration gegenereerd.
+- ✅ DTOs en service toegevoegd.
+- ✅ Service kan bootprofiel ophalen (GetOrCreateVesselProfileAsync).
+- ✅ Service maakt leeg profiel aan als geen bestaat (singleton-eerste-load).
+- ✅ Service werkt bestaand profiel bij (UpdateVesselProfileAsync).
+- ✅ Singleton semantiek bewaard via service logica.
+- ✅ Validatie faalt bij lege/null VesselName.
+- ✅ Validatie faalt bij te lange velden (VesselName 128, HomePort 128, CallSign 64, Mmsi 32).
+- ✅ Optionele velden mogen null/leeg zijn.
+- ✅ Geen UI-wijzigingen.
+- ✅ `dotnet build` slaagt.
+- ✅ Alle 11 unit tests slagen.
+
+Handmatige minimale validatie (2026-05-24):
+
+- Development-start van `BootManager.Web` verliep zonder fout.
+- EF migration werd toegepast op de lokale SQLite database.
+- `sqlite3 BootManager.Web\bootmanager.db ".tables"` toonde de nieuwe tabel `VesselProfiles`.
+
+**Notities voor US4:**
+
+- US4 kan nu `IVesselProfileService` injecteren in het onboardingformulier.
+- US4 roept `GetOrCreateVesselProfileAsync()` aan bij pagina-load.
+- US4 roept `UpdateVesselProfileAsync(request)` aan bij formulieropslag met de bootgegevens van de gebruiker.
+- Service handelt singleton-semantiek en validatie af; Razor-pagina kan dun blijven.
+- Geen wijziging aan `/onboarding` placeholder in deze story; UI volgt in US4.
+
+Geen wijzigingen aan:
+- Owner flags (PasswordChangeRequired, OnboardingCompleted): dat gebeurt in US4 als geheel opboarding compleet is.
+- Settings-pagina (bootgegevens wijzigen na onboarding): aparte toekomstige story.
+- Meerdere boten: niet ondersteund; singleton per installatie.
+- NMEA, ingest, logboek, Docker, Raspberry Pi: onveranderd.
 
 ### US6: Documentatie En Deployment-Config Bijwerken
 
