@@ -79,5 +79,5 @@ coverage/
 *.coveragexml
 /BootManager.Web/bootmanager.db-shm
 /BootManager.Web/bootmanager.db-wal
-/BootManager.Web/bootmanager.db
+/BootManager.Web/bootmanager*.db
 /BootManager.Web/data/

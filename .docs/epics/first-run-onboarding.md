@@ -117,30 +117,77 @@ Aanbevolen implementatie-aanpak voor vervolgstories:
 - Begin klein: verwijder eerst UI en navigatie naar pincode/recovery.
 - Services/kolommen mogen pas later worden opgeruimd als dat de slice kleiner en veiliger houdt.
 
-### US2: Bootstrap Owner Bij Lege Database
+### US2: Bootstrap Owner Bij Lege Database ✅ (2026-05-24)
 
-Besluit:
+**Status:** Gereed.
 
-- Als er geen owner bestaat, maakt de app automatisch één bootstrap owner aan.
-- Bootstrap naam: `BootManager Owner`.
-- Bootstrap e-mail: `owner@bootmanager.local`.
-- Bootstrap wachtwoord komt uit configuratie: `Bootstrap:DefaultPassword`.
-- In Production faalt startup duidelijk als er geen owner bestaat en `Bootstrap:DefaultPassword` ontbreekt.
-- Development mag een lokale fallback/configwaarde hebben.
-- Nieuwe velden op `OwnerProfile`:
-  - `PasswordChangeRequired bool`;
-  - `OnboardingCompleted bool`.
+Realisatie:
 
-Acceptatiecriteria:
+- `OwnerProfile` entiteit uitgebreid met `PasswordChangeRequired` en `OnboardingCompleted` flags.
+- `IBootstrapOwnerService` implementatie zorgt voor automatische bootstrap owner aanmaak.
+- Bootstrap owner aangemaakt met naam `BootManager Owner`, e-mail `owner@bootmanager.local`.
+- Bootstrap wachtwoord uit configuratie `Bootstrap:DefaultPassword`.
+- `PasswordChangeRequired = true`, `OnboardingCompleted = false` voor bootstrap owner.
+- EF Core migration toegevoegd: `20260524183942_AddOwnerSetupFlags.cs`.
+- Program.cs startup-flow aangepast: bootstrap service aangeroepen na database migratie.
+- Production modus: startup faalt duidelijk als geen owner en geen `Bootstrap:DefaultPassword`.
+- Development modus: fallback naar `BootManagerDev123!` if niet geconfigureerd.
+- **appsettings.json:** Bevat geen `Bootstrap:DefaultPassword` (moet expliciet via environment variable, secret of deployment-config ingesteld worden).
+- **appsettings.Development.json:** Mag optioneel `Bootstrap:DefaultPassword` bevatten voor development/testing.
 
-- Bij lege database ontstaat automatisch één owner.
-- Owner kan inloggen met het geconfigureerde bootstrap wachtwoord.
-- Owner krijgt `PasswordChangeRequired = true`.
-- Owner krijgt `OnboardingCompleted = false`.
-- Er wordt nooit een tweede owner aangemaakt.
-- Production zonder bootstrap wachtwoord faalt duidelijk als er nog geen owner bestaat.
-- EF migration toegevoegd voor de nieuwe owner flags.
-- `dotnet build` slaagt.
+Implementatie:
+
+- **BootManager.Core/Entities/OwnerProfile.cs:**
+  - Twee nieuwe properties: `PasswordChangeRequired` en `OnboardingCompleted` (default false).
+  - Constructor en Create-methode bijgewerkt met optionele parameters.
+  - Methods: `SetPasswordChangeRequired()` en `SetOnboardingCompleted()`.
+
+- **BootManager.Application/OwnerRegistration/Services:**
+  - `IBootstrapOwnerService` interface: `Task<bool> EnsureBootstrapOwnerAsync(string? bootstrapPassword, bool isProduction, CancellationToken ct)`.
+  - `BootstrapOwnerService` implementatie met veilige behandeling van configuratie.
+  - Production-validatie: exception if geen password.
+  - Development-fallback: dev wachtwoord.
+
+- **BootManager.Web/Program.cs:**
+  - Startup-blok aangepast: bootstrap service aangeroepen na database migratie.
+  - Foutafhandeling met duidelijke logging.
+
+- **appsettings.json:**
+  - Geen `Bootstrap.DefaultPassword` configuratie (Production moet dit expliciet instellen).
+  - `DevAdmin` config verwijderd (vervangen door bootstrap service).
+
+- **appsettings.Development.json:**
+  - `Bootstrap.DefaultPassword` configuratie toegevoegd voor development/testing.
+
+- **Unit tests:**
+  - 6 tests in `BootManager.UnitTests/OwnerRegistration/BootstrapOwnerServiceTests.cs`.
+  - Scenario's: lege DB, bestaande owner, production validatie, development fallback, flags.
+
+Acceptatiecriteria: allemaal vervuld.
+- ✅ Bij lege database ontstaat automatisch één owner.
+- ✅ Owner kan inloggen met `Bootstrap:DefaultPassword`.
+- ✅ Owner krijgt `PasswordChangeRequired = true`.
+- ✅ Owner krijgt `OnboardingCompleted = false`.
+- ✅ Geen tweede owner aangemaakt bij herstart.
+- ✅ Production zonder config faalt duidelijk.
+- ✅ EF migration aanwezig.
+- ✅ `dotnet build` slaagt.
+- ✅ Unit tests slagen.
+
+Handmatige validatie (2026-05-24):
+
+- Development lege database maakte precies één bootstrap owner aan.
+- Login met development bootstrap-wachtwoord werkte en landde op dashboard.
+- Flags na aanmaak: `PasswordChangeRequired = 1`, `OnboardingCompleted = 0`.
+- Tweede start maakte geen tweede owner aan.
+- Production-test moet lokaal met `dotnet run --no-launch-profile` worden uitgevoerd, omdat launch profiles Development forceren.
+- Production zonder `Bootstrap__DefaultPassword` en zonder owner faalde duidelijk met ontbrekende `Bootstrap:DefaultPassword`.
+- Production met expliciete `Bootstrap__DefaultPassword` startte en login werkte.
+- Production met bestaande owner en zonder bootstrap password startte en maakte geen tweede owner.
+
+Aandachtspunt buiten US2:
+
+- Tijdens Production-login op dashboard gaf `BootManager.Web.styles.css` een 404 en Blazor toonde "An unhandled error has occurred". Behandel dit later als apart Production/static asset issue als het opnieuw relevant wordt.
 
 Niet in deze story:
 
@@ -156,10 +203,17 @@ Configuratie-afspraak:
 }
 ```
 
+- **Production**: Moet expliciet ingesteld worden via environment variable, Docker secret of Azure Key Vault (niet in appsettings.json).
+- **Development**: Fallback naar `BootManagerDev123!` in BootstrapOwnerService als niet geconfigureerd; optioneel in appsettings.Development.json.
+- Startup faalt duidelijk als Production mode en geen owner en geen DefaultPassword geconfigureerd.
+
 Docker/deployment gebruikt later:
 
-```text
-BOOTMANAGER_BOOTSTRAP_PASSWORD=...
+```bash
+# Environment variable
+export BOOTMANAGER_BOOTSTRAP_PASSWORD=your-secure-password
+
+# Of via Docker secret/Azure Key Vault
 ```
 
 ### US3: Onboarding-Gate Afdwingen

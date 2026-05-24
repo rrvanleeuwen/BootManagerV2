@@ -78,7 +78,19 @@
     - OwnerLoginService gebruikt alleen wachtwoord (pincode/recovery services blijven als legacy)
     - `dotnet build` slaagt
     - Geen EF migration, geen bootstrap, geen onboarding
-  - [ ] **US2:** Bootstrap owner maken op eerste start
+  - [x] **US2 (2026-05-24):** Bootstrap owner maken op eerste start
+    - OwnerProfile uitgebreid met PasswordChangeRequired en OnboardingCompleted flags
+    - IBootstrapOwnerService maakt automatisch eigenaar aan bij lege database
+    - Bootstrap: naam `BootManager Owner`, e-mail `owner@bootmanager.local`
+    - Wachtwoord uit configuratie `Bootstrap:DefaultPassword`
+    - Production: moet expliciet via environment variable ingesteld worden (niet in appsettings.json)
+    - Development: fallback naar `BootManagerDev123!` met waarschuwing
+    - Startup faalt duidelijk als geen owner en geen password in Production
+    - EF migration toegevoegd: `20260524183942_AddOwnerSetupFlags.cs`
+    - Program.cs startup aangepast
+    - 6 unit tests, alle slagen
+    - Handmatig gevalideerd: Development bootstrap, geen dubbele owner, Production failure zonder password en Production start met bestaande owner
+    - Aandachtspunt buiten US2: Production dashboard gaf `BootManager.Web.styles.css` 404 na login; later apart onderzoeken als Production/static asset issue
   - [ ] **US3:** Verplichte onboarding-flow implementeren
   - Zie: [.docs/epics/first-run-onboarding.md](epics/first-run-onboarding.md)
 
