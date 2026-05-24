@@ -5,6 +5,7 @@
     <Router AppAssembly="@typeof(Program).Assembly">
         <Found Context="routeData">
             <StartupGate />
+            <OnboardingGate />
             <AuthorizeRouteView RouteData="routeData" DefaultLayout="@typeof(Layout.MainLayout)">
                 <NotAuthorized>
                     <LayoutView Layout="@typeof(Layout.MainLayout)">
