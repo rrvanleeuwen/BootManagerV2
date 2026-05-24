@@ -812,8 +812,13 @@ Gebruiker kan per logboekregel bijlagen toevoegen en beheren, onafhankelijk van 
 - `AttachmentCount` in `LogbookEntryDto` defaultt naar 0 als geen bijlagen aanwezig zijn
 - Bestaande bijlagen zonder omschrijving blijven geldig.
 
-#### Open technisch aandachtspunt
-- Bij verwijderen van een volledige logboekregel verwijdert EF de gekoppelde bijlage-records via cascade delete. De fysieke bestanden op schijf worden in de huidige slice niet expliciet opgeruimd via `LogbookAttachmentService.DeleteAsync`. Vervolgactie: verwijdering van logboekregel en bijlagenmetadata eerst database-consistent afronden, daarna fysieke bestanden opruimen zodat bestanden niet verdwijnen als de databaseverwijdering faalt.
+#### Verwijderen van logboekregels met bijlagen
+- Bij verwijderen van een volledige logboekregel verwijdert EF de gekoppelde bijlage-records via cascade delete.
+- Vooraf worden de veilige bestandspaden van gekoppelde bijlagen verzameld.
+- De logboekregel en bijlage-metadata worden binnen een database-transactie verwijderd.
+- Fysieke bestanden worden pas na succesvolle database-commit opgeruimd.
+- Als de databaseverwijdering faalt, blijven fysieke bestanden behouden.
+- Als fysieke cleanup na commit faalt, wordt dit gelogd zonder de databaseverwijdering terug te draaien.
 
 ### Rationale
 Deze slice voegt een praktisch feature toe zonder logica voor Draft/Confirmed of missed-logmoment te wijzigen. Bijlagen zijn orthogonaal aan bestaande logboek-workflows en voegen alleen UI en API-layer toe. De configureerbaarheid zorgt voor flexibiliteit op embedded systemen waar storage-paden kunnen verschillen per deployment.

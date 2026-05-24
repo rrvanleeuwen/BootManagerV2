@@ -4,6 +4,7 @@ using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ public class LogbookService : ILogbookService
     private readonly IRepository<LogbookEntry> _entryRepo;
     private readonly ILogbookMeasurementSuggestionService _suggestionService;
     private readonly ILogbookAttachmentService _attachmentService;
+    private readonly ILogbookEntryDeletionService _entryDeletionService;
     private readonly ILogger<LogbookService> _logger;
 
     /// <summary>
@@ -29,12 +31,14 @@ public class LogbookService : ILogbookService
         IRepository<LogbookEntry> entryRepo,
         ILogbookMeasurementSuggestionService suggestionService,
         ILogbookAttachmentService attachmentService,
+        ILogbookEntryDeletionService entryDeletionService,
         ILogger<LogbookService> logger)
     {
         _tripRepo = tripRepo;
         _entryRepo = entryRepo;
         _suggestionService = suggestionService;
         _attachmentService = attachmentService;
+        _entryDeletionService = entryDeletionService;
         _logger = logger;
     }
 
@@ -340,11 +344,37 @@ public class LogbookService : ILogbookService
     /// <inheritdoc />
     public async Task DeleteEntryAsync(int entryId, CancellationToken cancellationToken = default)
     {
-        var entry = await _entryRepo.SingleOrDefaultAsync(e => e.Id == entryId, cancellationToken)
-            ?? throw new InvalidOperationException($"Logboekregel met id {entryId} niet gevonden.");
+        var attachmentFilePaths = await _entryDeletionService.DeleteEntryAndCollectAttachmentFilePathsAsync(
+            entryId,
+            cancellationToken);
 
-        await _entryRepo.DeleteAsync(entry, cancellationToken);
-        _logger.LogInformation("Logboekregel {EntryId} verwijderd.", entryId);
+        foreach (var filePath in attachmentFilePaths)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    _logger.LogInformation(
+                        "Bijlagebestand verwijderd na verwijderen van logboekregel {EntryId}: {FilePath}",
+                        entryId,
+                        filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Bijlagebestand kon niet worden verwijderd na verwijderen van logboekregel {EntryId}: {FilePath}",
+                    entryId,
+                    filePath);
+            }
+        }
+
+        _logger.LogInformation(
+            "Logboekregel {EntryId} verwijderd. {AttachmentFileCount} gekoppelde bijlagebestanden verwerkt voor cleanup.",
+            entryId,
+            attachmentFilePaths.Count);
     }
 
     private async Task<LogbookEntryDto> MapEntryAsync(LogbookEntry e, CancellationToken cancellationToken)
