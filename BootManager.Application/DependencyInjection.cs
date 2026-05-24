@@ -27,6 +27,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IOwnerRegistrationService, OwnerRegistrationService>();
+        services.AddScoped<IBootstrapOwnerService, BootstrapOwnerService>();
         services.AddScoped<IOwnerLoginService, OwnerLoginService>();
         services.AddScoped<IOwnerRecoveryService, OwnerRecoveryService>();
         services.AddScoped<IOwnerSettingsService, OwnerSettingsService>();

@@ -133,48 +133,40 @@ builder.Services.AddScoped<IOperationalSettingsWithReloadService, OperationalSet
 
 var app = builder.Build();
 
-// DB init/migratie (pas aan naar MigrateAsync zodra je migrations gebruikt)
+// DB init/migratie
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var db = services.GetRequiredService<BootManagerDbContext>();
     await db.Database.MigrateAsync();
 
-    // Ensure a test admin exists for development/testing only. Uses the application
-    // registration service so hashing/encryption are applied consistently.
-    if (app.Environment.IsDevelopment())
+    // Ensure bootstrap owner exists
+    try
     {
-        try
+        var bootstrap = services.GetRequiredService<BootManager.Application.OwnerRegistration.Services.IBootstrapOwnerService>();
+        var config = services.GetRequiredService<IConfiguration>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+
+        var bootstrapPassword = config["Bootstrap:DefaultPassword"];
+        var isProduction = !app.Environment.IsDevelopment();
+
+        var created = await bootstrap.EnsureBootstrapOwnerAsync(bootstrapPassword, isProduction);
+        if (created)
         {
-            var reg = services.GetRequiredService<BootManager.Application.OwnerRegistration.Services.IOwnerRegistrationService>();
-            var logger = services.GetRequiredService<ILogger<Program>>();
-
-            var firstRun = await reg.CheckFirstRunAsync();
-            if (firstRun.IsFirstRun)
-            {
-                logger.LogInformation("No owner found - creating default test admin (Development only).");
-                var config = services.GetRequiredService<IConfiguration>();
-                var devEmail = config["DevAdmin:Email"] ?? "admin@localhost";
-                var devPassword = config["DevAdmin:Password"] ?? "Admin123!";
-
-                var req = new BootManager.Application.OwnerRegistration.DTOs.RegisterOwnerRequestDto
-                {
-                    Name = "Administrator",
-                    Email = devEmail,
-                    Password = devPassword,
-                    ConfirmPassword = devPassword,
-                    GenerateRecoveryCode = false
-                };
-
-                await reg.RegisterFirstOwnerAsync(req);
-                logger.LogInformation("Default test admin created (email=admin@localhost). Do NOT use this in production.");
-            }
+            logger.LogInformation("Bootstrap owner created successfully.");
         }
-        catch (Exception ex)
-        {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Failed to ensure default admin.");
-        }
+    }
+    catch (InvalidOperationException ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogCritical(ex, "Bootstrap owner creation failed. Application cannot start.");
+        throw;
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Unexpected error during bootstrap owner setup.");
+        throw;
     }
 }
 

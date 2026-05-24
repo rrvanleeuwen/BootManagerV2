@@ -25,13 +25,21 @@ public class OwnerProfile
     public byte[] EncryptedProfilePayload { get; private set; } = Array.Empty<byte>();
     public int EncryptionVersion { get; private set; } = 1;
 
+    // Setup-flags
+    /// <summary>Geeft aan dat het wachtwoord moet worden gewijzigd (bv. bij bootstrap).</summary>
+    public bool PasswordChangeRequired { get; private set; }
+
+    /// <summary>Geeft aan dat de onboarding-flow is voltooid.</summary>
+    public bool OnboardingCompleted { get; private set; }
+
     public DateTime CreatedUtc { get; private set; }
     public DateTime? UpdatedUtc { get; private set; }
 
     private OwnerProfile() { } // Voor EF
 
     private OwnerProfile(string passwordHash, string passwordSalt, string hashAlgorithm,
-        byte[] encryptedProfilePayload, int encryptionVersion, DateTime createdUtc)
+        byte[] encryptedProfilePayload, int encryptionVersion, DateTime createdUtc,
+        bool passwordChangeRequired = false, bool onboardingCompleted = false)
     {
         PasswordHash = passwordHash;
         PasswordSalt = passwordSalt;
@@ -39,6 +47,8 @@ public class OwnerProfile
         EncryptedProfilePayload = encryptedProfilePayload;
         EncryptionVersion = encryptionVersion;
         CreatedUtc = createdUtc;
+        PasswordChangeRequired = passwordChangeRequired;
+        OnboardingCompleted = onboardingCompleted;
     }
 
     public static OwnerProfile Create(
@@ -47,8 +57,11 @@ public class OwnerProfile
         string hashAlgorithm,
         byte[] encryptedProfilePayload,
         int encryptionVersion,
-        DateTime createdUtc)
-        => new(passwordHash, passwordSalt, hashAlgorithm, encryptedProfilePayload, encryptionVersion, createdUtc);
+        DateTime createdUtc,
+        bool passwordChangeRequired = false,
+        bool onboardingCompleted = false)
+        => new(passwordHash, passwordSalt, hashAlgorithm, encryptedProfilePayload, encryptionVersion, createdUtc,
+            passwordChangeRequired, onboardingCompleted);
 
     public void SetRecoveryCode(string recoveryHash, string recoverySalt, DateTime nowUtc)
     {
@@ -92,6 +105,20 @@ public class OwnerProfile
     {
         PinHash = null;
         PinSalt = null;
+        UpdatedUtc = nowUtc;
+    }
+
+    /// <summary>Zet de vlag dat wachtwoord moet worden gewijzigd.</summary>
+    public void SetPasswordChangeRequired(bool required, DateTime nowUtc)
+    {
+        PasswordChangeRequired = required;
+        UpdatedUtc = nowUtc;
+    }
+
+    /// <summary>Markeert onboarding als voltooid.</summary>
+    public void SetOnboardingCompleted(bool completed, DateTime nowUtc)
+    {
+        OnboardingCompleted = completed;
         UpdatedUtc = nowUtc;
     }
 }
