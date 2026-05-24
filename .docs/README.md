@@ -7,6 +7,7 @@ This folder contains comprehensive documentation for the BootManager project.
 ### Getting Started
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design, layering, data flow, vertical slices pattern
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Setup, development workflow, adding new features, debugging
+- **[../.codex/working-agreement.md](../.codex/working-agreement.md)** - Codex/Copilot workflow agreement for this repository
 
 ### Project Status
 - **[TODO.md](TODO.md)** - Implementation status, roadmap, backlog, known limitations
@@ -93,6 +94,7 @@ dotnet ef migrations add AddYourFeature --project BootManager.Infrastructure
 - `src/BootManager.Tools.Simulator/` - NMEA 2000 test data generator
 - `src/BootManager.Tools.Ingest/` - Message ingestion tool
 - `.github/copilot-instructions.md` - Repository guidelines (Dutch)
+- `.codex/working-agreement.md` - Codex/Copilot workflow agreement
 - `.docs/` - This documentation folder
 
 ## Current Implementation Status
@@ -137,5 +139,5 @@ See **[TODO.md](TODO.md)** for complete status and roadmap.
 
 ---
 
-**Documentation Last Updated:** 2026-05-17  
+**Documentation Last Updated:** 2026-05-24
 **Current Status:** Alle huidige slices (Battery, Depth, Wind, Motion, Position, Heading) zijn volledig geïmplementeerd inclusief migraties

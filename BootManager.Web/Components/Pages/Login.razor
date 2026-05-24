@@ -2,6 +2,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @implements IAsyncDisposable
 @using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
 @using System.Text.Json
@@ -9,45 +10,46 @@
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 
-<h3>Inloggen</h3>
-
-@if (!string.IsNullOrEmpty(_targetDescription))
+@if (_redirectingAuthenticatedUser)
 {
-    <div class="alert alert-info">Je logt in om @_targetDescription te openen.</div>
+    <p>Je bent al ingelogd. Doorsturen...</p>
 }
-
-@if (!string.IsNullOrEmpty(_error))
+else
 {
-    <div class="alert alert-danger">@_error</div>
+
+    <h3>Inloggen</h3>
+
+    @if (!string.IsNullOrEmpty(_targetDescription))
+    {
+        <div class="alert alert-info">Je logt in om @_targetDescription te openen.</div>
+    }
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <EditForm Model="@_model" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+        <div class="mb-2">
+            <label class="form-label">Wachtwoord</label>
+            <InputText class="form-control" type="password" @bind-Value="_model.Password" />
+        </div>
+        <div class="form-check mb-3">
+            <InputCheckbox class="form-check-input" @bind-Value="_model.RememberMe" />
+            <label class="form-check-label">Ingelogd blijven</label>
+        </div>
+
+        <button class="btn btn-primary" type="submit" disabled="@_busy">@(_busy ? "Bezig..." : "Inloggen")</button>
+    </EditForm>
 }
-
-<EditForm Model="@_model" OnValidSubmit="HandleLogin">
-    <DataAnnotationsValidator />
-    <div class="mb-2">
-        <label class="form-label">Wachtwoord</label>
-        <InputText class="form-control" type="password" @bind-Value="_model.Password" />
-        <small class="text-muted">Laat leeg als je met pincode wilt inloggen.</small>
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Pincode</label>
-        <InputText class="form-control" type="password" inputmode="numeric" @bind-Value="_model.Pin" />
-        <small class="text-muted">Laat leeg als je met wachtwoord wilt inloggen.</small>
-    </div>
-    <div class="form-check mb-3">
-        <InputCheckbox class="form-check-input" @bind-Value="_model.RememberMe" />
-        <label class="form-check-label">Ingelogd blijven</label>
-    </div>
-
-    <button class="btn btn-primary" type="submit" disabled="@_busy">@(_busy ? "Bezig..." : "Inloggen")</button>
-</EditForm>
-
-<div class="mt-3">
-    <a href="/recover">Wachtwoord vergeten / Herstel toegang</a>
-</div>
 
 @code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
     private BootManager.Application.Authentication.DTOs.LoginRequestDto _model = new();
     private bool _busy;
+    private bool _redirectingAuthenticatedUser;
     private string? _error;
     private string? _targetDescription;
     private IJSObjectReference? _authModule;
@@ -59,9 +61,21 @@
     /// <summary>
     /// Computes a friendly description of the return target whenever navigation parameters change.
     /// </summary>
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         _targetDescription = DescribeTarget(ReturnUrl);
+
+        if (AuthenticationStateTask is null)
+        {
+            return;
+        }
+
+        var authState = await AuthenticationStateTask;
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            _redirectingAuthenticatedUser = true;
+            Nav.NavigateTo("/dashboard", replace: true);
+        }
     }
 
     /// <summary>

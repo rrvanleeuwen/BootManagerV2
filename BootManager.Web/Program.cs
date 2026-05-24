@@ -63,6 +63,24 @@ builder.Services
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // use Always if HTTPS-only
         options.SlidingExpiration = true;
+        options.Events.OnValidatePrincipal = context =>
+        {
+            var persistentClaim = context.Principal?.FindFirst("bm.persistent")?.Value;
+            if (string.Equals(persistentClaim, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.CompletedTask;
+            }
+
+            var sessionId = context.Principal?.FindFirst("bm.session_id")?.Value;
+            var sessions = context.HttpContext.RequestServices.GetRequiredService<IAuthSessionStore>();
+            if (!sessions.IsValid(sessionId))
+            {
+                context.RejectPrincipal();
+                return context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            }
+
+            return Task.CompletedTask;
+        };
     })
     .AddJwtBearer(options =>
     {
@@ -80,6 +98,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<IAuthSessionStore, AuthSessionStore>();
 
 // Provide AuthenticationState to Razor Components
 builder.Services.AddCascadingAuthenticationState();
@@ -194,8 +213,15 @@ app.MapPost("/auth/login", async (LoginRequestDto req, IOwnerLoginService login,
     {
         new(ClaimTypes.NameIdentifier, result.OwnerId.Value.ToString()),
         new(ClaimTypes.Name, "Owner"),
-        new(ClaimTypes.Role, "Owner")
+        new(ClaimTypes.Role, "Owner"),
+        new("bm.persistent", req.RememberMe ? "true" : "false")
     };
+
+    if (!req.RememberMe)
+    {
+        var sessions = http.RequestServices.GetRequiredService<IAuthSessionStore>();
+        claims.Add(new Claim("bm.session_id", sessions.CreateSession()));
+    }
 
     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
     var principal = new ClaimsPrincipal(identity);
@@ -212,6 +238,8 @@ app.MapPost("/auth/login", async (LoginRequestDto req, IOwnerLoginService login,
 // Minimal API: logout
 app.MapPost("/auth/logout", async (HttpContext http) =>
 {
+    var sessionId = http.User.FindFirst("bm.session_id")?.Value;
+    http.RequestServices.GetRequiredService<IAuthSessionStore>().Remove(sessionId);
     await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     return Results.Ok();
 })
