@@ -48,9 +48,17 @@
 - [ ] **Digitaal Logboek** *(epic – UI richting eindgebruiker)*
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
   - **Referentie:** bestaand logboekvoorbeeld in `.docs/extraInfo/LogboekVoorbeeld.png`.
-  - **Doel:** reisgegevens, uurregels, automatische meetdatasamenvatting, detaildata en handmatige opmerkingen in logboekvorm tonen.
   - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel, browser-printweergave, akkoordflow (LogbookEntryStatus: Draft/Confirmed), en ontbrekende logmomenten feature (banner met overzicht en bulk-aanmaak tot 24 Draft-regels) geïmplementeerd op 2026-05-24. Delete-functionaliteit per regel toegevoegd.
-  - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont read-only samples en samenvattingen voor positie, COG/SOG, heading, wind, diepte en watertemperatuur binnen het tijdvak van de logregel.
+  - **Status 2026-05-24 (accordeer-slice):** Detailpagina herontworpen als accordeerhulpmiddel:
+    - **Context-header:** reisnaam, logboektijd lokaal, **logtijdvak lokaal** (HH:mm — HH:mm), status badge.
+    - **Waarschuwingen:** duidelijke alerts voor ontbrekende periode-start en geen meetdata in logtijdvak.
+    - **Logregelwaarden:** compacte overzicht van alle velden (Barometer, Log, Koers, Gem. SOG, Wind, GPS-status, Breedtegraad, Lengtegraad, Opmerkingen), met "Nog niet ingevuld" voor lege waarden.
+    - **Meetdata-overzicht:** samplecounts per meettype in visueel 6-kolom grid (Positie, COG/SOG, Heading, Wind, Diepte, Watertemperatuur).
+    - **Sampletabellen:** secundair onder "Samples"-kopje, alleen zichtbaar als samples beschikbaar.
+    - **Verwijderde elementen:** "Bronmetingen voor automatische suggesties" sectie verwijderd; `CourseBron`, `WindBron`, `PositieBron` DTOs en bijbehorende service-methodes verwijderd. Reden: oude bronmetingen vóór logtijdvak conflicteren met domeinregel dat Draft-regels alleen periode-data gebruiken.
+    - **DTO-cleanup:** `LogbookSourceMeasurementDto` klasse en properties uit `LogbookEntryDetailDto` verwijderd.
+    - **Service-cleanup:** `BepaalCourseSourceAsync()`, `BepaalWindSourceAsync()`, `BepaalPositieSourceAsync()` verwijderd.
+  - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont accordeer-layout met waarschuwingen, logregelwaarden, meetdata-overzicht en sampletabellen.
   - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print. Alleen Confirmed-regels worden afgedrukt.
   - **Huidige missing-moments-feature (2026-05-24):** banner boven logboektabel toont totaalaantal gemiste logmomenten en compacte lijst (max 5 zichtbaar + "+ meer"); knop "Conceptregels aanmaken" maakt tot 24 Draft-regels in één beurt aan met automatische meetdatasuggesties (alleen periode-data); herberekening van banner na batch. Delete-knop (🗑) per regel met bevestigingsdialoog; na verwijdering herbereken banner.
   - **Volgende slice:** gerelateerde features als detailweergave verbeteren of browser push notifications.

@@ -85,25 +85,19 @@ public class LogbookEntryDetailService : ILogbookEntryDetailService
             SavedValues = MapToSavedEntryValuesDto(entry)
         };
 
-        // Bepaal bronmetingen voor punt-in-tijd velden
-        if (periodStart.HasValue)
-        {
-            var start = periodStart.Value;
-            var end = entryTime;
+        // Laad periode-samples
+            if (periodStart.HasValue)
+            {
+                var start = periodStart.Value;
+                var end = entryTime;
 
-            // Zoek bronmetingen (met timestamp) voor Course, Wind en Positie
-            dto.CourseBron = await BepaalCourseSourceAsync(entry, start, cancellationToken);
-            dto.WindBron = await BepaalWindSourceAsync(entry, start, cancellationToken);
-            dto.PositieBron = await BepaalPositieSourceAsync(entry, start, cancellationToken);
-
-            // Laad periode-samples
-            dto.Positie = await BouwPositieSamenvattingAsync(start, end, cancellationToken);
-            dto.Beweging = await BouwBewegingSamenvattingAsync(start, end, cancellationToken);
-            dto.Heading = await BouwHeadingSamenvattingAsync(start, end, cancellationToken);
-            dto.Wind = await BouwWindSamenvattingAsync(start, end, cancellationToken);
-            dto.Diepte = await BouwDiepteSamenvattingAsync(start, end, cancellationToken);
-            dto.WaterTemperatuur = await BouwWaterTempSamenvattingAsync(start, end, cancellationToken);
-        }
+                dto.Positie = await BouwPositieSamenvattingAsync(start, end, cancellationToken);
+                dto.Beweging = await BouwBewegingSamenvattingAsync(start, end, cancellationToken);
+                dto.Heading = await BouwHeadingSamenvattingAsync(start, end, cancellationToken);
+                dto.Wind = await BouwWindSamenvattingAsync(start, end, cancellationToken);
+                dto.Diepte = await BouwDiepteSamenvattingAsync(start, end, cancellationToken);
+                dto.WaterTemperatuur = await BouwWaterTempSamenvattingAsync(start, end, cancellationToken);
+            }
 
         return dto;
     }
@@ -125,109 +119,6 @@ public class LogbookEntryDetailService : ILogbookEntryDetailService
             Longitude = entry.Longitude,
             AverageSogKnots = entry.AverageSogKnots
         };
-    }
-
-    /// <summary>
-    /// Bepaalt de bronmeting voor Course/Heading: zoekt de laatst bekende Heading of Motion vóór/op het logmoment.
-    /// </summary>
-    private async Task<LogbookSourceMeasurementDto?> BepaalCourseSourceAsync(
-        LogbookEntry entry, DateTime periodStart, CancellationToken cancellationToken)
-    {
-        if (entry.Course == null)
-            return null;
-
-        // Probeer eerst een Heading-meting vóór of op het entrymoment
-        var headingBeforeMoment = await _headingRepo.ListAsync(
-            h => h.RecordedAtUtc <= entry.EntryTimeUtc,
-            cancellationToken);
-        var lastHeading = headingBeforeMoment.OrderByDescending(h => h.RecordedAtUtc).FirstOrDefault();
-
-        if (lastHeading != null)
-        {
-            return new LogbookSourceMeasurementDto
-            {
-                SourceType = "Heading",
-                Value = $"{lastHeading.HeadingDegrees:F1}°",
-                MeasuredAtUtc = lastHeading.RecordedAtUtc,
-                IsOutsidePeriod = lastHeading.RecordedAtUtc < periodStart
-            };
-        }
-
-        // Fallback: Motion/COG als geen Heading
-        var motionBeforeMoment = await _motionRepo.ListAsync(
-            m => m.RecordedAtUtc <= entry.EntryTimeUtc,
-            cancellationToken);
-        var lastMotion = motionBeforeMoment.OrderByDescending(m => m.RecordedAtUtc).FirstOrDefault();
-
-        if (lastMotion != null)
-        {
-            return new LogbookSourceMeasurementDto
-            {
-                SourceType = "Motion (COG)",
-                Value = $"{lastMotion.CourseOverGroundDegrees:F1}°",
-                MeasuredAtUtc = lastMotion.RecordedAtUtc,
-                IsOutsidePeriod = lastMotion.RecordedAtUtc < periodStart
-            };
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Bepaalt de bronmeting voor Wind: zoekt de laatst bekende Wind-meting vóór/op het logmoment.
-    /// </summary>
-    private async Task<LogbookSourceMeasurementDto?> BepaalWindSourceAsync(
-        LogbookEntry entry, DateTime periodStart, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(entry.WindDescription))
-            return null;
-
-        var windBeforeMoment = await _windRepo.ListAsync(
-            w => w.RecordedAtUtc <= entry.EntryTimeUtc,
-            cancellationToken);
-        var lastWind = windBeforeMoment.OrderByDescending(w => w.RecordedAtUtc).FirstOrDefault();
-
-        if (lastWind != null)
-        {
-            var windSpeedKnots = Math.Round(lastWind.WindSpeed / 0.514444m, 1);
-            return new LogbookSourceMeasurementDto
-            {
-                SourceType = "Wind",
-                Value = $"{lastWind.WindAngleDegrees:F1}° / {windSpeedKnots:F1} kn",
-                MeasuredAtUtc = lastWind.RecordedAtUtc,
-                IsOutsidePeriod = lastWind.RecordedAtUtc < periodStart
-            };
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Bepaalt de bronmeting voor Positie/GPS: zoekt de laatst bekende Position-meting vóór/op het logmoment.
-    /// </summary>
-    private async Task<LogbookSourceMeasurementDto?> BepaalPositieSourceAsync(
-        LogbookEntry entry, DateTime periodStart, CancellationToken cancellationToken)
-    {
-        if (entry.Latitude == null || entry.Longitude == null)
-            return null;
-
-        var positionBeforeMoment = await _positionRepo.ListAsync(
-            p => p.RecordedAtUtc <= entry.EntryTimeUtc,
-            cancellationToken);
-        var lastPosition = positionBeforeMoment.OrderByDescending(p => p.RecordedAtUtc).FirstOrDefault();
-
-        if (lastPosition != null)
-        {
-            return new LogbookSourceMeasurementDto
-            {
-                SourceType = "Position",
-                Value = $"{lastPosition.Latitude:F4}, {lastPosition.Longitude:F4}",
-                MeasuredAtUtc = lastPosition.RecordedAtUtc,
-                IsOutsidePeriod = lastPosition.RecordedAtUtc < periodStart
-            };
-        }
-
-        return null;
     }
 
     /// <summary>
