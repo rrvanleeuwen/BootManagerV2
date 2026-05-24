@@ -49,4 +49,7 @@ public class LogbookEntryDto
 
     /// <summary>Tijdstempel (UTC) van de laatste wijziging.</summary>
     public DateTime UpdatedAtUtc { get; set; }
+
+    /// <summary>Aantal bijlagen bij deze logboekregel.</summary>
+    public int AttachmentCount { get; set; }
 }

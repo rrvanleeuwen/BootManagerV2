@@ -91,7 +91,6 @@ else
                     <th>Log</th>
                     <th>Koers</th>
                     <th>Positie / zeilvoering / opmerkingen</th>
-                    <th>Bijlagen</th>
                     <th>Wind</th>
                     <th>GPS</th>
                     <th>Lat.</th>
@@ -108,7 +107,6 @@ else
                         <td>@(entry.LogValue.HasValue ? entry.LogValue.Value.ToString("F1") : "")</td>
                         <td>@(entry.Course.HasValue ? entry.Course.Value + "°" : "")</td>
                         <td>@(entry.Remarks ?? "")</td>
-                        <td>—</td>
                         <td>@(entry.WindDescription ?? "")</td>
                         <td>@(entry.GpsStatus ?? "")</td>
                         <td class="text-nowrap">@FormatCoord(entry.Latitude)</td>
@@ -118,7 +116,7 @@ else
                 }
                 @if (!_entries.Any())
                 {
-                    <tr><td colspan="11" class="text-muted text-center">Geen logboekregels.</td></tr>
+                    <tr><td colspan="10" class="text-muted text-center">Geen logboekregels.</td></tr>
                 }
             </tbody>
         </table>

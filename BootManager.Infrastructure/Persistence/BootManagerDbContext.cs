@@ -69,6 +69,11 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<OperationalSettings> OperationalSettings => Set<OperationalSettings>();
 
+    /// <summary>
+    /// DbSet voor logboekbijlagen.
+    /// </summary>
+    public DbSet<LogbookAttachment> LogbookAttachments => Set<LogbookAttachment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
@@ -83,6 +88,7 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.WaterTemperatureMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogbookTripConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogbookEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.LogbookAttachmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.OperationalSettingsConfiguration());
     }
 }

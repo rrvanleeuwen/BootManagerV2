@@ -18,6 +18,7 @@ public class LogbookService : ILogbookService
     private readonly IRepository<LogbookTrip> _tripRepo;
     private readonly IRepository<LogbookEntry> _entryRepo;
     private readonly ILogbookMeasurementSuggestionService _suggestionService;
+    private readonly ILogbookAttachmentService _attachmentService;
     private readonly ILogger<LogbookService> _logger;
 
     /// <summary>
@@ -27,11 +28,13 @@ public class LogbookService : ILogbookService
         IRepository<LogbookTrip> tripRepo,
         IRepository<LogbookEntry> entryRepo,
         ILogbookMeasurementSuggestionService suggestionService,
+        ILogbookAttachmentService attachmentService,
         ILogger<LogbookService> logger)
     {
         _tripRepo = tripRepo;
         _entryRepo = entryRepo;
         _suggestionService = suggestionService;
+        _attachmentService = attachmentService;
         _logger = logger;
     }
 
@@ -106,11 +109,17 @@ public class LogbookService : ILogbookService
         await _tripRepo.UpdateAsync(entity, cancellationToken);
     }
 
-    /// <inheritdoc />
+     /// <inheritdoc />
     public async Task<IReadOnlyList<LogbookEntryDto>> GetEntriesAsync(int tripId, CancellationToken cancellationToken = default)
     {
         var list = await _entryRepo.ListAsync(e => e.LogbookTripId == tripId, cancellationToken);
-        return list.OrderBy(e => e.EntryTimeUtc).Select(MapEntry).ToList();
+        var dtos = new List<LogbookEntryDto>();
+        foreach (var entry in list.OrderBy(e => e.EntryTimeUtc))
+        {
+            var dto = await MapEntryAsync(entry, cancellationToken);
+            dtos.Add(dto);
+        }
+        return dtos;
     }
 
     /// <inheritdoc />
@@ -131,10 +140,10 @@ public class LogbookService : ILogbookService
             longitude: dto.Longitude,
             averageSogKnots: dto.AverageSogKnots);
 
-        await _entryRepo.AddAsync(entity, cancellationToken);
-        _logger.LogInformation("Logboekregel aangemaakt met id {EntryId} voor reis {TripId}.", entity.Id, tripId);
-        return MapEntry(entity);
-    }
+             await _entryRepo.AddAsync(entity, cancellationToken);
+            _logger.LogInformation("Logboekregel aangemaakt met id {EntryId} voor reis {TripId}.", entity.Id, tripId);
+            return await MapEntryAsync(entity, cancellationToken);
+        }
 
     /// <inheritdoc />
     public async Task UpdateEntryAsync(int entryId, SaveLogbookEntryDto dto, CancellationToken cancellationToken = default)
@@ -217,7 +226,7 @@ public class LogbookService : ILogbookService
 
         await _entryRepo.AddAsync(entity, cancellationToken);
         _logger.LogInformation("Draft logboekregel aangemaakt met id {EntryId} voor reis {TripId}.", entity.Id, tripId);
-        return MapEntry(entity);
+        return await MapEntryAsync(entity, cancellationToken);
     }
 
     private static LogbookTripDto MapTrip(LogbookTrip t) => new()
@@ -338,21 +347,26 @@ public class LogbookService : ILogbookService
         _logger.LogInformation("Logboekregel {EntryId} verwijderd.", entryId);
     }
 
-    private static LogbookEntryDto MapEntry(LogbookEntry e) => new()
+    private async Task<LogbookEntryDto> MapEntryAsync(LogbookEntry e, CancellationToken cancellationToken)
     {
-        Id = e.Id,
-        LogbookTripId = e.LogbookTripId,
-        EntryTimeUtc = e.EntryTimeUtc,
-        BaroPressure = e.BaroPressure,
-        LogValue = e.LogValue,
-        Course = e.Course,
-        Remarks = e.Remarks,
-        WindDescription = e.WindDescription,
-        GpsStatus = e.GpsStatus,
-        Latitude = e.Latitude,
-        Longitude = e.Longitude,
-        AverageSogKnots = e.AverageSogKnots,
-        Status = e.Status,
-        UpdatedAtUtc = e.UpdatedAtUtc
-    };
+        var attachmentCount = await _attachmentService.GetAttachmentCountAsync(e.Id, cancellationToken);
+        return new LogbookEntryDto
+        {
+            Id = e.Id,
+            LogbookTripId = e.LogbookTripId,
+            EntryTimeUtc = e.EntryTimeUtc,
+            BaroPressure = e.BaroPressure,
+            LogValue = e.LogValue,
+            Course = e.Course,
+            Remarks = e.Remarks,
+            WindDescription = e.WindDescription,
+            GpsStatus = e.GpsStatus,
+            Latitude = e.Latitude,
+            Longitude = e.Longitude,
+            AverageSogKnots = e.AverageSogKnots,
+            Status = e.Status,
+            UpdatedAtUtc = e.UpdatedAtUtc,
+            AttachmentCount = attachmentCount
+        };
+    }
 }

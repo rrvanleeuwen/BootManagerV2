@@ -36,4 +36,9 @@ public class OperationalSettingsDto
 
     /// <summary>Schakel capture-logging in of uit.</summary>
     public bool CaptureLoggingEnabled { get; set; } = false;
+
+    /// <summary>Directory voor opslag van logboekbijlagen.</summary>
+    [Required(ErrorMessage = "Logboekbijlagen-directory is verplicht.")]
+    [MaxLength(1024)]
+    public string LogbookAttachmentsDirectory { get; set; } = "data/logbook-attachments";
 }

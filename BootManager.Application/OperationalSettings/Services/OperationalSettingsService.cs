@@ -11,6 +11,8 @@ namespace BootManager.Application.OperationalSettings.Services;
 /// </summary>
 public class OperationalSettingsService : IOperationalSettingsService
 {
+    private const string DefaultLogbookAttachmentsDirectory = "data/logbook-attachments";
+
     private readonly IRepository<Core.Entities.OperationalSettings> _repository;
     private readonly ISystemClock _clock;
 
@@ -39,7 +41,7 @@ public class OperationalSettingsService : IOperationalSettingsService
         return MapToDto(settings);
     }
 
-    /// <inheritdoc />
+     /// <inheritdoc />
     public async Task SaveAsync(OperationalSettingsDto dto, CancellationToken ct = default)
     {
         Validate(dto);
@@ -57,6 +59,7 @@ public class OperationalSettingsService : IOperationalSettingsService
                 dto.RawStorageMode,
                 dto.DefaultSampleIntervalSeconds,
                 dto.CaptureLoggingEnabled,
+                dto.LogbookAttachmentsDirectory,
                 _clock.UtcNow);
             await _repository.AddAsync(settings, ct);
         }
@@ -70,6 +73,7 @@ public class OperationalSettingsService : IOperationalSettingsService
                 dto.RawStorageMode,
                 dto.DefaultSampleIntervalSeconds,
                 dto.CaptureLoggingEnabled,
+                dto.LogbookAttachmentsDirectory,
                 _clock.UtcNow);
             await _repository.UpdateAsync(settings, ct);
         }
@@ -84,7 +88,10 @@ public class OperationalSettingsService : IOperationalSettingsService
             ApiBaseUrl = s.ApiBaseUrl,
             RawStorageMode = s.RawStorageMode,
             DefaultSampleIntervalSeconds = s.DefaultSampleIntervalSeconds,
-            CaptureLoggingEnabled = s.CaptureLoggingEnabled
+            CaptureLoggingEnabled = s.CaptureLoggingEnabled,
+            LogbookAttachmentsDirectory = string.IsNullOrWhiteSpace(s.LogbookAttachmentsDirectory)
+                ? DefaultLogbookAttachmentsDirectory
+                : s.LogbookAttachmentsDirectory
         };
 
     private static void Validate(OperationalSettingsDto dto)
@@ -112,6 +119,9 @@ public class OperationalSettingsService : IOperationalSettingsService
 
         if (dto.DefaultSampleIntervalSeconds < 1 || dto.DefaultSampleIntervalSeconds > 3600)
             throw new ArgumentException("Sample-interval moet tussen 1 en 3600 seconden liggen.", nameof(dto.DefaultSampleIntervalSeconds));
+
+        if (string.IsNullOrWhiteSpace(dto.LogbookAttachmentsDirectory))
+            throw new ArgumentException("Logboekbijlagen-directory is verplicht.", nameof(dto.LogbookAttachmentsDirectory));
     }
 
     private static void ValidatePort(int port, string parameterName)

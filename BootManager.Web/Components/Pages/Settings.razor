@@ -116,6 +116,13 @@
                     <label class="form-check-label" for="captureLogging">Capture logging inschakelen</label>
                 </div>
 
+                <h6 class="mt-3">Logboekbijlagen</h6>
+                <div class="mb-2">
+                    <label>Directory voor bijlagen</label>
+                    <InputText class="form-control" @bind-Value="_opsModel.LogbookAttachmentsDirectory" />
+                    <small class="form-text text-muted">Pad waar bijlagen worden opgeslagen (bijv. data/logbook-attachments of /mnt/data/attachments op Raspberry Pi).</small>
+                </div>
+
                 <button type="submit" class="btn btn-primary" disabled="@_opsBusy">@(_opsBusy ? "Bezig..." : "Opslaan")</button>
             </EditForm>
             @if (!string.IsNullOrEmpty(_opsError)) 

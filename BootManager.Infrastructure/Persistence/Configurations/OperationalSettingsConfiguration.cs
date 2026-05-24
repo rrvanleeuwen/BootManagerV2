@@ -23,6 +23,7 @@ public class OperationalSettingsConfiguration : IEntityTypeConfiguration<Operati
             .HasConversion<string>().HasMaxLength(64);
         b.Property(x => x.DefaultSampleIntervalSeconds).IsRequired();
         b.Property(x => x.CaptureLoggingEnabled).IsRequired();
+        b.Property(x => x.LogbookAttachmentsDirectory).IsRequired().HasMaxLength(1024);
         b.Property(x => x.CreatedUtc).IsRequired();
         b.Property(x => x.UpdatedUtc);
     }

@@ -643,3 +643,232 @@ Dit herontwerp verduidelijkt de rol van de detailpagina: ondersteuning bij accor
 3. Toegang tot onderliggende samples voor verificatie.
 
 De verwijdering van oude bronmetingen versterkt consistentie: als het logtijdvak geen meetdata bevat, mogen opgeslagen waarden niet worden onderbouwd met metingen buiten het vak.
+
+---
+
+## Slice 6: Bijlagen per Logboekregel
+
+**Datum:** 2026-05-24
+**Status:** Geïmplementeerd
+
+### Aanleiding
+
+Een schipper wil tijdens/na een reis notities, foto's, documenten of handgeschreven schetsen kunnen koppelen aan individuele logboekregels. Deze bijlagen moeten:
+- Configureerbaar worden opgeslagen (voor flexibiliteit op Raspberry Pi / Docker persistent volumes)
+- Via logboek-detailpagina beheerd kunnen worden (upload/download/delete voor concept- en definitieve regels)
+- Vanuit `/logbook` direct kunnen worden toegevoegd via een compacte uploadmodal
+- In `/logbook` als teller zichtbaar zijn
+
+### Functioneel Doel
+
+Gebruiker kan per logboekregel bijlagen toevoegen en beheren, onafhankelijk van de akkoordstatus van de regel. Bijlagen tellen verschijnen in de logboek-lijstweergave.
+
+### Implementatie
+
+#### Core Entity
+**BootManager.Core/Entities/LogbookAttachment.cs**
+- `Id` (int, PK)
+- `LogbookEntryId` (int, FK → LogbookEntry)
+- `OriginalFileName` (string, bestandsnaam zoals geüpload)
+- `StoredFileName` (string, gegenereerd bestandsnaam met GUID ter voorkoming van conflicten)
+- `ContentType` (string, MIME-type)
+- `SizeBytes` (long, bestandsgrootte)
+- `UploadedAtUtc` (DateTime, systeemtijd)
+- `Description` (string?, optionele omschrijving/type van de bijlage)
+- Navigation `Entry` → LogbookEntry
+
+#### EF Core Mapping
+**BootManager.Infrastructure/Persistence/Configurations/LogbookAttachmentConfiguration.cs**
+- Table `LogbookAttachments`
+- Cascade delete op `LogbookEntry`
+- Unieke index op `LogbookEntryId` niet nodig; 1:many-verhouding toestaat meerdere bijlagen per entry
+
+#### Operationele Instellingen
+**BootManager.Core/Entities/OperationalSettings.cs**
+- Nieuw veld: `LogbookAttachmentsDirectory` (default: `"data/logbook-attachments"`)
+- Ondersteunt absoluut pad (bijv. `/mnt/data/attachments` op Raspberry Pi) en relatief pad
+
+**BootManager.Application/OperationalSettings/DTOs/OperationalSettingsDto.cs**
+- Nieuw veld: `LogbookAttachmentsDirectory` met `[Required]` en `[MaxLength(1024)]`
+
+#### Application Service
+**BootManager.Application/Logbook/Services/ILogbookAttachmentService.cs**
+- `UploadAsync(entryId, stream, fileName, contentType, description, ct)` → AttachmentUploadResultDto
+- `DownloadAsync(attachmentId, ct)` → (stream, fileName, contentType)
+- `DeleteAsync(attachmentId, ct)` → bool (true = verwijderd)
+- `GetAttachmentsAsync(entryId, ct)` → IEnumerable<LogbookAttachmentDto>
+- `GetAttachmentCountAsync(entryId, ct)` → int
+
+**BootManager.Application/Logbook/Services/LogbookAttachmentService.cs**
+- Implementatie met:
+  - 10 MB bestand-limiet
+  - Allowlist-filtering op bestandstype (PDF, Office, afbeeldingen, tekst)
+  - Gegenereerde opslag-bestandsnaam via GUID + extensie ter voorkoming van padtraversalfouten
+  - Path-safety checks via `Path.GetFullPath()`
+  - Logging op fouten
+  - Bij delete: probeert fysieke bestand te verwijderen, verwijdert altijd metadatarecord uit database
+
+#### DTOs
+**BootManager.Application/Logbook/DTOs/LogbookAttachmentDto.cs**
+- `Id`, `OriginalFileName`, `ContentType`, `SizeBytes`, `UploadedAtUtc`, `Description`
+- `FormattedSize` (computed property met human-readable grootte)
+
+**BootManager.Application/Logbook/DTOs/AttachmentUploadResultDto.cs**
+- Enum `AttachmentUploadStatus` (Success, FileTooLarge, InvalidFileType, StorageError, DatabaseError, UnknownError)
+- Velden: `Status`, `Message`, `Attachment`
+- Computed property `Success` (true als Status = Success)
+- Statische factories: `SuccessResult(attachment)`, `Error(status, message)`
+
+#### Web API Controller
+**BootManager.Web/Controllers/LogbookAttachmentsController.cs**
+- `POST api/LogbookAttachments/upload/{entryId:int}` → AttachmentUploadResultDto
+- `GET api/LogbookAttachments/download/{attachmentId:int}` → File (stream)
+- `DELETE api/LogbookAttachments/{attachmentId:int}` → 204 NoContent of 404
+- `GET api/LogbookAttachments/entry/{entryId:int}` → IEnumerable<LogbookAttachmentDto>
+- `GET api/LogbookAttachments/count/{entryId:int}` → int
+
+#### Blazor UI Wijzigingen
+
+**BootManager.Web/Components/Pages/Logbook.razor**
+- Logboektabel: kolom "Bijlagen" toont badge met aantal bijlagen (als > 0)
+- Per logboekregel is er een compacte uploadknop die een modal opent.
+- Uploadmodal bevat bestandselectie en optionele omschrijving/type.
+- Na succesvolle upload wordt de bijlagenteller direct bijgewerkt.
+
+**BootManager.Web/Components/Pages/LogbookEntryDetails.razor**
+- Sectie "Bijlagen" staat direct bovenaan na de context-header.
+- Toont lijst met bijlagen (naam, omschrijving, grootte, datum)
+- Downloaden per bijlage (via client-side download helper)
+- Delete-knop (met bevestiging) is beschikbaar voor concept- en definitieve regels.
+- Upload-formulier (InputFile + omschrijving + Upload-knop) is beschikbaar voor concept- en definitieve regels.
+- Feedback-berichten voor upload-fouten en -succes
+
+**BootManager.Web/Components/Pages/LogbookPrint.razor**
+- Printweergave toont geen bijlagenkolom. Bijlagenbeheer hoort bij de werk-UI en detailpagina, niet bij de compacte printlayout.
+
+**BootManager.Web/wwwroot/app.js**
+- Helper `downloadFileFromStream()` om bijlagen client-side af te downloaden
+
+#### Logbook Service Aanpassingen
+**BootManager.Application/Logbook/Services/LogbookService.cs**
+- Injectie van `ILogbookAttachmentService`
+- `GetEntriesAsync()`: async mapping via `MapEntryAsync()` die `AttachmentCount` populeer
+- `CreateEntryAsync()`, `CreateDraftEntryAsync()`: gebruiken `MapEntryAsync()`
+
+**BootManager.Application/Logbook/DTOs/LogbookEntryDto.cs**
+- Nieuw veld: `AttachmentCount` (int)
+
+#### Database Migratie
+- Tabel `LogbookAttachments` met kolommen en foreign key
+- `OperationalSettings.LogbookAttachmentsDirectory` kolom (nvarchar, 1024)
+
+#### DI Registratie
+**BootManager.Application/DependencyInjection.cs**
+- Registreer `ILogbookAttachmentService, LogbookAttachmentService` als scoped
+
+#### Settings UI
+**BootManager.Web/Components/Pages/Settings.razor**
+- Nieuwe sectie "Logboekbijlagen" onder "Operationele instellingen"
+- Input-veld voor `LogbookAttachmentsDirectory` met hulptext
+
+### Acceptatiecriteria
+
+- ✓ `dotnet build` slaagt.
+- ✓ EF Core migratie maakt tabel `LogbookAttachments` en veld in `OperationalSettings` aan.
+- ✓ Bijlagen kunnen worden geüpload via detailpagina.
+- ✓ Bijlagen kunnen rechtstreeks vanuit het logboekoverzicht via modal worden geüpload.
+- ✓ Bijlagen verschijnen in downloadbare lijst op detailpagina.
+- ✓ Bijlagen kunnen per ID worden gedownload (met originele bestandsnaam).
+- ✓ Bijlagen kunnen (met bevestiging) worden verwijderd.
+- ✓ Bijlageomschrijving/type wordt opgeslagen en getoond.
+- ✓ Bijlagen-teller verschijnt in logboek-lijstweergave als > 0.
+- ✓ Printweergave bevat geen bijlagenkolom.
+- ✓ Upload-limit (10 MB) wordt afgedwongen.
+- ✓ Bestandstypering wordt afgedwongen (PDF, Office, afbeeldingen, tekst).
+- ✓ Opslag-directory kan via settings worden ingesteld.
+- ✓ Fysieke bestanden worden veilig opgeslagen (gegenereerde naam, geen padtraversal).
+- ✓ Verwijdering van bestand en metadata werken correct.
+- ✓ Logboekregels kunnen conform oude logica worden aangemaakt/bewerkt (attachment-slice is orthogonaal).
+- ✓ Persistentie werkt op Linux/Docker volumekoppelingen (relatieve paden toegestaan).
+
+### Notities voor Implementatie en Deployment
+
+#### Opslag Directory Setup
+- **Lokale ontwikkeling:** standaard `data/logbook-attachments` wordt automatisch aangemaakt bij eerste upload
+- **Raspberry Pi / Docker:** mount persistent volume, bijvoorbeeld:
+  ```bash
+  docker run -v /mnt/external/logbook-attachments:/app/data/logbook-attachments \
+             -e "OperationalSettings__LogbookAttachmentsDirectory=/app/data/logbook-attachments" \
+             bootmanager-web
+  ```
+- **appsettings.json fallback:** kan nodig zijn voor initiële boot; zie OperationalSettingsService
+
+#### Filesystem Rechten
+- Container/Linux-user moet schrijfrechten hebben op geselecteerde directory
+- Bestanden worden per upload aangemaakt; geen periodieke cleanup geïmplementeerd (toekomstig)
+
+#### Backwards Compatibility
+- Oude logboeken zonder bijlagen blijven ongewijzigd werken
+- `AttachmentCount` in `LogbookEntryDto` defaultt naar 0 als geen bijlagen aanwezig zijn
+- Bestaande bijlagen zonder omschrijving blijven geldig.
+
+#### Open technisch aandachtspunt
+- Bij verwijderen van een volledige logboekregel verwijdert EF de gekoppelde bijlage-records via cascade delete. De fysieke bestanden op schijf worden in de huidige slice niet expliciet opgeruimd via `LogbookAttachmentService.DeleteAsync`. Vervolgactie: verwijdering van logboekregel en bijlagenmetadata eerst database-consistent afronden, daarna fysieke bestanden opruimen zodat bestanden niet verdwijnen als de databaseverwijdering faalt.
+
+### Rationale
+Deze slice voegt een praktisch feature toe zonder logica voor Draft/Confirmed of missed-logmoment te wijzigen. Bijlagen zijn orthogonaal aan bestaande logboek-workflows en voegen alleen UI en API-layer toe. De configureerbaarheid zorgt voor flexibiliteit op embedded systemen waar storage-paden kunnen verschillen per deployment.
+
+---
+
+## Slice 6b: Bijlagen-UI Verbetering (2026-05-24)
+
+**Status:** UI/UX Geoptimaliseerd
+**Wijzigingen:** Minimaal, alleen UI-laag
+
+### Aanpassingen
+
+#### Logbook.razor - Bijlagen-kolom
+- Bij `AttachmentCount == 0`: toon "—"
+- Bij `AttachmentCount > 0`: toon compacte klikbare badge "📎 N" (paperclip + aantal)
+- Badge navigeert naar `/logbook/entries/{entryId:int}/details` voor bijlagenbeheer
+- Naast de badge staat een uploadknop per regel voor direct toevoegen via modal.
+- Geen bestandsnamen in /logbook tabel; compact blijven
+
+#### Logbook.razor - Uploadmodal
+- Modal bevat bestandselectie en optionele omschrijving/type.
+- Upload gebruikt `ILogbookAttachmentService.UploadAsync()` direct vanuit Blazor Server, niet `HttpClient`.
+- Bij succes sluit de modal en wordt de teller in de tabel ververst.
+- Bij fout blijft de modal open en toont de foutmelding.
+
+#### LogbookEntryDetails.razor - Bijlagen-sectie
+- **Plaatsing:** Direct bovenaan na de context-header, zodat de gebruiker niet langs meetdata hoeft te scrollen.
+- **Upload:** Altijd beschikbaar (niet meer beperkt tot Draft-regels)
+- **Omschrijving/type:** Optioneel tekstveld bij upload; bestaande bijlagen tonen omschrijving wanneer ingevuld.
+- **Delete:** Altijd beschikbaar (niet meer beperkt tot Draft-regels)
+- **Download:** Ongewijzigd, voor alle bijlagen
+- **Helpertekst:** Toegevoegd: "Bijlagen kunnen ook na accorderen nog worden toegevoegd of verwijderd."
+- **Entry status:** Upload/delete wijzigen entry-status niet (orthogonale operaties)
+
+### Acceptatiecriteria
+
+- ✓ `/logbook` toont "—" bij 0 bijlagen.
+- ✓ `/logbook` toont badge "📎 N" bij N > 0.
+- ✓ Badge is klikbare link naar detailpagina.
+- ✓ Per regel kan direct een bijlage worden toegevoegd via uploadmodal.
+- ✓ Detailpagina toont upload-formulier altijd (Draft en Confirmed).
+- ✓ Detailpagina toont bijlagenblok bovenaan.
+- ✓ Detailpagina toont delete-knoppen altijd (Draft en Confirmed).
+- ✓ Omschrijving/type wordt opgeslagen en getoond.
+- ✓ Download werkt voor alle bijlagen.
+- ✓ Upload/delete wijzigt entry-status niet.
+- ✓ Geen bestandsnamen in `/logbook` tabel.
+- ✓ Helpertekst verduidelijkt management ook na accordering.
+- ✓ Printweergave heeft geen bijlagenkolom.
+- ✓ Missing-moments flow ongewijzigd.
+- ✓ Draft/Confirmed akkoordflow ongewijzigd.
+
+### Rationale
+Deze UI-verbetering maakt bijlagenbeheer intuïtiever en toegankelijker:
+1. **Logbook tabel:** Compact en begrijpelijk; badge signaleert aanwezigheid van bijlagen.
+2. **Detailpagina:** Volledige controle over bijlagen, onabhankelijk van entry-status (accordering beperkt entry-wijzigingen, niet bijlagenbeheer).
+3. **Helpertekst:** Verduidelijkt gebruiker dat bijlagen altijd kunnen worden beheerd.
