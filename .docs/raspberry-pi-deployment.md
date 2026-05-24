@@ -197,6 +197,23 @@ Als de UI vanaf andere apparaten bereikbaar moet zijn, moet de webapp luisteren 
 - Gaat Ingest op dezelfde Pi draaien als Web?
 - Waar komen NMEA-data vandaan: echte boot-hardware, simulator, of later?
 
+## Docker Compose Deployment (alternatief)
+
+Voor eenvoudige containerisatie op de Pi kan Docker Compose gebruikt worden. Dit biedt:
+
+- Reproduceerbare deployments zonder handmatige service-configuratie;
+- eenvoudig volume management voor database, logs en bijlagen;
+- service orchestration met health checks;
+- network isolation;
+- gemakkelijk schalen naar meerdere Pi's.
+
+Zie `.docs/docker-deployment.md` voor volledige details.
+
+Voordeel Docker Compose: sneller testen en reproduceerbaar.
+Voordeel systemd services: directe lage-level controle, slanker resource-gebruik.
+
+De voorkeur kan per use-case verschillen. Beide methoden zijn ondersteund.
+
 ## Bronnen
 
 - Raspberry Pi headless setup en Imager: https://www.raspberrypi.com/documentation/computers/getting-started.html

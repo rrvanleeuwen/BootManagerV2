@@ -1,0 +1,79 @@
+services:
+  bootmanager-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: bootmanager-web
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:5000
+      - ConnectionStrings__Default=Data Source=/var/lib/bootmanager/bootmanager.db
+      - Encryption__Key=${BOOTMANAGER_ENCRYPTION_KEY:?Set BOOTMANAGER_ENCRYPTION_KEY in .env}
+      - Jwt__Key=${BOOTMANAGER_JWT_KEY:?Set BOOTMANAGER_JWT_KEY in .env}
+      - Logging__LogLevel__Default=Information
+      - Logging__LogLevel__Microsoft.AspNetCore=Warning
+    volumes:
+      - bootmanager-db:/var/lib/bootmanager
+      - bootmanager-logs:/var/log/bootmanager
+      - bootmanager-attachments:/app/data/logbook-attachments
+    networks:
+      - bootmanager-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  bootmanager-ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingest
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: bootmanager-ingest
+    ports:
+      - "10110:10110/udp"
+      - "127.0.0.1:5010:5010"
+    environment:
+      - Ingest__ListenAddress=0.0.0.0
+      - Ingest__ListenPort=10110
+      - Ingest__MaxQueueSize=1000
+      - Ingest__BatchSize=10
+      - Ingest__ApiBaseUrl=http://bootmanager-web:5000
+      - Ingest__NetworkMessagesEndpoint=/api/networkmessages
+      - Ingest__CaptureLogging__Enabled=true
+      - Ingest__CaptureLogging__Directory=/var/log/bootmanager/ingest-capture
+      - Ingest__CaptureLogging__FilePrefix=ingest-capture
+      - Ingest__ControlApi__Enabled=true
+      - Ingest__ControlApi__ListenAddress=0.0.0.0
+      - Ingest__ControlApi__ListenPort=5010
+    volumes:
+      - bootmanager-logs:/var/log/bootmanager
+    networks:
+      - bootmanager-network
+    restart: unless-stopped
+    depends_on:
+      bootmanager-web:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+
+volumes:
+  bootmanager-db:
+    driver: local
+  bootmanager-logs:
+    driver: local
+  bootmanager-attachments:
+    driver: local
+
+networks:
+  bootmanager-network:
+    driver: bridge

@@ -1,0 +1,38 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy solution and project files
+COPY ["src/BootManager.Tools.Ingest/BootManager.Tools.Ingest.csproj", "src/BootManager.Tools.Ingest/"]
+COPY ["BootManager.Core/BootManager.Core.csproj", "BootManager.Core/"]
+
+# Restore dependencies
+RUN dotnet restore "src/BootManager.Tools.Ingest/BootManager.Tools.Ingest.csproj" -r linux-arm64
+
+# Copy all source code
+COPY . .
+
+# Build and publish
+RUN dotnet publish "src/BootManager.Tools.Ingest/BootManager.Tools.Ingest.csproj" \
+	-c Release \
+	-r linux-arm64 \
+	--self-contained false \
+	--no-restore \
+	-o /app/publish
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/runtime:8.0-jammy-arm64
+WORKDIR /app
+
+# Create data directories for volumes
+RUN mkdir -p /var/log/bootmanager
+
+# Copy published application
+COPY --from=build /app/publish .
+
+# Copy appsettings for reference (will be overridden by environment variables)
+COPY ["src/BootManager.Tools.Ingest/appsettings.json", "."]
+
+EXPOSE 10110/udp
+
+ENTRYPOINT ["dotnet", "BootManager.Tools.Ingest.dll"]

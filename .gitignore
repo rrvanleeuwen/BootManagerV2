@@ -59,6 +59,7 @@ desktop.ini
 *.log
 
 # Secrets (zorg dat je deze nooit commit)
+.env
 **/secrets.json
 **/appsettings.*.json.user
 **/*.pfx
