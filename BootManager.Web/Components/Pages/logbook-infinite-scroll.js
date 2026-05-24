@@ -1,52 +1,54 @@
 /**
- * Infinite scroll handler voor logboek card-view
- * Detecteert wanneer de load-meer-knop in zicht komt en triggert automatisch laden
+ * Infinite scroll handler voor logboek card-view.
+ * Detecteert wanneer de load-meer-knop in zicht komt en triggert automatisch laden.
  */
-export function initInfiniteScroll(dotnetHelper) {
-    const container = document.getElementById('cardScrollContainer');
+let observer;
+let container;
+let loadMoreBtn;
+
+export function initInfiniteScroll() {
+    container = document.getElementById('cardScrollContainer');
     if (!container) return;
 
-    const options = {
-        root: null, // viewport
-        rootMargin: '100px', // Trigger 100px voordat de knop volledig zichtbaar is
-        threshold: 0.01
-    };
-
-    // Vind de load-meer-knop
-    const findLoadMoreButton = () => {
-        // Zoek naar de "Meer laden" knop
-        const buttons = container.querySelectorAll('button');
-        return Array.from(buttons).find(btn => btn.textContent.includes('Meer laden'));
-    };
-
-    let loadMoreBtn = findLoadMoreButton();
-
-    const observer = new IntersectionObserver((entries) => {
+    observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            if (entry.isIntersecting && loadMoreBtn) {
-                // Check of de knop niet al disabled is
-                if (!loadMoreBtn.disabled) {
-                    console.log('Load more button is visible, triggering click');
-                    loadMoreBtn.click();
-                }
+            if (entry.isIntersecting && loadMoreBtn && !loadMoreBtn.disabled) {
+                loadMoreBtn.click();
             }
         });
-    }, options);
+    }, {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.01
+    });
 
-    // Observer de load-meer-knop
+    refreshInfiniteScroll();
+}
+
+export function refreshInfiniteScroll() {
+    if (!observer || !container) return;
+
+    if (loadMoreBtn) {
+        observer.unobserve(loadMoreBtn);
+    }
+
+    loadMoreBtn = findLoadMoreButton();
     if (loadMoreBtn) {
         observer.observe(loadMoreBtn);
     }
+}
 
-    // Expose cleanup function
-    return {
-        disconnect: () => observer.disconnect(),
-        refresh: () => {
-            loadMoreBtn = findLoadMoreButton();
-            observer.disconnect();
-            if (loadMoreBtn) {
-                observer.observe(loadMoreBtn);
-            }
-        }
-    };
+export function disconnectInfiniteScroll() {
+    if (observer) {
+        observer.disconnect();
+    }
+
+    observer = undefined;
+    container = undefined;
+    loadMoreBtn = undefined;
+}
+
+function findLoadMoreButton() {
+    const buttons = container.querySelectorAll('button');
+    return Array.from(buttons).find(btn => btn.textContent.includes('Meer laden'));
 }
