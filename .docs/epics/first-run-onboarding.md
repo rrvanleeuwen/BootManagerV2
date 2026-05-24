@@ -82,25 +82,27 @@ Relevante huidige onderdelen:
 
 ## User Stories
 
-### US1: Auth UI Vereenvoudigen Naar Wachtwoord-Only
+### US1: Auth UI Vereenvoudigen Naar Wachtwoord-Only ✅ (2026-05-24)
 
-Besluit:
+**Status:** Gereed.
+
+Realisatie:
 
 - Pincode verdwijnt uit de UI.
 - Recovery/master-key verdwijnt volledig uit de gebruikersflow.
 - Login is alleen met wachtwoord.
 - Settings toont geen pincodeblok.
-- `/recover` mag verwijderd worden of minstens niet meer bereikbaar/gelinkt zijn.
-- Oude database hoeft niet behouden te blijven; pincode/recovery backward compatibility is niet nodig.
+- `/recover` is niet meer bereikbaar via normale navigatie.
 
-Acceptatiecriteria:
+Implementatie:
 
-- Loginpagina toont alleen wachtwoord, "ingelogd blijven" en login-knop.
-- Link "Wachtwoord vergeten / Herstel toegang" is weg.
-- Settingspagina toont geen pincode instellen/verwijderen meer.
-- Recovery/master-key pagina is niet meer zichtbaar of bereikbaar in normale flow.
-- `OwnerLoginService` wordt in de UI-flow alleen met wachtwoord gebruikt.
-- `dotnet build` slaagt.
+- **Login.razor:** pincode-veld, hint en recovery-link verwijderd. Pagina toont nu alleen wachtwoord, "ingelogd blijven" en login-knop.
+- **Login.razor:** al ingelogde gebruikers worden doorgestuurd naar het dashboard.
+- **Settings.razor:** pincode-card volledig verwijderd. Code-methoden `SetPin`, `HandlePinSubmit`, `ClearPin` en gerelateerde state verwijderd.
+- **Settings.razor:** pagina is expliciet beschermd met owner-autorisatie.
+- **Auth cookies:** niet-persistente logins krijgen een in-memory sessie-id en worden ongeldig na applicatieherstart; "ingelogd blijven" blijft persistent.
+- **Acceptatiecriteria:** alle vervuld. `dotnet build` slaagt. Geen EF migration, geen bootstrap, geen onboarding.
+- **Opmerkingen:** OwnerRecoveryService, RecoverAccess.razor en pincode-properties in LoginRequestDto en services blijven als technische legacy-code; deze cleanup valt buiten deze story.
 
 Niet in deze story:
 
@@ -108,8 +110,9 @@ Niet in deze story:
 - Onboarding.
 - Vessel profile.
 - Deployment-config.
+- Opschoning services/database.
 
-Aanbevolen implementatie-aanpak:
+Aanbevolen implementatie-aanpak voor vervolgstories:
 
 - Begin klein: verwijder eerst UI en navigatie naar pincode/recovery.
 - Services/kolommen mogen pas later worden opgeruimd als dat de slice kleiner en veiliger houdt.

@@ -64,6 +64,24 @@
   - **Volgende slice:** gerelateerde features als detailweergave verbeteren of browser push notifications.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
+- [ ] **First-Run Onboarding & Auth Simplification** *(epic – gefaseerd)*
+  - **Doel:** Single-owner eerste-start flow met bootstrap wachtwoord, verplichte onboarding, en vereenvoudigde wachtwoord-only auth.
+  - [x] **US1 (2026-05-24):** Auth UI vereenvoudigd naar wachtwoord-only
+    - Loginpagina: alleen wachtwoordveld, "ingelogd blijven", login-knop
+    - Pincode-veld verwijderd uit Login.razor
+    - Recovery/master-key link verwijderd uit Login.razor
+    - Settingspagina: pincode-card verwijderd
+    - Settingspagina expliciet beschermd met owner-autorisatie
+    - Loginpagina stuurt al ingelogde gebruikers terug naar dashboard
+    - Niet-persistente login wordt ongeldig na applicatieherstart; "ingelogd blijven" blijft persistent
+    - `/recover` niet meer bereikbaar via normale navigatie
+    - OwnerLoginService gebruikt alleen wachtwoord (pincode/recovery services blijven als legacy)
+    - `dotnet build` slaagt
+    - Geen EF migration, geen bootstrap, geen onboarding
+  - [ ] **US2:** Bootstrap owner maken op eerste start
+  - [ ] **US3:** Verplichte onboarding-flow implementeren
+  - Zie: [.docs/epics/first-run-onboarding.md](epics/first-run-onboarding.md)
+
 - [ ] **Authentication & Authorization**
   - JWT-based API authentication
   - Role-based access control (Admin, User, Viewer)
