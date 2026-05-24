@@ -1,0 +1,98 @@
+@*
+Component: OnboardingGate
+Purpose:
+- Acts as a routing guard for authenticated users.
+- Enforces that users with incomplete setup (PasswordChangeRequired=true or OnboardingCompleted=false)
+  are redirected to /onboarding and cannot access other protected routes.
+- Allows routes on a whitelist before setup is complete.
+- Re-evaluates on every route change (client-side navigation) via LocationChanged event.
+
+How it works:
+- Subscribes to NavigationManager.LocationChanged to evaluate gate on every route change.
+- Calls IOwnerSetupStateService.GetSetupStateAsync() to determine setup requirements.
+- Whitelist routes that are allowed before onboarding is complete:
+  /login, /logout, /onboarding, /health
+- If user is authenticated and SetupRequired=true, redirects to /onboarding.
+- If user is authenticated and SetupRequired=false and on /onboarding, redirects to /dashboard.
+- Anonymous users are handled by AuthorizeRouteView (not this component).
+- Properly disposes LocationChanged subscription to prevent memory leaks.
+
+Placement:
+- Include in Routes.razor after StartupGate in the <Found> block so it evaluates all routes.
+- Should wrap or follow the AuthorizeRouteView.
+
+Dependencies:
+- IOwnerSetupStateService: provides setup state information.
+- NavigationManager: performs redirects and subscribes to location changes.
+- AuthenticationState: determines if user is authenticated.
+*@
+@using Microsoft.AspNetCore.Components.Authorization
+@implements IAsyncDisposable
+@inject BootManager.Application.OwnerRegistration.Services.IOwnerSetupStateService SetupStateService
+@inject NavigationManager Nav
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Subscribe to location changes for all future navigations
+        Nav.LocationChanged += OnLocationChanged;
+
+        // Evaluate gate on initial render
+        await EvaluateGateAsync();
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        // Re-evaluate gate on every location change (client-side navigation)
+        await EvaluateGateAsync();
+    }
+
+    private async Task EvaluateGateAsync()
+    {
+        // Only apply onboarding gate to authenticated users
+        var auth = AuthenticationStateTask is null ? null : await AuthenticationStateTask;
+        var isAuthenticated = auth?.User?.Identity?.IsAuthenticated == true;
+
+        if (!isAuthenticated)
+        {
+            // Anonymous users: let AuthorizeRouteView handle them
+            return;
+        }
+
+        var setupState = await SetupStateService.GetSetupStateAsync();
+        var relative = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+
+        // Whitelist of routes that are allowed before setup is complete
+        var allowBeforeSetup = new[] { "login", "logout", "onboarding", "health" };
+        var isWhitelisted = allowBeforeSetup.Any(r => string.Equals(relative, r, StringComparison.OrdinalIgnoreCase));
+
+        if (setupState.SetupRequired)
+        {
+            // User has setup requirements
+            if (!string.Equals(relative, "onboarding", StringComparison.OrdinalIgnoreCase) && !isWhitelisted)
+            {
+                // User is on a protected route; redirect to onboarding
+                Nav.NavigateTo("/onboarding", replace: true);
+            }
+            return;
+        }
+
+        // Setup is not required
+        if (string.Equals(relative, "onboarding", StringComparison.OrdinalIgnoreCase))
+        {
+            // User is done with setup but is on /onboarding; redirect to dashboard
+            Nav.NavigateTo("/dashboard", replace: true);
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        // Unsubscribe from LocationChanged to prevent memory leaks
+        Nav.LocationChanged -= OnLocationChanged;
+        await ValueTask.CompletedTask;
+    }
+}

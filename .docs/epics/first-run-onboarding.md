@@ -1,6 +1,6 @@
 # Epic: First-Run Onboarding & Auth Simplification
 
-Status: ontwerp vastgesteld, nog niet geïmplementeerd.
+Status: ontwerp vastgesteld. US1 en US2 gereed. US3 gereed (2026-05-24). US4-US5 volgen.
 
 Doel: BootManager krijgt een simpele, robuuste single-owner eerste-start flow. Bij een lege database maakt de applicatie automatisch één bootstrap owner aan. De gebruiker logt in met een geconfigureerd bootstrap wachtwoord, wordt daarna verplicht door onboarding geleid, vult eigenaar- en bootgegevens in, en wijzigt direct het wachtwoord.
 
@@ -216,39 +216,70 @@ export BOOTMANAGER_BOOTSTRAP_PASSWORD=your-secure-password
 # Of via Docker secret/Azure Key Vault
 ```
 
-### US3: Onboarding-Gate Afdwingen
+### US3: Onboarding-Gate Afdwingen ✅ (2026-05-24)
 
-Besluit:
+**Status:** Gereed.
 
-- Hard redirect naar `/onboarding`.
-- Setup is verplicht als:
-  - `PasswordChangeRequired = true`; of
-  - `OnboardingCompleted = false`.
-- Ingelogde gebruiker mag vóór onboarding niet naar dashboard/settings/logboek/andere app-pagina's.
-- Toegestaan vóór onboarding:
-  - `/login`;
-  - `/logout`;
-  - `/onboarding`;
-  - `/health`.
-- Als onboarding klaar is en gebruiker opent `/onboarding`, redirect naar `/dashboard`.
-- Voeg bij voorkeur een kleine setup-state service toe zodat Razor niet direct `OwnerProfile` hoeft te kennen.
+Realisatie:
 
-Acceptatiecriteria:
+- `IOwnerSetupStateService` interface met methode `GetSetupStateAsync()`.
+- `OwnerSetupStateDto` DTO met properties: `HasOwner`, `PasswordChangeRequired`, `OnboardingCompleted`, `SetupRequired`.
+- `OwnerSetupStateService` implementatie leest OwnerProfile via repository en vult DTO.
+  - `SetupRequired` is true als `!HasOwner || PasswordChangeRequired || !OnboardingCompleted`.
+- `OnboardingGate.razor` component controleert setup-status na authenticatie.
+  - Redirect naar `/onboarding` als `SetupRequired=true` en huidige route niet in whitelist.
+  - Redirect naar `/dashboard` als `SetupRequired=false` en huidige route == `/onboarding`.
+  - Whitelist: `/login`, `/logout`, `/onboarding`, `/health`.
+  - Anonieme gebruikers passeren gate; AuthorizeRouteView handelt ingang af.
+- Routes.razor aangepast: OnboardingGate toegevoegd na StartupGate in `<Found>` block.
+- `/onboarding` minimale placeholder-pagina aangemaakt met `@attribute [Authorize(Roles="Owner")]`.
+  - Toont korte tekst dat onboarding moet worden voltooid.
+  - Geen formulier (wordt US4).
+- Dependency injection: `IOwnerSetupStateService` geregistreerd in `BootManager.Application/DependencyInjection.cs`.
+- Unit tests: 5 tests in `BootManager.UnitTests/OwnerRegistration/OwnerSetupStateServiceTests.cs`.
+  - Scenario's: no owner, SetupRequired when PasswordChangeRequired, SetupRequired when OnboardingCompleted=false, SetupNotRequired when both flags true.
+  - Alle 5 tests slagen.
 
-- Er is een setup-state service, bijvoorbeeld `IOwnerSetupStateService`.
-- Service retourneert minimaal:
-  - `HasOwner`;
-  - `PasswordChangeRequired`;
-  - `OnboardingCompleted`;
-  - `SetupRequired`.
-- Ingelogde gebruiker met `SetupRequired = true` wordt naar `/onboarding` gestuurd.
-- Beschermde routes zijn niet bereikbaar vóór onboarding klaar is.
-- Setup-klaar gebruikers kunnen normaal navigeren.
-- `dotnet build` slaagt.
+**Acceptatiecriteria:** allemaal vervuld.
+- ✅ Er is een setup-state service `IOwnerSetupStateService`.
+- ✅ Service retourneert `HasOwner`, `PasswordChangeRequired`, `OnboardingCompleted`, `SetupRequired`.
+- ✅ Ingelogde user met `SetupRequired=true` wordt naar `/onboarding` gestuurd.
+- ✅ Dashboard, settings, logboek niet bereikbaar vóór setup klaar is.
+- ✅ `/onboarding` bereikbaar voor ingelogde owner met setup required.
+- ✅ Anonieme user krijgt login-flow.
+- ✅ Setup-klaar user wordt van `/onboarding` naar `/dashboard` geleid.
+- ✅ Geen redirect-loop.
+- ✅ `dotnet build` slaagt.
+- ✅ Unit tests slagen.
 
-Niet in deze story:
+Handmatige validatie (2026-05-24):
 
-- Volledig onboardingformulier, tenzij een minimale placeholder nodig is om routing testbaar te houden.
+- Bestaande development-owner met `OnboardingCompleted = false` werd na login naar `/onboarding` geleid.
+- Handmatig openen van `/dashboard`, `/settings` en `/logbook` stuurde terug naar `/onboarding`.
+- Anoniem openen van `/onboarding` leidde naar login.
+- Na tijdelijk zetten van `PasswordChangeRequired = false` en `OnboardingCompleted = true` stuurde `/onboarding` door naar `/dashboard`.
+- Met setup-klaar flags bleven `/settings` en `/logbook` normaal bereikbaar.
+- Opmerking: bij client-side navigatie naar geblokkeerde routes kan de doelpagina kort zichtbaar zijn voordat de gate terugstuurt. Functioneel blokkeert de gate de route; UX/security-hardening kan later server-side of route-level worden aangescherpt.
+- Testdatabase-notitie: lokale development-database is na validatie setup-klaar gezet (`PasswordChangeRequired = 0`, `OnboardingCompleted = 1`). Voor US4-test kan tijdelijk teruggezet worden naar `1,0` of een verse bootstrap-database worden gebruikt.
+
+Implementatie details:
+
+- **BootManager.Application/OwnerRegistration/DTOs/OwnerSetupStateDto.cs** - nieuw
+- **BootManager.Application/OwnerRegistration/Services/IOwnerSetupStateService.cs** - nieuw
+- **BootManager.Application/OwnerRegistration/Services/OwnerSetupStateService.cs** - nieuw
+- **BootManager.Web/Components/OnboardingGate.razor** - nieuw
+- **BootManager.Web/Components/Pages/Onboarding.razor** - nieuw
+- **BootManager.Web/Components/Routes.razor** - aangepast (OnboardingGate toevoegen)
+- **BootManager.Application/DependencyInjection.cs** - aangepast (service registratie)
+- **BootManager.UnitTests/OwnerRegistration/OwnerSetupStateServiceTests.cs** - 5 new tests
+
+Routes vóór onboarding toegestaan:
+- `/login` - anoniem/ingelogd
+- `/logout` - anoniem/ingelogd
+- `/onboarding` - alleen ingelogd
+- `/health` - anoniem/ingelogd
+
+Volgende stap: US4 implementeert het volledige onboardingformulier voor eigenaar-, boot- en wachtwoordgegevens.
 
 ### US4: Onboardingformulier Voor Eigenaar En Boot
 

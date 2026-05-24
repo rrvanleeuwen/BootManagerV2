@@ -91,7 +91,20 @@
     - 6 unit tests, alle slagen
     - Handmatig gevalideerd: Development bootstrap, geen dubbele owner, Production failure zonder password en Production start met bestaande owner
     - Aandachtspunt buiten US2: Production dashboard gaf `BootManager.Web.styles.css` 404 na login; later apart onderzoeken als Production/static asset issue
-  - [ ] **US3:** Verplichte onboarding-flow implementeren
+  - [ ] **US3 (2026-05-24):** Verplichte onboarding-flow implementeren
+    - `IOwnerSetupStateService` aangemaakt: haalt setup-status op (HasOwner, PasswordChangeRequired, OnboardingCompleted, SetupRequired)
+    - `OnboardingGate.razor` component afdwingt routing voor ingelogde users met ongemaakte setup
+    - Redirect naar `/onboarding` als setup verplicht is; verbied dashboard/settings/logboek
+    - Whitelist routes vóór onboarding: `/login`, `/logout`, `/onboarding`, `/health`
+    - Anonieme gebruikers krijgen normale login-flow via AuthorizeRouteView
+    - `/onboarding` minimale placeholder-pagina voor ingelogde owner
+    - Setup-klaar users worden van `/onboarding` naar `/dashboard` geleid
+    - Geen redirect-loop voorkomen via expliciete whitelist en authenticated check
+    - 5 unit tests voor OwnerSetupStateService, alle slagen
+    - Build slaagt, 61/62 unit tests slagen (1 pre-existing failure in recovery test)
+    - Handmatig gevalideerd: setup-required owner blijft op `/onboarding`; dashboard/settings/logbook redirecten terug; setup-klaar owner kan normale routes gebruiken
+    - Testnotitie: lokale development-database staat na validatie op `PasswordChangeRequired=0`, `OnboardingCompleted=1`; voor US4-test tijdelijk terugzetten naar `1,0` of verse bootstrap database gebruiken
+    - Geïmplementeerd: 2026-05-24
   - Zie: [.docs/epics/first-run-onboarding.md](epics/first-run-onboarding.md)
 
 - [ ] **Authentication & Authorization**
