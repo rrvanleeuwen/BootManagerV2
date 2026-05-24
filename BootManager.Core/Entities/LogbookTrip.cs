@@ -50,6 +50,11 @@ public class LogbookTrip
     public string? Crew { get; private set; }
 
     /// <summary>
+    /// Loginterval in minuten. Bepaalt de verwachte frequentie van logboekregels.
+    /// </summary>
+    public int LogIntervalMinutes { get; private set; }
+
+    /// <summary>
     /// Vrije notities over de reis.
     /// </summary>
     public string? Notes { get; private set; }
@@ -121,8 +126,12 @@ public class LogbookTrip
         decimal? engineHoursStart = null,
         decimal? engineHoursEnd = null,
         string? fuel = null,
-        decimal? totalSailingHours = null)
+        decimal? totalSailingHours = null,
+        int logIntervalMinutes = 60)
     {
+        if (logIntervalMinutes <= 0)
+            throw new ArgumentException("Loginterval moet groter dan nul zijn.", nameof(logIntervalMinutes));
+
         Name = name;
         DepartureUtc = departureUtc;
         ArrivalUtc = arrivalUtc;
@@ -137,6 +146,7 @@ public class LogbookTrip
         EngineHoursEnd = engineHoursEnd;
         Fuel = fuel;
         TotalSailingHours = totalSailingHours;
+        LogIntervalMinutes = logIntervalMinutes;
         CreatedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = DateTime.UtcNow;
     }
@@ -158,8 +168,12 @@ public class LogbookTrip
         decimal? engineHoursStart,
         decimal? engineHoursEnd,
         string? fuel,
-        decimal? totalSailingHours)
+        decimal? totalSailingHours,
+        int logIntervalMinutes = 60)
     {
+        if (logIntervalMinutes <= 0)
+            throw new ArgumentException("Loginterval moet groter dan nul zijn.", nameof(logIntervalMinutes));
+
         Name = name;
         DepartureUtc = departureUtc;
         ArrivalUtc = arrivalUtc;
@@ -174,6 +188,7 @@ public class LogbookTrip
         EngineHoursEnd = engineHoursEnd;
         Fuel = fuel;
         TotalSailingHours = totalSailingHours;
+        LogIntervalMinutes = logIntervalMinutes;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }

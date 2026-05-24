@@ -69,6 +69,10 @@ else
                             <label class="form-label">Bemanning</label>
                             <InputText class="form-control form-control-sm" @bind-Value="_tripForm.Crew" />
                         </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Loginterval (min)</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.LogIntervalMinutes" />
+                        </div>
                         <div class="col-12">
                             <label class="form-label">Notities</label>
                             <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="_tripForm.Notes" />
@@ -118,6 +122,19 @@ else
     <!-- Logboektabel -->
     @if (_selectedTrip != null)
     {
+        <!-- Banner voor vermiste logmomenten -->
+        @if (_nextExpectedLogMoment.HasValue && _nextExpectedLogMoment.Value < DateTime.UtcNow)
+        {
+            <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+                <strong>⚠ Vermist logmoment:</strong>
+                Verwacht om @BoordtijdHelper.NaarLokaal(_nextExpectedLogMoment.Value).ToString("HH:mm") (lokaal).
+                <button type="button" class="btn btn-sm btn-warning ms-2" @onclick="MaakDraftRegel">
+                    Conceptregel maken
+                </button>
+                <button type="button" class="btn-close" @onclick="() => _nextExpectedLogMoment = null"></button>
+            </div>
+        }
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Logboekregels — @_selectedTrip.Name</span>
@@ -147,7 +164,7 @@ else
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var entry in _entries)
+                            @foreach (var entry in GetDisplayEntries())
                             {
                                 @if (_editingEntryId == entry.Id && _entryForm != null)
                                 {
@@ -262,6 +279,9 @@ else
     private EntryFormModel? _entryForm;
     private EntryFormModel? _newEntryForm;
 
+    private DateTime? _nextExpectedLogMoment;
+    private bool _checkingLogMoment;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -300,6 +320,7 @@ else
         _entryForm = null;
         _newEntryForm = null;
         _tripSaved = false;
+        await BerekenVolgendeLogmoment();
     }
 
     private void NieuweReis()
@@ -385,6 +406,7 @@ else
             _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
             _newEntryForm = null;
             _foutmelding = null;
+            await BerekenVolgendeLogmoment();
         }
         catch (Exception ex)
         {
@@ -432,6 +454,9 @@ else
             _editingEntryId = null;
             _entryForm = null;
             _foutmelding = null;
+            // Herbereken het volgende verwachte logmoment, omdat de gebruiker
+            // mogelijk de tijd van een regel heeft gewijzigd.
+            await BerekenVolgendeLogmoment();
         }
         catch (Exception ex)
         {
@@ -480,6 +505,52 @@ else
         }
     }
 
+    private async Task BerekenVolgendeLogmoment()
+    {
+        if (_selectedTrip == null || _checkingLogMoment) return;
+        try
+        {
+            _checkingLogMoment = true;
+            _nextExpectedLogMoment = await LogbookService.GetNextExpectedLogMomentAsync(_selectedTrip.Id);
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Fout bij berekening logmoment: {ex.Message}";
+        }
+        finally
+        {
+            _checkingLogMoment = false;
+        }
+    }
+
+    /// <summary>
+    /// Retourneert logboekregels in omgekeerde volgorde (nieuw naar oud) voor display.
+    /// De interne _entries lijst blijft chronologisch oplopend voor berekeningen.
+    /// </summary>
+    private IEnumerable<LogbookEntryDto> GetDisplayEntries()
+    {
+        return _entries.AsEnumerable().Reverse();
+    }
+
+    private async Task MaakDraftRegel()
+    {
+        if (_selectedTrip == null || !_nextExpectedLogMoment.HasValue) return;
+        try
+        {
+            var entry = await LogbookService.CreateDraftEntryAsync(_selectedTrip.Id, _nextExpectedLogMoment.Value);
+            _entries.Add(entry);
+            _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
+            _foutmelding = null;
+            // Herbereken het volgende verwachte logmoment meteen, zodat eventuele volgende
+            // verlopen logmomenten direct zichtbaar blijven in de banner.
+            await BerekenVolgendeLogmoment();
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Aanmaken Draft-regel mislukt: {ex.Message}";
+        }
+    }
+
     // --- Formuliermodellen ---
 
     private class TripFormModel
@@ -498,6 +569,7 @@ else
         public decimal? EngineHoursEnd { get; set; }
         public string? Fuel { get; set; }
         public decimal? TotalSailingHours { get; set; }
+        public int LogIntervalMinutes { get; set; } = 60;
 
         public TripFormModel() { }
         public TripFormModel(LogbookTripDto dto)
@@ -516,6 +588,7 @@ else
             EngineHoursEnd = dto.EngineHoursEnd;
             Fuel = dto.Fuel;
             TotalSailingHours = dto.TotalSailingHours;
+            LogIntervalMinutes = dto.LogIntervalMinutes;
         }
 
         public CreateLogbookTripDto ToCreateDto() => new()
@@ -533,7 +606,8 @@ else
             EngineHoursStart = EngineHoursStart,
             EngineHoursEnd = EngineHoursEnd,
             Fuel = Fuel,
-            TotalSailingHours = TotalSailingHours
+            TotalSailingHours = TotalSailingHours,
+            LogIntervalMinutes = LogIntervalMinutes
         };
     }
 

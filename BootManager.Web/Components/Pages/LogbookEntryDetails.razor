@@ -35,23 +35,157 @@ else
                     <div>@BoordtijdHelper.NaarLokaal(_detail.EntryTimeUtc).ToString("dd-MM-yyyy HH:mm")</div>
                 </div>
                 <div class="col-md-4">
-                    <span class="text-muted small">Detailperiode (lokaal)</span>
-                    <div>
-                        @if (_detail.PeriodStartUtc.HasValue)
-                        {
-                            @BoordtijdHelper.NaarLokaal(_detail.PeriodStartUtc.Value).ToString("dd-MM-yyyy HH:mm")
-                            <span class="mx-1">→</span>
-                            @BoordtijdHelper.NaarLokaal(_detail.PeriodEndUtc).ToString("dd-MM-yyyy HH:mm")
-                        }
-                        else
-                        {
-                            <span class="text-muted">Geen periode beschikbaar</span>
-                        }
-                    </div>
+                    <span class="text-muted small">Status</span>
+                    <div>@(_detail.IsDraft ? "Concept" : "Akkoord")</div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Opgeslagen logregelwaarden -->
+    @if (_detail.SavedValues != null)
+    {
+        <div class="card mb-4 border-info">
+            <div class="card-header fw-semibold bg-light-info">Opgeslagen logregelwaarden</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    @if (_detail.SavedValues.BaroPressure.HasValue)
+                    {
+                        <div class="col-md-3">
+                            <span class="text-muted small">Barometer</span>
+                            <div>@_detail.SavedValues.BaroPressure.Value.ToString("F1") hPa</div>
+                        </div>
+                    }
+                    @if (_detail.SavedValues.LogValue.HasValue)
+                    {
+                        <div class="col-md-3">
+                            <span class="text-muted small">Log</span>
+                            <div>@_detail.SavedValues.LogValue.Value.ToString("F2") nm</div>
+                        </div>
+                    }
+                    @if (_detail.SavedValues.Course.HasValue)
+                    {
+                        <div class="col-md-3">
+                            <span class="text-muted small">Koers (opgeslagen)</span>
+                            <div>@_detail.SavedValues.Course.Value.ToString("F0")°</div>
+                        </div>
+                    }
+                    @if (_detail.SavedValues.AverageSogKnots.HasValue)
+                    {
+                        <div class="col-md-3">
+                            <span class="text-muted small">Gem. SOG (periode)</span>
+                            <div>@_detail.SavedValues.AverageSogKnots.Value.ToString("F1") kn</div>
+                        </div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(_detail.SavedValues.WindDescription))
+                {
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-3">
+                            <span class="text-muted small">Wind (opgeslagen)</span>
+                            <div>@_detail.SavedValues.WindDescription</div>
+                        </div>
+                    </div>
+                }
+                @if (_detail.SavedValues.Latitude.HasValue || _detail.SavedValues.Longitude.HasValue)
+                {
+                    <div class="row g-3 mt-2">
+                        @if (_detail.SavedValues.Latitude.HasValue)
+                        {
+                            <div class="col-md-3">
+                                <span class="text-muted small">Breedte (opgeslagen)</span>
+                                <div>@_detail.SavedValues.Latitude.Value.ToString("F5")</div>
+                            </div>
+                        }
+                        @if (_detail.SavedValues.Longitude.HasValue)
+                        {
+                            <div class="col-md-3">
+                                <span class="text-muted small">Lengte (opgeslagen)</span>
+                                <div>@_detail.SavedValues.Longitude.Value.ToString("F5")</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_detail.SavedValues.GpsStatus))
+                        {
+                            <div class="col-md-3">
+                                <span class="text-muted small">GPS-status</span>
+                                <div>@_detail.SavedValues.GpsStatus</div>
+                            </div>
+                        }
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_detail.SavedValues.Remarks))
+                {
+                    <div class="row g-3 mt-2">
+                        <div class="col-12">
+                            <span class="text-muted small">Opmerkingen</span>
+                            <div>@_detail.SavedValues.Remarks</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Bronmetingen (punt-in-tijd waarden) -->
+    @if (_detail.CourseBron != null || _detail.WindBron != null || _detail.PositieBron != null)
+    {
+        <div class="card mb-4 border-warning">
+            <div class="card-header fw-semibold bg-light-warning">Bronmetingen voor automatische suggesties</div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Deze bronmetingen zijn gebruikt bij het aanmaken van deze logboekregel (vooral relevant voor Concept-regels).
+                    Als een meting buiten het logtijdvak valt, komt de waarde van eerder in de reis.
+                </p>
+                <div class="row g-3">
+                    @if (_detail.CourseBron != null)
+                    {
+                        <div class="col-md-4">
+                            <span class="text-muted small">Koers (bron)</span>
+                            <div>@_detail.CourseBron.Value</div>
+                            <small class="text-muted">
+                                @_detail.CourseBron.SourceType<br/>
+                                @BoordtijdHelper.NaarLokaal(_detail.CourseBron.MeasuredAtUtc).ToString("HH:mm:ss")
+                                @if (_detail.CourseBron.IsOutsidePeriod)
+                                {
+                                    <span class="badge bg-warning text-dark">vóór logtijdvak</span>
+                                }
+                            </small>
+                        </div>
+                    }
+                    @if (_detail.WindBron != null)
+                    {
+                        <div class="col-md-4">
+                            <span class="text-muted small">Wind (bron)</span>
+                            <div>@_detail.WindBron.Value</div>
+                            <small class="text-muted">
+                                @_detail.WindBron.SourceType<br/>
+                                @BoordtijdHelper.NaarLokaal(_detail.WindBron.MeasuredAtUtc).ToString("HH:mm:ss")
+                                @if (_detail.WindBron.IsOutsidePeriod)
+                                {
+                                    <span class="badge bg-warning text-dark">vóór logtijdvak</span>
+                                }
+                            </small>
+                        </div>
+                    }
+                    @if (_detail.PositieBron != null)
+                    {
+                        <div class="col-md-4">
+                            <span class="text-muted small">Positie (bron)</span>
+                            <div>@_detail.PositieBron.Value</div>
+                            <small class="text-muted">
+                                @_detail.PositieBron.SourceType<br/>
+                                @BoordtijdHelper.NaarLokaal(_detail.PositieBron.MeasuredAtUtc).ToString("HH:mm:ss")
+                                @if (_detail.PositieBron.IsOutsidePeriod)
+                                {
+                                    <span class="badge bg-warning text-dark">vóór logtijdvak</span>
+                                }
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 
     @if (!_detail.PeriodStartUtc.HasValue)
     {
@@ -59,6 +193,8 @@ else
     }
     else
     {
+        <h5 class="mt-4 mb-3">Meetdata in logtijdvak</h5>
+
         <!-- Samenvatting per meettype -->
         <div class="row g-3 mb-4">
             <!-- Positie -->

@@ -49,4 +49,15 @@ public interface ILogbookService
     /// Accordeert een logboekregel: status wordt Confirmed. Heeft geen effect als de regel al Confirmed is.
     /// </summary>
     Task ConfirmEntryAsync(int entryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Berekent het volgende verwachte logmoment voor een reis.
+    /// Retourneert DateTime.UtcNow plus het loginterval, gebaseerd op de laatst ingevulde logboekregel (of DepartureUtc als geen regels).
+    /// </summary>
+    Task<DateTime> GetNextExpectedLogMomentAsync(int tripId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Maakt een Draft-logboekregel aan voor het opgegeven moment met automatische meetdatasuggesties.
+    /// </summary>
+    Task<LogbookEntryDto> CreateDraftEntryAsync(int tripId, DateTime entryTimeUtc, CancellationToken cancellationToken = default);
 }
