@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BootManager.Core.Enums;
 
 namespace BootManager.Core.Entities;
@@ -88,6 +89,11 @@ public class LogbookEntry
     /// Navigatieproperty naar de reis.
     /// </summary>
     public LogbookTrip? Trip { get; private set; }
+
+    /// <summary>
+    /// Bijlagen bij deze logboekregel.
+    /// </summary>
+    public ICollection<LogbookAttachment> Attachments { get; private set; } = new List<LogbookAttachment>();
 
     /// <summary>
     /// Parameterloze constructor voor EF Core.

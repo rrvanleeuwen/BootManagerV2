@@ -4,8 +4,11 @@
 @using BootManager.Application.Logbook.Services
 @using BootManager.Core.Enums
 @using BootManager.Web.Helpers
+@using Microsoft.AspNetCore.Components.Forms
 @inject ILogbookService LogbookService
 @inject ILogbookMeasurementSuggestionService SuggestionService
+@inject ILogbookAttachmentService AttachmentService
+@inject NavigationManager Navigation
 
 <h2 class="mb-3">Scheepsdagboek</h2>
 
@@ -223,7 +226,19 @@ else
                                         <td>@(entry.LogValue.HasValue ? entry.LogValue.Value.ToString("F1") : "")</td>
                                         <td>@(entry.Course.HasValue ? entry.Course.Value.ToString() + "°" : "")</td>
                                         <td>@entry.Remarks</td>
-                                        <td><span class="text-muted small">—</span></td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                @if (entry.AttachmentCount > 0)
+                                                {
+                                                    <a href="@($"/logbook/entries/{entry.Id}/details")" class="badge bg-info text-decoration-none" title="Bijlagen beheren">📎 @entry.AttachmentCount</a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">—</span>
+                                                }
+                                                <button class="btn btn-outline-primary btn-sm" @onclick="() => OpenUploadModal(entry.Id)" title="Bijlage toevoegen">📎+</button>
+                                            </div>
+                                        </td>
                                         <td>@entry.WindDescription</td>
                                         <td>@entry.GpsStatus</td>
                                         <td>@(entry.Latitude.HasValue ? entry.Latitude.Value.ToString("F4") : "")</td>
@@ -278,6 +293,55 @@ else
     }
 }
 
+<!-- Upload-modal voor bijlage uit overzicht -->
+@if (_showUploadModal && _modalEntryId.HasValue)
+{
+    <div class="modal fade show" id="uploadAttachmentModal" style="display: block;" role="dialog" aria-hidden="false">
+        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bijlage toevoegen</h5>
+                    <button type="button" class="btn-close" @onclick="CloseUploadModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Bestand *</label>
+                        <InputFile class="form-control form-control-sm" OnChange="OnModalFileSelected" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Omschrijving (optioneel)</label>
+                        <input type="text" class="form-control form-control-sm" placeholder="bijv. Foto motorruimte, brandstofbon..." @bind="_modalAttachmentDescription" />
+                    </div>
+                    @if (_modalSelectedFile != null)
+                    {
+                        <div class="text-muted small">Geselecteerd: @_modalSelectedFile.Name</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_modalUploadMessage))
+                    {
+                        <div class="alert alert-@(_modalUploadSuccess ? "success" : "danger") alert-sm mb-0" role="alert">
+                            @_modalUploadMessage
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="CloseUploadModal">Annuleren</button>
+                    <button type="button" class="btn btn-primary btn-sm" @onclick="ModalUploadAttachment" disabled="@(_modalUploading || _modalSelectedFile == null)">
+                        @if (_modalUploading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span><span>Uploaden</span>
+                        }
+                        else
+                        {
+                            <span>Upload</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @if (!string.IsNullOrEmpty(_foutmelding))
 {
     <div class="alert alert-danger mt-3">@_foutmelding</div>
@@ -327,6 +391,15 @@ else
     // Variabelen voor verwijderingsbevestiging
     private int? _entryIdToDelete;
     private string? _entryTimeToDelete;
+
+    // Variabelen voor upload-modal
+    private bool _showUploadModal = false;
+    private int? _modalEntryId;
+    private IBrowserFile? _modalSelectedFile;
+    private string? _modalAttachmentDescription;
+    private bool _modalUploading = false;
+    private string? _modalUploadMessage;
+    private bool _modalUploadSuccess = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -640,6 +713,92 @@ else
     {
         _entryIdToDelete = null;
         _entryTimeToDelete = null;
+    }
+
+    private void OpenUploadModal(int entryId)
+    {
+        _modalEntryId = entryId;
+        _modalSelectedFile = null;
+        _modalAttachmentDescription = null;
+        _modalUploadMessage = null;
+        _modalUploadSuccess = false;
+        _showUploadModal = true;
+    }
+
+    private void CloseUploadModal()
+    {
+        _showUploadModal = false;
+        _modalEntryId = null;
+        _modalSelectedFile = null;
+        _modalAttachmentDescription = null;
+        _modalUploadMessage = null;
+        _modalUploadSuccess = false;
+        StateHasChanged();
+    }
+    private void OnModalFileSelected(InputFileChangeEventArgs e)
+    {
+        _modalSelectedFile = e.File;
+        _modalUploadMessage = null;
+    }
+
+    private async Task ModalUploadAttachment()
+    {
+        if (_modalSelectedFile == null || !_modalEntryId.HasValue)
+        {
+            _modalUploadMessage = "Selecteer alstublieft een bestand.";
+            StateHasChanged();
+            return;
+        }
+
+        _modalUploading = true;
+        _modalUploadMessage = null;
+        _modalUploadSuccess = false;
+        StateHasChanged();
+
+        try
+        {
+            using var stream = _modalSelectedFile.OpenReadStream(maxAllowedSize: 10_485_760);
+
+            var result = await AttachmentService.UploadAsync(
+                _modalEntryId.Value,
+                stream,
+                _modalSelectedFile.Name,
+                _modalSelectedFile.ContentType,
+                _modalAttachmentDescription);
+
+            if (result.Status == AttachmentUploadStatus.Success)
+            {
+                _modalUploadMessage = "Bijlage succesvol geüpload.";
+                _modalUploadSuccess = true;
+                StateHasChanged();
+
+                // Herlaad entries om bijlagenteller bij te werken
+                if (_selectedTrip != null)
+                {
+                    _entries = (await LogbookService.GetEntriesAsync(_selectedTrip.Id)).ToList();
+                    StateHasChanged();
+                }
+
+                // Sluit modal na korte vertraging
+                await Task.Delay(800);
+                CloseUploadModal();
+            }
+            else
+            {
+                _modalUploadMessage = result.Message ?? $"Upload mislukt (status: {result.Status})";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _modalUploadMessage = $"Fout: {ex.Message}";
+            StateHasChanged();
+        }
+        finally
+        {
+            _modalUploading = false;
+            StateHasChanged();
+        }
     }
 
     // --- Formuliermodellen ---

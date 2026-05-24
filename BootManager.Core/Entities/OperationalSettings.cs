@@ -36,6 +36,9 @@ public class OperationalSettings
     /// <summary>Schakel capture-logging in of uit.</summary>
     public bool CaptureLoggingEnabled { get; private set; } = false;
 
+    /// <summary>Directory voor opslag van logboekbijlagen. Relatief of absoluut pad.</summary>
+    public string LogbookAttachmentsDirectory { get; private set; } = "data/logbook-attachments";
+
     /// <summary>Tijdstip van aanmaak (UTC).</summary>
     public DateTime CreatedUtc { get; private set; }
 
@@ -58,6 +61,7 @@ public class OperationalSettings
             RawStorageMode = RawStorageMode.All,
             DefaultSampleIntervalSeconds = 10,
             CaptureLoggingEnabled = false,
+            LogbookAttachmentsDirectory = "data/logbook-attachments",
             CreatedUtc = createdUtc
         };
 
@@ -72,6 +76,7 @@ public class OperationalSettings
         RawStorageMode rawStorageMode,
         int defaultSampleIntervalSeconds,
         bool captureLoggingEnabled,
+        string logbookAttachmentsDirectory,
         DateTime updatedUtc)
     {
         ListenAddress = listenAddress;
@@ -81,6 +86,7 @@ public class OperationalSettings
         RawStorageMode = rawStorageMode;
         DefaultSampleIntervalSeconds = defaultSampleIntervalSeconds;
         CaptureLoggingEnabled = captureLoggingEnabled;
+        LogbookAttachmentsDirectory = logbookAttachmentsDirectory;
         UpdatedUtc = updatedUtc;
     }
 }

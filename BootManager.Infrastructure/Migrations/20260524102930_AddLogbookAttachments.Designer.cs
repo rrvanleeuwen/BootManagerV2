@@ -3,6 +3,7 @@ using System;
 using BootManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BootManager.Infrastructure.Migrations
 {
     [DbContext(typeof(BootManagerDbContext))]
-    partial class BootManagerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260524102930_AddLogbookAttachments")]
+    partial class AddLogbookAttachments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -119,9 +122,6 @@ namespace BootManager.Infrastructure.Migrations
                     b.Property<string>("ContentType")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("LogbookEntryId")

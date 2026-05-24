@@ -98,6 +98,9 @@ public static class DependencyInjection
         // Registratie van Logboek-regel detail service
         services.AddScoped<ILogbookEntryDetailService, LogbookEntryDetailService>();
 
+        // Registratie van Logboek bijlagen service
+        services.AddScoped<ILogbookAttachmentService, LogbookAttachmentService>();
+
         // Registratie van operationele instellingen service
         services.AddScoped<IOperationalSettingsService, OperationalSettingsService>();
 

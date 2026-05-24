@@ -3,8 +3,12 @@
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
 @using BootManager.Web.Helpers
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
 @inject ILogbookEntryDetailService DetailService
+@inject ILogbookAttachmentService AttachmentService
 @inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
 
 <div class="mb-4">
     <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="TerugNaarLogboek">← Terug naar logboek</button>
@@ -65,6 +69,75 @@ else
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bijlagen sectie (direct na context-header) -->
+    <div class="card mb-4 border-info">
+        <div class="card-header fw-semibold bg-light-info">Bijlagen</div>
+        <div class="card-body">
+            @if (_attachments == null)
+            {
+                <p class="text-muted">Laden…</p>
+            }
+            else if (_attachments.Count == 0)
+            {
+                <p class="text-muted small">Geen bijlagen.</p>
+            }
+            else
+            {
+                <div class="list-group list-group-sm mb-3">
+                    @foreach (var attachment in _attachments)
+                    {
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">@attachment.OriginalFileName</div>
+                                @if (!string.IsNullOrEmpty(attachment.Description))
+                                {
+                                    <div class="text-muted small">@attachment.Description</div>
+                                }
+                                <div class="text-muted small">@attachment.FormattedSize • @attachment.UploadedAtUtc.ToString("dd-MM-yyyy HH:mm")</div>
+                            </div>
+                            <div class="flex-shrink-0 ms-2">
+                                <a class="btn btn-sm btn-outline-info" href="javascript:void(0)" @onclick="() => DownloadAttachment(attachment.Id)" title="Download">⬇</a>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAttachmentWithConfirm(attachment.Id)" title="Verwijderen">🗑</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="alert alert-info alert-sm mb-3" role="alert">
+                <small>Bijlagen kunnen ook na accorderen nog worden toegevoegd of verwijderd.</small>
+            </div>
+
+            <div class="mt-3 pt-3 border-top">
+                <label class="form-label">Upload bijlage</label>
+                <div class="input-group input-group-sm mb-2">
+                    <InputFile class="form-control" OnChange="OnFileSelected" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" />
+                    <input type="text" class="form-control" placeholder="Omschrijving (optioneel)" @bind="_attachmentDescription" />
+                    <button class="btn btn-outline-success" @onclick="UploadAttachment" disabled="@(_uploading || _selectedFile == null)">
+                        @if (_uploading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span><span>Uploaden</span>
+                        }
+                        else
+                        {
+                            <span>+ Upload</span>
+                        }
+                    </button>
+                </div>
+                @if (_selectedFile != null)
+                {
+                    <div class="text-muted small mb-2">Geselecteerd: @_selectedFile.Name</div>
+                }
+                @if (!string.IsNullOrEmpty(_uploadMessage))
+                {
+                    <div class="alert alert-@(_uploadSuccess ? "success" : "danger") alert-sm mb-0" role="alert">
+                        @_uploadMessage
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -340,11 +413,120 @@ else
 
     private bool _loading = true;
     private LogbookEntryDetailDto? _detail;
+    private List<LogbookAttachmentDto>? _attachments;
+    private IBrowserFile? _selectedFile;
+    private string? _attachmentDescription;
+    private bool _uploading = false;
+    private string? _uploadMessage;
+    private bool _uploadSuccess = false;
 
     protected override async Task OnInitializedAsync()
     {
         _detail = await DetailService.GetEntryDetailAsync(EntryId);
+        await LoadAttachments();
         _loading = false;
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        _uploadMessage = null;
+    }
+
+    private async Task LoadAttachments()
+    {
+        try
+        {
+            _attachments = (await AttachmentService.GetAttachmentsAsync(EntryId)).ToList();
+        }
+        catch
+        {
+            _attachments = new();
+        }
+    }
+
+    private async Task UploadAttachment()
+    {
+        if (_selectedFile == null)
+        {
+            _uploadMessage = "Selecteer alstublieft een bestand.";
+            return;
+        }
+
+        _uploading = true;
+        _uploadMessage = null;
+        _uploadSuccess = false;
+
+        try
+        {
+            using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 10_485_760); // 10 MB
+            var result = await AttachmentService.UploadAsync(
+                EntryId,
+                stream,
+                _selectedFile.Name,
+                _selectedFile.ContentType,
+                _attachmentDescription);
+
+            if (result.Status == AttachmentUploadStatus.Success)
+            {
+                _uploadMessage = "Bijlage succesvol geüpload.";
+                _uploadSuccess = true;
+                _selectedFile = null;
+                _attachmentDescription = null;
+                await LoadAttachments();
+                StateHasChanged();
+            }
+            else
+            {
+                _uploadMessage = string.Format("Upload mislukt: {0}", result.Message ?? "onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            _uploadMessage = string.Format("Fout: {0}", ex.Message);
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    private async Task DownloadAttachment(int attachmentId)
+    {
+        try
+        {
+            var (stream, fileName, _) = await AttachmentService.DownloadAsync(attachmentId);
+            if (stream != null)
+            {
+                await using (stream)
+                {
+                    using var streamRef = new DotNetStreamReference(stream);
+                    await JsRuntime.InvokeVoidAsync("downloadFileFromStream", fileName ?? "download", streamRef);
+                }
+            }
+        }
+        catch
+        {
+            // Fout stil afhandelen
+        }
+    }
+
+    private async Task DeleteAttachmentWithConfirm(int attachmentId)
+    {
+        if (!await JsRuntime.InvokeAsync<bool>("confirm", "Weet u zeker dat u deze bijlage wilt verwijderen?"))
+            return;
+
+        try
+        {
+            if (await AttachmentService.DeleteAsync(attachmentId))
+            {
+                await LoadAttachments();
+            }
+        }
+        catch
+        {
+            // Fout stil afhandelen
+        }
     }
 
     private void TerugNaarLogboek() => Navigation.NavigateTo("/logbook");
