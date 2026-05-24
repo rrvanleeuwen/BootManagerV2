@@ -348,9 +348,9 @@ else
                                 </tr>
                             }
 
-                            @if (!_entries.Any() && _newEntryForm == null)
+                            @if (!GetFilteredAndSortedEntries().Any() && _newEntryForm == null)
                             {
-                                <tr><td colspan="13" class="text-center text-muted">Nog geen logboekregels. Klik op "+&nbsp;Nieuwe regel" om te beginnen.</td></tr>
+                                <tr><td colspan="13" class="text-center text-muted">@GetEmptyEntriesMessage()</td></tr>
                             }
                         </tbody>
                     </table>
@@ -361,7 +361,7 @@ else
                     @if (!GetFilteredAndSortedEntries().Any())
                     {
                         <div class="text-center text-muted py-4">
-                            Nog geen logboekregels. Klik op "+ Nieuwe regel" om te beginnen.
+                            @GetEmptyEntriesMessage()
                         </div>
                     }
                     else
@@ -475,6 +475,76 @@ else
                                     {
                                         <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenUploadModal(entry.Id)" title="Bijlage toevoegen">📎 Add</button>
                                     }
+                                </div>
+                            </div>
+                        }
+                        else if (_entryForm != null)
+                        {
+                            <div class="logbook-card draft">
+                                <div class="logbook-card-header">
+                                    <div class="logbook-card-header-time">Bewerken</div>
+                                    <div class="logbook-card-header-badges">
+                                        @if (entry.Status == LogbookEntryStatus.Draft)
+                                        {
+                                            <span class="badge bg-warning text-dark">Concept</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Definitief</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="logbook-card-body">
+                                    <div class="mb-2">
+                                        <label class="form-label form-label-sm">Tijd</label>
+                                        <InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_entryForm.EntryTimeLocal" />
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label form-label-sm">Baro (hPa)</label>
+                                            <InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.BaroPressure" />
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label form-label-sm">Log (nm)</label>
+                                            <InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.LogValue" />
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <label class="form-label form-label-sm">Koers (°)</label>
+                                        <InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Course" />
+                                    </div>
+                                    <div class="mt-2">
+                                        <label class="form-label form-label-sm">Opmerkingen</label>
+                                        <InputText class="form-control form-control-sm" @bind-Value="_entryForm.Remarks" />
+                                    </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-6">
+                                            <label class="form-label form-label-sm">Wind</label>
+                                            <InputText class="form-control form-control-sm" @bind-Value="_entryForm.WindDescription" />
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label form-label-sm">GPS</label>
+                                            <InputText class="form-control form-control-sm" @bind-Value="_entryForm.GpsStatus" />
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-6">
+                                            <label class="form-label form-label-sm">Lat</label>
+                                            <InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Latitude" />
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label form-label-sm">Long</label>
+                                            <InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Longitude" />
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <label class="form-label form-label-sm">Gem. SOG (kn)</label>
+                                        <InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.AverageSogKnots" />
+                                    </div>
+                                </div>
+                                <div class="logbook-card-actions">
+                                    <button class="btn btn-sm btn-success" @onclick="() => OpslaanRegel(entry.Id)">Opslaan</button>
+                                    <button class="btn btn-sm btn-secondary" @onclick="AnnuleerBewerking">Annuleren</button>
                                 </div>
                             </div>
                         }
@@ -711,7 +781,7 @@ else
 
     // JavaScript interop
     private IJSObjectReference? _infiniteScrollModule;
-    private dynamic? _infiniteScrollController;
+    private bool _refreshInfiniteScroll;
 
     protected override async Task OnInitializedAsync()
     {
@@ -741,13 +811,24 @@ else
             {
                 _infiniteScrollModule = await JS.InvokeAsync<IJSObjectReference>(
                     "import", "./Components/Pages/logbook-infinite-scroll.js");
-                _infiniteScrollController = await _infiniteScrollModule.InvokeAsync<dynamic>(
-                    "initInfiniteScroll");
+                await _infiniteScrollModule.InvokeVoidAsync("initInfiniteScroll");
             }
             catch (Exception ex)
             {
                 // Infinite scroll is optional, don't fail if it doesn't load
                 System.Diagnostics.Debug.WriteLine($"Infinite scroll initialization failed: {ex.Message}");
+            }
+        }
+        else if (_refreshInfiniteScroll && _infiniteScrollModule is not null)
+        {
+            try
+            {
+                _refreshInfiniteScroll = false;
+                await _infiniteScrollModule.InvokeVoidAsync("refreshInfiniteScroll");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Infinite scroll refresh failed: {ex.Message}");
             }
         }
     }
@@ -899,6 +980,7 @@ else
                     Longitude = dto.Longitude,
                     AverageSogKnots = dto.AverageSogKnots,
                     Status = updated.Status,
+                    AttachmentCount = updated.AttachmentCount,
                     UpdatedAtUtc = DateTime.UtcNow
                 };
                 _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
@@ -906,6 +988,7 @@ else
             _editingEntryId = null;
             _entryForm = null;
             _foutmelding = null;
+            ResetCardPaging();
             // Herbereken het volgende verwachte logmoment, omdat de gebruiker
             // mogelijk de tijd van een regel heeft gewijzigd.
             await BerekenVolgendeLogmoment();
@@ -946,10 +1029,12 @@ else
                     Longitude = e.Longitude,
                     AverageSogKnots = e.AverageSogKnots,
                     Status = LogbookEntryStatus.Confirmed,
+                    AttachmentCount = e.AttachmentCount,
                     UpdatedAtUtc = DateTime.UtcNow
                 };
             }
             _foutmelding = null;
+            ResetCardPaging();
         }
         catch (Exception ex)
         {
@@ -1030,6 +1115,16 @@ else
         return filtered.OrderByDescending(e => e.EntryTimeUtc);
     }
 
+    private string GetEmptyEntriesMessage()
+    {
+        if (!_entries.Any())
+        {
+            return "Nog geen logboekregels. Klik op \"+ Nieuwe regel\" om te beginnen.";
+        }
+
+        return "Geen logboekregels gevonden met de actieve filters.";
+    }
+
     /// <summary>
     /// Reset alle filters naar standaardwaarden.
     /// </summary>
@@ -1051,6 +1146,7 @@ else
         _cardPageIndex = 0;
         _displayedEntries.Clear();
         LoadMoreCards();
+        QueueInfiniteScrollRefresh();
     }
 
     /// <summary>
@@ -1075,6 +1171,12 @@ else
 
         _cardPageIndex++;
         _hasMoreEntries = (_cardPageIndex * _cardPageSize) < totalCount;
+        QueueInfiniteScrollRefresh();
+    }
+
+    private void QueueInfiniteScrollRefresh()
+    {
+        _refreshInfiniteScroll = true;
     }
 
     /// <summary>
@@ -1267,6 +1369,7 @@ else
                 if (_selectedTrip != null)
                 {
                     _entries = (await LogbookService.GetEntriesAsync(_selectedTrip.Id)).ToList();
+                    ResetCardPaging();
                     StateHasChanged();
                 }
 
@@ -1405,10 +1508,7 @@ else
         {
             try
             {
-                if (_infiniteScrollController is not null)
-                {
-                    await _infiniteScrollModule.InvokeVoidAsync("disconnect");
-                }
+                await _infiniteScrollModule.InvokeVoidAsync("disconnectInfiniteScroll");
                 await _infiniteScrollModule.DisposeAsync();
             }
             catch (Exception ex)

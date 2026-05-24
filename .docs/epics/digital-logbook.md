@@ -1109,45 +1109,46 @@ Gebruikersvoordeel: Scrollen naar beneden laadt automatisch meer kaarten, zonder
 
 #### JavaScript (`logbook-infinite-scroll.js`)
 ```javascript
+let observer;
+let container;
+let loadMoreBtn;
+
 export function initInfiniteScroll() {
-  const container = document.getElementById('cardScrollContainer');
+  container = document.getElementById('cardScrollContainer');
   if (!container) return;
 
-  const options = {
-    root: null,
-    rootMargin: '100px',
-    threshold: 0.01
-  };
-
-  const findLoadMoreButton = () => {
-    const buttons = container.querySelectorAll('button');
-    return Array.from(buttons).find(btn => btn.textContent.includes('Meer laden'));
-  };
-
-  let loadMoreBtn = findLoadMoreButton();
-
-  const observer = new IntersectionObserver((entries) => {
+  observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting && loadMoreBtn && !loadMoreBtn.disabled) {
         loadMoreBtn.click();
       }
     });
-  }, options);
+  }, {
+    root: null,
+    rootMargin: '100px',
+    threshold: 0.01
+  });
 
+  refreshInfiniteScroll();
+}
+
+export function refreshInfiniteScroll() {
+  if (!observer || !container) return;
+  if (loadMoreBtn) {
+    observer.unobserve(loadMoreBtn);
+  }
+
+  loadMoreBtn = findLoadMoreButton();
   if (loadMoreBtn) {
     observer.observe(loadMoreBtn);
   }
+}
 
-  return {
-    disconnect: () => observer.disconnect(),
-    refresh: () => {
-      loadMoreBtn = findLoadMoreButton();
-      observer.disconnect();
-      if (loadMoreBtn) {
-        observer.observe(loadMoreBtn);
-      }
-    }
-  };
+export function disconnectInfiniteScroll() {
+  observer?.disconnect();
+  observer = undefined;
+  container = undefined;
+  loadMoreBtn = undefined;
 }
 ```
 
@@ -1178,6 +1179,26 @@ export function initInfiniteScroll() {
 3. **Desktop ongewijzigd:** Power-users op laptop kunnen alle regels in één tabel zien
 4. **Client-side filters:** Gefilterde lijsten dynamisch opnieuw gepagineerd zonder server round-trip
 5. **Blazor binding fix:** Expliciete handlers vermijden RZ10008 compile-fouten
+
+---
+
+## Slice 8b: Responsive Logbook Hardening (2026-05-24)
+
+**Status:** Geïmplementeerd
+
+### Aanpassingen
+- Desktop en mobiel tonen nu een aparte lege-state als actieve filters geen regels opleveren.
+- Mobiele kaartweergave ondersteunt bestaande regels bewerken met een inline kaartformulier.
+- Card-paging wordt opnieuw opgebouwd na bewerken, accorderen en bijlage-upload, zodat filters en bijlagentellers actueel blijven.
+- `AttachmentCount` blijft behouden bij lokale DTO-updates na bewerken of accorderen.
+- Infinite-scroll interop gebruikt expliciete modulefuncties (`initInfiniteScroll`, `refreshInfiniteScroll`, `disconnectInfiniteScroll`) in plaats van een dynamisch teruggegeven controller-object.
+- De observer wordt na paging-wijzigingen opnieuw gekoppeld aan de actuele "Meer laden"-knop.
+
+### Acceptatiecriteria
+- ✓ `dotnet build` slaagt.
+- ✓ `git diff --check` geeft geen whitespace errors.
+- ✓ Kaartweergave blijft consistent na filteren, bewerken, accorderen, uploaden en verwijderen.
+- ✓ Infinite-scroll cleanup loopt via de JS-module en laat geen controller-state achter in .NET.
 
 ---
 
