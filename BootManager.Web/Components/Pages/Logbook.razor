@@ -1,14 +1,17 @@
 @page "/logbook"
+@implements IAsyncDisposable
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
 @using BootManager.Core.Enums
 @using BootManager.Web.Helpers
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
 @inject ILogbookService LogbookService
 @inject ILogbookMeasurementSuggestionService SuggestionService
 @inject ILogbookAttachmentService AttachmentService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <h2 class="mb-3">Scheepsdagboek</h2>
 
@@ -155,6 +158,70 @@ else
             </div>
         }
 
+        <!-- Filter UI -->
+        <div class="card mb-3">
+            <div class="card-body py-3">
+                <div class="row g-2 align-items-end">
+                    <!-- Status filter -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label class="form-label form-label-sm mb-1" for="statusFilter">Status</label>
+                        <select id="statusFilter" class="form-select form-select-sm" @onchange="OnStatusFilterChanged" value="@_statusFilter">
+                            <option value="all">Alle</option>
+                            <option value="draft">Concept / Te accorderen</option>
+                            <option value="confirmed">Definitief</option>
+                        </select>
+                    </div>
+
+                    <!-- Attachment filter -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label class="form-label form-label-sm mb-1" for="attachmentFilter">Bijlagen</label>
+                        <select id="attachmentFilter" class="form-select form-select-sm" @onchange="OnAttachmentFilterChanged" value="@_attachmentFilter">
+                            <option value="all">Alle</option>
+                            <option value="with">Met bijlagen</option>
+                            <option value="without">Zonder bijlagen</option>
+                        </select>
+                    </div>
+
+                    <!-- Search filter -->
+                    <div class="col-12 col-md-4">
+                        <label class="form-label form-label-sm mb-1" for="searchFilter">Zoeken</label>
+                        <input id="searchFilter" type="text" class="form-control form-control-sm" placeholder="Opmerkingen, wind, GPS…" @onchange="OnSearchFilterChanged" value="@_searchFilter" />
+                    </div>
+
+                    <!-- Date range filters (optional) -->
+                    <div class="col-12 col-sm-6 col-md-2 d-md-none">
+                        <label class="form-label form-label-sm mb-1">Datumfilter</label>
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#dateFilterModal">
+                            📅 Filter
+                        </button>
+                    </div>
+
+                    <!-- Reset button -->
+                    <div class="col-12 col-sm-6 col-md-auto">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 w-md-auto" @onclick="ResetFilters">
+                            ⟳ Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Desktop date range (shown only on md and larger) -->
+                <div class="row g-2 align-items-end mt-2 d-none d-md-flex">
+                    <div class="col-auto">
+                        <small class="text-muted">Periode:</small>
+                    </div>
+                    <div class="col-auto">
+                        <input type="date" class="form-control form-control-sm" style="width: 130px;" @onchange="OnDateFilterStartChanged" value="@_dateFilterStart?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-auto">
+                        <span class="text-muted small">tot</span>
+                    </div>
+                    <div class="col-auto">
+                        <input type="date" class="form-control form-control-sm" style="width: 130px;" @onchange="OnDateFilterEndChanged" value="@_dateFilterEnd?.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Logboekregels — @_selectedTrip.Name</span>
@@ -164,7 +231,7 @@ else
                 </div>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive logbook-table-wrapper">
                     <table class="table table-sm table-bordered table-hover mb-0 logbook-table">
                         <thead class="table-dark">
                             <tr>
@@ -184,7 +251,7 @@ else
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var entry in GetDisplayEntries())
+                            @foreach (var entry in GetFilteredAndSortedEntries())
                             {
                                 @if (_editingEntryId == entry.Id && _entryForm != null)
                                 {
@@ -288,6 +355,208 @@ else
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Responsive card view for mobile/tablet -->
+                <div class="logbook-cards-wrapper px-2 py-2" id="cardScrollContainer">
+                    @if (!GetFilteredAndSortedEntries().Any())
+                    {
+                        <div class="text-center text-muted py-4">
+                            Nog geen logboekregels. Klik op "+ Nieuwe regel" om te beginnen.
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var entry in _displayedEntries)
+                        {
+                            @if (_editingEntryId != entry.Id)
+                            {
+                                <div class="logbook-card @(entry.Status == LogbookEntryStatus.Draft ? "draft" : "")">
+                                <div class="logbook-card-header">
+                                    <div>
+                                        <div class="logbook-card-header-time">@BoordtijdHelper.NaarLokaal(entry.EntryTimeUtc).ToString("HH:mm")</div>
+                                    </div>
+                                    <div class="logbook-card-header-badges">
+                                        @if (entry.Status == LogbookEntryStatus.Draft)
+                                        {
+                                            <span class="badge bg-warning text-dark">Concept</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Definitief</span>
+                                        }
+                                        @if (entry.AttachmentCount > 0)
+                                        {
+                                            <span class="badge bg-info">📎 @entry.AttachmentCount</span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="logbook-card-body">
+                                    @if (!string.IsNullOrWhiteSpace(entry.Remarks))
+                                    {
+                                        <div class="logbook-card-remarks">
+                                            <strong>@entry.Remarks</strong>
+                                        </div>
+                                    }
+
+                                    <div class="logbook-card-data">
+                                        @if (entry.BaroPressure.HasValue)
+                                        {
+                                            <div class="logbook-data-item">
+                                                <span class="logbook-data-label">Baro</span>
+                                                <span class="logbook-data-value">@entry.BaroPressure.Value.ToString("F1") hPa</span>
+                                            </div>
+                                        }
+                                        @if (entry.LogValue.HasValue)
+                                        {
+                                            <div class="logbook-data-item">
+                                                <span class="logbook-data-label">Log</span>
+                                                <span class="logbook-data-value">@entry.LogValue.Value.ToString("F1") nm</span>
+                                            </div>
+                                        }
+                                        @if (entry.Course.HasValue)
+                                        {
+                                            <div class="logbook-data-item">
+                                                <span class="logbook-data-label">Koers</span>
+                                                <span class="logbook-data-value">@entry.Course.Value°</span>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(entry.WindDescription))
+                                        {
+                                            <div class="logbook-data-item">
+                                                <span class="logbook-data-label">Wind</span>
+                                                <span class="logbook-data-value">@entry.WindDescription</span>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(entry.GpsStatus))
+                                        {
+                                            <div class="logbook-data-item">
+                                                <span class="logbook-data-label">GPS</span>
+                                                <span class="logbook-data-value">@entry.GpsStatus</span>
+                                            </div>
+                                        }
+                                        @if (entry.Latitude.HasValue)
+                                        {
+                                            <div class="logbook-data-item">
+                                                <span class="logbook-data-label">Lat</span>
+                                                <span class="logbook-data-value">@entry.Latitude.Value.ToString("F4")</span>
+                                            </div>
+                                        }
+                                        @if (entry.Longitude.HasValue)
+                                        {
+                                            <div class="logbook-data-item">
+                                                <span class="logbook-data-label">Long</span>
+                                                <span class="logbook-data-value">@entry.Longitude.Value.ToString("F4")</span>
+                                            </div>
+                                        }
+                                        @if (entry.AverageSogKnots.HasValue)
+                                        {
+                                            <div class="logbook-data-item">
+                                                <span class="logbook-data-label">Gem. SOG</span>
+                                                <span class="logbook-data-value">@entry.AverageSogKnots.Value.ToString("F1") kn</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="logbook-card-actions">
+                                    <a class="btn btn-sm btn-outline-info" href="/logbook/entries/@entry.Id/details">Details</a>
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => BewerkenRegel(entry)">Bewerken</button>
+                                    @if (entry.Status == LogbookEntryStatus.Draft)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success" @onclick="() => AccorderenRegel(entry.Id)">Accorderen</button>
+                                    }
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => VerwijderRegel(entry)">Verwijderen</button>
+                                    @if (entry.AttachmentCount > 0)
+                                    {
+                                        <a href="@($"/logbook/entries/{entry.Id}/details")" class="btn btn-sm btn-outline-info" title="Bijlagen beheren">Bijlagen</a>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenUploadModal(entry.Id)" title="Bijlage toevoegen">📎 Add</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @if (_newEntryForm != null)
+                    {
+                        <div class="logbook-card" style="background-color: #d1e7dd; border-color: #198754;">
+                            <div class="logbook-card-body">
+                                <div class="mb-2">
+                                    <label class="form-label form-label-sm">Tijd</label>
+                                    <InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_newEntryForm.EntryTimeLocal" />
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Baro (hPa)</label>
+                                        <InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.BaroPressure" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Log (nm)</label>
+                                        <InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.LogValue" />
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <label class="form-label form-label-sm">Koers (°)</label>
+                                    <InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Course" />
+                                </div>
+                                <div class="mt-2">
+                                    <label class="form-label form-label-sm">Opmerkingen</label>
+                                    <InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.Remarks" />
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Wind</label>
+                                        <InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.WindDescription" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">GPS</label>
+                                        <InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.GpsStatus" />
+                                    </div>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Lat</label>
+                                        <InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Latitude" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Long</label>
+                                        <InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Longitude" />
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <label class="form-label form-label-sm">Gem. SOG (kn)</label>
+                                    <InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.AverageSogKnots" />
+                                </div>
+                            </div>
+                            <div class="logbook-card-actions">
+                                <button class="btn btn-sm btn-info" @onclick="VulSuggestiesNieuweRegel">💡 Suggesties</button>
+                                <button class="btn btn-sm btn-success" @onclick="OpslaanNieuweRegel">Opslaan</button>
+                                <button class="btn btn-sm btn-secondary" @onclick="() => _newEntryForm = null">Annuleren</button>
+                            </div>
+                        </div>
+                    }
+
+                        <!-- Load more button -->
+                        @if (_hasMoreEntries && _displayedEntries.Any())
+                        {
+                            <div class="text-center py-3">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="LoadMoreCards" disabled="@_isLoadingMore">
+                                    @if (_isLoadingMore)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span><span>Laden…</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Meer laden</span>
+                                    }
+                                </button>
+                            </div>
+                        }
+                    }
+                </div>
             </div>
         </div>
     }
@@ -341,6 +610,31 @@ else
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+
+<!-- Date filter modal for mobile -->
+<div class="modal fade" id="dateFilterModal" tabindex="-1" aria-labelledby="dateFilterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dateFilterModalLabel">Datumfilter</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Begindatum</label>
+                    <input type="date" class="form-control" @onchange="OnDateFilterStartChanged" value="@_dateFilterStart?.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Einddatum</label>
+                    <input type="date" class="form-control" @onchange="OnDateFilterEndChanged" value="@_dateFilterEnd?.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @if (!string.IsNullOrEmpty(_foutmelding))
 {
@@ -401,6 +695,24 @@ else
     private string? _modalUploadMessage;
     private bool _modalUploadSuccess = false;
 
+    // Filter-state
+    private string _statusFilter = "all"; // "all", "draft", "confirmed"
+    private string _attachmentFilter = "all"; // "all", "with", "without"
+    private string _searchFilter = string.Empty;
+    private DateTime? _dateFilterStart;
+    private DateTime? _dateFilterEnd;
+
+    // Paging state voor mobiel/tablet (infinite scroll)
+    private List<LogbookEntryDto> _displayedEntries = new(); // Zichtbare entries in card-view
+    private int _cardPageSize = 8; // Items per page in card-view
+    private bool _hasMoreEntries = false; // Zijn er meer entries beschikbaar?
+    private bool _isLoadingMore = false; // Laadt meer data?
+    private int _cardPageIndex = 0; // Huidige pagina-index voor card-view
+
+    // JavaScript interop
+    private IJSObjectReference? _infiniteScrollModule;
+    private dynamic? _infiniteScrollController;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -418,6 +730,25 @@ else
         finally
         {
             _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _infiniteScrollModule = await JS.InvokeAsync<IJSObjectReference>(
+                    "import", "./Components/Pages/logbook-infinite-scroll.js");
+                _infiniteScrollController = await _infiniteScrollModule.InvokeAsync<dynamic>(
+                    "initInfiniteScroll");
+            }
+            catch (Exception ex)
+            {
+                // Infinite scroll is optional, don't fail if it doesn't load
+                System.Diagnostics.Debug.WriteLine($"Infinite scroll initialization failed: {ex.Message}");
+            }
         }
     }
 
@@ -439,6 +770,7 @@ else
         _entryForm = null;
         _newEntryForm = null;
         _tripSaved = false;
+        ResetCardPaging(); // Initialiseer card-paging voor deze reis
         await BerekenVolgendeLogmoment();
     }
 
@@ -525,6 +857,7 @@ else
             _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
             _newEntryForm = null;
             _foutmelding = null;
+            ResetCardPaging(); // Reset paging na nieuwe regel
             await BerekenVolgendeLogmoment();
         }
         catch (Exception ex)
@@ -651,6 +984,158 @@ else
         return _entries.AsEnumerable().Reverse();
     }
 
+    /// <summary>
+    /// Retourneert gefilterde en gesorteerde logboekregels op basis van actieve filters.
+    /// </summary>
+    private IEnumerable<LogbookEntryDto> GetFilteredAndSortedEntries()
+    {
+        var filtered = _entries.AsEnumerable();
+
+        // Statusfilter
+        if (_statusFilter == "draft")
+            filtered = filtered.Where(e => e.Status == LogbookEntryStatus.Draft);
+        else if (_statusFilter == "confirmed")
+            filtered = filtered.Where(e => e.Status == LogbookEntryStatus.Confirmed);
+
+        // Bijlagenfilter
+        if (_attachmentFilter == "with")
+            filtered = filtered.Where(e => e.AttachmentCount > 0);
+        else if (_attachmentFilter == "without")
+            filtered = filtered.Where(e => e.AttachmentCount == 0);
+
+        // Zoekveld: zoekt in Remarks, WindDescription en GpsStatus
+        if (!string.IsNullOrWhiteSpace(_searchFilter))
+        {
+            var searchLower = _searchFilter.ToLowerInvariant();
+            filtered = filtered.Where(e =>
+                (e.Remarks?.ToLowerInvariant().Contains(searchLower) ?? false) ||
+                (e.WindDescription?.ToLowerInvariant().Contains(searchLower) ?? false) ||
+                (e.GpsStatus?.ToLowerInvariant().Contains(searchLower) ?? false)
+            );
+        }
+
+        // Datumfilter (optioneel, alleen indien ingesteld)
+        if (_dateFilterStart.HasValue)
+        {
+            var startUtc = BoordtijdHelper.NaarUtc(_dateFilterStart.Value);
+            filtered = filtered.Where(e => e.EntryTimeUtc >= startUtc);
+        }
+        if (_dateFilterEnd.HasValue)
+        {
+            var endUtc = BoordtijdHelper.NaarUtc(_dateFilterEnd.Value.AddDays(1).AddTicks(-1));
+            filtered = filtered.Where(e => e.EntryTimeUtc <= endUtc);
+        }
+
+        // Sorteer nieuw → oud (omgekeerde chronologische volgorde)
+        return filtered.OrderByDescending(e => e.EntryTimeUtc);
+    }
+
+    /// <summary>
+    /// Reset alle filters naar standaardwaarden.
+    /// </summary>
+    private void ResetFilters()
+    {
+        _statusFilter = "all";
+        _attachmentFilter = "all";
+        _searchFilter = string.Empty;
+        _dateFilterStart = null;
+        _dateFilterEnd = null;
+        ResetCardPaging();
+    }
+
+    /// <summary>
+    /// Reset paging voor card-view.
+    /// </summary>
+    private void ResetCardPaging()
+    {
+        _cardPageIndex = 0;
+        _displayedEntries.Clear();
+        LoadMoreCards();
+    }
+
+    /// <summary>
+    /// Laadt volgende batch van gefilterde entries voor card-view.
+    /// </summary>
+    private void LoadMoreCards()
+    {
+        if (_isLoadingMore) return;
+
+        var allFiltered = GetFilteredAndSortedEntries().ToList();
+        var totalCount = allFiltered.Count;
+
+        int skipCount = _cardPageIndex * _cardPageSize;
+        if (skipCount >= totalCount)
+        {
+            _hasMoreEntries = false;
+            return;
+        }
+
+        var nextBatch = allFiltered.Skip(skipCount).Take(_cardPageSize).ToList();
+        _displayedEntries.AddRange(nextBatch);
+
+        _cardPageIndex++;
+        _hasMoreEntries = (_cardPageIndex * _cardPageSize) < totalCount;
+    }
+
+    /// <summary>
+    /// Event handler voor status filter verandering.
+    /// </summary>
+    private void OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        _statusFilter = e.Value?.ToString() ?? "all";
+        ResetCardPaging();
+    }
+
+    /// <summary>
+    /// Event handler voor bijlagen filter verandering.
+    /// </summary>
+    private void OnAttachmentFilterChanged(ChangeEventArgs e)
+    {
+        _attachmentFilter = e.Value?.ToString() ?? "all";
+        ResetCardPaging();
+    }
+
+    /// <summary>
+    /// Event handler voor zoek filter verandering.
+    /// </summary>
+    private void OnSearchFilterChanged(ChangeEventArgs e)
+    {
+        _searchFilter = e.Value?.ToString() ?? string.Empty;
+        ResetCardPaging();
+    }
+
+    /// <summary>
+    /// Event handler voor begin datum filter verandering.
+    /// </summary>
+    private void OnDateFilterStartChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            _dateFilterStart = date;
+        }
+        else
+        {
+            _dateFilterStart = null;
+        }
+        ResetCardPaging();
+    }
+
+    /// <summary>
+    /// Event handler voor eind datum filter verandering.
+    /// </summary>
+    private void OnDateFilterEndChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            _dateFilterEnd = date;
+        }
+        else
+        {
+            _dateFilterEnd = null;
+        }
+        ResetCardPaging();
+    }
+
     private async Task MaakMultipleDraftRegels()
     {
         if (_selectedTrip == null) return;
@@ -661,6 +1146,9 @@ else
 
             // Herlaad de entries
             _entries = (await LogbookService.GetEntriesAsync(_selectedTrip.Id)).ToList();
+
+            // Reset paging na aanmaken
+            ResetCardPaging();
 
             // Herbereken gemiste logmomenten
             await BerekenVolgendeLogmoment();
@@ -692,6 +1180,9 @@ else
 
             // Verwijder uit lokale lijst
             _entries = _entries.Where(e => e.Id != _entryIdToDelete.Value).ToList();
+
+            // Reset paging na verwijdering
+            ResetCardPaging();
 
             // Herbereken gemiste logmomenten
             await BerekenVolgendeLogmoment();
@@ -903,5 +1394,27 @@ else
             Longitude = Longitude,
             AverageSogKnots = AverageSogKnots
         };
+    }
+
+    /// <summary>
+    /// Cleanup voor JavaScript interop
+    /// </summary>
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (_infiniteScrollModule is not null)
+        {
+            try
+            {
+                if (_infiniteScrollController is not null)
+                {
+                    await _infiniteScrollModule.InvokeVoidAsync("disconnect");
+                }
+                await _infiniteScrollModule.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error disposing infinite scroll: {ex.Message}");
+            }
+        }
     }
 }
