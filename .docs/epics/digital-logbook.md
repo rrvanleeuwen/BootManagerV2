@@ -877,3 +877,320 @@ Deze UI-verbetering maakt bijlagenbeheer intuïtiever en toegankelijker:
 1. **Logbook tabel:** Compact en begrijpelijk; badge signaleert aanwezigheid van bijlagen.
 2. **Detailpagina:** Volledige controle over bijlagen, onabhankelijk van entry-status (accordering beperkt entry-wijzigingen, niet bijlagenbeheer).
 3. **Helpertekst:** Verduidelijkt gebruiker dat bijlagen altijd kunnen worden beheerd.
+
+---
+
+## Slice 7: Responsieve UI & Filterfunctionaliteit (2026-05-24)
+
+**Status:** Gerealiseerd
+**Wijzigingen:** Filters client-side, responsive layout voor mobiel/tablet
+
+### Problematiek
+- Logboektabel heeft veel kolommen, waardoor pagina op mobiel/tablet slecht bruikbaar wordt
+- Bij lange reizen met veel logmomenten is het moeilijk snel bepaalde regels te vinden
+- Gebruiker moet horizontaal scrollen of zwaar zoomen op mobiel
+
+### Aanpassingen
+
+#### Logbook.razor - Filters
+Compacte filterbalk boven de logboektabel met:
+- **Statusfilter:** Alle / Concept / Definitief
+- **Bijlagenfilter:** Alle / Met bijlagen / Zonder bijlagen
+- **Zoekveld:** Doorzoekt Remarks, WindDescription en GpsStatus client-side
+- **Datumfilter:** Optioneel; desktop inline (md-breakpoint), mobiel via modal
+- **Reset-knop:** Stelt alle filters terug naar standaard
+
+**Implementatie:**
+- Filters zijn volledig client-side (`_statusFilter`, `_attachmentFilter`, `_searchFilter`, `_dateFilterStart`, `_dateFilterEnd`)
+- Gefilterde entries via `GetFilteredAndSortedEntries()` methode
+- Sortering: nieuw → oud (descending) behouden
+- Filter UI wordt weergegeven in compacte card boven de tabel
+- State-management: filters persisteren zolang pagina geopend is (niet sessie-opslag)
+
+#### Logbook.razor - Responsive Layout
+- **Desktop (≥992px):** Tabelweergave, alle kolommen zichtbaar, filterbalk compact
+- **Tablet/Mobiel (<992px):**
+  - Tabel verborgen via CSS (`display: none`)
+  - Alternatieve kaart-weergave aktief
+  - Per logboekregel een aparte kaart met:
+    - **Header:** Tijd (lokaal), statusbadge, bijlagenbadge
+    - **Body:** Opmerkingen prominent, technische waarden in responsive grid (Baro, Log, Koers, Wind, GPS, Lat, Long, Gem. SOG)
+    - **Acties:** Details, Bewerken, Accorderen (als concept), Verwijderen, Bijlage toevoegen
+  - Acties niet overlappend, tekst niet buiten containers
+  - Compact padding/margins op <576px
+
+#### Logbook.razor.css - Responsive Styles
+- CSS media queries voor breakpoints: xs (<576px), sm (≥576px), md (≥768px), lg (≥992px)
+- Tabelweergave dynamisch tonen/verbergen
+- Card-grid layouts voor data-velden
+- Responsieve buttongroepen met flex-wrap
+- Small-screen optimalisaties: kleinere tekst, compact padding, responsive input-breedtes
+
+#### Bestaande Flows
+- Nieuwe regel toevoegen: UI aangepast per breakpoint (tabel vs. kaart)
+- Bewerken: In-line editing in tabel (desktop), kaart-formulier (mobiel)
+- Accorderen: Knop beschikbaar in tabel en kaart
+- Verwijderen: Bevestigingsdialoog werkt op beide layouts
+- Bijlage toevoegen: Modal ongewijzigd, werkend op desktop en mobiel
+- Gemiste logmomenten: Banner behouden, acties zichtbaar op beide layouts
+- Detailpagina: Ongewijzigd, navigatie werkt via Details-knop in kaart en tabel
+
+#### Printweergave
+- Ongewijzigd; `/logbook/trips/{tripId}/print` blijft compact tabelformat
+
+### Acceptatiecriteria
+
+- ✓ `dotnet build` slaagt zonder fouten
+- ✓ `git diff --check` geeft geen whitespace errors
+- ✓ **Desktop (≥992px):** Bestaande tabelweergave werkend, filters compact boven tabel
+- ✓ **Tablet/Mobiel (<992px):** Kaart-weergave zichtbaar, tabel verborgen
+- ✓ **Filters werken client-side:**
+  - Status filter (Alle/Concept/Definitief) filtert correct
+  - Bijlage filter (Alle/Met/Zonder) filtert correct
+  - Zoekfilter (opmerkingen, wind, GPS) werkt case-insensitively
+  - Datumfilter (optioneel) filtert per dag-range
+- ✓ **Sortering:** Nieuw → oud behouden na filteren
+- ✓ **Responsive tekst/buttons:** Geen overlaps, geen horizontaal scrollen op mobiel als primaire workflow
+- ✓ **Bestaande acties beschikbaar:** Details, Bewerken, Accorderen, Verwijderen, Bijlage toevoegen op desktop en mobiel
+- ✓ **Flows ongewijzigd:** Nieuwe regel, bewerken, accorderen, verwijderen, bijlage toevoegen, details openen, gemiste logmomenten allen werkend
+- ✓ **Printweergave:** Ongewijzigd
+- ✓ **Bijlagendetails:** Ongewijzigd
+
+### Rationale
+Deze slice verbetert gebruikbaarheid op mobiel/tablet aanzienlijk:
+1. **Filters:** Gebruiker kan snel relevante regels vinden zonder lange scroll
+2. **Responsive layout:** Geen compulsief zoomen/horizontaal scrollen op kleine schermen
+3. **Client-side filters:** Snelle interactie zonder server round-trips
+4. **Consistent design:** Desktop tabel behouden voor power-users, mobiel-optimized kaarten voor onderweg
+
+---
+
+## Slice 8: Mobile/Tablet Infinite Scroll en Dynamische Paging
+
+**Datum:** 2026-05-24
+**Status:** Geïmplementeerd
+
+### Aanleiding
+
+De kaart-weergave voor mobiel/tablet kon alle gefilterde logboekregels tegelijk renderen, wat voor langere reizen (>100 regels) tot vertragen op kleine apparaten kon leiden. Dit slice implementeert **dynamische paging** met infinite-scroll-trigger op mobiel/tablet, terwijl desktop-tabel ongewijzigd blijft.
+
+### Functionaliteit
+
+#### Card-Paging State
+**BootManager.Web/Components/Pages/Logbook.razor** uitgebreid met paging-state:
+- `_displayedEntries` (List<LogbookEntryDto>): zichtbare kaarten in het huidige venster
+- `_cardPageSize` (int): 8 items per pagina (aanpasbaar)
+- `_cardPageIndex` (int): huidig pagina-index (0-based)
+- `_hasMoreEntries` (bool): zijn er meer gefilterde entries beschikbaar?
+- `_isLoadingMore` (bool): wordt momenteel volgende batch geladen?
+
+#### Reset bij Filter-Verandering
+Nieuwe helper-methode `ResetCardPaging()` stelt paging-state terug:
+- `_cardPageIndex = 0`
+- `_displayedEntries.Clear()`
+- Laadt eerste batch via `LoadMoreCards()`
+- Aangeroepen vanuit alle filter-change handlers: `OnStatusFilterChanged()`, `OnAttachmentFilterChanged()`, `OnSearchFilterChanged()`, `OnDateFilterStartChanged()`, `OnDateFilterEndChanged()`
+- Ook aangeroepen in: `SelecteerReis()`, `OpslaanNieuweRegel()`, `BevestigVerwijdering()`, `MaakMultipleDraftRegels()`
+
+#### Load-More Methode
+**`LoadMoreCards()`** (private):
+- Haalt volgende `_cardPageSize` items uit gefilterde en gesorteerde entries
+- Voegt toe aan `_displayedEntries`
+- Increment `_cardPageIndex`
+- Update `_hasMoreEntries` op basis van totale gefilterde count
+- Defensive: check `_isLoadingMore` om dubbele loads te voorkomen
+
+#### Filter Change Handlers
+Vijf nieuwe event handlers vervangen combinatie van `@bind` + `@onchange`:
+- `OnStatusFilterChanged(ChangeEventArgs e)`
+- `OnAttachmentFilterChanged(ChangeEventArgs e)`
+- `OnSearchFilterChanged(ChangeEventArgs e)`
+- `OnDateFilterStartChanged(ChangeEventArgs e)`
+- `OnDateFilterEndChanged(ChangeEventArgs e)`
+
+Elk handler:
+- Parset waarde uit `ChangeEventArgs`
+- Update filter state (`_statusFilter`, enz.)
+- Roept `ResetCardPaging()` aan
+
+Rationale: Blazor laat `@bind` en `@onchange` niet samen toe op hetzelfde element. Expliciete handlers geven meer controle en voorkomen binding-conflicten.
+
+#### Infinite-Scroll Trigger
+**Nieuwe JavaScript-module:** `BootManager.Web/Components/Pages/logbook-infinite-scroll.js`
+
+Exports `initInfiniteScroll()`:
+- Zoekt HTML-element `#cardScrollContainer` (de kaart-container)
+- Monitort met `IntersectionObserver` de "Meer laden" knop
+- Wanneer knop in viewport komt (100px vóór het scrollen): auto-click
+- Callback aan Blazor niet nodig; JavaScript luistert naar native HTML-events
+
+Gebruikersvoordeel: Scrollen naar beneden laadt automatisch meer kaarten, zonder handmatige knopklik (optioneel gebruikersgemak).
+
+#### Blazor Component Changes
+
+**Markup-wijzigingen:**
+- Filter-inputs/selects gewijzigd van `@bind="_var" @onchange="() => ResetCardPaging()"` naar:
+  ```razor
+  @onchange="OnStatusFilterChanged" value="@_statusFilter"
+  ```
+  (voor select; vergelijkbaar voor input-velden)
+- Datepicker-inputs: `@onchange="OnDateFilterStartChanged" value="@_dateFilterStart?.ToString("yyyy-MM-dd")"`
+- Kaart-weergave: loopt over `_displayedEntries` in plaats van volledige gefilterde lijst
+- "Meer laden" knop: zichtbaar als `_hasMoreEntries`; disabled tijdens `_isLoadingMore`
+
+**Code-behind:**
+- Injectie van `IJSRuntime` toegevoegd
+- Velden `_infiniteScrollModule` (IJSObjectReference?) en `_infiniteScrollController` (dynamic?)
+- Methode `OnAfterRenderAsync(bool firstRender)` importeert JS-module en initialiseert infinite scroll
+- IAsyncDisposable interface geïmplementeerd: `DisposeAsync()` ruimt JS-resources op
+
+#### Desktop Ongewijzigd
+- Tabelweergave toont **alle** gefilterde entries in één tabel
+- Geen paging op desktop (≥992px breakpoint)
+- Filter-reset werkt ook op desktop; paging-state wordt beheerd maar niet zichtbaar
+
+#### Printweergave Ongewijzigd
+- `/logbook/trips/{tripId}/print` toont alleen `Confirmed` entries, ongewijzigd
+
+### Implementatiedetails
+
+#### Card Markup (Blazor)
+```razor
+<div class="logbook-cards-wrapper px-2 py-2" id="cardScrollContainer">
+  @foreach (var entry in _displayedEntries)
+  {
+    <div class="logbook-card">
+      <!-- Header: Tijd, Status, Bijlage-teller -->
+      <!-- Body: Opmerkingen, technische velden -->
+      <!-- Acties: Details, Bewerken, Accorderen, Verwijderen, Bijlage -->
+    </div>
+  }
+</div>
+
+@if (_hasMoreEntries)
+{
+  <button class="btn btn-sm btn-outline-primary"
+          @onclick="LoadMoreCards"
+          disabled="@_isLoadingMore">
+    @if (_isLoadingMore)
+    {
+      <span class="spinner-border spinner-border-sm me-2"></span>Laden...
+    }
+    else
+    {
+      <span>Meer laden</span>
+    }
+  </button>
+}
+```
+
+#### CSS (@media query)
+```css
+/* Mobiel/tablet (<992px): kaarten zichtbaar, paging actief */
+@media (max-width: 991px) {
+  .logbook-cards-wrapper {
+    display: block;
+  }
+  .logbook-card {
+    /* styled */
+  }
+}
+
+/* Desktop (≥992px): tabel zichtbaar, kaarten verborgen */
+@media (min-width: 992px) {
+  .logbook-cards-wrapper {
+    display: none;
+  }
+  .logbook-table-wrapper {
+    display: block;
+  }
+}
+```
+
+#### JavaScript (`logbook-infinite-scroll.js`)
+```javascript
+export function initInfiniteScroll() {
+  const container = document.getElementById('cardScrollContainer');
+  if (!container) return;
+
+  const options = {
+    root: null,
+    rootMargin: '100px',
+    threshold: 0.01
+  };
+
+  const findLoadMoreButton = () => {
+    const buttons = container.querySelectorAll('button');
+    return Array.from(buttons).find(btn => btn.textContent.includes('Meer laden'));
+  };
+
+  let loadMoreBtn = findLoadMoreButton();
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && loadMoreBtn && !loadMoreBtn.disabled) {
+        loadMoreBtn.click();
+      }
+    });
+  }, options);
+
+  if (loadMoreBtn) {
+    observer.observe(loadMoreBtn);
+  }
+
+  return {
+    disconnect: () => observer.disconnect(),
+    refresh: () => {
+      loadMoreBtn = findLoadMoreButton();
+      observer.disconnect();
+      if (loadMoreBtn) {
+        observer.observe(loadMoreBtn);
+      }
+    }
+  };
+}
+```
+
+### Acceptatiecriteria
+
+- ✓ `dotnet build` slaagt zonder fouten
+- ✓ `git diff --check` geeft geen whitespace errors
+- ✓ **Paging state:** `_displayedEntries`, `_cardPageSize`, `_hasMoreEntries`, `_cardPageIndex` geïnitialiseerd
+- ✓ **Filter handlers:** `OnStatusFilterChanged`, `OnAttachmentFilterChanged`, `OnSearchFilterChanged`, `OnDateFilterStartChanged`, `OnDateFilterEndChanged` werken zonder `@bind`/`@onchange` conflicten
+- ✓ **Reset paging:** Filter-verandering triggert `ResetCardPaging()` → kaarten worden opnieuw geladen van pagina 0
+- ✓ **Lazy loading:** Bij laadtijd tonen slechts eerste `_cardPageSize` (8) kaarten
+- ✓ **"Meer laden" knop:** Zichtbaar als meer entries beschikbaar; disabled tijdens laadtijd
+- ✓ **Infinite scroll:** JavaScript-module laadt automatisch volgende batch wanneer knop in zicht komt
+- ✓ **Mobiel/tablet (<992px):** Kaarten zichtbaar, paging werkend
+- ✓ **Desktop (≥992px):** Tabel zichtbaar, paging niet zichtbaar (alle entries in tabel)
+- ✓ **Filters werken:** Gefilterde entries correct in paging opgenomen
+- ✓ **Sortering:** Nieuw → oud behouden binnen pagina's
+- ✓ **Bijlagen, accordering, verwijdering:** Acties beschikbaar per kaart
+- ✓ **Details openen:** Navigatie naar detailpagina werkt
+- ✓ **Printweergave:** Ongewijzigd, alleen Confirmed entries
+- ✓ **Gemiste logmomenten banner:** Werkt met nieuwe paging-state
+- ✓ **IAsyncDisposable cleanup:** JavaScript-resources correct opgeruimd
+
+### Rationale
+
+1. **Performantie:** Kleine apparaten renderen slechts 8 kaarten tegelijk → snellere DOM-updates, minder geheugengebruik
+2. **UX:** Infinite scroll geeft seamless scrolling-ervaring; gebruiker voelt zich niet "tot X items per pagina beperkt"
+3. **Desktop ongewijzigd:** Power-users op laptop kunnen alle regels in één tabel zien
+4. **Client-side filters:** Gefilterde lijsten dynamisch opnieuw gepagineerd zonder server round-trip
+5. **Blazor binding fix:** Expliciete handlers vermijden RZ10008 compile-fouten
+
+---
+
+## Technische Schuld & Toekomstige Slices
+
+### Voor Verdere Optimalisatie
+- Virtual scrolling op extreem lange lijsten (>1000 entries in één reis)
+- Serverside filters en paging als client-side filters bottleneck wordt
+- Caching van gefilterde resultaten per trip
+- Responsive grid-layouts voor tabellen (bijv. Griddle of Syncfusion)
+
+### Potentiële Features
+- Batch-acties (selecteer meerdere kaarten, accordeer/verwijder tegelijk)
+- Drag-and-drop reordering van regels (voor nooddocumenten)
+- In-kaart-bewerking in plaats van modal (prototype)
+- Offline-support via IndexedDB voor draft-regels
