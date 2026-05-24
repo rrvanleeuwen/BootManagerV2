@@ -163,4 +163,13 @@ public class LogbookEntry
         Status = LogbookEntryStatus.Confirmed;
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Zet de logboekregel op Draft-status. Gebruikelijk voor automatisch aangemaakte regels.
+    /// </summary>
+    public void SetDraft()
+    {
+        Status = LogbookEntryStatus.Draft;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 }

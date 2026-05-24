@@ -17,6 +17,7 @@ public class LogbookService : ILogbookService
 {
     private readonly IRepository<LogbookTrip> _tripRepo;
     private readonly IRepository<LogbookEntry> _entryRepo;
+    private readonly ILogbookMeasurementSuggestionService _suggestionService;
     private readonly ILogger<LogbookService> _logger;
 
     /// <summary>
@@ -25,10 +26,12 @@ public class LogbookService : ILogbookService
     public LogbookService(
         IRepository<LogbookTrip> tripRepo,
         IRepository<LogbookEntry> entryRepo,
+        ILogbookMeasurementSuggestionService suggestionService,
         ILogger<LogbookService> logger)
     {
         _tripRepo = tripRepo;
         _entryRepo = entryRepo;
+        _suggestionService = suggestionService;
         _logger = logger;
     }
 
@@ -52,7 +55,8 @@ public class LogbookService : ILogbookService
             engineHoursStart: dto.EngineHoursStart,
             engineHoursEnd: dto.EngineHoursEnd,
             fuel: dto.Fuel,
-            totalSailingHours: dto.TotalSailingHours);
+            totalSailingHours: dto.TotalSailingHours,
+            logIntervalMinutes: dto.LogIntervalMinutes);
 
         await _tripRepo.AddAsync(entity, cancellationToken);
         _logger.LogInformation("Logboek reis aangemaakt met id {TripId}.", entity.Id);
@@ -96,7 +100,8 @@ public class LogbookService : ILogbookService
             engineHoursStart: dto.EngineHoursStart,
             engineHoursEnd: dto.EngineHoursEnd,
             fuel: dto.Fuel,
-            totalSailingHours: dto.TotalSailingHours);
+            totalSailingHours: dto.TotalSailingHours,
+            logIntervalMinutes: dto.LogIntervalMinutes);
 
         await _tripRepo.UpdateAsync(entity, cancellationToken);
     }
@@ -165,6 +170,56 @@ public class LogbookService : ILogbookService
         _logger.LogInformation("Logboekregel {EntryId} geaccordeerd.", entryId);
     }
 
+    /// <inheritdoc />
+    public async Task<DateTime> GetNextExpectedLogMomentAsync(int tripId, CancellationToken cancellationToken = default)
+    {
+        var trip = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
+            ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
+
+        var entries = await _entryRepo.ListAsync(e => e.LogbookTripId == tripId, cancellationToken);
+
+        // Bepaal basis: laatste logboekregel of vertrek
+        DateTime baseTime = entries.Count > 0
+            ? entries.OrderByDescending(e => e.EntryTimeUtc).First().EntryTimeUtc
+            : trip.DepartureUtc;
+
+        // Loginterval: fallback naar 60 als ongeldig
+        int interval = trip.LogIntervalMinutes > 0 ? trip.LogIntervalMinutes : 60;
+
+        return baseTime.AddMinutes(interval);
+    }
+
+    /// <inheritdoc />
+    public async Task<LogbookEntryDto> CreateDraftEntryAsync(int tripId, DateTime entryTimeUtc, CancellationToken cancellationToken = default)
+    {
+        var trip = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
+            ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
+
+        // Haal meetdatasuggesties op, exclusief oude "laatst bekende" waarden (alleen logtijdvak-data)
+        var suggestions = await _suggestionService.GetSuggestionsAsync(tripId, entryTimeUtc, onlyPeriodData: true, cancellationToken);
+
+        // Maak Draft-entry aan met suggesties (handmatige velden: BaroPressure en LogValue blijven null)
+        var entity = new LogbookEntry(
+            logbookTripId: tripId,
+            entryTimeUtc: entryTimeUtc,
+            baroPressure: null,
+            logValue: null,
+            course: suggestions.Course,
+            remarks: null,
+            windDescription: suggestions.WindDescription,
+            gpsStatus: suggestions.GpsStatus,
+            latitude: suggestions.Latitude,
+            longitude: suggestions.Longitude,
+            averageSogKnots: suggestions.AverageSogKnots);
+
+        // Zet expliciet op Draft
+        entity.SetDraft();
+
+        await _entryRepo.AddAsync(entity, cancellationToken);
+        _logger.LogInformation("Draft logboekregel aangemaakt met id {EntryId} voor reis {TripId}.", entity.Id, tripId);
+        return MapEntry(entity);
+    }
+
     private static LogbookTripDto MapTrip(LogbookTrip t) => new()
     {
         Id = t.Id,
@@ -182,6 +237,7 @@ public class LogbookService : ILogbookService
         EngineHoursEnd = t.EngineHoursEnd,
         Fuel = t.Fuel,
         TotalSailingHours = t.TotalSailingHours,
+        LogIntervalMinutes = t.LogIntervalMinutes,
         CreatedAtUtc = t.CreatedAtUtc,
         UpdatedAtUtc = t.UpdatedAtUtc
     };

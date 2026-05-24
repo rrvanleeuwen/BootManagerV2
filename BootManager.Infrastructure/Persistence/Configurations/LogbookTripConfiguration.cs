@@ -24,6 +24,7 @@ public class LogbookTripConfiguration : IEntityTypeConfiguration<LogbookTrip>
         b.Property(x => x.DestinationPort).HasMaxLength(128);
         b.Property(x => x.VesselName).HasMaxLength(128);
         b.Property(x => x.Crew).HasMaxLength(512);
+        b.Property(x => x.LogIntervalMinutes).IsRequired().HasDefaultValue(60);
         b.Property(x => x.Notes).HasMaxLength(2048);
         b.Property(x => x.LogstandStart).HasColumnType("TEXT");
         b.Property(x => x.LoggedMiles).HasColumnType("TEXT");

@@ -48,4 +48,7 @@ public class CreateLogbookTripDto
 
     /// <summary>Totaal vaaruren van de reis.</summary>
     public decimal? TotalSailingHours { get; set; }
+
+    /// <summary>Loginterval in minuten (standaard 60).</summary>
+    public int LogIntervalMinutes { get; set; } = 60;
 }

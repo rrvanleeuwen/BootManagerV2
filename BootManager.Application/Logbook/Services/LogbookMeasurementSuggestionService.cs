@@ -10,8 +10,15 @@ namespace BootManager.Application.Logbook.Services;
 
 /// <summary>
 /// Haalt automatische meetdata-suggesties op voor een logboekregel.
-/// Punt-in-tijd velden zijn gebaseerd op de meest recente meting vóór of op EntryTimeUtc.
-/// Periode-aggregaties lopen van de vorige logboekregel (of reisvertrek) tot EntryTimeUtc.
+///
+/// Voor handmatig ingevoerde regels (onlyPeriodData=false, default):
+/// - Punt-in-tijd velden (Course, Wind, Position) zijn gebaseerd op de meest recente meting vóór of op EntryTimeUtc.
+///
+/// Voor automatisch gemaakte Draft-regels (onlyPeriodData=true):
+/// - Punt-in-tijd velden gebruiken alleen metingen BINNEN het logtijdvak.
+/// - Als geen metingen in het logtijdvak beschikbaar zijn, blijven die velden leeg.
+///
+/// Periode-aggregaties (AverageSogKnots) lopen altijd van vorige logboekregel (of reisvertrek) tot EntryTimeUtc.
 /// </summary>
 public class LogbookMeasurementSuggestionService : ILogbookMeasurementSuggestionService
 {
@@ -42,52 +49,122 @@ public class LogbookMeasurementSuggestionService : ILogbookMeasurementSuggestion
     }
 
     /// <inheritdoc />
-    public async Task<LogbookMeasurementSuggestionDto> GetSuggestionsAsync(int tripId, DateTime entryTimeUtc, CancellationToken cancellationToken = default)
+    public async Task<LogbookMeasurementSuggestionDto> GetSuggestionsAsync(
+        int tripId,
+        DateTime entryTimeUtc,
+        bool onlyPeriodData = false,
+        CancellationToken cancellationToken = default)
     {
         // Bepaal de start van de periode: vorige logregel of reisvertrek
         DateTime? periodStart = await BepaalPeriodStartAsync(tripId, entryTimeUtc, cancellationToken);
 
-        // Koers: voorkeur HeadingMeasurement, fallback MotionMeasurement (punt-in-tijd)
+        // === SEMANTIEK PUNT-IN-TIJD VELDEN (Course, Wind, GPS) ===
+        // Voor Draft-regels (onlyPeriodData=true):
+        //   Gebruik alleen meetdata BINNEN het logtijdvak (periodStart tot entryTimeUtc).
+        //   Als geen data in logtijdvak: veld blijft leeg.
+        //   Dit voorkomt misleidende oude waarden.
+        //
+        // Voor handmatige regels (onlyPeriodData=false):
+        //   Gebruik laatst bekende waarde vóór of op het logmoment.
+        //   Dit geeft de gebruiker de momentane staat op het moment van loggen.
+
         int? course = null;
-        var headings = await _headingRepo.ListAsync(
-            h => h.RecordedAtUtc <= entryTimeUtc, cancellationToken);
-        var latestHeading = headings.OrderByDescending(h => h.RecordedAtUtc).FirstOrDefault();
-        if (latestHeading != null)
+        if (onlyPeriodData && periodStart.HasValue)
         {
-            course = (int)Math.Round((double)latestHeading.HeadingDegrees);
+            // Draft-regel: alleen metingen BINNEN logtijdvak
+            var headingsInPeriod = await _headingRepo.ListAsync(
+                h => h.RecordedAtUtc >= periodStart.Value && h.RecordedAtUtc <= entryTimeUtc, cancellationToken);
+            var latestHeadingInPeriod = headingsInPeriod.OrderByDescending(h => h.RecordedAtUtc).FirstOrDefault();
+            if (latestHeadingInPeriod != null)
+            {
+                course = (int)Math.Round((double)latestHeadingInPeriod.HeadingDegrees);
+            }
+            else
+            {
+                // Fallback: Motion/COG in logtijdvak
+                var motionsInPeriod = await _motionRepo.ListAsync(
+                    m => m.RecordedAtUtc >= periodStart.Value && m.RecordedAtUtc <= entryTimeUtc, cancellationToken);
+                var latestMotionInPeriod = motionsInPeriod.OrderByDescending(m => m.RecordedAtUtc).FirstOrDefault();
+                if (latestMotionInPeriod != null)
+                    course = (int)Math.Round((double)latestMotionInPeriod.CourseOverGroundDegrees);
+            }
         }
-        else
+        else if (!onlyPeriodData)
         {
-            var motions = await _motionRepo.ListAsync(
-                m => m.RecordedAtUtc <= entryTimeUtc, cancellationToken);
-            var latestMotion = motions.OrderByDescending(m => m.RecordedAtUtc).FirstOrDefault();
-            if (latestMotion != null)
-                course = (int)Math.Round((double)latestMotion.CourseOverGroundDegrees);
+            // Handmatige regel: laatst bekende waarde vóór of op entryTimeUtc
+            var headings = await _headingRepo.ListAsync(
+                h => h.RecordedAtUtc <= entryTimeUtc, cancellationToken);
+            var latestHeading = headings.OrderByDescending(h => h.RecordedAtUtc).FirstOrDefault();
+            if (latestHeading != null)
+            {
+                course = (int)Math.Round((double)latestHeading.HeadingDegrees);
+            }
+            else
+            {
+                var motions = await _motionRepo.ListAsync(
+                    m => m.RecordedAtUtc <= entryTimeUtc, cancellationToken);
+                var latestMotion = motions.OrderByDescending(m => m.RecordedAtUtc).FirstOrDefault();
+                if (latestMotion != null)
+                    course = (int)Math.Round((double)latestMotion.CourseOverGroundDegrees);
+            }
         }
 
-        // Wind (punt-in-tijd)
+        // Wind
         string? windDescription = null;
-        var winds = await _windRepo.ListAsync(
-            w => w.RecordedAtUtc <= entryTimeUtc, cancellationToken);
-        var latestWind = winds.OrderByDescending(w => w.RecordedAtUtc).FirstOrDefault();
-        if (latestWind != null)
+        if (onlyPeriodData && periodStart.HasValue)
         {
-            var windKnoten = latestWind.WindSpeed / 0.514444m;
-            windDescription = $"{latestWind.WindAngleDegrees:F0}° {windKnoten:F1} kn";
+            // Draft-regel: alleen metingen BINNEN logtijdvak
+            var windsInPeriod = await _windRepo.ListAsync(
+                w => w.RecordedAtUtc >= periodStart.Value && w.RecordedAtUtc <= entryTimeUtc, cancellationToken);
+            var latestWindInPeriod = windsInPeriod.OrderByDescending(w => w.RecordedAtUtc).FirstOrDefault();
+            if (latestWindInPeriod != null)
+            {
+                var windKnoten = latestWindInPeriod.WindSpeed / 0.514444m;
+                windDescription = $"{latestWindInPeriod.WindAngleDegrees:F0}° {windKnoten:F1} kn";
+            }
+        }
+        else if (!onlyPeriodData)
+        {
+            // Handmatige regel: laatst bekende waarde vóór of op entryTimeUtc
+            var winds = await _windRepo.ListAsync(
+                w => w.RecordedAtUtc <= entryTimeUtc, cancellationToken);
+            var latestWind = winds.OrderByDescending(w => w.RecordedAtUtc).FirstOrDefault();
+            if (latestWind != null)
+            {
+                var windKnoten = latestWind.WindSpeed / 0.514444m;
+                windDescription = $"{latestWind.WindAngleDegrees:F0}° {windKnoten:F1} kn";
+            }
         }
 
-        // Positie (punt-in-tijd)
+        // Positie
         string? gpsStatus = null;
         double? latitude = null;
         double? longitude = null;
-        var positions = await _positionRepo.ListAsync(
-            p => p.RecordedAtUtc <= entryTimeUtc, cancellationToken);
-        var latestPosition = positions.OrderByDescending(p => p.RecordedAtUtc).FirstOrDefault();
-        if (latestPosition != null)
+        if (onlyPeriodData && periodStart.HasValue)
         {
-            gpsStatus = "OK";
-            latitude = (double)latestPosition.Latitude;
-            longitude = (double)latestPosition.Longitude;
+            // Draft-regel: alleen metingen BINNEN logtijdvak
+            var positionsInPeriod = await _positionRepo.ListAsync(
+                p => p.RecordedAtUtc >= periodStart.Value && p.RecordedAtUtc <= entryTimeUtc, cancellationToken);
+            var latestPositionInPeriod = positionsInPeriod.OrderByDescending(p => p.RecordedAtUtc).FirstOrDefault();
+            if (latestPositionInPeriod != null)
+            {
+                gpsStatus = "OK";
+                latitude = (double)latestPositionInPeriod.Latitude;
+                longitude = (double)latestPositionInPeriod.Longitude;
+            }
+        }
+        else if (!onlyPeriodData)
+        {
+            // Handmatige regel: laatst bekende waarde vóór of op entryTimeUtc
+            var positions = await _positionRepo.ListAsync(
+                p => p.RecordedAtUtc <= entryTimeUtc, cancellationToken);
+            var latestPosition = positions.OrderByDescending(p => p.RecordedAtUtc).FirstOrDefault();
+            if (latestPosition != null)
+            {
+                gpsStatus = "OK";
+                latitude = (double)latestPosition.Latitude;
+                longitude = (double)latestPosition.Longitude;
+            }
         }
 
         // Gemiddelde SOG over de periode (alleen als periodStart bekend is)
@@ -115,8 +192,10 @@ public class LogbookMeasurementSuggestionService : ILogbookMeasurementSuggestion
     }
 
     /// <summary>
-    /// Bepaalt de startgrens van de logperiode:
-    /// de EntryTimeUtc van de vorige logregel, of anders de reisvertrekdatum.
+    /// Bepaalt de startgrens van het logtijdvak voor periode-aggregaties (bijv. gemiddelde SOG).
+    /// Het logtijdvak loopt van de EntryTimeUtc van de vorige logregel (of reisvertrekdatum als geen vorige regel)
+    /// tot aan het huidige logmoment (EntryTimeUtc).
+    /// Dit zorgt ervoor dat elke logperiode semantisch aansluit bij de logboekregels-hiërarchie.
     /// </summary>
     private async Task<DateTime?> BepaalPeriodStartAsync(int tripId, DateTime entryTimeUtc, CancellationToken cancellationToken)
     {

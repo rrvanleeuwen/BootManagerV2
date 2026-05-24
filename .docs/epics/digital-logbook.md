@@ -1,6 +1,6 @@
 # Epic: Digitaal Logboek
 
-**Datum:** 2026-05-23  
+**Datum:** 2026-05-24 (latest: Draft-suggesties herzien voor veiligheid)
 **Status:** Voorgesteld, klaar voor eerste implementatie-slice
 
 ---
@@ -365,3 +365,66 @@ Functioneel voorstel:
 - Nog geen automatisch definitief maken.
 - Nog geen stille bulk-aanmaak van meerdere regels zonder gebruiker.
 - Eventueel ontbrekende meerdere logmomenten mogen eerst als lijst of één eerstvolgend logmoment worden ontworpen.
+
+---
+
+## Slice: Correctie van Draft-regelsuggesties (2026-05-24)
+
+**Datum:** 2026-05-24
+**Branch:** feature/logbook-missing-moments
+**Status:** Geïmplementeerd
+
+### Probleem
+In de vorige implementatie kregen Draft-regels voor gemiste logmomenten "laatst bekende" meetwaarden die van veel eerder in de reis konden stammen. Dit was misleidend: als een gebruiker een gemist logmoment om 18:08 zag met koerswaarde van 090°, kon die waarde afkomstig zijn van 12:58 (geen metingen tussen 17:08–18:08). De detailtabellen waren leeg (geen samples in het logtijdvak), maar de overzichtswaarden suggereerden verkeerd dat er actuele data was.
+
+### Domeinregel
+**Draft-regels voor gemiste logmomenten gebruiken ALLEEN meetdata BINNEN het bijbehorende logtijdvak.**
+
+- **Logtijdvak:** van vorige logboekregel (of `DepartureUtc` als geen vorige) tot `EntryTimeUtc` van de nieuwe Draft-regel.
+- **Punt-in-tijd velden (Course, WindDescription, GpsStatus, Latitude, Longitude):** alleen metingen BINNEN het logtijdvak; voorkeur = meest recente beschikbare.
+- **Periode-velden (AverageSogKnots):** gemiddeld over het logtijdvak (blijft ongewijzigd).
+- **Geen data = leeg veld:** als geen metingen van het type BINNEN het logtijdvak, blijft het veld leeg.
+- **Handmatige regels:** behouden het oude "laatst bekende vóór of op logmoment" gedrag voor gebruikergemak.
+
+### Implementatie
+
+#### 1. Service-contract uitgebreid
+`ILogbookMeasurementSuggestionService.GetSuggestionsAsync(..., bool onlyPeriodData = false, ...)`
+
+- `onlyPeriodData=true`: Draft-regels, alleen metingen IN het logtijdvak.
+- `onlyPeriodData=false` (default): handmatige regels, "laatst bekende vóór of op logmoment" gedrag.
+
+#### 2. Suggestie-logica herzien
+`LogbookMeasurementSuggestionService.GetSuggestionsAsync()` nu met twee paden:
+
+**Draft-pad (`onlyPeriodData=true`):**
+- **Course:** Zoekt Heading/MotionMeasurement met `RecordedAtUtc >= periodStart && RecordedAtUtc <= entryTimeUtc`. Voorkeur: laatste Heading, fallback: Motion/COG. Geen data = null.
+- **WindDescription:** Zoekt WindMeasurement in periode, voorkeur = meest recent. Geen data = null.
+- **GpsStatus, Latitude, Longitude:** Zoekt PositionMeasurement in periode, voorkeur = meest recent. Geen data = null.
+- **AverageSogKnots:** Berekend over MotionMeasurements in periode (ongewijzigd).
+
+**Handmatig-pad (`onlyPeriodData=false`):**
+- Course, WindDescription, Positie: "laatst bekende vóór of op logmoment" (origineel gedrag).
+
+#### 3. Draft-aanmaak
+`LogbookService.CreateDraftEntryAsync()` roept nu:
+```
+await _suggestionService.GetSuggestionsAsync(tripId, entryTimeUtc, onlyPeriodData: true, ...)
+```
+
+#### 4. Detailpagina
+De detailweergave blijft ongewijzigd en werkt correct:
+- Toont de opgeslagen logwaarden (die nu vaker null zijn voor lege Draft-regels).
+- Periode-sampletabellen tonen alleen data IN het logtijdvak (blijft consistent).
+- Als geen samples beschikbaar: "Geen data" (nu correct).
+
+### Acceptatie
+- ✓ `dotnet build` slaagt.
+- ✓ Draft-regel voor gemist logmoment zonder metingen in het logtijdvak: alle automatische velden leeg.
+- ✓ Draft-regel met metingen in logtijdvak: velden gevuld uit die metingen alleen.
+- ✓ Handmatige regels: ongewijzigd Confirmed, kunnen nog suggesties ophalen (met oude "laatst bekende" semantiek).
+- ✓ Detailpagina: toont correcte waarden, geen oude bronmetingen als automatische onderbouwing.
+- ✓ Print: ongewijzigd, alleen Confirmed.
+
+### Rationale
+Veiligheid en controleerbaarheid: een lege Draft-regel is beter dan een regel met oude waarden. De gebruiker kan dan bewust kiezen of deze handmatig in te vullen op basis van andere bronnen (papieren logboek, GPS, etc.). De domeinregel zorgt voor consistentie: als de detailtabel leeg is (geen meetdata in periode), mag de overzichtsregel ook geen "oude" waarden tonen.

@@ -17,11 +17,26 @@ public class LogbookEntryDetailDto
     /// <summary>Tijdstempel (UTC) van de logboekregel.</summary>
     public DateTime EntryTimeUtc { get; set; }
 
+    /// <summary>Status van de logboekregel: Draft ("Concept") of Confirmed ("Akkoord").</summary>
+    public bool IsDraft { get; set; }
+
+    /// <summary>Opgeslagen waarden van de logboekregel zelf (de gebruiker ziet wat er in de regel staat).</summary>
+    public LogbookSavedEntryValuesDto? SavedValues { get; set; }
+
     /// <summary>Begintijd (UTC) van de detailperiode. Null als geen geldige start bepaald kon worden.</summary>
     public DateTime? PeriodStartUtc { get; set; }
 
     /// <summary>Eindtijd (UTC) van de detailperiode (gelijk aan EntryTimeUtc).</summary>
     public DateTime PeriodEndUtc { get; set; }
+
+    /// <summary>Bronmeting voor koers (Heading of Motion). Toont welke meting is gebruikt bij Draft-regel-aanmaak.</summary>
+    public LogbookSourceMeasurementDto? CourseBron { get; set; }
+
+    /// <summary>Bronmeting voor wind. Toont welke meting is gebruikt bij Draft-regel-aanmaak.</summary>
+    public LogbookSourceMeasurementDto? WindBron { get; set; }
+
+    /// <summary>Bronmeting voor positie/GPS. Toont welke meting is gebruikt bij Draft-regel-aanmaak.</summary>
+    public LogbookSourceMeasurementDto? PositieBron { get; set; }
 
     /// <summary>Samenvatting van positie binnen de periode.</summary>
     public LogbookDetailSummaryDto<LogbookPositionSampleDto>? Positie { get; set; }
@@ -40,6 +55,58 @@ public class LogbookEntryDetailDto
 
     /// <summary>Samenvatting van watertemperatuur binnen de periode.</summary>
     public LogbookDetailSummaryDto<LogbookWaterTempSampleDto>? WaterTemperatuur { get; set; }
+}
+
+/// <summary>
+/// De opgeslagen waarden van een logboekregel (zoals ingevuld door de gebruiker of voorgesteld via Draft-aanmaak).
+/// </summary>
+public class LogbookSavedEntryValuesDto
+{
+    /// <summary>Barometer-stand in hPa.</summary>
+    public decimal? BaroPressure { get; set; }
+
+    /// <summary>Logwaarde (afstand door water) in nautische mijlen.</summary>
+    public decimal? LogValue { get; set; }
+
+    /// <summary>Koers in graden (0-359).</summary>
+    public int? Course { get; set; }
+
+    /// <summary>Opmerkingen (positie, zeilvoering, etc.).</summary>
+    public string? Remarks { get; set; }
+
+    /// <summary>Windrichting en -kracht (compact geformatteerd).</summary>
+    public string? WindDescription { get; set; }
+
+    /// <summary>GPS-statusindicator.</summary>
+    public string? GpsStatus { get; set; }
+
+    /// <summary>Breedtegraad (WGS84, decimaal).</summary>
+    public double? Latitude { get; set; }
+
+    /// <summary>Lengtegraad (WGS84, decimaal).</summary>
+    public double? Longitude { get; set; }
+
+    /// <summary>Gemiddelde snelheid over grond (SOG) in knopen.</summary>
+    public decimal? AverageSogKnots { get; set; }
+}
+
+/// <summary>
+/// Informatie over de bronmeting van een bepaalde waarde (koers, wind, positie).
+/// Dit helpt te zien waar een automatisch voorgestelde waarde vandaan komt.
+/// </summary>
+public class LogbookSourceMeasurementDto
+{
+    /// <summary>Type bron: "Heading", "Motion", "Wind", "Position".</summary>
+    public string SourceType { get; set; } = string.Empty;
+
+    /// <summary>Waarde van de meting (bijv. "045°" voor koers).</summary>
+    public string Value { get; set; } = string.Empty;
+
+    /// <summary>Tijdstempel (UTC) van wanneer de meting is gedaan.</summary>
+    public DateTime MeasuredAtUtc { get; set; }
+
+    /// <summary>True als deze meting VÓÓr de start van het logtijdvak valt.</summary>
+    public bool IsOutsidePeriod { get; set; }
 }
 
 /// <summary>

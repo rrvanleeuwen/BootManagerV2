@@ -53,6 +53,9 @@ public class LogbookTripDto
     /// <summary>Totaal vaaruren van de reis.</summary>
     public decimal? TotalSailingHours { get; set; }
 
+    /// <summary>Loginterval in minuten.</summary>
+    public int LogIntervalMinutes { get; set; }
+
     /// <summary>Tijdstempel (UTC) waarop de reis is aangemaakt.</summary>
     public DateTime CreatedAtUtc { get; set; }
 

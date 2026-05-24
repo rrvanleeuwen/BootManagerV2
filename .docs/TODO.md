@@ -49,10 +49,11 @@
   - **Aanleiding:** Dataverwerking voor ondersteunde YDEN/NMEA0183-data werkt voldoende om richting een bruikbaar logboek te gaan.
   - **Referentie:** bestaand logboekvoorbeeld in `.docs/extraInfo/LogboekVoorbeeld.png`.
   - **Doel:** reisgegevens, uurregels, automatische meetdatasamenvatting, detaildata en handmatige opmerkingen in logboekvorm tonen.
-  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel en browser-printweergave zijn geïmplementeerd. Akkoordflow (LogbookEntryStatus: Draft/Confirmed) geïmplementeerd op 2026-05-23.
+  - **Status:** basislogboek, reis-samenvatting, meetdatasuggesties, read-only detailpagina per logboekregel, browser-printweergave en akkoordflow (LogbookEntryStatus: Draft/Confirmed) geïmplementeerd. Op 2026-05-24 ontbrekende logmomenten feature toegevoegd (instelbaar loginterval per reis, banner met "Conceptregel maken"-knop).
   - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont read-only samples en samenvattingen voor positie, COG/SOG, heading, wind, diepte en watertemperatuur binnen het tijdvak van de logregel.
   - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print.
-  - **Volgende slice:** ontbrekende logmomenten zichtbaar maken in de logboek-UI. Start klein: banner/melding + knop om een `Draft`-regel voor het eerstvolgende gemiste logmoment te maken. Nog geen browser push notifications.
+  - **Huidige missing-moments-feature:** banner boven logboektabel als volgende logmoment verstreken; knop om Draft-regel aan te maken voor dat moment met automatische meetdatasuggesties.
+  - **Volgende slice:** gerelateerde features als batch-aanmaak of detailweergave verbeteren.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 - [ ] **Authentication & Authorization**
@@ -233,13 +234,19 @@
 
 De basis voor het eindgebruikerslogboek is geïmplementeerd:
 
-- `LogbookTrip` entity voor reis-header en reis-samenvatting.
-- `LogbookEntry` entity voor logboekregels per uur/event.
+- `LogbookTrip` entity voor reis-header en reis-samenvatting (nu met per-reis `LogIntervalMinutes`).
+- `LogbookEntry` entity voor logboekregels per uur/event (nu met `Status: Draft | Confirmed`).
 - `/logbook` Blazor-pagina met kolommen uit `.docs/extraInfo/LogboekVoorbeeld.png`.
+  - Banner met "Volgende logmoment verstreken" indien vervallen moment gedetecteerd.
+  - Knop "Conceptregel maken" → maakt automatische Draft-regel voor gemist moment.
 - Handmatige invoer voor opmerkingen/zeilvoering en basisvelden.
 - Meetdatasuggesties op basis van bestaande measurements.
+  - **2026-05-24:** Draft-regels gebruiken nu ALLEEN meetdata BINNEN het logtijdvak (kritieke veiligheidsfix).
+  - Handmatige regels behouden "laatst bekende vóór logmoment" voor gebruikergemak.
 - Read-only detailpagina per logboekregel met samples en samenvattingen.
-- Browser-printweergave per reis zonder app-menu/topbar in de afdruk.
+  - Toont opgeslagen waarden, periode-samples en bronmetingen apart.
+  - Lege Draft-regels tonen correct "Geen data" wanneer geen meetdata in logtijdvak.
+- Browser-printweergave per reis zonder app-menu/topbar in de afdruk (Confirmed-only).
 
 Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
@@ -280,5 +287,5 @@ Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 ---
 
-**Last Updated:** 2026-05-23  
+**Last Updated:** 2026-05-24
 **Maintained By:** Development Team
