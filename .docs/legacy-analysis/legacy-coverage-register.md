@@ -30,7 +30,7 @@ Bij afronding van een story of PR:
 | US0.1 Installatie uitvoeren | Partial | Docker/Raspberry Pi documentatie aanwezig; echte Docker/Pi smoke test open. |
 | US0.2 Registratie eerste eigenaar | Replaced | Vervangen door bootstrap owner + verplichte onboarding. |
 | US0.3 Inloggen als eigenaar | Done | Wachtwoord-only login aanwezig. |
-| US0.4 Wachtwoord of pincode wijzigen | Partial | Wachtwoord wijzigen technisch aanwezig; pincode uit normale flow verwijderd; UX/runtime-validatie open. |
+| US0.4 Wachtwoord of pincode wijzigen | Done | Wachtwoord wijzigen in Settings is technisch aanwezig en handmatig positief getest op 2026-05-25. Pincode is bewust uit de normale BootManagerV2-flow verwijderd/vervangen. |
 | US0.5 Herstel van toegang | Replaced | Back-upcode/master-key vervangen door operationele resetprocedure. |
 | US0.6 Eigenaarprofiel beheren | Done | Wachtwoord wijzigen beschikbaar in Settings; bootgegevens wijzigen op 2026-05-25 via IVesselProfileService; eigenaargegevens (naam/e-mail) wijzigen in Settings geïmplementeerd op 2026-05-25 via IOwnerSettingsService met encrypted payload. Naam verplicht, e-mail optioneel. |
 
