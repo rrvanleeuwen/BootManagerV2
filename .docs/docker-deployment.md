@@ -60,7 +60,15 @@ cp .env.example .env
 nano .env
 ```
 
-Vervang beide waarden door lange willekeurige strings. `.env` staat in `.gitignore` en mag niet worden gecommit.
+Vervang alle waarden. Gebruik lange willekeurige strings voor de encryptie- en JWT-sleutel. Kies voor `BOOTMANAGER_BOOTSTRAP_PASSWORD` een tijdelijk eerste-login-wachtwoord dat je na onboarding niet meer gebruikt. `.env` staat in `.gitignore` en mag niet worden gecommit.
+
+Minimale `.env`:
+
+```text
+BOOTMANAGER_ENCRYPTION_KEY=replace-with-a-long-random-encryption-key
+BOOTMANAGER_JWT_KEY=replace-with-a-long-random-jwt-signing-key
+BOOTMANAGER_BOOTSTRAP_PASSWORD=replace-with-first-login-password
+```
 
 ```bash
 # Start services in achtergrond
@@ -80,6 +88,22 @@ Na start is:
 - Web UI bereikbaar op: http://localhost:5000 (of http://<pi-hostname>:5000)
 - Ingest luistert op: UDP 10110
 - Ingest control API beschikbaar op: 127.0.0.1:5010 (alleen op dezelfde host)
+
+## Eerste Start En Onboarding
+
+Bij een lege database voert `bootmanager-web` bij startup de eerste-start flow uit:
+
+1. EF Core migraties worden toegepast.
+2. Als er nog geen owner bestaat, maakt de app exact een bootstrap owner aan.
+3. De bootstrap owner gebruikt het wachtwoord uit `Bootstrap:DefaultPassword`, in Docker gezet via `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
+4. De eerste login leidt verplicht naar `/onboarding`.
+5. De gebruiker vult eigenaargegevens, bootgegevens en een nieuw wachtwoord in.
+6. Na succesvolle onboarding worden `PasswordChangeRequired=false` en `OnboardingCompleted=true`.
+7. De gebruiker krijgt toegang tot het dashboard.
+
+Production zonder bestaande owner en zonder `Bootstrap:DefaultPassword` faalt bewust bij startup. Dit voorkomt dat een deployment met een lege database onbedoeld zonder eerste-login-wachtwoord start.
+
+Na onboarding is het bootstrap-wachtwoord ongeldig. Bewaar het dus alleen als tijdelijk installatiegeheim, niet als blijvend beheerderswachtwoord.
 
 ## Logs
 
@@ -163,6 +187,7 @@ Alle configuratie gebeurt via environment variables in `docker-compose.yml`. Gee
 | `ConnectionStrings__Default` | `/var/lib/bootmanager/bootmanager.db` | SQLite database pad |
 | `Encryption__Key` | uit `.env` | Encryptiesleutel voor gevoelige owner-data |
 | `Jwt__Key` | uit `.env` | Signing key voor JWT API-authenticatie |
+| `Bootstrap__DefaultPassword` | uit `.env` | Tijdelijk eerste-login-wachtwoord voor bootstrap owner bij lege database |
 | `Logging__LogLevel__Default` | `Information` | Log niveau applicatie |
 | `Logging__LogLevel__Microsoft.AspNetCore` | `Warning` | Log niveau ASP.NET Core |
 
@@ -250,11 +275,32 @@ Vooralsnog: `docker compose stop` is de standaard.
 docker compose logs bootmanager-web
 
 # Typische oorzaken:
-# - .env ontbreekt of bevat geen BOOTMANAGER_ENCRYPTION_KEY / BOOTMANAGER_JWT_KEY
+# - .env ontbreekt of bevat geen BOOTMANAGER_ENCRYPTION_KEY / BOOTMANAGER_JWT_KEY / BOOTMANAGER_BOOTSTRAP_PASSWORD
 # - Database niet beschrijfbaar: volume permissions
 # - Poort 5000 al in gebruik: sudo lsof -i :5000
 # - Insufficient RAM: docker stats
 ```
+
+### Eerste login of wachtwoord kwijt
+
+De normale gebruikersflow bevat geen pincode, recovery-code of master-key UI. Als de enige gebruiker niet meer kan inloggen, is fysieke/admin toegang tot de Pi nodig.
+
+Veilige resetprocedure:
+
+1. Stop de containers:
+   ```bash
+   docker compose stop
+   ```
+2. Maak een backup van de database uit het Docker volume.
+3. Hernoem of verwijder daarna pas de SQLite database in het `bootmanager-db` volume.
+4. Controleer dat `.env` een geldig `BOOTMANAGER_BOOTSTRAP_PASSWORD` bevat.
+5. Start opnieuw:
+   ```bash
+   docker compose up -d
+   ```
+6. Doorloop opnieuw bootstrap login en onboarding.
+
+Deze reset maakt een nieuwe installatie-state aan. Bootgegevens wijzigen na afgeronde onboarding is een aparte toekomstige story.
 
 ### Ingest ontvangt geen berichten
 

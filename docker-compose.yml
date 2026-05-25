@@ -13,6 +13,7 @@ services:
       - ConnectionStrings__Default=Data Source=/var/lib/bootmanager/bootmanager.db
       - Encryption__Key=${BOOTMANAGER_ENCRYPTION_KEY:?Set BOOTMANAGER_ENCRYPTION_KEY in .env}
       - Jwt__Key=${BOOTMANAGER_JWT_KEY:?Set BOOTMANAGER_JWT_KEY in .env}
+      - Bootstrap__DefaultPassword=${BOOTMANAGER_BOOTSTRAP_PASSWORD:?Set BOOTMANAGER_BOOTSTRAP_PASSWORD in .env}
       - Logging__LogLevel__Default=Information
       - Logging__LogLevel__Microsoft.AspNetCore=Warning
     volumes:

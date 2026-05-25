@@ -230,23 +230,25 @@ cp .env.example .env
 nano .env
 ```
 
-Vervang beide waarden:
+Vervang alle waarden:
 
 ```text
 BOOTMANAGER_ENCRYPTION_KEY=...
 BOOTMANAGER_JWT_KEY=...
+BOOTMANAGER_BOOTSTRAP_PASSWORD=...
 ```
 
-Gebruik lange willekeurige strings. Voor een eerste test mag dit handmatig, bijvoorbeeld twee lange zinnen zonder spaties.
+Gebruik lange willekeurige strings voor de encryptie- en JWT-sleutel. Kies voor `BOOTMANAGER_BOOTSTRAP_PASSWORD` een tijdelijk eerste-login-wachtwoord. Dit wachtwoord wordt gebruikt voor de bootstrap owner bij een lege database en is na onboarding niet meer geldig.
 
 Waarom:
 
 - BootManager heeft een encryptiesleutel en JWT signing key nodig.
+- Een lege productie-installatie heeft expliciet een bootstrap-wachtwoord nodig.
 - `.env` wordt niet gecommit.
 
 Controlepunt:
 
-- `cat .env` toont twee ingevulde waarden.
+- `cat .env` toont drie ingevulde waarden.
 
 ## 10. Docker Compose configuratie controleren
 
@@ -326,6 +328,31 @@ Controlepunt:
 
 - BootManager webpagina opent.
 
+## 13a. Eerste login en onboarding
+
+Open de BootManager webpagina.
+
+Bij een lege database verwacht je:
+
+1. De app maakt automatisch een bootstrap owner aan.
+2. Je komt op `/login`.
+3. Log in met de waarde van `BOOTMANAGER_BOOTSTRAP_PASSWORD` uit `.env`.
+4. Je wordt verplicht naar `/onboarding` gestuurd.
+5. Vul eigenaargegevens, bootgegevens en een nieuw wachtwoord in.
+6. Na opslaan kom je op `/dashboard`.
+7. Het bootstrap-wachtwoord werkt daarna niet meer; het nieuwe wachtwoord wel.
+
+Waarom:
+
+- Dit bevestigt dat de eerste-start setup compleet is.
+- De bootgegevens worden opgeslagen in het singleton `VesselProfile`.
+- De setup flags worden afgerond zodat de rest van de app bereikbaar is.
+
+Controlepunt:
+
+- `/dashboard` opent na onboarding.
+- Handmatig openen van `/onboarding` stuurt terug naar `/dashboard`.
+
 ## 14. Logs bekijken
 
 Op de Pi:
@@ -383,6 +410,32 @@ Niet in de eerste installatieronde:
 - automatische backups;
 - Docker image registry;
 - echte NMEA hardware koppelen.
+
+## 16a. Reset bij vergeten wachtwoord
+
+Er is geen normale pincode-, recovery- of master-key flow meer in de UI.
+
+Als de enige gebruiker niet meer kan inloggen:
+
+1. Zorg voor SSH/admin toegang tot de Pi.
+2. Stop containers:
+   ```bash
+   docker compose stop
+   ```
+3. Maak eerst een backup van de database in het Docker volume.
+4. Hernoem of verwijder daarna de actieve SQLite database.
+5. Controleer dat `.env` nog een geldig `BOOTMANAGER_BOOTSTRAP_PASSWORD` bevat.
+6. Start opnieuw:
+   ```bash
+   docker compose up -d
+   ```
+7. Doorloop opnieuw eerste login en onboarding.
+
+Let op:
+
+- Dit is een operationele factory-reset van de actieve database.
+- Bewaar backups als logboek- of meetdata nog nodig kan zijn.
+- Bootgegevens wijzigen na onboarding is later een aparte story.
 
 Die onderwerpen komen pas nadat de basis betrouwbaar draait.
 
