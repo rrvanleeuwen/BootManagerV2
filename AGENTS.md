@@ -65,8 +65,15 @@ For implementation work, Codex must not jump directly from branch creation to a
 Copilot prompt. After creating or selecting the feature branch, Codex must first
 formulate a concise user story together with scope, out-of-scope items,
 acceptance criteria, legacy coverage impact, and required manual test notes.
-Codex must ask the user whether that user story is correct. Only after the user
-approves the user story may Codex generate the Copilot prompt.
+Codex must ask the user whether that user story is correct. After user approval,
+Codex must automatically save the approved user story in the relevant
+`.docs/epics/*.md` file before generating the Copilot prompt. The saved story
+must include the story sentence, scope, out-of-scope items, acceptance criteria,
+legacy coverage impact, and required manual test notes. If no suitable epic file
+exists yet, Codex should create a small appropriate epic document or first
+propose the documentation location when the choice is ambiguous. Only after the
+approved user story is stored in the epic file may Codex generate the Copilot
+prompt.
 
 For the legacy BootManager Word-source inventory, continue strictly one source
 file at a time. After each processed file, stop and ask the user for approval

@@ -32,7 +32,7 @@ Bij afronding van een story of PR:
 | US0.3 Inloggen als eigenaar | Done | Wachtwoord-only login aanwezig. |
 | US0.4 Wachtwoord of pincode wijzigen | Partial | Wachtwoord wijzigen technisch aanwezig; pincode uit normale flow verwijderd; UX/runtime-validatie open. |
 | US0.5 Herstel van toegang | Replaced | Back-upcode/master-key vervangen door operationele resetprocedure. |
-| US0.6 Eigenaarprofiel beheren | Partial | Wachtwoord wijzigen beschikbaar in Settings; bootgegevens wijzigen geïmplementeerd op 2026-05-25. Eigenaargegevens (naam/e-mail) wijzigen in Settings is nog open. |
+| US0.6 Eigenaarprofiel beheren | Done | Wachtwoord wijzigen beschikbaar in Settings; bootgegevens wijzigen op 2026-05-25 via IVesselProfileService; eigenaargegevens (naam/e-mail) wijzigen in Settings geïmplementeerd op 2026-05-25 via IOwnerSettingsService met encrypted payload. Naam verplicht, e-mail optioneel. |
 
 ## Epic 1: Bootbeheer & Gebruikersbeheer
 

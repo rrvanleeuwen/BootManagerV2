@@ -3,7 +3,7 @@ using BootManager.Application.Authentication.DTOs;
 namespace BootManager.Application.Authentication.Services;
 
 /// <summary>
-/// Beheerst instellingen van de eigenaar zoals wachtwoord en pincode wijzigingen.
+/// Beheerst instellingen van de eigenaar zoals wachtwoord, pincode en profielgegevens wijzigingen.
 /// </summary>
 public interface IOwnerSettingsService
 {
@@ -28,4 +28,21 @@ public interface IOwnerSettingsService
     /// </summary>
     /// <param name="ct">Annuleringstoken.</param>
     Task ClearPinAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Haalt de eigenaarprofiel-gegevens (naam en e-mail) op.
+    /// </summary>
+    /// <param name="ct">Annuleringstoken.</param>
+    /// <returns>GetOwnerProfileResponseDto met naam en e-mail.</returns>
+    /// <exception cref="InvalidOperationException">Wanneer geen eigenaar profiel bestaat.</exception>
+    Task<GetOwnerProfileResponseDto> GetOwnerProfileAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Werkt de eigenaarprofiel-gegevens (naam en e-mail) bij.
+    /// </summary>
+    /// <param name="request">UpdateOwnerProfileRequestDto met nieuwe naam en e-mail.</param>
+    /// <param name="ct">Annuleringstoken.</param>
+    /// <exception cref="ArgumentException">Wanneer validatie mislukt.</exception>
+    /// <exception cref="InvalidOperationException">Wanneer geen eigenaar profiel bestaat.</exception>
+    Task UpdateOwnerProfileAsync(UpdateOwnerProfileRequestDto request, CancellationToken ct = default);
 }

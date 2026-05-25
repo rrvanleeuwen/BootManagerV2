@@ -172,7 +172,19 @@
 
 - [x] **Owner Profile & Vessel Settings (US2: Bootgegevens wijzigen)** *(slice gestart 2026-05-25)*
   - **Aanleiding 2026-05-25:** Na onboarding zijn eigenaargegevens, bootgegevens en wachtwoordbeheer niet duidelijk genoeg als normale beheerflow beschikbaar. Bootgegevens uit onboarding moeten achteraf wijzigbaar zijn; wachtwoord wijzigen moet expliciet gevalideerd en goed vindbaar blijven.
-  - **US2 (2026-05-25):** Bootgegevens wijzigen in instellingen
+  - [x] **US1 (2026-05-25):** Eigenaargegevens wijzigen in instellingen
+    - `/settings` toont huidige eigenaarnaam en e-mailadres uit encrypted owner payload.
+    - Gebruiker kan beide velden wijzigen; naam is verplicht, e-mail optioneel.
+    - IOwnerSettingsService uitgebreid met GetOwnerProfileAsync() en UpdateOwnerProfileAsync()
+    - DTOs: GetOwnerProfileResponseDto, UpdateOwnerProfileRequestDto
+    - OwnerSettingsService: decryptie/encryptie van encrypted payload met IEncryptionService
+    - Settings.razor: nieuwe sectie "Eigenaarprofiel" boven "Wachtwoord wijzigen" met formulier
+    - Validatie: naam verplicht, email optioneel/geldig, wachtwoordhash/flags blijven ongewijzigd
+    - 8 unit tests voor GetOwnerProfileAsync/UpdateOwnerProfileAsync + edge cases, alle slagen
+    - Validatie-, fout- en succesmeldingen Nederlands
+    - `dotnet build` slaagt, 13/13 OwnerSettings-tests slagen
+    - Handmatig gevalideerd: eigenaargegevens laden en wijzigen werkt, validatie werkt, refresh persistent
+  - [x] **US2 (2026-05-25):** Bootgegevens wijzigen in instellingen
     - `/settings` toont bootgegevens uit `VesselProfile` (bootnaam, thuishaven, roepnaam, MMSI).
     - Gebruiker kan alle velden wijzigen; bootnaam is verplicht, overigen optioneel.
     - Lege optionele velden (null/empty) worden correct verwerkt.
@@ -184,13 +196,11 @@
     - `dotnet build` slaagt.
     - **Handmatige test vóór PR:** Settings openen, bootgegevens wijzigen/opslaan, refresh, leeg veld testen.
   - **Open voor vervolgslices:**
-    - **US1:** Eigenaargegevens wijzigen in instellingen (naam verplicht, e-mail optioneel).
     - **US3:** Wachtwoord wijzigen verifiëren en UX verbeteren.
     - **US4:** Settings pagina logisch ordenen in Account, Boot en Operationeel.
   - Zie: [.docs/epics/owner-profile-settings.md](epics/owner-profile-settings.md)
 
-- [ ] **Owner Profile & Vessel Settings (US1/US3/US4)** *(vervolg slices)*
-  - US1: Eigenaargegevens wijzigen in instellingen (naam, e-mail).
+- [ ] **Owner Profile & Vessel Settings (US3/US4)** *(vervolg slices)*
   - US3: Wachtwoord wijzigen verifiëren en UX verbeteren.
   - US4: Settings pagina logisch ordenen.
 
