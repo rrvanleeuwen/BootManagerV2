@@ -59,6 +59,15 @@
     - **DTO-cleanup:** `LogbookSourceMeasurementDto` klasse en properties uit `LogbookEntryDetailDto` verwijderd.
     - **Service-cleanup:** `BepaalCourseSourceAsync()`, `BepaalWindSourceAsync()`, `BepaalPositieSourceAsync()` verwijderd.
   - **Huidige detailweergave:** `/logbook/entries/{entryId:int}/details` toont accordeer-layout met waarschuwingen, logregelwaarden, meetdata-overzicht en sampletabellen.
+  - **Status 2026-05-25 (confirm-slice):** Accordeer-knop op detailpagina geïmplementeerd:
+    - **Bevestigknop:** "✓ Accorderen" knop zichtbaar voor Draft-regels in context-header (rechts).
+    - **Knopgedrag:** disabled staat voor Confirmed-regels; loading-state tijdens bevestiging; spinner en "Bezig met accorderen..." tekst.
+    - **Functionaliteit:** roept `ILogbookService.ConfirmEntryAsync` aan; herlaadt detail automatisch na succes met bijgewerkte status.
+    - **Foutafhandeling:** foutmeldingen tonen in alert boven context-header; gebruiker blijft op detailpagina.
+    - **Status-update:** na bevestiging wijzigt statusbadge van "Concept" naar "Akkoord" en verdwijnt knop.
+    - Geen service-aanpassingen nodig (ConfirmEntryAsync bestond al).
+    - `dotnet build` slaagt.
+    - Printweergave ongewijzigd: Confirmed-only filters blijven intact.
   - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print. Alleen Confirmed-regels worden afgedrukt.
   - **Huidige missing-moments-feature (2026-05-24):** banner boven logboektabel toont totaalaantal gemiste logmomenten en compacte lijst (max 5 zichtbaar + "+ meer"); knop "Conceptregels aanmaken" maakt tot 24 Draft-regels in één beurt aan met automatische meetdatasuggesties (alleen periode-data); herberekening van banner na batch. Delete-knop (🗑) per regel met bevestigingsdialoog; na verwijdering herbereken banner.
   - **Volgende slice:** gerelateerde features als detailweergave verbeteren of browser push notifications.

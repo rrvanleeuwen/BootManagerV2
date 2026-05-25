@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject ILogbookEntryDetailService DetailService
 @inject ILogbookAttachmentService AttachmentService
+@inject ILogbookService LogbookService
 @inject NavigationManager Navigation
 @inject IJSRuntime JsRuntime
 
@@ -14,6 +15,14 @@
     <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="TerugNaarLogboek">← Terug naar logboek</button>
     <h1 class="mb-1">Logboekregel accordering</h1>
 </div>
+
+@if (!string.IsNullOrEmpty(_confirmationError))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Fout bij accorderen:</strong> @_confirmationError
+        <button type="button" class="btn-close" @onclick="() => _confirmationError = null"></button>
+    </div>
+}
 
 @if (_loading)
 {
@@ -48,24 +57,41 @@ else
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <span class="text-muted small">Logboektijd (lokaal)</span>
-                        <div class="h5 mb-0">@BoordtijdHelper.NaarLokaal(_detail.EntryTimeUtc).ToString("dd-MM-yyyy HH:mm")</div>
-                    </div>
-                    <div class="mb-0">
-                        <span class="text-muted small">Logtijdvak (lokaal)</span>
-                        <div>
-                            @if (_detail.PeriodStartUtc.HasValue)
-                            {
-                                @BoordtijdHelper.NaarLokaal(_detail.PeriodStartUtc.Value).ToString("HH:mm")
-                                <span class="text-muted">—</span>
-                                @BoordtijdHelper.NaarLokaal(_detail.PeriodEndUtc).ToString("HH:mm")
-                            }
-                            else
-                            {
-                                <span class="text-muted">Onbekend</span>
-                            }
+                <div class="col-md-6 d-flex flex-column justify-content-between">
+                    @if (_detail.IsDraft)
+                    {
+                        <div class="text-end">
+                            <button class="btn btn-sm btn-success" @onclick="OnConfirmEntry" disabled="@_confirming">
+                                @if (_confirming)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span><span>Bezig met accorderen...</span>
+                                }
+                                else
+                                {
+                                    <span>✓ Accorderen</span>
+                                }
+                            </button>
+                        </div>
+                    }
+                    <div>
+                        <div class="mb-3">
+                            <span class="text-muted small">Logboektijd (lokaal)</span>
+                            <div class="h5 mb-0">@BoordtijdHelper.NaarLokaal(_detail.EntryTimeUtc).ToString("dd-MM-yyyy HH:mm")</div>
+                        </div>
+                        <div class="mb-0">
+                            <span class="text-muted small">Logtijdvak (lokaal)</span>
+                            <div>
+                                @if (_detail.PeriodStartUtc.HasValue)
+                                {
+                                    @BoordtijdHelper.NaarLokaal(_detail.PeriodStartUtc.Value).ToString("HH:mm")
+                                    <span class="text-muted">—</span>
+                                    @BoordtijdHelper.NaarLokaal(_detail.PeriodEndUtc).ToString("HH:mm")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Onbekend</span>
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -419,6 +445,8 @@ else
     private bool _uploading = false;
     private string? _uploadMessage;
     private bool _uploadSuccess = false;
+    private bool _confirming = false;
+    private string? _confirmationError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -530,6 +558,36 @@ else
     }
 
     private void TerugNaarLogboek() => Navigation.NavigateTo("/logbook");
+
+    /// <summary>
+    /// Accordeert de logboekregel (Draft → Confirmed) en vernieuwt de pagina.
+    /// </summary>
+    private async Task OnConfirmEntry()
+    {
+        _confirmationError = null;
+        _confirming = true;
+
+        try
+        {
+            await LogbookService.ConfirmEntryAsync(EntryId);
+
+            // Herlaad de detailpagina met de bijgewerkte status
+            _detail = await DetailService.GetEntryDetailAsync(EntryId);
+            StateHasChanged();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _confirmationError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _confirmationError = "Er is een onverwachte fout opgetreden: " + ex.Message;
+        }
+        finally
+        {
+            _confirming = false;
+        }
+    }
 
     /// <summary>
     /// Controleer of er geen meetdata beschikbaar is in het logtijdvak.

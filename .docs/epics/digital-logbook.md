@@ -1202,6 +1202,48 @@ export function disconnectInfiniteScroll() {
 
 ---
 
+## Slice 9: Confirm-knop op Detailpagina (2026-05-25)
+
+**Status:** Geïmplementeerd
+
+### Doel
+Gebruikers kunnen een Draft-logboekregel direct accorderen vanuit de detailpagina (`/logbook/entries/{entryId:int}/details`), zonder terug naar het overzicht te hoeven gaan.
+
+### Aanpassingen
+- **Detailpagina context-header:** "✓ Accorderen" knop toegevoegd rechts naast statusbadge.
+  - Zichtbaar: alleen voor Draft-regels.
+  - Disabled: voor Confirmed-regels.
+- **Knopgedrag:**
+  - Loading-state: spinner + "Bezig met accorderen..." tijdens de operatie.
+  - Foutafhandeling: InvalidOperationException en andere fouten tonen in rode alert boven context-header.
+  - Gebruiker: gebruiker blijft op detailpagina na succes.
+- **Status-update:**
+  - Na bevestiging roept `ILogbookService.ConfirmEntryAsync` op.
+  - Detail herlaadt automatisch via `ILogbookEntryDetailService.GetEntryDetailAsync`.
+  - Statusbadge wisselt van "Concept" naar "Akkoord"; knop verdwijnt.
+- **Service:**
+  - Geen wijzigingen; `ConfirmEntryAsync` bestond al.
+  - Component injekt `ILogbookService` voor de bevestiging.
+- **Printweergave:**
+  - Ongewijzigd: Confirmed-only filtering blijft intact in `/logbook/trips/{tripId:int}/print`.
+
+### Acceptatiecriteria
+- ✓ Draft-detailpagina toont "✓ Accorderen"-knop in context-header.
+- ✓ Confirmed-detailpagina toont geen knop.
+- ✓ Bevestigen werkt: roept `ConfirmEntryAsync`, status wijzigt, pagina vernieuwt.
+- ✓ Foutafhandeling: meldingen in rode alert, geen crash.
+- ✓ Gebruiker blijft op pagina met bijgewerkte status.
+- ✓ Printweergave ongewijzigd.
+- ✓ `dotnet build` slaagt.
+
+### Technische Details
+- **File:** `BootManager.Web\Components\Pages\LogbookEntryDetails.razor`
+  - Geïnjectioneerd: `ILogbookService LogbookService`.
+  - State: `_confirming` (bool), `_confirmationError` (string?).
+  - Method: `OnConfirmEntry()` – aanroepen service, herladen detail, fout afhandelen.
+
+---
+
 ## Technische Schuld & Toekomstige Slices
 
 ### Voor Verdere Optimalisatie
