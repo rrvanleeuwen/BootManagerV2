@@ -34,6 +34,20 @@ prompts, review en documentatie.
 - Daarna formuleert Codex pas een voorstel, Copilot-prompt of vervolgstap, passend bij de huidige BootManagerV2-architectuur en roadmap.
 - Bij afronding van functionaliteit werkt Codex `legacy-coverage-register.md` bij voor alle geraakte legacy US-nummers. Een story is pas administratief afgerond als de legacy-dekking is gecontroleerd en, waar nodig, afgevinkt of als `Partial` bijgewerkt.
 
+## User story vóór Copilot-prompt
+
+- Na het maken of kiezen van een feature-branch formuleert Codex eerst samen met de gebruiker de user story.
+- Die user story bevat minimaal:
+  - user story in de vorm "Als ... wil ik ... zodat ...";
+  - scope;
+  - expliciet buiten scope;
+  - acceptatiecriteria;
+  - geraakte legacy US-nummers en verwachte coverage-status;
+  - noodzakelijke handmatige teststappen als de wijziging UI, runtime, database, configuratie of auth raakt.
+- Codex vraagt daarna expliciet of de user story klopt.
+- Pas na akkoord van de gebruiker maakt Codex de Copilot-prompt.
+- Als de gebruiker later de scope wijzigt, herformuleert Codex eerst de user story voordat een nieuwe of aangepaste Copilot-prompt wordt gemaakt.
+
 ## Testadvies voor commit/PR
 
 - Bij UI-wijzigingen, onboarding/auth-flow, deployment/configuratie, databasegedrag of andere runtimegevoelige
@@ -51,8 +65,9 @@ prompts, review en documentatie.
 - Daarna gaat Codex automatisch door naar de volgende actie:
   - bepaal de volgende logische user story vanuit de actuele documentatie en codecontext;
   - maak altijd eerst een nieuwe feature-branch vanaf actuele `master`;
-  - leg daarna aan de gebruiker voor wat de volgende user story zou kunnen zijn;
-  - geef pas daarna de Copilot-prompt als de gebruiker daarom vraagt of akkoord geeft.
+  - formuleer daarna de user story inclusief scope, buiten scope, acceptatiecriteria en legacy coverage;
+  - vraag expliciet akkoord op de user story;
+  - geef pas daarna de Copilot-prompt als de gebruiker akkoord geeft.
 
 ## Reden
 

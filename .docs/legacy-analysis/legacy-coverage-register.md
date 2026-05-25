@@ -32,14 +32,14 @@ Bij afronding van een story of PR:
 | US0.3 Inloggen als eigenaar | Done | Wachtwoord-only login aanwezig. |
 | US0.4 Wachtwoord of pincode wijzigen | Partial | Wachtwoord wijzigen technisch aanwezig; pincode uit normale flow verwijderd; UX/runtime-validatie open. |
 | US0.5 Herstel van toegang | Replaced | Back-upcode/master-key vervangen door operationele resetprocedure. |
-| US0.6 Eigenaarprofiel beheren | Open | Vastgelegd in `Owner Profile & Vessel Settings`. |
+| US0.6 Eigenaarprofiel beheren | Partial | Wachtwoord wijzigen beschikbaar in Settings; bootgegevens wijzigen geïmplementeerd op 2026-05-25. Eigenaargegevens (naam/e-mail) wijzigen in Settings is nog open. |
 
 ## Epic 1: Bootbeheer & Gebruikersbeheer
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
 | US1.1 Eerste opstart en bootaanmaak | Done | Afgedekt door onboarding + `VesselProfile`. |
-| US1.2 Bootinformatie bewerken | Open | Vastgelegd in `Owner Profile & Vessel Settings`. |
+| US1.2 Bootinformatie bewerken | Partial | Bootgegevens wijzigen in Settings geïmplementeerd op 2026-05-25 via `IVesselProfileService`; velden (VesselName, HomePort, CallSign, MMSI) kunnen nu post-onboarding worden aangepast. Launchpad-gerelateerde bootbeheer (gebieden, opslaglocaties) is open. |
 | US1.3 Gebruikers aanmaken en rollen toewijzen | Parked | Multi-user buiten huidige single-owner scope. |
 | US1.4 Inloggen als bestaande gebruiker | Parked | Multi-user buiten huidige single-owner scope. |
 | US1.5 Meerdere boten beheren | Parked | BootManagerV2 gebruikt voorlopig single-vessel installatie. |

@@ -13,6 +13,8 @@ Standing instruction from the user:
 3. Do not wait for the user to explicitly ask for this scope check.
 4. Determine whether the idea is already defined in the legacy scope, already implemented, partially implemented, parked, dependent on other modules, or genuinely new.
 5. Then map the answer to the current BootManagerV2 architecture, roadmap and Copilot workflow.
+6. For implementation work, after creating/selecting a branch, formulate the user story first and ask the user for approval before generating a Copilot prompt.
+7. The user story must include scope, out-of-scope, acceptance criteria, legacy US coverage impact, and manual test notes when relevant.
 
 Primary scope files:
 
@@ -30,10 +32,10 @@ Coverage rule:
 
 ## Current Branch And PR Context
 
-- Current branch: `feature/inventarisatie-user-stories-oude-bootmanager`
-- Existing PR: `#60`
-- User noted that there is still an old PR/action that probably needs to be discarded later.
-- Do not close/recreate/merge PRs without explicit user instruction.
+- PR `#60` was merged and local `master` was fast-forwarded to merge commit `152a0443061f41783f54015ecffbb7700067a750`.
+- Current branch: `feature/owner-vessel-settings`
+- This branch was created from current `master`.
+- Copilot has already been given a prompt for bootgegevens wijzigen in Settings, before the new "user story before prompt" rule was recorded. Apply the new rule from now on.
 
 ## Processed Word Files
 
@@ -109,7 +111,4 @@ Next file to process after user approval:
 
 ## Current Worktree Expectation
 
-There are uncommitted documentation changes from processing all legacy Word exports, recording the standing scope-awareness instruction, and adding the legacy coverage register.
-There are untracked Word source files for Epic 0 through Epic 12.
-
-This is intentional. The user asked not to commit or push between files; commit/push should happen only when the user explicitly asks.
+There may be uncommitted documentation changes recording the new "user story before Copilot prompt" workflow. These should be committed with the owner/vessel settings branch if still present.

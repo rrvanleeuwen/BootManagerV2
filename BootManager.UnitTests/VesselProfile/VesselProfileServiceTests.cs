@@ -24,7 +24,7 @@ public class VesselProfileServiceTests
         var result = await sut.GetOrCreateVesselProfileAsync();
 
         Assert.NotNull(result);
-        Assert.Equal("Unnamed Vessel", result.VesselName);
+        Assert.Equal("Naamloze boot", result.VesselName);
         Assert.Null(result.HomePort);
         Assert.Null(result.CallSign);
         Assert.Null(result.Mmsi);
@@ -227,7 +227,8 @@ public class VesselProfileServiceTests
             Mmsi = null
         };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.UpdateVesselProfileAsync(request));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => sut.UpdateVesselProfileAsync(request));
+        Assert.Contains("Bootprofiel niet gevonden", ex.Message);
     }
 
     private static Core.Entities.VesselProfile CreateVesselProfile(string name, string? homePort, string? callSign, string? mmsi)
