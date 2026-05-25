@@ -45,8 +45,12 @@ prompts, review en documentatie.
   - geraakte legacy US-nummers en verwachte coverage-status;
   - noodzakelijke handmatige teststappen als de wijziging UI, runtime, database, configuratie of auth raakt.
 - Codex vraagt daarna expliciet of de user story klopt.
-- Pas na akkoord van de gebruiker maakt Codex de Copilot-prompt.
+- Na akkoord van de gebruiker bewaart Codex de goedgekeurde user story automatisch in het bijbehorende `.docs/epics/*.md` bestand, zonder dat de gebruiker daar expliciet om hoeft te vragen.
+- Als er nog geen passend epic-bestand bestaat, maakt Codex een klein, logisch epic-document aan of stelt eerst het juiste documentatiepad voor als de keuze projectinhoudelijk onzeker is.
+- De vastgelegde user story bevat dezelfde kern als de akkoordversie: storyzin, scope, buiten scope, acceptatiecriteria, legacy coverage-impact en noodzakelijke handmatige teststappen.
+- Pas nadat de goedgekeurde user story in het epic-bestand staat, maakt Codex de Copilot-prompt.
 - Als de gebruiker later de scope wijzigt, herformuleert Codex eerst de user story voordat een nieuwe of aangepaste Copilot-prompt wordt gemaakt.
+- Bij latere implementatie, review en afronding werkt Codex hetzelfde epic-bestand bij met status, implementatiedetails en verificatie, zodat user stories niet alleen in chat of prompts bestaan.
 
 ## Testadvies voor commit/PR
 

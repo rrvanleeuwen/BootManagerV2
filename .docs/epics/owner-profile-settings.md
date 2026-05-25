@@ -1,6 +1,6 @@
 # Epic: Owner Profile & Vessel Settings
 
-Status: US2 (Bootgegevens wijzigen) geïmplementeerd op 2026-05-25; US1/US3/US4 in backlog.
+Status: US2 (Bootgegevens wijzigen) geïmplementeerd op 2026-05-25; US1 (Eigenaargegevens wijzigen) geïmplementeerd op 2026-05-25; US3/US4 in backlog.
 
 ## Aanleiding
 
@@ -62,6 +62,10 @@ Open probleem:
 
 ### US1: Eigenaargegevens Wijzigen In Instellingen
 
+**Status:** ✅ Geïmplementeerd op 2026-05-25.
+
+**User story:** Als eigenaar wil ik mijn naam en e-mailadres na onboarding kunnen wijzigen in Instellingen, zodat mijn eigenaarprofiel actueel blijft zonder de eerste-start onboarding opnieuw te hoeven doorlopen.
+
 **Doel:** De eigenaar kan naam en e-mail uit het onboardingprofiel later aanpassen.
 
 Velden:
@@ -73,17 +77,50 @@ Gedrag:
 
 - Settings toont huidige eigenaargegevens.
 - Opslaan werkt de encrypted owner payload bij.
-- Wachtwoordhash en setup flags blijven ongewijzigd.
-- Validatiefouten worden duidelijk getoond.
+- Wachtwoordhash, setup/onboarding-status en bootgegevens blijven ongewijzigd.
+- Validatie-, succes- en foutmeldingen zijn Nederlandstalig.
 
-Acceptatiecriteria:
+**Implementatie (2026-05-25):**
 
-- `/settings` toont eigenaarnaam en e-mail.
-- Naam leeg opslaan faalt.
-- E-mail mag leeg zijn.
-- Succesvolle opslag blijft zichtbaar na refresh.
-- `dotnet build` slaagt.
-- Gerichte service/unit tests waar businesslogica wordt toegevoegd.
+- DTOs toegevoegd: `GetOwnerProfileResponseDto`, `UpdateOwnerProfileRequestDto` in `BootManager.Application/Authentication/DTOs/`
+- `IOwnerSettingsService` uitgebreid met `GetOwnerProfileAsync()` en `UpdateOwnerProfileAsync()`
+- `OwnerSettingsService` geïmplementeerd met decryptie/encryptie via `IEncryptionService`
+  - `GetOwnerProfileAsync()`: decrypteert payload, retourneert naam/email
+  - `UpdateOwnerProfileAsync()`: valideert input (naam verplicht, email optioneel), decrypteert huidige payload, update naam/email, re-encrypteert, slaat op
+  - Wachtwoord-hash en setup-flags blijven ongewijzigd
+- Settings.razor aangepast:
+  - Nieuwe "Eigenaarprofiel"-sectie boven "Wachtwoord wijzigen"
+  - Form voor naam (verplicht) en e-mail (optioneel)
+  - Laden op OnInitializedAsync, validatie, Nederlands fout-/succesmeldingen
+- Unit tests: 8 nieuwe eigenaarprofieltests, alle slagen
+  - GetOwnerProfile succesvol + edge cases
+  - UpdateOwnerProfile succesvol, validatie (lege naam, ongeldige email), payload-integriteit
+- Build succesvol, 13/13 OwnerSettings-tests slagen
+- Acceptatiecriteria afgedekt
+
+**Test coverage:**
+- `OwnerSettingsServiceTests.GetOwnerProfile_Succeeds_ReturnsNameAndEmail` ✅
+- `OwnerSettingsServiceTests.GetOwnerProfile_Fails_WhenNoOwnerExists` ✅
+- `OwnerSettingsServiceTests.UpdateOwnerProfile_Succeeds_UpdatesNameAndEmail` ✅
+- `OwnerSettingsServiceTests.UpdateOwnerProfile_Succeeds_AllowsEmptyEmail` ✅
+- `OwnerSettingsServiceTests.UpdateOwnerProfile_Fails_WhenNameEmpty` ✅
+- `OwnerSettingsServiceTests.UpdateOwnerProfile_Fails_WhenEmailInvalid` ✅
+- `OwnerSettingsServiceTests.UpdateOwnerProfile_Fails_WhenNoOwnerExists` ✅
+- `OwnerSettingsServiceTests.UpdateOwnerProfile_Succeeds_PreservesPasswordHash` ✅
+
+**Acceptatiecriteria:**
+
+- ✅ `/settings` toont eigenaarnaam en e-mail.
+- ✅ Naam leeg opslaan faalt met Nederlandse melding.
+- ✅ E-mail mag leeg zijn.
+- ✅ Geldige wijziging opslaan toont Nederlandse succesmelding.
+- ✅ Succesvolle opslag blijft zichtbaar na refresh.
+- ✅ Bestaande wachtwoord- en bootgegevensflows blijven werken.
+- ✅ `dotnet build` slaagt.
+- ✅ Gerichte service/unit tests toegevoegd.
+
+
+- Geen nieuwe onboarding-flow.
 
 ### US2: Bootgegevens Wijzigen In Instellingen
 

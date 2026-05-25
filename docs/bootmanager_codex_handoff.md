@@ -249,7 +249,9 @@ Per stap werkt Codex idealiter als volgt:
    - benoem geraakte legacy US-nummers en verwachte coverage-status
    - benoem handmatige teststappen als UI, runtime, database, configuratie of auth geraakt wordt
    - vraag de gebruiker expliciet of deze user story klopt
-   - ga pas door naar een Copilot-prompt na akkoord van de gebruiker
+   - bewaar de goedgekeurde user story daarna automatisch in het relevante `.docs/epics/*.md` bestand
+   - maak of stel eerst een passend epic-bestand voor als er nog geen logisch epic-document bestaat
+   - ga pas door naar een Copilot-prompt nadat de goedgekeurde user story in het epic-bestand staat
 
 4. **Copilot-prompt formuleren**
    - duidelijk afgebakend
@@ -297,11 +299,12 @@ Bij akkoord op een nieuwe slice of grotere werkstap regelt Codex de git-flow:
 4. Maak vanaf actuele `master` een nieuwe feature-branch met een duidelijke naam.
 5. Formuleer daarna eerst de user story met scope, buiten scope, acceptatiecriteria en legacy coverage-impact.
 6. Vraag expliciet akkoord op de user story.
-7. Maak pas na akkoord de Copilot-prompt en laat Copilot of codewijzigingen daarna uitvoeren.
-8. Review na wijzigingen de scope, build/teststatus en eventuele runtimechecks.
-9. Controleer dat er geen long-running repo-processen of `dotnet` processen zijn blijven hangen.
-10. Vraag de gebruiker expliciet om akkoord voordat Codex commit, push en PR aanmaakt.
-11. Na akkoord voert Codex commit, push en PR-aanmaak uit en controleert daarna opnieuw de werkmapstatus.
+7. Bewaar de goedgekeurde user story automatisch in het relevante `.docs/epics/*.md` bestand.
+8. Maak pas daarna de Copilot-prompt en laat Copilot of codewijzigingen daarna uitvoeren.
+9. Review na wijzigingen de scope, build/teststatus en eventuele runtimechecks.
+10. Controleer dat er geen long-running repo-processen of `dotnet` processen zijn blijven hangen.
+11. Vraag de gebruiker expliciet om akkoord voordat Codex commit, push en PR aanmaakt.
+12. Na akkoord voert Codex commit, push en PR-aanmaak uit en controleert daarna opnieuw de werkmapstatus.
 
 ---
 
@@ -524,6 +527,7 @@ Gebruik bij nieuwe werkstappen bij voorkeur deze aanpak:
 - formuleer één volgende kleine of middelgrote user story
 - benoem scope, buiten scope, acceptatiecriteria en legacy coverage-impact
 - vraag expliciet akkoord op de user story voordat je een Copilot-prompt maakt
+- bewaar de goedgekeurde user story automatisch in het relevante `.docs/epics/*.md` bestand voordat je de Copilot-prompt maakt
 - geef acceptatiecriteria
 - maak een Copilot-prompt die de gewenste functionaliteit, grenzen en architectuurafspraken beschrijft
 - vermijd een uitputtende bestandslijst of te gedetailleerde implementatie-instructies, tenzij de gebruiker daar expliciet om vraagt

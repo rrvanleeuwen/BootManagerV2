@@ -15,6 +15,8 @@ Standing instruction from the user:
 5. Then map the answer to the current BootManagerV2 architecture, roadmap and Copilot workflow.
 6. For implementation work, after creating/selecting a branch, formulate the user story first and ask the user for approval before generating a Copilot prompt.
 7. The user story must include scope, out-of-scope, acceptance criteria, legacy US coverage impact, and manual test notes when relevant.
+8. After the user approves a user story, save it automatically in the relevant `.docs/epics/*.md` file before generating a Copilot prompt. Do not wait for the user to explicitly ask for this.
+9. During implementation/review/closure, keep that epic file updated with status, implementation details and verification.
 
 Primary scope files:
 
@@ -32,10 +34,11 @@ Coverage rule:
 
 ## Current Branch And PR Context
 
-- PR `#60` was merged and local `master` was fast-forwarded to merge commit `152a0443061f41783f54015ecffbb7700067a750`.
-- Current branch: `feature/owner-vessel-settings`
+- PR `#61` was merged and local `master` was fast-forwarded to merge commit `170d02f9c6516f23f43e2e0f28dabad8e0a7a551`.
+- Current branch: `feature/owner-profile-settings-us1`
 - This branch was created from current `master`.
-- Copilot has already been given a prompt for bootgegevens wijzigen in Settings, before the new "user story before prompt" rule was recorded. Apply the new rule from now on.
+- The approved US1 user story for owner name/e-mail management is saved in `.docs/epics/owner-profile-settings.md`.
+- The next step is to give Copilot the prompt for US1, unless the user changes scope first.
 
 ## Processed Word Files
 
@@ -111,4 +114,4 @@ Next file to process after user approval:
 
 ## Current Worktree Expectation
 
-There may be uncommitted documentation changes recording the new "user story before Copilot prompt" workflow. These should be committed with the owner/vessel settings branch if still present.
+There are expected uncommitted documentation changes on `feature/owner-profile-settings-us1` recording the approved US1 story and the rule that approved user stories must be stored in epic files before Copilot prompts.
