@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IOwnerRegistrationService, OwnerRegistrationService>();
         services.AddScoped<IBootstrapOwnerService, BootstrapOwnerService>();
         services.AddScoped<IOwnerSetupStateService, OwnerSetupStateService>();
+        services.AddScoped<IOnboardingService, OnboardingService>();
         services.AddScoped<IOwnerLoginService, OwnerLoginService>();
         services.AddScoped<IOwnerRecoveryService, OwnerRecoveryService>();
         services.AddScoped<IOwnerSettingsService, OwnerSettingsService>();

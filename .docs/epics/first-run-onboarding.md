@@ -1,6 +1,6 @@
 # Epic: First-Run Onboarding & Auth Simplification
 
-Status: ontwerp vastgesteld. US1 en US2 gereed. US3 gereed (2026-05-24). US4-US5 volgen.
+Status: ontwerp vastgesteld. US1, US2, US3, US4, US5 gereed (2026-05-24). US6 volgt (docs/deployment-config).
 
 Doel: BootManager krijgt een simpele, robuuste single-owner eerste-start flow. Bij een lege database maakt de applicatie automatisch één bootstrap owner aan. De gebruiker logt in met een geconfigureerd bootstrap wachtwoord, wordt daarna verplicht door onboarding geleid, vult eigenaar- en bootgegevens in, en wijzigt direct het wachtwoord.
 
@@ -281,61 +281,101 @@ Routes vóór onboarding toegestaan:
 
 Volgende stap: US4 implementeert het volledige onboardingformulier voor eigenaar-, boot- en wachtwoordgegevens.
 
-### US4: Onboardingformulier Voor Eigenaar En Boot
+### US4: Onboardingformulier Voor Eigenaar En Boot ✅ (2026-05-24)
 
-Besluit:
+**Status:** Gereed.
 
-- Eén pagina: `/onboarding`.
-- Alleen bruikbaar na login.
-- Verplicht zolang setup niet klaar is.
+Realisatie:
 
-Velden:
+- `/onboarding` pagina vervangen door volledig formulier met drie secties
+- Eigenaargegevens sectie: Naam (verplicht), E-mail (optioneel)
+- Bootgegevens sectie: Bootnaam (verplicht), Thuishaven (optioneel), Roepnaam (optioneel), MMSI (optioneel)
+- Wachtwoordwijziging sectie: Huidig (verplicht), Nieuw (verplicht, 8+ chars), Bevestiging (verplicht, moet gelijk)
+- `IOnboardingService` interface met methode `CompleteInitialOnboardingAsync(CompleteOnboardingRequestDto request, CancellationToken ct)`
+- `OnboardingService` implementatie met volledige validatie logica:
+  - Verplichte velden: eigenaarsnaam, bootnaam, huidig/nieuw wachtwoord
+  - Wachtwoord minimaal 8 tekens
+  - Nieuw wachtwoord ≠ huidig wachtwoord
+  - Wachtwoord en bevestiging moeten gelijk zijn
+  - Huidig wachtwoord verificatie tegen OwnerProfile hash
+- Serviceflow: password verify → vessel get-or-create via `IVesselProfileService.GetOrCreateVesselProfileAsync()` → vessel update via `IVesselProfileService.UpdateVesselProfileAsync()` → owner payload encrypt → password update → flags zetten → redirect
+- DTOs:
+  - `CompleteOnboardingRequestDto`: alle velden (owner/vessel/password)
+  - `CompleteOnboardingResponseDto`: success, error message, updated vessel profile, updated owner name/email
+- Dependency injection: `IOnboardingService` geregistreerd als Scoped in `BootManager.Application/DependencyInjection.cs`
+- Blazor component `/onboarding` met:
+  - Three card sections (Eigenaar, Boot, Wachtwoord) met labels en hints
+  - Form submission handler met loading state
+  - Error message display
+  - Success message met auto-redirect naar `/dashboard`
+  - Logout button als fallback
+  - Responsive layout (col-md-8 form, col-md-4 info panel)
+- Error handling: exceptions caught, returned as failure response met bericht
+- Unit tests: 9 tests in `BootManager.UnitTests/OwnerRegistration/OnboardingServiceTests.cs`
+  - Scenario's: valid submission, missing owner name, missing vessel name, password too short, password mismatch, incorrect current password, new password same as old, no owner found, optional fields empty
+  - Alle 9 tests slagen
+- Build slaagt; gerichte onboardingtests slagen
 
-Eigenaar:
+Aanvullende validatie en fix (2026-05-25):
 
-- Naam: verplicht.
-- E-mail: optioneel.
+- Verse-database runtime-test uitgevoerd door bestaande `BootManager.Web\bootmanager.db` tijdelijk te hernoemen en de app een nieuwe SQLite database te laten maken.
+- Bootstrap login met `BootManager123!` leidde correct naar `/onboarding`.
+- Formulier succesvol ingevuld en opgeslagen; gebruiker werd naar `/dashboard` geleid.
+- Oud bootstrap-wachtwoord werd ongeldig; nieuw gekozen wachtwoord werkte.
+- Handmatig navigeren naar `/onboarding` na afronding redirectte terug naar `/dashboard`.
+- SQLite-controle bevestigde `PasswordChangeRequired = 0`, `OnboardingCompleted = 1` en zichtbare bootgegevens in `VesselProfiles`.
+- Opgeloste opslagbug: onboarding faalde in een verse database als nog geen `VesselProfile` bestond, omdat `UpdateVesselProfileAsync()` een bestaand profiel verwacht. `OnboardingService` roept nu eerst `GetOrCreateVesselProfileAsync()` aan en werkt daarna het profiel bij.
 
-Boot:
+**Implementatie details:**
 
-- Bootnaam: verplicht.
-- Thuishaven: optioneel.
-- Roepnaam: optioneel.
-- MMSI: optioneel.
+- **BootManager.Application/OwnerRegistration/DTOs/CompleteOnboardingRequestDto.cs** - nieuw
+  - Properties: OwnerName, OwnerEmail, VesselName, HomePort, CallSign, Mmsi, CurrentPassword, NewPassword, ConfirmNewPassword
+  - Dutch XML-documentatie
 
-Wachtwoord:
+- **BootManager.Application/OwnerRegistration/DTOs/CompleteOnboardingResponseDto.cs** - nieuw
+  - Properties: Success, ErrorMessage, UpdatedVesselProfile, UpdatedOwnerName, UpdatedOwnerEmail
+  - Dutch XML-documentatie
 
-- Huidig/bootstrap wachtwoord: verplicht.
-- Nieuw wachtwoord: verplicht.
-- Bevestig nieuw wachtwoord: verplicht.
-- Nieuw wachtwoord minimaal 8 tekens.
-- Nieuw wachtwoord mag niet gelijk zijn aan huidig/bootstrap wachtwoord.
+- **BootManager.Application/OwnerRegistration/Services/IOnboardingService.cs** - nieuw
+  - Interface met methode `CompleteInitialOnboardingAsync(request, ct)`
+  - Dutch XML-documentatie
 
-Na succesvol opslaan:
+- **BootManager.Application/OwnerRegistration/Services/OnboardingService.cs** - nieuw
+  - Service implementatie met validatie en serviceflow
+  - Afhankelijkheden: `IRepository<OwnerProfile>`, `IPasswordHasher`, `IEncryptionService`, `ISystemClock`, `IVesselProfileService`, `ILogger`
+  - Maakt het singleton bootprofiel aan als dit nog niet bestaat voordat de vessel update wordt uitgevoerd
+  - Catch en handle exceptions (ArgumentException, UnauthorizedAccessException, InvalidOperationException)
+  - Dutch logging en error messages
+  - Private helper `ValidateRequest()` voor invoervalidatie
 
-- Owner naam/e-mail opgeslagen.
-- Vessel profile opgeslagen.
-- Wachtwoord gewijzigd.
-- `PasswordChangeRequired = false`.
-- `OnboardingCompleted = true`.
-- Redirect naar `/dashboard`.
+- **BootManager.Web/Components/Pages/Onboarding.razor** - aangepast
+  - Replaced placeholder met volledige formulier
+  - Three card sections met form fields en hints
+  - Submit button met loading state en spinner
+  - Form submit gebruikt Blazor `preventDefault`, zodat de submit volledig via de componenthandler loopt
+  - Error/success message display
+  - Logout button
+  - Form field labels met required markers (`*`) en optional markers
+  - Responsive Bootstrap layout
+  - Injected `IOnboardingService` en `NavigationManager`
+  - Code-behind met `HandleSubmit()` en `HandleLogout()` methods
+  - `@using` directives voor DTOs
 
-Aanbevolen service:
+- **BootManager.Application/DependencyInjection.cs** - aangepast
+  - `services.AddScoped<IOnboardingService, OnboardingService>();` toegevoegd
 
-- `IOnboardingService`.
-- Methode: `CompleteInitialOnboardingAsync(CompleteOnboardingRequestDto request)`.
-- Validatie in application service.
-- Razor-pagina blijft dun.
-
-Acceptatiecriteria:
-
-- `/onboarding` bestaat.
-- Opslaan faalt bij onjuist huidig wachtwoord.
-- Opslaan faalt als nieuw wachtwoord gelijk is aan huidig wachtwoord.
-- Opslaan faalt als verplichte velden ontbreken.
-- Bij succes zijn owner, vessel profile en setup flags bijgewerkt.
-- Daarna blijft gebruiker niet in onboarding hangen.
-- `dotnet build` slaagt.
+**Acceptatiecriteria:** allemaal vervuld.
+- ✅ `/onboarding` toont volledige formulier voor ingelogde owner met setup required
+- ✅ Opslaan faalt bij ontbrekende eigenaarsnaam
+- ✅ Opslaan faalt bij ontbrekende bootnaam
+- ✅ Opslaan faalt bij onjuist huidig wachtwoord
+- ✅ Opslaan faalt bij nieuw wachtwoord korter dan 8 tekens
+- ✅ Opslaan faalt bij mismatch nieuw wachtwoord en bevestiging
+- ✅ Opslaan faalt bij nieuw wachtwoord gelijk aan huidig
+- ✅ Bij succes: owner naam/e-mail bijgewerkt, wachtwoord gewijzigd, vessel profile opgeslagen, flags gezet, redirect naar `/dashboard`
+- ✅ Dashboard/settings/logbook bereikbaar na onboarding compleet
+- ✅ `dotnet build` slaagt
+- ✅ 9 unit tests slagen
 
 ### US5: VesselProfile Introduceren ✅ (2026-05-24)
 
@@ -492,35 +532,19 @@ Later kan een aparte story een nettere factory-reset of owner-reset command toev
 
 ## Aanbevolen Implementatievolgorde
 
-1. US1: auth UI vereenvoudigen naar wachtwoord-only.
-2. US2: bootstrap owner + owner setup flags.
-3. US3: onboarding gate.
-4. US5: vessel profile datalaag.
-5. US4: onboardingformulier dat owner + vessel + wachtwoord afrondt.
-6. US6: docs/deployment-config.
+1. ✅ US1: auth UI vereenvoudigen naar wachtwoord-only. (2026-05-24)
+2. ✅ US2: bootstrap owner + owner setup flags. (2026-05-24)
+3. ✅ US3: onboarding gate. (2026-05-24)
+4. ✅ US5: vessel profile datalaag. (2026-05-24)
+5. ✅ US4: onboardingformulier dat owner + vessel + wachtwoord afrondt. (2026-05-24)
+6. [ ] US6: docs/deployment-config.
 
 US4 hangt af van US5 voor opslag van bootgegevens. Daarom is het praktisch om US5 vóór of samen met US4 te implementeren, maar de user-facing flow blijft US4.
 
+Alle core user stories zijn nu voltooid. De onboarding-flow is operationeel en helpt de eindgebruiker door de eerste-start setup. US6 werkt de documentatie en deployment-config bij.
+
 ## Volgende Keer Hier Starten
 
-Start met US1.
+Start met US6: Documentatie en deployment-config bijwerken (bootstrap password env var, Docker config, runbooks).
 
-Voorgestelde branch:
-
-```text
-feature/auth-simplify-password-only
-```
-
-Bespreek voor de prompt nog één keer:
-
-- Gaan we `/recover` volledig verwijderen of alleen route onbereikbaar maken?
-- Laten we pincode/recovery serviceklassen tijdelijk bestaan als dode code, of ruimen we ze meteen op?
-
-Aanbevolen Copilot-richting voor US1:
-
-- Scope klein houden.
-- Geen migration.
-- Geen bootstrap.
-- Geen onboarding.
-- Alleen UI/navigatie vereenvoudigen naar wachtwoord-only en recovery/pincode uit de zichtbare flow verwijderen.
-- `dotnet build` draaien.
+Na afloop van US6 is de epic gereed voor deployment.

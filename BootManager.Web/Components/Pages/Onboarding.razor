@@ -1,19 +1,292 @@
 @page "/onboarding"
+@using BootManager.Application.OwnerRegistration.DTOs
+@using BootManager.Application.OwnerRegistration.Services
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@inject IOnboardingService OnboardingService
+@inject NavigationManager NavigationManager
 
-<h3>Onboarding - Applicatie Instellen</h3>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Initiële Setup - BootManager Inrichten</h2>
+            <p class="text-muted">
+                Welkom! Voordat je BootManager kunt gebruiken, moeten we eerst jouw gegevens,
+                je bootinformatie en je nieuwe wachtwoord instellen.
+            </p>
 
-<div class="alert alert-info">
-    <h5>Onboarding Vereist</h5>
-    <p>
-        Welkom! Voordat je BootManager kunt gebruiken, moet je eerst de initiële setup voltooien.
-        Dit omvat het instellen van je eigenaargegevens en bootinformatie.
-    </p>
-    <p>
-        <strong>Placeholder:</strong> Het volledige onboardingformulier wordt in de volgende iteratie (US4) geïmplementeerd.
-    </p>
+            @if (IsSubmitting)
+            {
+                <div class="alert alert-info">
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Setup wordt voltooid...</span>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(SuccessMessage))
+            {
+                <div class="alert alert-success">
+                    <strong>Succes!</strong> Je setup is voltooid. Je wordt doorgestuurd naar het dashboard...
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="alert alert-danger">
+                    <strong>Fout:</strong> @ErrorMessage
+                </div>
+            }
+
+            <form @onsubmit="HandleSubmit" @onsubmit:preventDefault="true" novalidate>
+                <fieldset disabled="@IsSubmitting">
+                    <!-- Eigenaar Sectie -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-person"></i> Eigenaargegevens
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="ownerName" class="form-label">
+                                    Naam <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="ownerName"
+                                    @bind="Request.OwnerName"
+                                    placeholder="Jouw volledige naam"
+                                    required />
+                                <small class="text-muted d-block mt-1">Dit is jouw volledige naam.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="ownerEmail" class="form-label">
+                                    E-mail <span class="text-secondary">(optioneel)</span>
+                                </label>
+                                <input
+                                    type="email"
+                                    class="form-control"
+                                    id="ownerEmail"
+                                    @bind="Request.OwnerEmail"
+                                    placeholder="jouw.email@voorbeeld.nl" />
+                                <small class="text-muted d-block mt-1">Optionele contacte-mail.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Boot Sectie -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-water"></i> Bootgegevens
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="vesselName" class="form-label">
+                                    Bootnaam <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="vesselName"
+                                    @bind="Request.VesselName"
+                                    placeholder="Naam van jouw boot"
+                                    required />
+                                <small class="text-muted d-block mt-1">De naam van je boot.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="homePort" class="form-label">
+                                    Thuishaven <span class="text-secondary">(optioneel)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="homePort"
+                                    @bind="Request.HomePort"
+                                    placeholder="bijv. Amsterdam" />
+                                <small class="text-muted d-block mt-1">Je thuishaven.</small>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="callSign" class="form-label">
+                                            Roepnaam <span class="text-secondary">(optioneel)</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="callSign"
+                                            @bind="Request.CallSign"
+                                            placeholder="bijv. PH-ABC" />
+                                        <small class="text-muted d-block mt-1">VHF-roepnaam.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="mmsi" class="form-label">
+                                            MMSI <span class="text-secondary">(optioneel)</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="mmsi"
+                                            @bind="Request.Mmsi"
+                                            placeholder="bijv. 244123456" />
+                                        <small class="text-muted d-block mt-1">Mari Mobile Service Identity.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wachtwoord Sectie -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-lock"></i> Wachtwoordwijziging
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                Voer je huidige bootstrap-wachtwoord in, en kies vervolgens een nieuw, sterk wachtwoord.
+                            </p>
+
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">
+                                    Huidig Wachtwoord <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="password"
+                                    class="form-control"
+                                    id="currentPassword"
+                                    @bind="Request.CurrentPassword"
+                                    placeholder="Voer je bootstrap-wachtwoord in"
+                                    required />
+                                <small class="text-muted d-block mt-1">Het wachtwoord waarmee je bent ingelogd.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">
+                                    Nieuw Wachtwoord <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="password"
+                                    class="form-control"
+                                    id="newPassword"
+                                    @bind="Request.NewPassword"
+                                    placeholder="Kies een nieuw, sterk wachtwoord"
+                                    required />
+                                <small class="text-muted d-block mt-1">
+                                    Minimaal 8 tekens. Zorg voor een sterk wachtwoord met hoofd- en kleine letters, getallen en symbolen.
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">
+                                    Bevestig Nieuw Wachtwoord <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="password"
+                                    class="form-control"
+                                    id="confirmPassword"
+                                    @bind="Request.ConfirmNewPassword"
+                                    placeholder="Herhaal je nieuwe wachtwoord"
+                                    required />
+                                <small class="text-muted d-block mt-1">
+                                    Typ hetzelfde wachtwoord ter bevestiging.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Knoppen -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">
+                            @if (IsSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span>Bezig met opslaan...</span>
+                            }
+                            else
+                            {
+                                <span>Setup Voltooien</span>
+                            }
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="HandleLogout" disabled="@IsSubmitting">
+                            Uitloggen
+                        </button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Belangrijke Informatie</h6>
+                </div>
+                <div class="card-body small">
+                    <p>
+                        <strong>Waarom dit formulier?</strong>
+                        Dit is je eerste keer dat je BootManager installeert. We moeten je gegevens opslaan om alles in te richten.
+                    </p>
+                    <p>
+                        <strong>Wachtwoord:</strong>
+                        Nadat je dit formulier indient, is je bootstrap-wachtwoord niet meer geldig. Je kunt dan alleen inloggen
+                        met het nieuwe wachtwoord dat je hier instelt.
+                    </p>
+                    <p>
+                        <strong>Bootgegevens:</strong>
+                        Deze informatie wordt opgeslagen in BootManager en kan later via instellingen worden gewijzigd (als dit
+                        in de toekomst wordt toegevoegd).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<p>
-    Zodra de onboarding is voltooid, krijg je toegang tot het dashboard en alle overige functies van BootManager.
-</p>
+@code {
+    private CompleteOnboardingRequestDto Request { get; set; } = new();
+    private bool IsSubmitting { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        IsSubmitting = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var response = await OnboardingService.CompleteInitialOnboardingAsync(Request);
+
+            if (response.Success)
+            {
+                SuccessMessage = "Setup voltooid! Je wordt doorgestuurd...";
+                await Task.Delay(1500); // Geef gebruiker even tijd om het bericht te zien
+                NavigationManager.NavigateTo("/dashboard", forceLoad: true);
+            }
+            else
+            {
+                ErrorMessage = response.ErrorMessage ?? "Onbekende fout bij setup.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Fout bij setup: {ex.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private void HandleLogout()
+    {
+        NavigationManager.NavigateTo("/logout");
+    }
+}

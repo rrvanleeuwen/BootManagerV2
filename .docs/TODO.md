@@ -91,7 +91,7 @@
     - 6 unit tests, alle slagen
     - Handmatig gevalideerd: Development bootstrap, geen dubbele owner, Production failure zonder password en Production start met bestaande owner
     - Aandachtspunt buiten US2: Production dashboard gaf `BootManager.Web.styles.css` 404 na login; later apart onderzoeken als Production/static asset issue
-  - [ ] **US3 (2026-05-24):** Verplichte onboarding-flow implementeren
+  - [x] **US3 (2026-05-24):** Verplichte onboarding-flow implementeren
     - `IOwnerSetupStateService` aangemaakt: haalt setup-status op (HasOwner, PasswordChangeRequired, OnboardingCompleted, SetupRequired)
     - `OnboardingGate.razor` component afdwingt routing voor ingelogde users met ongemaakte setup
     - Redirect naar `/onboarding` als setup verplicht is; verbied dashboard/settings/logboek
@@ -120,7 +120,31 @@
     - Handmatig minimaal gevalideerd: Development-start past migratie toe en `VesselProfiles` tabel bestaat in SQLite
     - Aandachtspunt voor US4: service injecteren, GetOrCreate bij load, Update bij opslag; UI kan dun blijven
     - Geïmplementeerd: 2026-05-24
-  - [ ] **US4:** Onboardingformulier bouwen met eigenaar-, boot- en wachtwoordgegevens
+  - [x] **US4 (2026-05-24):** Onboardingformulier bouwen met eigenaar-, boot- en wachtwoordgegevens
+    - `/onboarding` pagina vervangen door volledig formulier met drie secties: Eigenaargegevens, Bootgegevens, Wachtwoordwijziging
+    - Eigenaargegevens: Naam (verplicht), E-mail (optioneel)
+    - Bootgegevens: Bootnaam (verplicht), Thuishaven (optioneel), Roepnaam (optioneel), MMSI (optioneel)
+    - Wachtwoord: Huidig (verplicht), Nieuw (verplicht, 8+ chars), Bevestiging (verplicht, moet gelijk zijn aan Nieuw)
+    - `IOnboardingService` interface met `CompleteInitialOnboardingAsync(request)` methode
+    - `OnboardingService` implementatie met volledige validatie logica:
+      - Verplichte velden (naam, bootnaam)
+      - Wachtwoord minimaal 8 tekens
+      - Nieuw wachtwoord ≠ huidig wachtwoord
+      - Bevestiging moet gelijk zijn aan nieuw
+      - Huidig wachtwoord verificatie tegen OwnerProfile hash
+    - Serviceflow: password verify → vessel get-or-create → vessel update → owner payload encrypt → password update → setup flags naar false/true → redirect
+    - DTO's: `CompleteOnboardingRequestDto` (request) en `CompleteOnboardingResponseDto` (response)
+    - DI: `IOnboardingService` geregistreerd als Scoped
+    - UI: Razor component met formulier, foutweergave, validatie feedback, submit button en logout knop
+    - Error handling: catch exceptions en return failure response met bericht
+    - Redirect naar `/dashboard` na succes
+    - 9 unit tests in OnboardingServiceTests, alle slagen
+    - Build slaagt; gerichte onboardingtests slagen
+    - Status 2026-05-25: verse-database runtime-test uitgevoerd. Bestaande `bootmanager.db` is tijdelijk hernoemd, app maakte een bootstrap owner aan, login met `BootManager123!` leidde naar `/onboarding`, formulieropslag leidde naar `/dashboard`, oud bootstrap-wachtwoord werd ongeldig, nieuw wachtwoord werkte en `/onboarding` redirectte daarna terug naar dashboard.
+    - Status 2026-05-25: opslagbug gefixt waarbij `UpdateVesselProfileAsync()` faalde als er nog geen `VesselProfile` bestond. `OnboardingService` maakt het singleton bootprofiel nu eerst aan via `GetOrCreateVesselProfileAsync()` en werkt het daarna bij.
+    - Status 2026-05-25: SQLite-validatie op de testdatabase gaf `PasswordChangeRequired=0`, `OnboardingCompleted=1` en de ingevulde vesselgegevens in `VesselProfiles`.
+    - Acceptatiecriteria vervuld: alle verplichte velden gevalideerd, alle wachtwoordregels toegepast, owner/vessel/flags bijgewerkt bij succes
+    - Geïmplementeerd: 2026-05-24
   - [ ] **US6:** Documentatie en deployment-config bijwerken
   - Zie: [.docs/epics/first-run-onboarding.md](epics/first-run-onboarding.md)
 
