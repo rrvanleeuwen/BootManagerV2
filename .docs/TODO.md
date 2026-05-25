@@ -145,7 +145,15 @@
     - Status 2026-05-25: SQLite-validatie op de testdatabase gaf `PasswordChangeRequired=0`, `OnboardingCompleted=1` en de ingevulde vesselgegevens in `VesselProfiles`.
     - Acceptatiecriteria vervuld: alle verplichte velden gevalideerd, alle wachtwoordregels toegepast, owner/vessel/flags bijgewerkt bij succes
     - Geïmplementeerd: 2026-05-24
-  - [ ] **US6:** Documentatie en deployment-config bijwerken
+  - [x] **US6 (2026-05-25):** Documentatie en deployment-config bijwerken
+    - `.env.example` uitgebreid met `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
+    - `docker-compose.yml` geeft `Bootstrap__DefaultPassword` door aan `bootmanager-web` via verplichte `.env` variabele.
+    - Docker deploymentdocumentatie beschrijft eerste-start flow, bootstrap login, verplichte onboarding en reset bij vergeten wachtwoord.
+    - Raspberry Pi deploymentdocumentatie beschrijft production bootstrap-configuratie, eerste-start flow en resetprocedure.
+    - First install runbook beschrijft secrets, eerste login, onboardingcontrole en reset bij vergeten wachtwoord.
+    - Vastgelegd: production zonder bestaande owner en zonder `Bootstrap:DefaultPassword` faalt bewust.
+    - Vastgelegd: pincode/recovery/master-key zitten niet meer in de normale gebruikersflow.
+    - Vastgelegd: bootgegevens wijzigen na onboarding is een toekomstige story.
   - Zie: [.docs/epics/first-run-onboarding.md](epics/first-run-onboarding.md)
 
 - [ ] **Authentication & Authorization**

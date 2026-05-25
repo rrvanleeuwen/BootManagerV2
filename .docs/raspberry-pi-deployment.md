@@ -57,6 +57,20 @@ BootManager bestaat uit minimaal twee processen:
 
 Voor de eerste deployment starten we waarschijnlijk eerst alleen `BootManager.Web`. Daarna voegen we `Ingest` toe als tweede service.
 
+## Eerste-start flow
+
+Op een lege Pi/database werkt BootManager als volgt:
+
+1. `BootManager.Web` past database-migraties toe.
+2. Als er geen `OwnerProfile` bestaat, wordt een bootstrap owner aangemaakt.
+3. De eerste login gebruikt `Bootstrap:DefaultPassword`.
+4. Een ingelogde bootstrap owner wordt verplicht naar `/onboarding` gestuurd.
+5. In onboarding worden eigenaargegevens, bootgegevens en een nieuw wachtwoord ingevuld.
+6. Na succesvolle onboarding zijn `PasswordChangeRequired=false` en `OnboardingCompleted=true`.
+7. Het dashboard en de rest van de applicatie zijn daarna bereikbaar.
+
+De normale gebruikersflow gebruikt geen pincode, recovery-code of master-key UI. Het bootstrap-wachtwoord is alleen bedoeld voor eerste installatie en wordt na onboarding vervangen door het gekozen nieuwe wachtwoord.
+
 ## Persistente paden op de Pi
 
 Aanbevolen layout:
@@ -96,6 +110,26 @@ Productievoorstel:
 ```
 
 Daarnaast moet `Encryption:Key` niet op `CHANGE_THIS_PRODUCTION_KEY` blijven staan.
+
+Voor production moet ook een bootstrap-wachtwoord expliciet ingesteld worden:
+
+```text
+Bootstrap:DefaultPassword=<tijdelijk-eerste-login-wachtwoord>
+```
+
+Bij Docker Compose gebeurt dit via `.env`:
+
+```text
+BOOTMANAGER_BOOTSTRAP_PASSWORD=replace-with-first-login-password
+```
+
+Bij systemd kan dit bijvoorbeeld als environment variable in de service worden gezet:
+
+```ini
+Environment=Bootstrap__DefaultPassword=replace-with-first-login-password
+```
+
+Als de database leeg is en dit wachtwoord ontbreekt, hoort `BootManager.Web` in production niet door te starten. Dat is bewust: een lege productie-installatie moet altijd een expliciet eerste-login-wachtwoord hebben.
 
 ### Ingest
 
@@ -196,6 +230,20 @@ Als de UI vanaf andere apparaten bereikbaar moet zijn, moet de webapp luisteren 
 - Moet BootManager alleen thuisnetwerk-bereikbaar zijn of later ook van buitenaf?
 - Gaat Ingest op dezelfde Pi draaien als Web?
 - Waar komen NMEA-data vandaan: echte boot-hardware, simulator, of later?
+
+## Reset bij vergeten wachtwoord
+
+Voor deze epic is er geen in-app recovery. Als de enige gebruiker niet meer kan inloggen:
+
+1. Zorg voor fysieke/admin toegang tot de Pi.
+2. Stop `BootManager.Web` en `BootManager.Tools.Ingest` of de Docker containers.
+3. Maak een backup van `/var/lib/bootmanager/bootmanager.db` of van het Docker volume.
+4. Hernoem of verwijder daarna pas de actieve SQLite database.
+5. Controleer dat `Bootstrap:DefaultPassword` opnieuw is ingesteld.
+6. Start BootManager opnieuw.
+7. Doorloop opnieuw de bootstrap login en onboarding.
+
+Deze reset wist de actieve applicatie-state in de database. Bewaar backups zolang je oude logboek- of meetdata nog nodig kunt hebben. Bootgegevens wijzigen na onboarding is later een aparte story.
 
 ## Docker Compose Deployment (alternatief)
 

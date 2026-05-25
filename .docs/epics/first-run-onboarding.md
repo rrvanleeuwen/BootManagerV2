@@ -1,6 +1,6 @@
 # Epic: First-Run Onboarding & Auth Simplification
 
-Status: ontwerp vastgesteld. US1, US2, US3, US4, US5 gereed (2026-05-24). US6 volgt (docs/deployment-config).
+Status: ontwerp vastgesteld. US1, US2, US3, US4, US5 gereed (2026-05-24). US6 gereed (2026-05-25).
 
 Doel: BootManager krijgt een simpele, robuuste single-owner eerste-start flow. Bij een lege database maakt de applicatie automatisch één bootstrap owner aan. De gebruiker logt in met een geconfigureerd bootstrap wachtwoord, wordt daarna verplicht door onboarding geleid, vult eigenaar- en bootgegevens in, en wijzigt direct het wachtwoord.
 
@@ -470,20 +470,18 @@ Geen wijzigingen aan:
 - Meerdere boten: niet ondersteund; singleton per installatie.
 - NMEA, ingest, logboek, Docker, Raspberry Pi: onveranderd.
 
-### US6: Documentatie En Deployment-Config Bijwerken
+### US6: Documentatie En Deployment-Config Bijwerken ✅ (2026-05-25)
 
-Besluit:
-
-- Deze story hoort aan het einde van de epic, zodra de codeflow vastligt.
+**Status:** Gereed.
 
 Te wijzigen:
 
-- `.env.example`;
-- `docker-compose.yml`;
-- `.docs/raspberry-pi-deployment.md`;
-- `.docs/docker-deployment.md`;
-- `.docs/pi-first-install-runbook.md`;
-- eventueel `.docs/TODO.md`.
+- `.env.example` ✅
+- `docker-compose.yml` ✅
+- `.docs/raspberry-pi-deployment.md` ✅
+- `.docs/docker-deployment.md` ✅
+- `.docs/pi-first-install-runbook.md` ✅
+- `.docs/TODO.md` ✅
 
 Docker config:
 
@@ -499,21 +497,21 @@ Compose:
 
 Docs moeten uitleggen:
 
-- Eerste start maakt bootstrap owner.
-- Eerste login gebruikt bootstrap wachtwoord.
-- Onboarding is verplicht.
-- Gebruiker kiest direct nieuw wachtwoord.
-- Geen pincode/recovery/master-key UI.
-- Als gebruiker niet meer kan inloggen: operationele factory-reset procedure via database backup/hernoemen/verwijderen.
-- Bootgegevens wijzigen is later.
+- Eerste start maakt bootstrap owner. ✅
+- Eerste login gebruikt bootstrap wachtwoord. ✅
+- Onboarding is verplicht. ✅
+- Gebruiker kiest direct nieuw wachtwoord. ✅
+- Geen pincode/recovery/master-key UI. ✅
+- Als gebruiker niet meer kan inloggen: operationele factory-reset procedure via database backup/hernoemen/verwijderen. ✅
+- Bootgegevens wijzigen is later. ✅
 
 Acceptatiecriteria:
 
-- Deployment-config bevat bootstrap password env var.
-- Development-config ondersteunt lokale flow.
-- Runbook beschrijft eerste login en onboarding.
-- Docs beschrijven reset bij vergeten wachtwoord.
-- `dotnet build` slaagt.
+- ✅ Deployment-config bevat bootstrap password env var.
+- ✅ Development-config ondersteunt lokale flow.
+- ✅ Runbook beschrijft eerste login en onboarding.
+- ✅ Docs beschrijven reset bij vergeten wachtwoord.
+- ✅ `dotnet build` slaagt.
 
 ## Operationele Resetprocedure Bij Vergeten Wachtwoord
 
@@ -537,14 +535,14 @@ Later kan een aparte story een nettere factory-reset of owner-reset command toev
 3. ✅ US3: onboarding gate. (2026-05-24)
 4. ✅ US5: vessel profile datalaag. (2026-05-24)
 5. ✅ US4: onboardingformulier dat owner + vessel + wachtwoord afrondt. (2026-05-24)
-6. [ ] US6: docs/deployment-config.
+6. ✅ US6: docs/deployment-config. (2026-05-25)
 
 US4 hangt af van US5 voor opslag van bootgegevens. Daarom is het praktisch om US5 vóór of samen met US4 te implementeren, maar de user-facing flow blijft US4.
 
-Alle core user stories zijn nu voltooid. De onboarding-flow is operationeel en helpt de eindgebruiker door de eerste-start setup. US6 werkt de documentatie en deployment-config bij.
+Alle core user stories zijn nu voltooid. De onboarding-flow is operationeel en helpt de eindgebruiker door de eerste-start setup. US6 heeft de documentatie en deployment-config bijgewerkt voor Docker, Raspberry Pi en eerste installatie.
 
 ## Volgende Keer Hier Starten
 
-Start met US6: Documentatie en deployment-config bijwerken (bootstrap password env var, Docker config, runbooks).
+De First-Run Onboarding & Auth Simplification epic is gereed voor deploymentvalidatie.
 
-Na afloop van US6 is de epic gereed voor deployment.
+Logische vervolgstap: voer een Docker Compose smoke test uit met een verse database en `.env` met `BOOTMANAGER_BOOTSTRAP_PASSWORD`, of pak daarna de volgende roadmap-story op buiten deze epic.
