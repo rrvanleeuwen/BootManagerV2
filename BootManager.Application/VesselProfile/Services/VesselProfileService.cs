@@ -52,7 +52,7 @@ public class VesselProfileService : IVesselProfileService
         // Anders maak een leeg profiel aan
         _logger.LogInformation("No vessel profile found; creating empty profile");
 
-        var emptyVesselName = "Unnamed Vessel"; // Standaard bootnaam voor nieuw profiel
+        var emptyVesselName = "Naamloze boot"; // Standaard bootnaam voor nieuw profiel
         var newProfile = Core.Entities.VesselProfile.Create(
             vesselName: emptyVesselName,
             homePort: null,
@@ -81,7 +81,7 @@ public class VesselProfileService : IVesselProfileService
 
         if (profile == null)
         {
-            throw new InvalidOperationException("No vessel profile found. Please call GetOrCreateVesselProfileAsync first.");
+            throw new InvalidOperationException("Bootprofiel niet gevonden. Zorg dat u eerst GetOrCreateVesselProfileAsync aanroept.");
         }
 
         // Update het profiel
@@ -106,34 +106,34 @@ public class VesselProfileService : IVesselProfileService
     {
         if (string.IsNullOrWhiteSpace(request.VesselName))
         {
-            throw new ArgumentException("VesselName is required and cannot be empty.", nameof(request.VesselName));
+            throw new ArgumentException("Bootnaam is verplicht.", nameof(request.VesselName));
         }
 
         if (request.VesselName.Length > MaxVesselNameLength)
         {
             throw new ArgumentException(
-                $"VesselName cannot exceed {MaxVesselNameLength} characters.", 
+                $"Bootnaam mag niet langer zijn dan {MaxVesselNameLength} tekens.",
                 nameof(request.VesselName));
         }
 
         if (!string.IsNullOrEmpty(request.HomePort) && request.HomePort.Length > MaxHomePortLength)
         {
             throw new ArgumentException(
-                $"HomePort cannot exceed {MaxHomePortLength} characters.", 
+                $"Thuishaven mag niet langer zijn dan {MaxHomePortLength} tekens.",
                 nameof(request.HomePort));
         }
 
         if (!string.IsNullOrEmpty(request.CallSign) && request.CallSign.Length > MaxCallSignLength)
         {
             throw new ArgumentException(
-                $"CallSign cannot exceed {MaxCallSignLength} characters.", 
+                $"Roepnaam mag niet langer zijn dan {MaxCallSignLength} tekens.",
                 nameof(request.CallSign));
         }
 
         if (!string.IsNullOrEmpty(request.Mmsi) && request.Mmsi.Length > MaxMmsiLength)
         {
             throw new ArgumentException(
-                $"Mmsi cannot exceed {MaxMmsiLength} characters.", 
+                $"MMSI mag niet langer zijn dan {MaxMmsiLength} tekens.",
                 nameof(request.Mmsi));
         }
     }

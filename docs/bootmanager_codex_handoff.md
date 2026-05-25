@@ -241,7 +241,17 @@ Per stap werkt Codex idealiter als volgt:
    - gecontroleerd
    - passend bij bestaande architectuur
 
-3. **Copilot-prompt formuleren**
+3. **User story expliciet formuleren en laten goedkeuren**
+   - formuleer de user story als "Als ... wil ik ... zodat ..."
+   - benoem scope
+   - benoem expliciet buiten scope
+   - benoem acceptatiecriteria
+   - benoem geraakte legacy US-nummers en verwachte coverage-status
+   - benoem handmatige teststappen als UI, runtime, database, configuratie of auth geraakt wordt
+   - vraag de gebruiker expliciet of deze user story klopt
+   - ga pas door naar een Copilot-prompt na akkoord van de gebruiker
+
+4. **Copilot-prompt formuleren**
    - duidelijk afgebakend
    - projectspecifiek
    - geen brede refactors zonder noodzaak
@@ -251,13 +261,13 @@ Per stap werkt Codex idealiter als volgt:
    - neem bij nieuwe features expliciet op dat relevante `.docs` documentatie moet worden bijgewerkt
    - neem bij documentatie-updates expliciet op dat datums de actuele sessiedatum moeten gebruiken en niet automatisch oude documentdatums mogen overnemen
 
-4. **Copilot-output beoordelen**
+5. **Copilot-output beoordelen**
    - architectuur
    - compileerbaarheid
    - semantische juistheid
    - scopebewaking
 
-5. **Acceptatietests geven**
+6. **Acceptatietests geven**
    - build
    - runtime-keten
    - logging
@@ -265,7 +275,7 @@ Per stap werkt Codex idealiter als volgt:
    - SQLite
    - regressiecheck
 
-6. **Commit/push-moment expliciet benoemen**
+7. **Commit/push-moment expliciet benoemen**
    - alleen als de stap inhoudelijk klopt en getest is
 
 ### Belangrijke werkafspraken
@@ -285,11 +295,13 @@ Bij akkoord op een nieuwe slice of grotere werkstap regelt Codex de git-flow:
 2. Controleer of er relevante open PR's of recent gemergde PR's zijn.
 3. Zorg dat lokale `master` actueel is via een fast-forward pull vanaf `origin/master`.
 4. Maak vanaf actuele `master` een nieuwe feature-branch met een duidelijke naam.
-5. Laat Copilot of codewijzigingen pas daarna uitvoeren.
-6. Review na wijzigingen de scope, build/teststatus en eventuele runtimechecks.
-7. Controleer dat er geen long-running repo-processen of `dotnet` processen zijn blijven hangen.
-8. Vraag de gebruiker expliciet om akkoord voordat Codex commit, push en PR aanmaakt.
-9. Na akkoord voert Codex commit, push en PR-aanmaak uit en controleert daarna opnieuw de werkmapstatus.
+5. Formuleer daarna eerst de user story met scope, buiten scope, acceptatiecriteria en legacy coverage-impact.
+6. Vraag expliciet akkoord op de user story.
+7. Maak pas na akkoord de Copilot-prompt en laat Copilot of codewijzigingen daarna uitvoeren.
+8. Review na wijzigingen de scope, build/teststatus en eventuele runtimechecks.
+9. Controleer dat er geen long-running repo-processen of `dotnet` processen zijn blijven hangen.
+10. Vraag de gebruiker expliciet om akkoord voordat Codex commit, push en PR aanmaakt.
+11. Na akkoord voert Codex commit, push en PR-aanmaak uit en controleert daarna opnieuw de werkmapstatus.
 
 ---
 
@@ -510,6 +522,8 @@ Gebruik bij nieuwe werkstappen bij voorkeur deze aanpak:
 
 ### Daarna voorstellen
 - formuleer één volgende kleine of middelgrote user story
+- benoem scope, buiten scope, acceptatiecriteria en legacy coverage-impact
+- vraag expliciet akkoord op de user story voordat je een Copilot-prompt maakt
 - geef acceptatiecriteria
 - maak een Copilot-prompt die de gewenste functionaliteit, grenzen en architectuurafspraken beschrijft
 - vermijd een uitputtende bestandslijst of te gedetailleerde implementatie-instructies, tenzij de gebruiker daar expliciet om vraagt

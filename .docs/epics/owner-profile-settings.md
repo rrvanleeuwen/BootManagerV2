@@ -1,6 +1,6 @@
 # Epic: Owner Profile & Vessel Settings
 
-Status: backlog / ontwerp vastgelegd (2026-05-25).
+Status: US2 (Bootgegevens wijzigen) geïmplementeerd op 2026-05-25; US1/US3/US4 in backlog.
 
 ## Aanleiding
 
@@ -89,6 +89,8 @@ Acceptatiecriteria:
 
 **Doel:** De eigenaar kan het singleton bootprofiel na onboarding aanpassen.
 
+**Status:** ✅ Afgerond op 2026-05-25.
+
 Velden:
 
 - Bootnaam: verplicht.
@@ -105,13 +107,29 @@ Gedrag:
 
 Acceptatiecriteria:
 
-- `/settings` toont bootnaam, thuishaven, roepnaam en MMSI.
-- Bootnaam leeg opslaan faalt.
-- Optionele velden mogen leeg zijn.
-- Succesvolle opslag blijft zichtbaar na refresh.
-- Onboardinggegevens kunnen achteraf worden aangepast.
-- `dotnet build` slaagt.
-- Bestaande `VesselProfileServiceTests` blijven slagen.
+- ✅ `/settings` toont bootnaam, thuishaven, roepnaam en MMSI.
+- ✅ Bootnaam leeg opslaan faalt met duidelijke foutmelding.
+- ✅ Optionele velden mogen leeg zijn.
+- ✅ Succesvolle opslag blijft zichtbaar na refresh.
+- ✅ Onboardinggegevens kunnen achteraf worden aangepast.
+- ✅ `dotnet build` slaagt.
+- ✅ Bestaande `VesselProfileServiceTests` blijven slagen.
+
+**Implementatiedetails:**
+
+- **Component:** `BootManager.Web/Components/Pages/Settings.razor`
+  - Nieuwe sectie "Bootgegevens" tussen wachtwoord en operationele instellingen.
+  - `EditForm` gebonden aan `VesselEditModel` (lokaal model met settable properties).
+  - `OnInitializedAsync()` laadt bootgegevens via `IVesselProfileService.GetOrCreateVesselProfileAsync()`.
+  - `HandleVesselSubmit()` verwerkt opslaan, trim whitespace, handelt null/lege optionele velden af.
+  - Validatiefouten uit service (`ArgumentException`) tonen in alert met rode kleur.
+  - Succesmeldingen tonen in groene alert.
+
+- **Service:** `VesselProfileService` gebruikt voor opslaan; user-facing validatie- en fallbackteksten voor bootgegevens zijn Nederlandstalig gemaakt.
+
+- **DTOs:** `VesselProfileDto` en `UpdateVesselProfileRequestDto` ongewijzigd gebruikt.
+
+- **Tests:** `VesselProfileServiceTests` aangepast voor Nederlandse fallbacktekst; bestaande VesselProfile-tests blijven slagen.
 
 ### US3: Wachtwoord Wijzigen Verifiëren En UX Verbeteren
 

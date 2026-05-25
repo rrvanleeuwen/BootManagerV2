@@ -61,6 +61,13 @@ When a BootManagerV2 feature is completed, Codex must update
 the story as administratively complete. If coverage is partial, keep the status
 as `Partial` and record what remains open.
 
+For implementation work, Codex must not jump directly from branch creation to a
+Copilot prompt. After creating or selecting the feature branch, Codex must first
+formulate a concise user story together with scope, out-of-scope items,
+acceptance criteria, legacy coverage impact, and required manual test notes.
+Codex must ask the user whether that user story is correct. Only after the user
+approves the user story may Codex generate the Copilot prompt.
+
 For the legacy BootManager Word-source inventory, continue strictly one source
 file at a time. After each processed file, stop and ask the user for approval
 before processing the next file. Do not commit or push between files unless the

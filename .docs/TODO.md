@@ -170,14 +170,29 @@
   - Role-based access control (Admin, User, Viewer)
   - Secure owner profile management
 
-- [ ] **Owner Profile & Vessel Settings** *(epic – beheer na onboarding)*
+- [x] **Owner Profile & Vessel Settings (US2: Bootgegevens wijzigen)** *(slice gestart 2026-05-25)*
   - **Aanleiding 2026-05-25:** Na onboarding zijn eigenaargegevens, bootgegevens en wachtwoordbeheer niet duidelijk genoeg als normale beheerflow beschikbaar. Bootgegevens uit onboarding moeten achteraf wijzigbaar zijn; wachtwoord wijzigen moet expliciet gevalideerd en goed vindbaar blijven.
-  - **US1:** Eigenaargegevens wijzigen in instellingen (naam verplicht, e-mail optioneel, encrypted owner payload bijwerken).
-  - **US2:** Bootgegevens wijzigen in instellingen via bestaand `IVesselProfileService` (bootnaam verplicht, thuishaven/roepnaam/MMSI optioneel).
-  - **US3:** Wachtwoord wijzigen verifiëren en UX verbeteren na onboarding (oud wachtwoord faalt, nieuw wachtwoord werkt, duidelijke feedback).
-  - **US4:** Settings pagina logisch ordenen in Account, Boot en Operationeel.
-  - **Testafspraak:** bij deze epic altijd handmatige UI/runtime-test vóór commit/PR, vooral voor wachtwoordwijzigingen.
+  - **US2 (2026-05-25):** Bootgegevens wijzigen in instellingen
+    - `/settings` toont bootgegevens uit `VesselProfile` (bootnaam, thuishaven, roepnaam, MMSI).
+    - Gebruiker kan alle velden wijzigen; bootnaam is verplicht, overigen optioneel.
+    - Lege optionele velden (null/empty) worden correct verwerkt.
+    - Opslaan gebruikt bestaande `IVesselProfileService.UpdateVesselProfileAsync()`.
+    - Bestaande validatie uit service (veldlengtes, verplicht bootnaam) werkt via `ArgumentException`.
+    - Succesmeldingen en foutmeldingen tonen duidelijk.
+    - Na refresh zijn wijzigingen persistent zichtbaar.
+    - Onboardinggegevens kunnen achteraf worden aangepast.
+    - `dotnet build` slaagt.
+    - **Handmatige test vóór PR:** Settings openen, bootgegevens wijzigen/opslaan, refresh, leeg veld testen.
+  - **Open voor vervolgslices:**
+    - **US1:** Eigenaargegevens wijzigen in instellingen (naam verplicht, e-mail optioneel).
+    - **US3:** Wachtwoord wijzigen verifiëren en UX verbeteren.
+    - **US4:** Settings pagina logisch ordenen in Account, Boot en Operationeel.
   - Zie: [.docs/epics/owner-profile-settings.md](epics/owner-profile-settings.md)
+
+- [ ] **Owner Profile & Vessel Settings (US1/US3/US4)** *(vervolg slices)*
+  - US1: Eigenaargegevens wijzigen in instellingen (naam, e-mail).
+  - US3: Wachtwoord wijzigen verifiëren en UX verbeteren.
+  - US4: Settings pagina logisch ordenen.
 
 - [ ] **Query API Enhancements**
   - Date range filtering on measurements
