@@ -81,3 +81,6 @@ coverage/
 /BootManager.Web/bootmanager.db-wal
 /BootManager.Web/bootmanager*.db
 /BootManager.Web/data/
+
+# Legacy analysis source PDFs stay local; commit extracted text/OCR instead.
+/.docs/legacy-input/*.pdf

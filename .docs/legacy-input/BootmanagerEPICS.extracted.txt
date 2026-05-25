@@ -1,0 +1,207 @@
+﻿Source: .docs\legacy-input\BootmanagerEPICS.pdf
+Pages: 68
+
+===== Page 1 =====
+BootManager_Softwa...BootManager_Softwarevisie_v0.7maandag 13 oktober 202518:39   Nieuwe sectie 1 Pagina 1   
+
+===== Page 2 =====
+   Nieuwe sectie 1 Pagina 2   
+
+===== Page 3 =====
+   Nieuwe sectie 1 Pagina 3   
+
+===== Page 4 =====
+   Nieuwe sectie 1 Pagina 4   
+
+===== Page 5 =====
+   Nieuwe sectie 1 Pagina 5   
+
+===== Page 6 =====
+BootManager_Epic0...BootManager_Epic0_Installatie_Authenticatiemaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 6   
+
+===== Page 7 =====
+   Nieuwe sectie 1 Pagina 7   
+
+===== Page 8 =====
+   Nieuwe sectie 1 Pagina 8   
+
+===== Page 9 =====
+BootManager_Epic1_Bootbeheer_en_GebruikersbeheerBootManager_Epic1_Bootbeheer_en_Gebruikersbeheermaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 9   
+
+===== Page 10 =====
+   Nieuwe sectie 1 Pagina 10   
+
+===== Page 11 =====
+   Nieuwe sectie 1 Pagina 11   
+
+===== Page 12 =====
+   Nieuwe sectie 1 Pagina 12   
+
+===== Page 13 =====
+   Nieuwe sectie 1 Pagina 13   
+
+===== Page 14 =====
+BootManager_Epic2_InventarisbeheerBootManager_Epic2_Inventarisbeheermaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 14   
+
+===== Page 15 =====
+   Nieuwe sectie 1 Pagina 15   
+
+===== Page 16 =====
+   Nieuwe sectie 1 Pagina 16   
+
+===== Page 17 =====
+   Nieuwe sectie 1 Pagina 17   
+
+===== Page 18 =====
+   Nieuwe sectie 1 Pagina 18   
+
+===== Page 19 =====
+   Nieuwe sectie 1 Pagina 19   
+
+===== Page 20 =====
+   Nieuwe sectie 1 Pagina 20   
+
+===== Page 21 =====
+   Nieuwe sectie 1 Pagina 21   
+
+===== Page 22 =====
+BootManager_Epic3_PassagePlanningBootManager_Epic3_PassagePlanningmaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 22   
+
+===== Page 23 =====
+   Nieuwe sectie 1 Pagina 23   
+
+===== Page 24 =====
+   Nieuwe sectie 1 Pagina 24   
+
+===== Page 25 =====
+   Nieuwe sectie 1 Pagina 25   
+
+===== Page 26 =====
+   Nieuwe sectie 1 Pagina 26   
+
+===== Page 27 =====
+   Nieuwe sectie 1 Pagina 27   
+
+===== Page 28 =====
+   Nieuwe sectie 1 Pagina 28   
+
+===== Page 29 =====
+BootManager_Epic4_DocumentbeheerBootManager_Epic4_Documentbeheermaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 29   
+
+===== Page 30 =====
+   Nieuwe sectie 1 Pagina 30   
+
+===== Page 31 =====
+   Nieuwe sectie 1 Pagina 31   
+
+===== Page 32 =====
+   Nieuwe sectie 1 Pagina 32   
+
+===== Page 33 =====
+   Nieuwe sectie 1 Pagina 33   
+
+===== Page 34 =====
+   Nieuwe sectie 1 Pagina 34   
+
+===== Page 35 =====
+BootManager_Epic5_LogboekBootManager_Epic5_Logboekmaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 35   
+
+===== Page 36 =====
+   Nieuwe sectie 1 Pagina 36   
+
+===== Page 37 =====
+   Nieuwe sectie 1 Pagina 37   
+
+===== Page 38 =====
+   Nieuwe sectie 1 Pagina 38   
+
+===== Page 39 =====
+   Nieuwe sectie 1 Pagina 39   
+
+===== Page 40 =====
+BootManager_Epic6_OnderhoudsbeheerLBootManager_Epic6_OnderhoudsbeheerLmaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 40   
+
+===== Page 41 =====
+   Nieuwe sectie 1 Pagina 41   
+
+===== Page 42 =====
+   Nieuwe sectie 1 Pagina 42   
+
+===== Page 43 =====
+   Nieuwe sectie 1 Pagina 43   
+
+===== Page 44 =====
+BootManager_Epic7_DashboardBootManager_Epic7_Dashboardmaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 44   
+
+===== Page 45 =====
+   Nieuwe sectie 1 Pagina 45   
+
+===== Page 46 =====
+   Nieuwe sectie 1 Pagina 46   
+
+===== Page 47 =====
+   Nieuwe sectie 1 Pagina 47   
+
+===== Page 48 =====
+BootManager_Epic8_SysteembeheerBootManager_Epic8_Systeembeheermaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 48   
+
+===== Page 49 =====
+   Nieuwe sectie 1 Pagina 49   
+
+===== Page 50 =====
+   Nieuwe sectie 1 Pagina 50   
+
+===== Page 51 =====
+   Nieuwe sectie 1 Pagina 51   
+
+===== Page 52 =====
+BootManager_Epic9_IntegratieBootManager_Epic9_Integratiemaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 52   
+
+===== Page 53 =====
+   Nieuwe sectie 1 Pagina 53   
+
+===== Page 54 =====
+   Nieuwe sectie 1 Pagina 54   
+
+===== Page 55 =====
+BootManager_Epic10_RapportageBootManager_Epic10_Rapportagemaandag 13 oktober 202518:59   Nieuwe sectie 1 Pagina 55   
+
+===== Page 56 =====
+   Nieuwe sectie 1 Pagina 56   
+
+===== Page 57 =====
+   Nieuwe sectie 1 Pagina 57   
+
+===== Page 58 =====
+BootManager_Epic11_NotificatiesBootManager_Epic11_Notificatiesmaandag 13 oktober 202522:18   Nieuwe sectie 1 Pagina 58   
+
+===== Page 59 =====
+   Nieuwe sectie 1 Pagina 59   
+
+===== Page 60 =====
+   Nieuwe sectie 1 Pagina 60   
+
+===== Page 61 =====
+BootManager_Epic12_AIBootManager_Epic12_AImaandag 13 oktober 202522:18   Nieuwe sectie 1 Pagina 61   
+
+===== Page 62 =====
+   Nieuwe sectie 1 Pagina 62   
+
+===== Page 63 =====
+   Nieuwe sectie 1 Pagina 63   
+
+===== Page 64 =====
+BootManager_Roadmap_SprintplanningBootManager_Roadmap_Sprintplanningmaandag 13 oktober 202522:18   Nieuwe sectie 1 Pagina 64   
+
+===== Page 65 =====
+   Nieuwe sectie 1 Pagina 65   
+
+===== Page 66 =====
+   Nieuwe sectie 1 Pagina 66   
+
+===== Page 67 =====
+   Nieuwe sectie 1 Pagina 67   
+
+===== Page 68 =====
+   Nieuwe sectie 1 Pagina 68   
+

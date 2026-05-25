@@ -170,6 +170,15 @@
   - Role-based access control (Admin, User, Viewer)
   - Secure owner profile management
 
+- [ ] **Owner Profile & Vessel Settings** *(epic – beheer na onboarding)*
+  - **Aanleiding 2026-05-25:** Na onboarding zijn eigenaargegevens, bootgegevens en wachtwoordbeheer niet duidelijk genoeg als normale beheerflow beschikbaar. Bootgegevens uit onboarding moeten achteraf wijzigbaar zijn; wachtwoord wijzigen moet expliciet gevalideerd en goed vindbaar blijven.
+  - **US1:** Eigenaargegevens wijzigen in instellingen (naam verplicht, e-mail optioneel, encrypted owner payload bijwerken).
+  - **US2:** Bootgegevens wijzigen in instellingen via bestaand `IVesselProfileService` (bootnaam verplicht, thuishaven/roepnaam/MMSI optioneel).
+  - **US3:** Wachtwoord wijzigen verifiëren en UX verbeteren na onboarding (oud wachtwoord faalt, nieuw wachtwoord werkt, duidelijke feedback).
+  - **US4:** Settings pagina logisch ordenen in Account, Boot en Operationeel.
+  - **Testafspraak:** bij deze epic altijd handmatige UI/runtime-test vóór commit/PR, vooral voor wachtwoordwijzigingen.
+  - Zie: [.docs/epics/owner-profile-settings.md](epics/owner-profile-settings.md)
+
 - [ ] **Query API Enhancements**
   - Date range filtering on measurements
   - Pagination support
