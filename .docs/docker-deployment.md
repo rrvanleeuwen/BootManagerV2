@@ -223,6 +223,27 @@ Van buiten de containers:
 - Ingest UDP: beschikbaar op host poort 10110
 - Ingest control API: beschikbaar op 127.0.0.1:5010 (alleen localhost in docker-compose.yml)
 
+### Ingest Control API: Container-Intern vs. Host-Toegang
+
+De Ingest control API werkt op twee niveaus:
+
+**Container-intern (Web → Ingest):**
+- `bootmanager-web` bereikt de Ingest control API via `http://bootmanager-ingest:5010` (service-naam).
+- Dit is ingesteld in `docker-compose.yml` via `Ingest__ControlApi__BaseUrl=http://bootmanager-ingest:5010`.
+- Werkt **alleen** binnenin het Docker Compose netwerk.
+- Zonder deze override zou Web proberen `http://127.0.0.1:5010` te bereiken, wat binnen de Web-container naar zichzelf wijst, niet naar Ingest.
+
+**Host-toegang (Pi/admin-machine → Ingest):**
+- Docker Compose port binding: `127.0.0.1:5010:5010` (vastgesteld in `docker-compose.yml`).
+- De control API is bereikbaar op de Pi/host zelf via `http://127.0.0.1:5010`.
+- **Niet** bereikbaar van buiten de Pi (veilig voor localhost-only operationele commando's).
+
+**Samengevat:**
+| Context | Control API URL | Beschrijving |
+|---------|-----------------|-------------|
+| Web-container (naar Ingest) | `http://bootmanager-ingest:5010` | Service-naam within Docker network |
+| Host/Pi (naar Ingest) | `http://127.0.0.1:5010` | Docker port binding, localhost-only |
+
 ## Relatie tot systemd Services
 
 Dit Docker Compose setup is een **alternatief** voor systemd services (zie `.docs/raspberry-pi-deployment.md`).
