@@ -1,0 +1,1705 @@
+﻿Source images: C:\tmp\BootmanagerEPICS-pages
+Images: 56
+
+===== page-001 =====
+
+
+===== page-002 =====
+& BootManager — Softwarevisie v0.7
+
+1. Doel van de applicatie
+
+BootManager is een integraal boordbeheersysteem voor zeil- en motorboten.
+
+De applicatie ondersteunt booteigenaren bij het beheren van alle essentiële zaken aan
+boord:
+
+- Voorraadbeheer - weten wat waar ligt
+
+- Passageplanning - berekenen van benodigde voorraden voor een reis
+
+- Documentbeheer - bewaren van certificaten, verzekeringen en vergunningen
+
+- Reislogboek - registreren van vaartochten en omstandigheden
+
+- Onderhoudsbeheer - vastleggen van onderhoud en herinneringen
+
+BootManager draait volledig offline, bijvoorbeeld op een Raspberry Pi of laptop via een
+lokale Blazor WebApp (Interactive Server).
+
+Het doel is om alle operationele en administratieve informatie van de boot te centraliseren,
+zodat de gebruiker altijd overzicht houdt.
+
+2. Gebruikers en doelgroep
+
+Primaire gebruiker: booteigenaar of vaste schipper.
+
+Secundaire gebruikers: partner of bemanning.
+
+Technisch beheerder: optioneel, verantwoordelijk voor installatie en back-ups.
+
+Gebruikers werken vaak zonder internetverbinding, hebben behoefte aan snelle toegang tot
+informatie en willen één systeem voor administratie, planning en onderhoud.
+
+3. Hoofdfuncties (uitgebreid)
+
+3.1 Boot- en locatiebeheer
+
+- Ondersteuning voor meerdere boten.
+
+- Bootgegevens: naam, type, bouwjaar, lengte, breedte, diepgang, foto's.
+- Indeling in gebieden (kajuit, kombuis, machinekamer, voorpunt, enz.).
+- Binnen elk gebied één of meer opslagruimten (kast, lade, bak).
+
+- Mogelijkheid tot visuele weergave van de bootindeling.
+
+3.2 Voorraadbeheer
+
+- Registratie van producten met naam, categorie, hoeveelheid, eenheid,
+houdbaarheidsdatum.
+
+- Locatie (gebied + opslagruimte).
+
+- Foto, barcode of QR-code.
+
+- Waarschuwingen bij lage voorraad of verlopen producten.
+
+- Filters op categorie, locatie of status.
+
+- Export naar CSV /Excel.
+
+3.3 Passageplanning
+- Invoer van reisduur en aantal bemanningsleden.
+
+
+===== page-003 =====
+- Opgeven van gemiddeld verbruik per persoon per dag.
+
+- Automatische berekening van benodigde hoeveelheden.
+
+- Vergelijking met actuele voorraad > inkooplijst genereren.
+- Opslaan, kopiëren en hergebruiken van plannen.
+
+3.4 Documentbeheer
+
+- Opslag van documenten (PDF, JPG, PNG) met titel, type, beschrijving, vervaldatum,
+gekoppelde boot.
+
+- Notificaties bij naderende vervaldatum.
+
+- Bestanden lokaal versleuteld opgeslagen.
+
+- Categorieën: verzekeringen, certificaten, vergunningen, keuringen.
+
+3.5 Reislogboek
+
+- Handmatig of automatisch logregels aanmaken.
+
+- Tijdstip, positie, koers, snelheid, windrichting, windkracht, diepte.
+- Ondersteuning voor meerdere reizen.
+
+- Export naar PDF of CSV.
+
+3.6 Onderhoudsbeheer
+
+- Registratie van uitgevoerd onderhoud: datum, omschrijving, kosten, onderdelen,
+uitvoerder.
+
+- Onderhoudsschema’s per onderdeel.
+
+- Herinneringen op basis van datum of draaiuren.
+
+- Historisch overzicht en integratie met documenten.
+
+3.7 Gebruikersbeheer
+
+- Rollen: eigenaar, bemanning, alleen-lezen.
+- Lokale login of pincode.
+
+- Gastmodus voor tijdelijke gebruikers.
+
+3.8 Offline werking
+
+- Draait volledig lokaal op Raspberry Pi of laptop.
+- SQLite-database voor opslag.
+
+- Back-up naar USB-stick of netwerkschijf.
+
+- Geen internetverbinding vereist.
+
+4, Architectuur en technologie
+
+Frontend: Blazor WebApp (.NET 8, Interactive Server)
+
+Backend: ASP.NET Core (.NET 8)
+
+Database: SQLite
+
+ORM: Entity Framework Core
+
+Architectuurstijl: Clean Architecture + Repository Pattern + CQRS (Feature-gebaseerd)
+Lagen: Core > Application > Infrastructure > Presentation
+
+
+===== page-006 =====
+
+
+===== page-007 =====
+BootManager — Epic 0: Installatie & Authenticatie
+
+Doel
+De gebruiker kan BootManager voor het eerst installeren, een eigenaarprofiel aanmaken en
+veilig inloggen.
+
+Belangrijkste functionaliteiten
+
+- Eerste installatie en configuratie van BootManager op Raspberry Pi of laptop.
+- Aanmaken van het eerste eigenaarprofiel (registratie met naam, e-mail,
+wachtwoord/pincode).
+
+- Lokale versleuteling van login-gegevens.
+
+- Inlogproces voor de eigenaar bij volgende sessies.
+
+- Beheer van inloggegevens (wijzigen, herstel via back-upcode).
+
+User Stories met Acceptatiecriteria
+
+USO.1 — Installatie uitvoeren
+Als nieuwe gebruiker wil ik BootManager kunnen installeren, zodat ik het op mijn boot kan
+gebruiken.
+
+e Given dat de installatiebestanden aanwezig zijn op de Raspberry Pi,
+When ik het installatieproces start,
+Then wordt de webapp lokaal geïnstalleerd en kan ik de setup starten.
+
+US0.2 — Registratie eerste eigenaar
+Als nieuwe gebruiker wil ik een eigenaarprofiel kunnen aanmaken, zodat ik persoonlijke
+toegang krijg tot BootManager.
+
+¢ Given dat BootManager voor het eerst wordt gestart en geen eigenaarprofiel bestaat,
+When de gebruiker op ‘Registreren als eigenaar’ klikt en zijn gegevens invoert,
+Then wordt een nieuw eigenaarprofiel aangemaakt en lokaal versleuteld opgeslagen.
+
+US0.3 — Inloggen als eigenaar
+Als eigenaar wil ik kunnen inloggen, zodat mijn gegevens en instellingen beschermd zijn.
+
+e Given dat er een eigenaarprofiel bestaat,
+When ik mijn pincode of wachtwoord invoer,
+Then opent de applicatie en worden mijn persoonlijke boten geladen.
+
+US0.4 — Wachtwoord of pincode wijzigen
+Als eigenaar wil ik mijn inloggegevens kunnen wijzigen, zodat ik mijn beveiliging kan
+bijwerken.
+
+
+===== page-008 =====
+¢ Given dat ik ben ingelogd,
+When ik via instellingen mijn pincode/wachtwoord aanpas,
+Then wordt de nieuwe code versleuteld opgeslagen en is de oude ongeldig.
+
+US0.5 — Herstel van toegang
+Als eigenaar wil ik mijn toegang kunnen herstellen als ik mijn wachtwoord ben vergeten,
+zodat ik mijn data niet verlies.
+
+e Given dat ik mijn wachtwoord niet meer weet,
+When ik kies voor ‘Herstel via back-upcode' of 'Beheersleutel importeren’,
+Then wordt mijn toegang hersteld en mijn profiel opnieuw actief.
+
+USO.6 - Eigenaarprofiel beheren
+Als eigenaar wil ik mijn persoonlijke gegevens kunnen wijzigen, zodat mijn profiel actueel
+blijft.
+
+e Given dat ik ben ingelogd,
+When ik mijn profielgegevens open,
+Then kan ik naam, e-mail of voorkeuren aanpassen en opslaan.
+
+
+===== page-009 =====
+
+
+===== page-010 =====
+BootManager — Epic 1: Bootbeheer & Gebruikersbeheer
+
+Doel
+De basis van de applicatie: het aanmaken van een boot met alle eigenschappen, inclusief
+gebruikers, machtigingen en bootstructuur (gebieden en opslaglocaties).
+
+Belangrijkste functionaliteiten
+
+- Eerste opstart van de applicatie (initial setup).
+
+- Aanmaken van een bootprofiel met eigenschappen: naam, type, bouwjaar, afmetingen,
+foto's.
+
+- Beheren van meerdere boten binnen één account.
+
+- Gebruikers aanmaken en rollen toewijzen (eigenaar, bemanning, alleen-lezen).
+
+- Opbouwen van de bootstructuur met gebieden en opslaglocaties.
+
+- Koppelen van QR-codes of tags aan opslaglocaties voor snelle herkenning.
+
+Uitgebreide User Stories met Acceptatiecriteria
+
+US1.1 — Eerste opstart en bootaanmaak
+Als eigenaar wil ik bij de eerste opstart een bootprofiel kunnen aanmaken, zodat ik
+BootManager kan gebruiken voor mijn schip.
+
+e _ Given dat de applicatie voor het eerst wordt gestart,
+When de eigenaar het welkomstscherm ziet en op 'Nieuwe boot aanmaken’ klikt,
+Then wordt een wizard getoond waarmee bootgegevens kunnen worden ingevoerd
+(naam, type, bouwjaar, afmetingen, foto) en opgeslagen in de lokale database.
+
+US1.2 — Bootinformatie bewerken
+Als eigenaar wil ik bootinformatie kunnen wijzigen of verwijderen, zodat mijn gegevens up-
+to-date blijven.
+
+¢ Given dat er één of meer boten bestaan,
+When de eigenaar op de bootinstellingen klikt,
+Then kan hij eigenschappen aanpassen of de boot verwijderen (met bevestiging).
+
+US1.3 - Gebruikers aanmaken en rollen toewijzen
+Als eigenaar wil ik extra gebruikers kunnen aanmaken en machtigingen toekennen, zodat
+mijn bemanning ook toegang heeft.
+
+* Given dat de eigenaar is ingelogd,
+When hij een nieuw gebruikersprofiel aanmaakt met een e-mailadres of
+gebruikersnaam,
+Then kan hij kiezen tussen rollen (Eigenaar, Bemanning, Alleen-lezen) en toegang
+verlenen.
+
+
+===== page-011 =====
+US1.4 — Inloggen als bestaande gebruiker
+Als bemanningslid of eigenaar wil ik kunnen inloggen, zodat ik mijn rolgebaseerde toegang
+krijg.
+
+e Given dat een gebruiker reeds bestaat,
+When de bemanning of eigenaar de pincode of het wachtwoord invoert,
+Then opent BootManager met de functies die bij hun rol horen.
+
+US1.5 - Meerdere boten beheren
+Als eigenaar wil ik meerdere boten kunnen beheren, zodat ik voor elk schip aparte gegevens
+heb.
+
+Given dat de eigenaar meer dan één boot in zijn profiel heeft,
+When hij de bootselectie opent,
+Then kan hij tussen boten wisselen en worden alle gegevens (voorraad, documenten,
+etc.) contextueel geladen.
+
+US1.6 — Boot selecteren bij opstart
+
+Als bemanningslid of eigenaar wil ik bij het opstarten kunnen kiezen welke boot ik wil
+beheren, zodat ik de juiste context heb — tenzij er slechts één boot actief is, in dat geval
+wordt die automatisch geselecteerd.
+
+« Given dat er één of meer boten geregistreerd zijn,
+When BootManager wordt gestart,
+Then
+- als één boot actief is, wordt deze automatisch geselecteerd en geladen;
+- als meerdere boten actief zijn, verschijnt een keuzescherm waarin de gebruiker de
+gewenste boot kan kiezen.
+
+US1.7 - Gebruikersrechten wijzigen
+Als eigenaar wil ik rechten van bestaande gebruikers kunnen aanpassen, zodat ik de
+toegang kan beheren.
+
+e Given dat een gebruiker al bestaat,
+When de eigenaar de gebruikerslijst opent,
+Then kan hij de rol wijzigen en de wijziging wordt direct actief.
+
+US1.8 - Gebruiker verwijderen
+Als eigenaar wil ik een gebruiker kunnen verwijderen, zodat ongewenste toegang wordt
+voorkomen.
+
+Given dat de eigenaar is ingelogd,
+When hij een gebruiker selecteert en verwijdert,
+Then wordt deze verwijderd uit de lokale database en heeft geen toegang meer.
+
+
+===== page-013 =====
+US1.14 - Tag opnieuw koppelen of vervangen
+Als eigenaar wil ik een tag opnieuw kunnen koppelen of vervangen, zodat ik beschadigde of
+verplaatste QR-codes kan vernieuwen.
+
+e Given dat een locatie al een tag heeft,
+When de eigenaar op ‘Tag vervangen!’ klikt,
+Then wordt de oude koppeling ongeldig gemaakt en een nieuwe QR-code aangemaakt.
+
+US1.15 — Overzicht van alle tags
+Als eigenaar wil ik een overzicht van alle gegenereerde tags kunnen zien, zodat ik weet
+welke locaties zijn voorzien van QR-codes.
+
+¢ Given dat er meerdere opslaglocaties bestaan,
+When de eigenaar het overzicht opent,
+Then toont BootManager een lijst met locaties, hun ID's en tagstatus (geprint,
+gekoppeld, vervangen).
+
+US1.16 — Bootgegevens exporteren/importeren (toekomst)
+Als eigenaar wil ik mijn bootgegevens kunnen exporteren en later importeren, zodat ik mijn
+configuratie kan verplaatsen of herstellen.
+
+¢ _ Given dat een boot bestaat,
+When de eigenaar kiest voor exporteren,
+Then wordt een back-upbestand (.json of zip) aangemaakt met alle bootinstellingen, dat
+later via import kan worden teruggezet.
+
+US1.17 — Toekomstige cloud-bootselectie
+Als bemanningslid of eigenaar wil ik op afstand een boot kunnen selecteren, zodat ik die kan
+bekijken of onderhouden zonder fysieke toegang tot de Raspberry Pi.
+
+«Given dat cloud-synchronisatie actief is,
+When de bemanning of eigenaar de webapp op afstand opent,
+Then kan hij kiezen welke bootgegevens hij wil bekijken of bewerken.
+
+
+===== page-014 =====
+
+
+===== page-016 =====
+Given dat de eigenaar categorieën gebruikt,
+When hij een icoon wil wijzigen of een nieuw icoon uploadt (vb. PNG of SVG),
+
+Then wordt het icoon toegevoegd aan de bibliotheek en kan het worden geselecteerd bij
+categorieën.
+
+US2.3 - Product aanmaken
+
+*Als eigenaar wil ik een nieuw product kunnen aanmaken met naam, omschrijving,
+categorie, eenheid (bijv. blik, kg, stuk), minimale voorraad, barcode(s), optioneel een foto en
+locatie, zodat ik alle productgegevens in één keer kan vastleggen.*
+
+Given dat de eigenaar de inventarispagina opent,
+
+When hij op “Nieuw product” klikt en de velden invult (naam, omschrijving, categorie,
+eenheid, minimale voorraad, barcode, eventueel een foto en opslaglocatie),
+
+Then wordt het product toegevoegd aan de database met alle ingevoerde gegevens, inclusief
+locatie, en is direct beschikbaar voor voorraadbeheer en scanning.
+
+US2.4 - Product bewerken of verwijderen
+
+*Als eigenaar wil ik bestaande producten kunnen wijzigen of verwijderen, zodat de
+gegevens actueel blijven.*
+
+Given dat een product bestaat,
+When de eigenaar de bewerk- of verwijderactie uitvoert,
+
+Then worden wijzigingen opgeslagen of het product na bevestiging verwijderd.
+
+US2.5 - Barcodes en QR-codes koppelen aan producten
+
+*Als eigenaar wil ik één of meerdere barcodes en QR-codes kunnen koppelen aan
+producten, zodat ik ze snel kan identificeren, opzoeken en varianten van hetzelfde product
+kan samenvoegen (bijv. verschillende merken van hagelslag).*
+
+Given dat een product bestaat,
+When de eigenaar één of meerdere barcodes toevoegt of een QR-code genereert,
+
+Then worden deze codes opgeslagen bij het product en kunnen ze gebruikt worden voor
+zoeken, voorraadbeheer en scanning.
+
+
+===== page-017 =====
+US2.6 - Barcode scannen bij zoeken
+
+*Als bemanningslid of eigenaar wil ik een barcode kunnen scannen om een product snel te
+vinden, zodat ik niet handmatig hoef te zoeken.*
+
+Given dat producten barcodes hebben,
+When de gebruiker een barcode scant via camera of scanner,
+
+Then toont BootManager direct het overeenkomende productdetail.
+
+US2.7 - Barcodeherkenning via foto en Al
+
+*Als bemanningslid of eigenaar wil ik een foto van een product kunnen maken, zodat
+BootManager de barcode uitleest of het product herkent met Al als de code niet leesbaar is.*
+
+Given dat een gebruiker een foto maakt van een product,
+When BootManager de barcode niet kan scannen,
+
+Then probeert het systeem met Al te herkennen wat het product is (bijv. merk, verpakking,
+tekst) en suggesties te tonen.
+
+US2.8 - Product koppelen aan opslaglocatie
+
+*Als eigenaar wil ik een product aan een opslaglocatie kunnen koppelen, zodat ik weet waar
+het zich bevindt aan boord.*
+
+Given dat er producten en opslaglocaties bestaan,
+When de eigenaar in het productdetail “Koppel locatie” kiest,
+
+Then kan hij één of meerdere locaties selecteren en een hoeveelheid per locatie opgeven.
+
+US2.9 - Voorraad bekijken per locatie
+
+*Als bemanningslid of eigenaar wil ik de producten kunnen zien die zich op een specifieke
+opslaglocatie bevinden, zodat ik snel iets kan terugvinden.”
+
+Given dat de bemanning of eigenaar een locatie selecteert (handmatig of via QR-scan),
+
+When de detailpagina wordt geopend,
+
+
+===== page-018 =====
+Then toont BootManager alle producten en hoeveelheden die daar zijn opgeslagen.
+
+US2.10 - Voorraad aanpassen (tellen of corrigeren)
+
+*Als bemanningslid of eigenaar wil ik de actuele voorraad kunnen aanpassen, zodat de
+gegevens overeenkomen met de werkelijkheid.*
+
+Given dat een product aan een locatie is gekoppeld,
+When de gebruiker een telling invoert of een correctie doet,
+
+Then wordt de hoeveelheid bijgewerkt en wordt de wijziging gelogd in het
+voorraadlogboek.
+
+US2.11 - Minimumvoorraad & waarschuwing
+
+*Als eigenaar wil ik een minimumvoorraad per product kunnen instellen, zodat ik een
+melding krijg wanneer iets bijna op is.*
+
+Given dat producten een minimumvoorraadwaarde hebben,
+When de actuele hoeveelheid onder die waarde zakt,
+
+Then toont BootManager een waarschuwing in de inventarislijst of dashboard.
+
+US2.12 - Zoeken en filteren
+
+*Als bemanningslid of eigenaar wil ik producten kunnen zoeken en filteren, zodat ik snel
+iets vind.*
+
+Given dat de inventaris veel producten bevat,
+When de gebruiker een zoekterm invoert of filters kiest,
+
+Then toont BootManager enkel de relevante producten (met directe toegang tot de locatie).
+
+US2.13 - Voorraadlogboek
+
+*Als eigenaar wil ik een logboek van voorraadwijzigingen kunnen bekijken, zodat ik zie wie
+wat heeft aangepast en wanneer.*
+
+Given dat er voorraadwijzigingen zijn geweest,
+
+
+===== page-019 =====
+When de eigenaar het logboek opent,
+
+Then toont het systeem datum, gebruiker, product, oude en nieuwe hoeveelheid.
+
+US2.14 - QR-scanner-modus
+
+*Als bemanningslid of eigenaar wil ik een QR-scanner-modus kunnen gebruiken om snel
+voorraad te bekijken of te wijzigen, zodat telling aan boord eenvoudig is.*
+
+Given dat opslaglocaties een QR-code hebben,
+When de gebruiker deze scant,
+
+Then opent het systeem de voorraadlijst van die locatie en kan de gebruiker direct aantallen
+aanpassen.
+
+US2.15 - Bulkimport / export voorraad
+
+*Als eigenaar wil ik mijn voorraad kunnen exporteren of importeren, zodat ik deze elders
+kan bewerken of een back-up kan maken.*
+
+Given dat er voorraaddata bestaat,
+When de eigenaar kiest voor export of import,
+
+Then wordt een .CSV / .JSON-bestand aangemaakt of ingelezen met alle producten,
+hoeveelheden en locaties.
+
+US2.16 - Voorraadstatus in dashboard
+
+*Als bemanningslid of eigenaar wil ik een overzicht zien van totale voorraadwaarde en
+status, zodat ik snel inzicht krijg in de situatie aan boord.*
+
+Given dat de voorraad is geregistreerd,
+When de gebruiker het dashboard opent,
+
+Then toont het systeem een samenvatting per categorie, aantal producten onder minimum,
+en totale aantallen.
+
+US2.17 - Integratie met passage-planning
+
+
+===== page-020 =====
+*Als eigenaar wil ik de geplande reis kunnen koppelen aan de voorraad, zodat ik weet of ik
+voldoende heb voor de duur van de tocht.*
+
+Given dat een passageplanning bestaat (duur, aantal personen),
+When de eigenaar op “Bereken benodigdheden” klikt,
+
+Then berekent BootManager wat nog moet worden aangeschaft en toont dit in een
+boodschappenlijst.
+
+US2.18 - Productfoto of label
+
+*Als eigenaar wil ik een foto of label aan een product kunnen toevoegen, zodat het
+makkelijker te herkennen is.*
+
+Given dat een product bestaat,
+When de eigenaar een foto uploadt of label invoert,
+
+Then wordt deze opgeslagen en zichtbaar in de productdetails en lijsten.
+
+US2.19 - Voorraad automatisch ophogen bij nieuwe aankoop
+
+*Als eigenaar wil ik bij het toevoegen van nieuwe producten aan de voorraad alleen de
+aangekochte hoeveelheid hoeven invoeren, zodat BootManager automatisch de bestaande
+voorraad ophoogt.*
+
+Given dat het product al in de voorraad bestaat,
+When de eigenaar een nieuwe hoeveelheid invoert (bijv. “+1 kg” of “+3 stuks”),
+
+Then verhoogt BootManager de bestaande voorraad automatisch met deze hoeveelheid en
+logt de wijziging in het voorraadlogboek.
+
+US2.20 - Voorraad verminderen bij verbruik via barcode
+
+*Als bemanningslid of eigenaar wil ik door de barcode van een product te scannen kunnen
+aangeven hoeveel ik daarvan heb verbruikt, zodat BootManager automatisch de voorraad
+verlaagt met de juiste hoeveelheid.*
+
+Given dat er voorraad van een product aanwezig is,
+
+When de gebruiker de barcode scant en invoert hoeveel van het product is verbruikt (bijv.
+“0,5 zak macaroni” of “1 fles water”),
+
+
+===== page-021 =====
+Then vermindert BootManager automatisch de huidige voorraad met die hoeveelheid en
+logt het verbruik in het voorraadlogboek.
+
+US2.21 - Synchronisatie met cloud (toekomst)
+
+*Als eigenaar wil ilk mijn voorraad kunnen synchroniseren met de cloud, zodat ik ook buiten
+de boot toegang heb tot de gegevens.*
+
+Given dat cloud-synchronisatie is ingeschakeld,
+When er wijzigingen worden gemaakt,
+
+Then worden deze automatisch gesynchroniseerd zodra er verbinding beschikbaar is.
+
+Samenvatting van de Epic
+Categorie                                       Functionaliteit
+
+Beheer                                               Producten, categorieën en locaties
+aanmaken, wijzigen en verwijderen
+
+Structuur                                                      Koppeling van producten aan
+opslaglocaties en categorieën
+
+Controle                                                     Voorraadniveaus, waarschuwingen,
+barcode/QR en Al-herkenning
+
+Toegang                                             Offline beheer en (toekomst) cloud-
+synchronisatie
+
+Overzicht                                               Zoeken, filteren, audit trail, export/import
+en passage-integratie
+
+
+===== page-022 =====
+
+
+===== page-023 =====
+BootManager — Epic 3: Passageplanning
+Dit document bevat de volledige, definitieve user stories en acceptatiecriteria voor Epic 3
+(Passageplanning), conform het canvas.
+
+Doel
+
+Gebruikers (voornamelijk de eigenaar) kunnen zeiltochten plannen, de bemanning
+registreren, de duur en bestemming vastleggen en automatisch berekenen welke voorraad
+en documenten nodig zijn voor een veilige en goed voorbereide reis.
+
+Belangrijkste functionaliteiten
+
+e _ Aanmaken, bewerken en verwijderen van passageplannen
+
+¢ Invoeren van vertrekdatum, duur, bestemming(en) en opvarenden
+
+¢ Berekenen van voorraadbehoefte op basis van duur en aantal personen
+
+e Vergelijken met actuele voorraad (Epic 2) en boodschappenlijst genereren
+e Menuplanning per dag met koppeling aan verbruiksberekening
+
+¢ _ Koppelen van documenten en certificaten aan een passage
+
+«__ Exporteren van een compleet reisplan (PDF/CSV)
+
+e Dashboard met overzicht van planning, status en waarschuwingen
+
+e Instelbare verbruiksprofielen (brandstof per uur, water per persoon per dag)
+e _ Synchronisatie en offline modus
+
+User Stories + Acceptatiecriteria
+US3.1 - Passage aanmaken
+
+*Als eigenaar wil ik een nieuwe passage kunnen aanmaken met vertrekdatum, bestemming
+en duur, zodat ik een reis kan voorbereiden.
+
+Given dat de eigenaar is ingelogd,
+When hij kiest voor “Nieuwe Passage” en vertrekdatum, bestemming en duur invult,
+
+Then wordt het plan opgeslagen in de lokale database en zichtbaar in de passage-lijst.
+
+US3.2 - Bemanning toevoegen
+
+*Als eigenaar wil ik bemanningsleden kunnen toevoegen aan een passage, inclusief hun
+volledige naam en geboortedatum, zodat ik een volledige bemanningslijst kan vastleggen
+voor de reis.*
+
+Given dat een passageplan bestaat,
+
+
+===== page-024 =====
+When de eigenaar bemanningsleden toevoegt of selecteert uit bestaande gebruikers en
+daarbij de volledige naam en geboortedatum invult,
+
+Then worden deze gegevens opgeslagen bij de passage en opgenomen in de bemanningslijst
+en exportdocumenten.
+
+US3.3 - Benodigdheden berekenen (met instellingen)
+
+*Als eigenaar wil ik dat BootManager automatisch berekent hoeveel voedsel, water en
+brandstof nodig is voor de duur van de reis, op basis van mijn ingestelde verbruiksprofielen,
+zodat ik nauwkeurige berekeningen krijg.*
+
+Given dat een passageplan bestaat met duur, aantal personen en een verbruiksprofiel,
+When de eigenaar de berekening start,
+
+Then gebruikt BootManager de volgende instellingen:
+
+- Brandstofverbruik per uur (instelbaar in instellingen) x aantal geplande motoruren
+
+- Waterverbruik per persoon per dag (instelbaar in instellingen) x aantal personen x duur
+- Voedselverbruik afgeleid van geplande menu's (zie US3.6 en US3.14)
+
+And toont het systeem per categorie de benodigde hoeveelheden.
+
+US3.4 - Vergelijking met voorraad
+
+*Als eigenaar wil ik dat BootManager de berekende benodigdheden vergelijkt met mijn
+huidige voorraad, zodat ik zie wat ik nog moet aanschaffen.*
+
+Given dat een berekening is uitgevoerd,
+When de vergelijking met de actuele voorraad (Epic 2) plaatsvindt,
+
+Then toont BootManager een boodschappenlijst van ontbrekende producten.
+
+US3.5 - Boodschappenlijst genereren
+
+*Als eigenaar wil ik een boodschappenlijst kunnen exporteren of printen, zodat ik aan wal
+efficiënt kan inkopen.*
+
+Given dat de berekening en vergelijking zijn uitgevoerd,
+
+
+===== page-025 =====
+When de eigenaar kiest voor “Exporteer lijst”,
+
+Then wordt een overzicht (PDF/CSV) gegenereerd met productnaam, hoeveelheid en
+locatiecategorie.
+
+US3.6 - Menu's plannen en beheren
+
+*Als eigenaar wil ik per dag en per maaltijd (ontbijt, lunch, diner) gerechten kunnen
+plannen, aanmaken en beheren, en per gerecht kunnen vastleggen welke producten en
+hoeveelheden daarvoor nodig zijn, zodat ik mijn maaltijden voor de reis kan voorbereiden
+en BootManager automatisch het verbruik kan berekenen.”
+
+Given dat een passageplan bestaat,
+
+When de eigenaar kiest voor “Menuplanning” en per dag gerechten toevoegt met naam,
+beschrijving, maaltijdtype en gekoppelde producten (met hoeveelheden),
+
+Then worden deze menu’s opgeslagen per dag, zichtbaar in een overzicht en gekoppeld aan
+de passage,
+
+And kan BootManager deze gegevens gebruiken voor de berekening van benodigdheden en
+voorraadverbruik (zie US3.14).
+
+US3.7 - Documenten koppelen
+
+*Als eigenaar wil ik documenten zoals verzekeringspapieren, certificaten of
+vaarvergunningen kunnen koppelen aan een passage, zodat ik weet dat alles geldig is
+tijdens de reis.*
+
+Given dat documenten beschikbaar zijn in de documentmodule,
+When de eigenaar ze koppelt aan een passage,
+
+Then toont BootManager waarschuwingen bij vervaldatums binnen de geplande reisduur.
+
+US3.8 - Statusdashboard
+
+*Als eigenaar wil ik in één oogopslag kunnen zien of mijn passageplanning compleet is,
+zodat ik weet of ik klaar ben voor vertrek.*
+
+Given dat een passage bestaat,
+
+When de gebruiker het dashboard opent,
+
+
+===== page-026 =====
+Then toont BootManager de status van voorraad, documenten, bemanning en
+vertrekdatum.
+
+US3.9 - Export reisplan
+
+*Als eigenaar wil ik mijn complete reisplan kunnen exporteren naar PDF, zodat ik een
+overzicht heb van bemanning, route, voorraad en documenten.*
+
+Given dat een passageplan volledig is ingevuld,
+When de eigenaar op “Exporteer reisplan” klikt,
+
+Then genereert BootManager een gestructureerd rapport met alle relevante gegevens.
+
+US3.10 - Synchronisatie met logboek
+
+*Als eigenaar wil ik dat het logboek automatisch gekoppeld wordt aan de passage, zodat
+tijdens de reis de positie en gebeurtenissen worden vastgelegd binnen hetzelfde plan.*
+
+Given dat de reis is gestart,
+When BootManager in logmodus staat,
+
+Then worden locatie, tijd en verbruik automatisch geregistreerd in de gekoppelde passage.
+
+US3.11 - Herbruikbare passage templates
+
+*Als eigenaar wil ik eerdere passages kunnen dupliceren als template, zodat ik vergelijkbare
+reizen sneller kan voorbereiden.*
+
+Given dat er eerdere passages bestaan,
+When de eigenaar kiest voor “Dupliceer”,
+
+Then wordt een nieuw passageplan aangemaakt met dezelfde basisgegevens (duur,
+bemanning, routes) die nadien bewerkbaar zijn.
+
+US3.12 - Synchronisatie en offline modus
+
+*Als eigenaar wil ik mijn passageplanning kunnen synchroniseren met de cloud wanneer
+internet beschikbaar is, zodat ik zowel aan boord als thuis mijn plannen kan beheren.*
+
+
+===== page-027 =====
+Given dat cloud-synchronisatie is ingeschakeld,
+When wijzigingen worden gemaakt tijdens of buiten de reis,
+
+Then worden deze gesynchroniseerd zodra een verbinding beschikbaar is.
+
+US3.13 - Verbruiksinstellingen beheren
+
+*Als eigenaar wil ik in de instellingen kunnen aangeven wat het brandstofverbruik per uur
+is en hoeveel water per persoon per dag gemiddeld wordt gebruikt, zodat de berekening
+van benodigdheden realistisch is.*
+
+Given dat BootManager verbruiksinstellingen ondersteunt,
+
+When de eigenaar waarden invult of wijzigt (bijv. brandstof: 2,3 liter/uur, water: 15
+liter/persoon/dag),
+
+Then worden deze waarden opgeslagen in de lokale configuratie en gebruikt bij
+toekomstige berekeningen van benodigdheden.
+
+US3.14 - Menu's koppelen aan verbruiksberekening
+
+*Als eigenaar wil ik bij het plannen van menu's kunnen aangeven welke producten en
+hoeveelheden daarvoor worden gebruikt, zodat BootManager het totale voedselverbruik
+kan berekenen en vergelijken met de voorraad.*
+
+Given dat er menu's zijn ingevoerd voor de passage,
+When de eigenaar per gerecht producten selecteert met benodigde hoeveelheden,
+
+Then berekent BootManager automatisch het totale verbruik van elk product over de hele
+reis en vergelijkt dit met de actuele voorraad (Epic 2).
+
+Samenvatting van de Epic
+
+Categorie                                                    Functionaliteit
+
+Beheer                                                  Plannen en beheren van passages en
+bemanning
+
+Structuur                                            Koppeling tussen passages, menu's en
+
+voorraad
+
+
+===== page-028 =====
+Controle
+
+Toegang
+
+Overzicht
+
+Berekening van verbruik, waarschuwingen
+en voorspellingen
+
+Offline beschikbaarheid en cloud-
+synchronisatie
+
+Dashboard, rapportages, integratie met
+andere modules
+
+
+===== page-029 =====
+
+
+===== page-031 =====
+US4.2 - Document bewerken of verwijderen
+
+*Als eigenaar wil ik documenten kunnen aanpassen of verwijderen, zodat mijn
+administratie up-to-date blijft.*
+
+Given dat een document al bestaat,
+When de eigenaar wijzigingen aanbrengt of kiest voor verwijderen,
+
+Then worden de wijzigingen opgeslagen of het document na bevestiging verwijderd uit het
+systeem.
+
+US4.3 - Document koppelen aan boot, bemanningslid of passage
+
+*Als eigenaar wil ik documenten kunnen koppelen aan een specifieke boot, bemanningslid
+of passage, zodat ik de context behoud waarin het document relevant is.*
+
+Given dat documenten en entiteiten (boot, bemanningsleden, passages) bestaan,
+When de eigenaar een document koppelt aan één of meerdere van deze entiteiten,
+
+Then wordt deze relatie opgeslagen en weergegeven bij zowel het document als het
+gekoppelde onderdeel.
+
+US4.4 - Vervaldatum en waarschuwingen
+
+*Als eigenaar wil ik per document een optionele vervaldatum kunnen opslaan en
+automatisch een waarschuwing ontvangen wanneer deze bijna verloopt, zodat ik tijdig actie
+kan ondernemen.”
+
+Given dat documenten met een vervaldatum bestaan,
+When de huidige datum binnen de ingestelde herinneringstermijn valt (bijv. 30 dagen),
+Then toont BootManager een melding op het dashboard en in het documentenoverzicht,
+
+And documenten zonder vervaldatum blijven onbeperkt geldig zonder waarschuwing.
+
+US4.5 - Documentstatusoverzicht (dashboard)
+
+*Als eigenaar wil ik een dashboard zien met alle documenten die binnenkort verlopen of al
+verlopen zijn, zodat ik overzicht heb over mijn administratieve status.*
+
+
+===== page-032 =====
+Given dat er documenten met vervaldatums bestaan,
+When de eigenaar het documentdashboard opent,
+
+Then toont BootManager een lijst met documenten per status: geldig, bijna verlopen,
+verlopen.
+
+US4.6 - Zoeken, filteren en sorteren (uitgebreid)
+
+*Als eigenaar wil ik documenten kunnen zoeken op naam of beschrijving, en kunnen filteren
+op categorie of status, zodat ik snel vind wat ik nodig heb.*
+
+Given dat meerdere documenten zijn opgeslagen,
+When de eigenaar een zoekterm invoert of filters kiest,
+Then zoekt BootManager in naam en beschrijving,
+
+And toont het systeem alleen de documenten die voldoen aan de ingevoerde zoekcriteria of
+filters.
+
+US4.7 - Offline beschikbaarheid
+
+*Als eigenaar wil ik dat alle documenten offline beschikbaar blijven aan boord, zodat ik ze
+ook zonder internet kan raadplegen”
+
+Given dat BootManager lokaal draait op de Raspberry Pi,
+When de eigenaar een document opent,
+
+Then wordt het bestand lokaal geladen, ongeacht of er internettoegang is.
+
+US4.8 - Cloud-synchronisatie
+
+*Als eigenaar wil ik dat documenten automatisch worden gesynchroniseerd zodra er
+internetverbinding is, zodat mijn administratie altijd actueel is, zowel aan boord als thuis.*
+
+Given dat cloud-synchronisatie is ingeschakeld,
+When nieuwe documenten worden toegevoegd of bestaande worden gewijzigd,
+
+Then worden de wijzigingen gesynchroniseerd zodra een verbinding beschikbaar is.
+
+
+===== page-033 =====
+US4.9 - Exporteren van documentlijst
+
+*Als eigenaar wil ik mijn documentoverzicht kunnen exporteren naar PDF of CSV, zodat ik
+een back-up of printbaar overzicht kan maken.*
+
+Given dat documenten bestaan,
+When de eigenaar kiest voor “Exporteer documentlijst”,
+
+Then wordt een bestand aangemaakt met documentnamen, categorieën, vervaldatums en
+gekoppelde entiteiten.
+
+US4.10 - Documentgeschiedenis / audit trail
+
+*Als eigenaar wil ik kunnen zien wie wanneer een document heeft toegevoegd, gewijzigd of
+verwijderd, zodat ik inzicht heb in de documentgeschiedenis.*
+
+Given dat documentwijzigingen worden gelogd,
+When de eigenaar de geschiedenis van een document opent,
+
+Then toont BootManager een overzicht met datum, tijd, gebruiker en actie.
+
+US4.11 - Herinneringsinstellingen beheren
+
+*Als eigenaar wil ik kunnen instellen hoeveel dagen vooraf ik een waarschuwing krijg voor
+een vervallend document, zodat ik zelf bepaal hoe vroeg ik herinnerd wil worden.*
+
+Given dat BootManager waarschuwingen ondersteunt,
+When de eigenaar een herinneringstermijn aanpast (bijv. 14, 30 of 60 dagen),
+
+Then past het systeem de waarschuwingen daarop aan en berekent toekomstige meldingen
+volgens die instelling.
+
+US4.12 - Documenten koppelen aan passageplanning (Epic 3)
+
+*Als eigenaar wil ik tijdens het plannen van een passage relevante documenten kunnen
+toevoegen (zoals vaarplan of vergunningen), zodat ik alles bij de hand heb voor vertrek.*
+
+Given dat een passageplan bestaat,
+
+When de eigenaar documenten koppelt aan die passage,
+
+
+===== page-035 =====
+
+
+===== page-037 =====
+US5.2 — Automatisch loggen en intervalinstelling
+
+Als eigenaar wil ik dat BootManager automatisch logboekregels aanmaakt op basis van
+GPS/NMEA-data, met een instelbaar interval, zodat ik zonder handmatige invoer mijn
+reisgegevens kan bijhouden.
+
+Given dat BootManager verbonden is met GPS/NMEA, When automatische logging actief is,
+Then registreert BootManager automatisch tijd, positie, koers, snelheid en windinformatie
+op het ingestelde interval.
+
+US5.3 — Motoruren en brandstof in header
+Als eigenaar wil ik in het logboek de motoruren en het brandstofniveau kunnen vastleggen,
+zodat ik het verbruik van de motor tijdens de reis kan volgen.
+
+Given dat een logboekheader bestaat, When de gebruiker motoruren (start/eind) en
+brandstofniveau opgeeft, Then berekent BootManager automatisch de verbruikte brandstof
+en het aantal motoruren van de reis.
+
+US5.4 — Notities en gebeurtenissen toevoegen
+Als bemanningslid of eigenaar wil ik bij iedere log-entry notities of gebeurtenissen kunnen
+vastleggen, zodat ik persoonlijke observaties in het logboek kan opnemen.
+
+Given dat een log-entry bestaat, When de gebruiker tekst toevoegt in het notitieveld, Then
+wordt deze opgeslagen en weergegeven bij die entry.
+
+US5.5 — Logboek koppelen aan passage
+Als eigenaar wil ik dat het logboek automatisch wordt gekoppeld aan de actieve passage,
+zodat de reisgegevens logisch worden gestructureerd.
+
+Given dat een passage actief is, When BootManager logregels aanmaakt of de gebruiker
+handmatig logt, Then worden deze entries gekoppeld aan die passage.
+
+US5.6 — Logboekheader invullen
+
+Als eigenaar wil ik bij het aanmaken van een logboek de reisgegevens (vertrek, aankomst,
+bemanning, brandstof, motoruren, logstand, etc.) kunnen vastleggen, zodat het logboek een
+volledig overzicht van de reis vormt.
+
+Given dat een nieuwe passage is gestart, When de gebruiker een logboek aanmaakt, Then
+kan hij alle header-velden invullen of automatisch laten overnemen uit de passageplanning.
+
+US5.7 — Logregels met nautische velden
+
+Als bemanningslid of eigenaar wil ik per logregel nautische gegevens kunnen vastleggen
+(tijd, koers, wind, barometer, logstand, opmerkingen), zodat de reis gedetailleerd wordt
+bijgehouden.
+
+Given dat een logboek bestaat, When de gebruiker een logregel toevoegt, Then kan hij alle
+relevante velden invullen, inclusief windinformatie en opmerkingen.
+
+
+===== page-038 =====
+US5.8 — Bijlagen toevoegen aan logregel
+Als bemanningslid of eigenaar wil ik een foto of bestand kunnen koppelen aan een logregel,
+zodat ik bijzondere momenten of omstandigheden visueel kan vastleggen.
+
+Given dat een logregel bestaat, When de gebruiker een bijlage toevoegt, Then wordt deze
+gekoppeld en zichtbaar in het logboekoverzicht.
+
+US5.9 - Logboekweergave in klassiek format en routekaart
+
+Als gebruiker wil ik dat het logboek in een klassiek nautisch format wordt weergegeven,
+met een kaart van de afgelegde route, zodat het aansluit bij het traditionele
+scheepsjournaal.
+
+Given dat logboekgegevens bestaan, When de gebruiker het logboek bekijkt, Then toont
+BootManager de header met reisinfo en een tabel met tijd, koers, wind, positie,
+opmerkingen, inclusief een routekaart.
+
+US5.10 — Exporteren van logboek
+Als eigenaar wil ik mijn logboek kunnen exporteren naar PDF of CSV, zodat ik de reis kan
+archiveren of delen met anderen.
+
+Given dat een logboek bestaat, When de gebruiker kiest voor export, Then genereert
+BootManager een bestand met alle logregels, inclusief de headerinformatie en kaart.
+
+US5.11 — Statistieken en samenvatting
+
+Als eigenaar wil ik na afloop van een passage een samenvatting kunnen zien van de totale
+reisduur, afstand, gemiddelde snelheid en brandstofverbruik, zodat ik inzicht krijg in de
+prestaties van de boot.
+
+Given dat een logboek volledig is, When de gebruiker de samenvatting bekijkt, Then toont
+BootManager afstand, duur, verbruik, gemiddelde snelheid en windstatistieken.
+
+US5.12 — Offline werking
+Als bemanningslid of eigenaar wil ik dat het logboek volledig offline werkt, zodat ik altijd
+kan loggen, ook zonder internet of GPS-signaal.
+
+Given dat BootManager offline draait, When de gebruiker logregels toevoegt, Then worden
+deze lokaal opgeslagen en later gesynchroniseerd zodra verbinding beschikbaar is.
+
+US5.13 — Cloud-synchronisatie
+
+Als eigenaar wil ik dat mijn logboek automatisch wordt gesynchroniseerd zodra er
+internetverbinding is, zodat mijn gegevens veilig worden opgeslagen en ook thuis
+beschikbaar zijn.
+
+Given dat cloud-synchronisatie is ingeschakeld, When BootManager online komt, Then
+worden alle lokale logboekgegevens geüpload naar de cloud en gekoppeld aan de juiste
+passage.
+
+
+===== page-039 =====
+US5.14 — Logboek afronden bij aankomst
+
+Als eigenaar wil ik bij aankomst de resterende logboekgegevens kunnen invullen of
+bijwerken (zoals aankomsthaven, motorureneindstand, brandstofniveau, eind-logstand en
+totale afstand), zodat het logboek compleet en accuraat wordt afgesloten.
+
+Given dat een logboek is gestart met vertrekgegevens, When de gebruiker aangeeft dat de
+passage is voltooid, Then opent BootManager een afrondingsscherm met de ontbrekende
+velden (zoals aankomsthaven, motoruren-eind, afstand, enz.), And na bevestiging wordt het
+logboek als voltooid gemarkeerd en opgenomen in de statistieken.
+
+
+===== page-040 =====
+
+
+===== page-041 =====
+BootManager — Epic 6: Onderhoudsbeheer (Technisch Logboek)
+
+Dit document bevat de volledige beschrijving van Epic 6 van het BootManager-project. De
+Epic behandelt het technisch logboek waarmee gebruikers onderhoudstaken kunnen
+plannen, uitvoeren en opvolgen. Zo blijft duidelijk wat wanneer is gedaan, wat binnenkort
+moet gebeuren en welke onderdelen of kosten daarbij horen.
+
+Doel
+
+Gebruikers (voornamelijk de eigenaar) kunnen onderhoudstaken aan de boot plannen,
+uitvoeren en opvolgen. Zo blijft duidelijk wat wanneer is gedaan, wat binnenkort moet
+gebeuren en welke onderdelen of kosten daarmee gepaard gaan.
+
+Belangrijkste functionaliteiten
+
+e Onderhoudstaken aanmaken (handmatig of automatisch op interval: tijd, draaiuren of
+vaarkilometers)
+
+« _ Koppeling aan onderdelen (motor, romp, zeilen, accu's, elektronica, filters, etc.)
+
+e _ Prioriteit, status en verwachte uitvoerdatum beheer per taak
+
+e _ Vastleggen van uitgevoerd onderhoud met datum, omschrijving, kosten, monteur en
+bijlagen
+
+e _ Automatische herinneringen op basis van interval of gebruiksdata
+
+¢ Dashboard met openstaande, binnenkort vervallende en uitgevoerde taken
+
+«_ Koppeling met Documentbeheer (Epic 4) voor facturen en handleidingen
+
+« Rapportage / export naar PDF of CSV
+
+e Volledig offline gebruik en cloudsynchronisatie
+
+User Stories + Acceptatiecriteria
+
+US6.1 — Onderhoudstaak aanmaken
+
+Als eigenaar wil ik een onderhoudstaak kunnen aanmaken met naam, beschrijving,
+onderdeel, prioriteit en interval (tijd of draaiuren), zodat ik gepland onderhoud kan
+bijhouden.
+
+Given dat de eigenaar is ingelogd, When hij een nieuwe onderhoudstaak toevoegt met de
+benodigde velden, Then wordt deze taak opgeslagen en verschijnt ze in de lijst van geplande
+taken.
+
+US6.2 — Onderhoud koppelen aan onderdeel
+Als eigenaar wil ik onderhoudstaken kunnen koppelen aan specifieke bootonderdelen
+(motor, tuigage, romp, elektronica, etc.), zodat ik per onderdeel een onderhoudshistoriek
+heb.
+
+Given dat onderdelen bestaan, When de eigenaar een taak aanmaakt of wijzigt, Then kan hij
+één of meerdere onderdelen selecteren waarop de taak van toepassing is.
+
+
+===== page-042 =====
+US6.3 — Onderhoud op interval (planning)
+Als eigenaar wil ik onderhoud kunnen plannen op tijds- of gebruiksintervallen, zodat
+BootManager mij herinnert wanneer het onderhoud nodig is.
+
+Given dat een taak een interval heeft (bijv. elke 6 maanden of na 100 motoruren), When de
+eigenaar deze instelt, Then berekent BootManager automatisch de volgende uitvoerdatum
+en toont die in het dashboard.
+
+US6.4 — Automatische herinneringen en waarschuwingen
+Als eigenaar wil ik automatische waarschuwingen ontvangen bij aankomend of achterstallig
+onderhoud, zodat ik tijdig actie kan ondernemen.
+
+Given dat onderhoudstaken met vervaldatum bestaan, When de huidige datum de
+herinneringstermijn bereikt, Then toont BootManager een melding in het dashboard en
+markeert de taak als ‘bijna vervallen’.
+
+US6.5 — Uitgevoerd onderhoud registreren
+Als eigenaar wil ik uitgevoerd onderhoud kunnen registreren met datum, beschrijving,
+kosten, monteur en gebruikte onderdelen, zodat ik kan bijhouden wat er is gedaan.
+
+Given dat een onderhoudstaak bestaat, When de gebruiker op ‘Markeer als uitgevoerd’ klikt
+en de gegevens invoert, Then wordt de taak verplaatst naar de historiek met alle details.
+
+US6.6 — Bijlagen toevoegen aan onderhoud
+Als eigenaar wil ik foto's of documenten (zoals facturen of handleidingen) kunnen koppelen
+aan een onderhoudsvermelding, zodat ik bewijs en referentie heb.
+
+Given dat onderhoud is uitgevoerd, When de gebruiker een bestand uploadt (PDF, JPG, PNG,
+DOCX), Then wordt de bijlage opgeslagen en zichtbaar bij de onderhoudsdetails.
+
+US6.7 — Onderhoud wijzigen of verwijderen
+Als eigenaar wil ik onderhoudstaken kunnen bewerken of verwijderen, zodat ik mijn
+onderhoudsplanning actueel houd.
+
+Given dat onderhoudstaken bestaan, When de eigenaar een taak bewerkt of verwijdert,
+Then worden de wijzigingen opgeslagen of de taak na bevestiging verwijderd.
+
+US6.8 — Onderhoudshistoriek per onderdeel
+Als eigenaar wil ik de onderhoudshistoriek per onderdeel kunnen bekijken, zodat ik weet
+wat er in het verleden is uitgevoerd.
+
+Given dat onderdelen onderhoudsrecords hebben, When de gebruiker een onderdeel
+selecteert, Then toont BootManager alle gerelateerde uitgevoerde taken met datum en
+details.
+
+
+===== page-043 =====
+US6.9 — Dashboard met onderhoudsstatus
+
+Als eigenaar wil ik op een dashboard zien hoeveel onderhoud gepland, bijna vervallen en
+uitgevoerd is, zodat ik overzicht houd over de staat van mijn boot.
+
+Given dat onderhoudstaken bestaan, When het dashboard wordt geopend, Then toont
+BootManager een samenvatting van taken per status en onderdeel.
+
+US6.10 — Zoeken en filteren
+Als eigenaar wil ik onderhoudstaken kunnen filteren op status, onderdeel of periode, zodat
+ik snel specifieke informatie vind.
+
+Given dat er meerdere onderhoudstaken zijn, When de gebruiker filters toepast of een
+zoekterm invoert, Then toont BootManager alleen de relevante taken.
+
+US6.11 — Exporteren van onderhoudslogboek
+Als eigenaar wil ik mijn onderhoudslogboek kunnen exporteren naar PDF of CSV, zodat ik
+dit kan delen of bewaren.
+
+Given dat onderhoudsgegevens bestaan, When de gebruiker kiest voor export, Then
+genereert BootManager een bestand met alle relevante taken, kosten en onderdelen.
+
+US6.12 — Koppeling met Documentbeheer
+Als eigenaar wil ik documenten (facturen, handleidingen, certificaten) kunnen koppelen aan
+onderhoudsvermeldingen, zodat ik alles centraal kan beheren.
+
+Given dat Documentbeheer (Epic 4) actief is, When de gebruiker documenten koppelt aan
+onderhoud, Then worden de bestanden gelinkt en zichtbaar bij de taak.
+
+US6.13 — Offline werking
+Als eigenaar wil ik onderhoudstaken offline kunnen beheren, zodat ik ook zonder internet
+toegang heb tot alle gegevens.
+
+Given dat BootManager offline draait, When de gebruiker taken aanmaakt of wijzigt, Then
+worden deze lokaal opgeslagen en later gesynchroniseerd.
+
+US6.14 — Cloud-synchronisatie
+Als eigenaar wil ik dat mijn onderhoudslogboek automatisch wordt gesynchroniseerd zodra
+er internetverbinding is, zodat ik overal over actuele data beschik.
+
+Given dat cloud-synchronisatie is ingeschakeld, When BootManager online komt, Then
+worden alle onderhoudsgegevens gesynchroniseerd met de cloud en eventueel beschikbaar
+op andere apparaten.
+
+
+===== page-044 =====
+
+
+===== page-047 =====
+US7.9 — Widget voor logboekactiviteit
+Als gebruiker wil ik de laatst geregistreerde logboekvermeldingen zien, zodat ik weet wat er
+recent is gebeurd.
+
+Given dat logboekdata bestaat, When het dashboard wordt geladen, Then toont
+BootManager de laatste logregels met tijd en samenvatting.
+
+US7.10 — Personaliseren van widgets
+Als eigenaar wil ik kunnen kiezen welke widgets op het dashboard getoond worden en in
+welke volgorde, zodat het aansluit bij mijn gebruik.
+
+Given dat meerdere widgets beschikbaar zijn, When de gebruiker instellingen wijzigt, Then
+wordt de lay-out opgeslagen en bij volgende sessies toegepast.
+
+US7.11 — Interactieve navigatie
+Als gebruiker wil ik op een widget kunnen klikken om naar de corresponderende module te
+gaan, zodat ik snel kan doorklikken naar details.
+
+Given dat een widget gegevens toont, When de gebruiker erop klikt, Then opent
+BootManager de bijbehorende pagina (bijv. Voorraad of Onderhoud).
+
+US7.12 — Offline weergave
+Als gebruiker wil ik het dashboard ook offline kunnen gebruiken, zodat ik aan boord altijd
+toegang heb tot de laatste bekende gegevens.
+
+Given dat BootManager offline is, When het dashboard wordt geopend, Then toont het de
+laatst gesynchroniseerde data met een melding dat de informatie mogelijk verouderd is.
+
+US7.13 — Automatische update van gegevens
+Als gebruiker wil ik dat het dashboard automatisch wordt bijgewerkt bij wijzigingen in
+andere modules, zodat ik altijd actuele informatie zie.
+
+Given dat data verandert (bijv. voorraad of onderhoud), When BootManager actief is, Then
+ververst het dashboard automatisch de bijbehorende widgets.
+
+US7.14 — Cloudsynchronisatie
+Als eigenaar wil ik dat het dashboard automatisch wordt bijgewerkt zodra er internet
+beschikbaar is, zodat ik ook op afstand de actuele status zie.
+
+Given dat cloud-synchronisatie is ingeschakeld, When BootManager verbinding maakt met
+internet, Then worden alle dashboardgegevens bijgewerkt met de meest recente informatie
+uit de cloud.
+
+
+===== page-048 =====
+
+
+===== page-049 =====
+BootManager — Epic 8: Systeembeheer & Configuratie
+
+Dit document bevat de volledige beschrijving van Epic 8 van het BootManager-project. De
+Epic behandelt het systeembeheer en de configuratie, waarmee de eigenaar of beheerder
+instellingen kan beheren zoals eenheden, taal, sensorkoppelingen, gebruikersrechten, back-
+up en synchronisatie.
+
+Doel
+
+De eigenaar (of beheerder) moet het systeem kunnen instellen en configureren: eenheden,
+taal, sensorkoppelingen, gebruikersrechten, back-up- en synchronisatie-instellingen. Dit
+zorgt ervoor dat BootManager zich aanpast aan verschillende boten, gebruikers en
+gebruiksomstandigheden (offline of online).
+
+Belangrijkste functionaliteiten
+
+e Instellingen voor eenheden (afstand, gewicht, volume, temperatuur, snelheid, druk)
+«  Taal- en regionale instellingen
+
+¢ _ Gebruikersrechten (rolbeheer: eigenaar, bemanning, gast)
+
+e Sensorintegratie (NMEA, GPS, barometer, motordata, tankniveaus, weerstation)
+
+¢ Beheer van lokale en cloud-accounts
+
+e Back-up en herstel van data
+
+e _ Systeeminformatie (hardwarestatus, opslag, netwerk, Raspberry Pi-configuratie)
+
+e _ Logboek van systeemacties en synchronisaties
+
+e Offline modusbeheer
+
+ 
+
+User Stories + Acceptatiecriteria
+
+US8.1 — Instellingenpagina openen
+Als eigenaar wil ik via het menu een centrale instellingenpagina kunnen openen, zodat ik
+systeemvoorkeuren kan beheren.
+
+Given dat de gebruiker eigenaar is, When hij de instellingenpagina opent, Then toont
+BootManager alle configuratiecategorieën (eenheden, taal, sensoren, gebruikers, back-up,
+enz.).
+
+US8.2 — Eenheden configureren
+Als eigenaar wil ik de gebruikte eenheden (liter, kilo, knopen, °C/°F, bar, NM) kunnen
+instellen, zodat metingen consistent worden weergegeven.
+
+Given dat er standaardwaarden bestaan, When de gebruiker eenheden aanpast, Then past
+BootManager alle modules automatisch aan de nieuwe instellingen aan.
+
+US8.3 — Taal en regio instellen
+Als gebruiker wil ik de taal van de interface en regionale voorkeuren (datum-/tijdnotatie)
+kunnen wijzigen, zodat de interface aansluit bij mijn voorkeur.
+
+
+===== page-050 =====
+Given dat meerdere talen beschikbaar zijn, When de gebruiker een andere taal kiest, Then
+wordt de interface opnieuw geladen in de gekozen taal en opgeslagen als voorkeur.
+
+US8.4 — Gebruikersrollen beheren
+Als eigenaar wil ik verschillende gebruikersrollen kunnen toekennen (bijv. eigenaar,
+bemanning, gast), zodat ik controle heb over wie welke functies mag gebruiken.
+
+Given dat meerdere gebruikers zijn geregistreerd, When de eigenaar een rol wijzigt, Then
+worden de toegangsrechten voor die gebruiker direct bijgewerkt.
+
+US8.5 — Sensorintegratie configureren
+Als eigenaar wil ik sensoren kunnen koppelen (GPS, NMEA, tankniveaus, motordata,
+barometer, windmeter), zodat BootManager automatisch gegevens ontvangt.
+
+Given dat de boot beschikt over sensoren, When de gebruiker verbindingen toevoegt of test,
+Then worden deze opgeslagen en automatisch gebruikt in logboek en dashboard.
+
+US8.6 — Raspberry Pi-configuratie beheren
+Als eigenaar wil ik systeeminformatie kunnen bekijken van de Raspberry Pi (CPU,
+geheugen, opslag, netwerk), zodat ik de status kan monitoren.
+
+Given dat BootManager draait op een Pi, When de eigenaar de systeeminfo bekijkt, Then
+toont het systeem een overzicht met de actuele hardwarestatus.
+
+US8.7 - Gebruikersbeheer (toevoegen/verwijderen)
+Als eigenaar wil ik gebruikers kunnen toevoegen of verwijderen, zodat ik de toegang tot het
+systeem kan beheren.
+
+Given dat de eigenaar ingelogd is, When hij een nieuwe gebruiker toevoegt of verwijdert,
+Then worden de wijzigingen opgeslagen en doorgevoerd in de gebruikerslijst.
+
+US8.8 — Back-up maken en herstellen
+Als eigenaar wil ik handmatig of automatisch een back-up kunnen maken van alle gegevens
+en deze kunnen herstellen, zodat ik geen data verlies.
+
+Given dat BootManager lokaal data opslaat, When de gebruiker kiest voor back-up of
+herstel, Then wordt een exportbestand (zip of json) aangemaakt of ingelezen.
+
+US8.9 — Cloudinstellingen beheren
+Als eigenaar wil ik mijn cloudaccount kunnen koppelen of ontkoppelen, zodat ik zelf bepaal
+of mijn data gesynchroniseerd wordt.
+
+Given dat BootManager cloud-functionaliteit ondersteunt, When de gebruiker de koppeling
+wijzigt, Then worden de cloudinstellingen bijgewerkt en de synchronisatie-status
+weergegeven.
+
+
+===== page-051 =====
+US8.10 — Automatische synchronisatie plannen
+Als eigenaar wil ik de frequentie van automatische synchronisatie kunnen instellen, zodat ik
+controle heb over netwerkverkeer en batterijgebruik.
+
+Given dat cloud-synchronisatie actief is, When de gebruiker een tijdsinterval kiest, Then
+gebruikt BootManager dat interval voor automatische updates.
+
+US8.11 — Logboek van systeemacties bekijken
+Als eigenaar wil ik een logboek kunnen zien van systeemacties (zoals back-ups, updates,
+synchronisaties), zodat ik inzicht heb in recente activiteiten.
+
+Given dat systeemacties worden gelogd, When de gebruiker het systeemlogboek opent,
+Then toont BootManager datum, type actie, resultaat en eventuele foutmeldingen.
+
+US8.12 — Offline modus beheren
+Als eigenaar wil ik handmatig de offline modus kunnen activeren of deactiveren, zodat ik
+controle heb over netwerkgebruik.
+
+Given dat BootManager netwerktoegang heeft, When de gebruiker offline modus activeert,
+Then stopt BootManager alle automatische synchronisatieprocessen tot de modus wordt
+uitgeschakeld.
+
+US8.13 — Systeeminstellingen exporteren/importeren
+Als eigenaar wil ik mijn configuratie kunnen exporteren of importeren, zodat ik dezelfde
+instellingen kan gebruiken op een ander apparaat of na herinstallatie.
+
+Given dat instellingen beschikbaar zijn, When de gebruiker exporteert of importeert, Then
+maakt BootManager een configuratiebestand aan of leest het in.
+
+US8.14 — Standaardinstellingen herstellen
+Als eigenaar wil ik alle instellingen kunnen terugzetten naar fabriekswaarden, zodat ik kan
+herbeginnen met een schone configuratie.
+
+Given dat BootManager actief is, When de gebruiker kiest voor ‘Herstel
+standaardinstellingen’, Then worden alle configuraties gewist en teruggezet naar de
+standaardwaarden.
+
+
+===== page-052 =====
+
+
+===== page-054 =====
+US9.6 — Externe API-verbinding beheren
+Als eigenaar wil ik API-sleutels en koppelingen kunnen beheren.
+
+Given dat koppelingen bestaan, When de eigenaar API-sleutels toevoegt of verwijdert, Then
+worden de wijzigingen opgeslagen.
+
+US9.7 — Synchronisatie met andere apparaten
+Als gebruiker wil ik gegevens kunnen synchroniseren met andere apparaten.
+
+Given dat meerdere apparaten verbonden zijn via Wi-Fi, When de gebruiker synchronisatie
+activeert, Then worden gegevens gedeeld.
+
+
+===== page-055 =====
+
+
+===== page-056 =====
+BootManager — Epic 10: Rapportage & Analyse
+BootManager biedt inzicht in trends, verbruik, onderhoudsintervallen en vaargedrag door
+rapportages te genereren (PDF, CSV, dashboardgrafieken).
+
+Belangrijkste functionaliteiten
+
+®_ Statistieken over brandstof-, water- en voedselverbruik
+
+¢ Overzicht van motoruren, onderhoudskosten, passages per periode
+¢ Analyse van voorraadverloop
+
+e Export naar PDF en CSV
+
+¢ _ Grafieken en visuele dashboards
+
+e Kostenanalyse per tocht of per categorie
+
+User Stories + Acceptatiecriteria
+
+US10.1 — Brandstofanalyse
+Als eigenaar wil ik brandstofverbruik per passage kunnen zien.
+
+Given dat motoruren geregistreerd zijn, When de gebruiker een periode kiest, Then toont
+BootManager het verbruik per tocht.
+
+US10.2 - Voorraadanalyse
+Als eigenaar wil ik zien hoe de voorraad zich ontwikkelt over tijd.
+
+Given dat voorraadmutaties zijn geregistreerd, When de gebruiker de analysepagina opent,
+Then toont BootManager trends per categorie.
+
+US10.3 - Onderhoudsrapportage
+Als eigenaar wil ik overzicht van uitgevoerd en gepland onderhoud.
+
+Given dat onderhoudsdata beschikbaar is, When de gebruiker rapportage opent, Then toont
+BootManager taken met datum en kosten.
+
+US10.4 — Kostenanalyse per tocht
+Als eigenaar wil ik totale kosten per passage kunnen berekenen.
+
+Given dat kosten zijn geregistreerd, When de gebruiker een tocht selecteert, Then toont
+BootManager totale en gemiddelde kosten.
+
+US10.5 — Export naar PDF/CSV
+Als gebruiker wil ik rapportages kunnen exporteren.
+
+Given dat een rapportage is aangemaakt, When de gebruiker kiest voor export, Then wordt
+een bestand aangemaakt.
+
+
+===== page-057 =====
+US10.6 — Visuele trends en grafieken
+Als gebruiker wil ik data kunnen bekijken in grafieken.
+
+Given dat historische data beschikbaar is, When de gebruiker de rapportagepagina opent,
+Then toont BootManager interactieve grafieken.
+
+
+===== page-058 =====
+
+
+===== page-059 =====
+BootManager — Epic 11: Notificaties & Waarschuwingen
+
+BootManager waarschuwt gebruikers automatisch voor belangrijke gebeurtenissen zoals
+lage voorraad, onderhoud of vervallen documenten.
+
+Belangrijkste functionaliteiten
+
+e __Push- en e-mailmeldingen
+
+¢ _ Waarschuwingen bij lage voorraad, onderhoud, documenten
+¢ Instelbare notificatiefrequentie per gebruiker
+
+e __Dashboardindicatoren en kleuren
+
+e Logging van verzonden meldingen
+
+User Stories + Acceptatiecriteria
+
+US11.1 — Waarschuwing bij lage voorraad
+Als eigenaar wil ik melding ontvangen bij lage voorraad.
+
+Given dat minimumwaarden ingesteld zijn, When voorraad onder de drempel zakt, Then
+verstuurt BootManager melding.
+
+US11.2 - Documentvervalmelding
+Als eigenaar wil ik melding ontvangen bij bijna verlopen document.
+
+Given dat documenten vervaldatums hebben, When vervaldatum nadert, Then ontvangt de
+eigenaar melding.
+
+US11.3 - Onderhoudsherinnering
+Als eigenaar wil ik herinnerd worden aan gepland onderhoud.
+
+Given dat onderhoud gepland is, When datum nadert, Then toont BootManager
+waarschuwing.
+
+US11.4 - Passageplanning waarschuwing
+Als gebruiker wil ik melding ontvangen als vertrekdatum dichtbij komt.
+
+Given dat passage gepland is, When vertrekdatum binnen dagen valt, Then verstuurt
+BootManager melding.
+
+US11.5 — Instellingen voor notificaties beheren
+Als eigenaar wil ik meldingstype kunnen kiezen.
+
+Given dat notificaties bestaan, When gebruiker voorkeuren instelt, Then bewaart
+BootManager voorkeuren.
+
+US11.6 - Notificatiegeschiedenis bekijken
+Als gebruiker wil ik overzicht van meldingen zien.
+
+
+===== page-060 =====
+Given dat meldingen zijn verstuurd, When gebruiker logboek opent, Then toont
+BootManager meldingen.
+
+
+===== page-061 =====
+
+
+===== page-062 =====
+BootManager — Epic 12: Slimme Herkenning & Al-Ondersteuning
+BootManager gebruikt Al voor herkenning, categorisatie en voorspelling van voorraad- en
+onderhoudsgegevens.
+
+Belangrijkste functionaliteiten
+
+e Barcode- en QR-herkenning via camera
+
+¢  Al-herkenning van producten op foto’s
+
+© Automatische categorisatie van producten
+
+e _ Suggesties voor voorraadaanvulling
+
+e _ Predictief onderhoud op basis van gebruikspatronen
+e _ Taalondersteuning via spraakinput (optioneel)
+
+User Stories + Acceptatiecriteria
+
+US12.1 — Barcodeherkenning
+Als gebruiker wil ik barcode kunnen scannen.
+
+Given dat camera toegang heeft, When barcode wordt gescand, Then vult BootManager
+productinformatie aan.
+
+US12.2 - Al-herkenning via foto
+Als gebruiker wil ik foto kunnen maken voor herkenning.
+
+Given dat afbeelding is geüpload, When gebruiker kiest Al-herkenning, Then toont
+BootManager suggesties.
+
+US12.3 - Automatische categorisatie
+Als eigenaar wil ik dat nieuwe producten automatisch categorie krijgen.
+
+Given dat Al getraind is, When nieuw product wordt aangemaakt, Then stelt BootManager
+categorie voor.
+
+US12.4 — Suggesties voor aanvulling
+Als eigenaar wil ik Al-suggesties voor voorraadaanvulling.
+
+Given dat verbruiksdata bestaat, When BootManager trends analyseert, Then toont systeem
+aanbevelingen.
+
+US12.5 — Predictief onderhoud
+Als eigenaar wil ik voorspelling van onderhoud.
+
+Given dat gebruiksdata beschikbaar is, When BootManager trends detecteert, Then
+berekent systeem onderhoudsintervallen.
+
+
+===== page-063 =====
+US12.6 - Spraakondersteuning
+Als gebruiker wil ik opdrachten kunnen inspreken.
+
+Given dat microfoon actief is, When gebruiker commando inspreekt, Then voert
+BootManager actie uit.
+
+
+===== page-064 =====
+
+
+===== page-065 =====
+BootManager — Agile Roadmap & Sprintplanning
+
+Projectduur: 12 sprints van 2 weken (ca. 6 maanden)
+
+Team: 1-2 developers, 1 product owner, 1 tester
+
+Technologie: ‚NET 8 Blazor Interactive Server + SQLite + CQRS + RepositoryPattern
+Deploymentdoel: Raspberry Pi (lokaal) + optionele cloud-sync
+
+Fase 1 — Fundament (Sprints 1 & 2)
+@ Doel: werkende lokale applicatie, basisinrichting, login en bootstructuur.
+
+Sprint            Focus               Belangrijkste      Deliverables                Rollenfocus
+Epics
+Sprint 1          Authenticatie & Epic 0,8            - Login-                       Dev: infra
+configuratie                             /registratiescherm        setup
+- Rollen                      PO: test login
+
+“Eigenaar/Bemanning” Tester:
+- Configuratiepagina      validatie
+(eenheden, taal)
+
+- SQLite-connectie +
+
+CQRS skeleton
+
+Sprint 2          Boot- &             Epic 1              - CRUD Boot, Gebied,      Dev: domein
+Gebiedsbeheer                         Opslaglocatie               uitbreiden
+- QR-code per locatie      PO: demo
+- Navigatiebasis            Tester: CRUD-
+- Unit-tests                  testen
+BootService
+
+ DoD Fase 1: App start lokaal op Raspberry Pi, login werkt, boot + locaties aangemaakt,
+instellingen opgeslagen.
+
+Fase 2 — Kernfunctionaliteit (Sprints 3-5)
+@ Doel: waarde leveren met voorraad- en documentbeheer.
+
+Sprint            Focus                 Epics             Deliverables                 Rollenfocus
+Sprint 3         Product- &          Epic 2           - Categorieën met          Dev: CRUD +
+voorraadbeheer                                icoontjes                             barcode logic
+(deel 1)                                   - Voorraad per locatie      PO: UX
+- QR-scanner-modus       feedback
+Tester:
+
+tellingen
+
+
+===== page-068 =====
+- Sync getest (mock cloud)
+- PO accepteert demo
+
+

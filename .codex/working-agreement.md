@@ -16,6 +16,14 @@ prompts, review en documentatie.
 - Als Codex tijdens review een bug vindt, formuleert Codex eerst een prompt of reviewadvies voor Copilot.
 - Alleen bij expliciete opdracht zoals "pas dit zelf aan", "implementeer dit" of "fix dit in de code" mag Codex code wijzigen.
 
+## Testadvies voor commit/PR
+
+- Bij UI-wijzigingen, onboarding/auth-flow, deployment/configuratie, databasegedrag of andere runtimegevoelige
+  wijzigingen geeft Codex vóór commit/push/PR expliciet een korte handmatige teststap aan de gebruiker.
+- Codex wacht op de terugkoppeling van de gebruiker voordat de wijziging als commitwaardig wordt behandeld.
+- Als alleen statische documentatie is aangepast en geen runtimegedrag geraakt wordt, volstaat een build/config-check
+  met expliciete vermelding dat geen handmatige runtime-test nodig is.
+
 ## Story-afronding en vervolgflow
 
 - Als de gebruiker zegt dat een user story goed is, dan werkt Codex documentatie bij waar nodig,
