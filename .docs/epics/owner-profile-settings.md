@@ -1,6 +1,6 @@
 # Epic: Owner Profile & Vessel Settings
 
-Status: US2 (Bootgegevens wijzigen) geïmplementeerd op 2026-05-25; US1 (Eigenaargegevens wijzigen) geïmplementeerd op 2026-05-25; US3/US4 in backlog.
+Status: US1 (Eigenaargegevens wijzigen), US2 (Bootgegevens wijzigen), US3 (Wachtwoord wijzigen verifiëren) en US4 (Settings pagina ordenen met accordion) afgerond op 2026-05-25.
 
 ## Aanleiding
 
@@ -170,6 +170,8 @@ Acceptatiecriteria:
 
 ### US3: Wachtwoord Wijzigen Verifiëren En UX Verbeteren
 
+**Status:** ✅ Afgerond op 2026-05-25 op basis van handmatige runtime-test door gebruiker.
+
 **Doel:** Wachtwoord wijzigen blijft betrouwbaar beschikbaar na onboarding en is duidelijk herkenbaar voor de gebruiker.
 
 Gedrag:
@@ -184,19 +186,33 @@ Gedrag:
 
 Acceptatiecriteria:
 
-- Wachtwoord wijzigen via `/settings` werkt na onboarding.
-- Onjuist huidig wachtwoord faalt.
-- Mismatch bevestiging faalt.
-- Te kort wachtwoord faalt volgens bestaande regels.
-- Na wijziging werkt oud wachtwoord niet meer en nieuw wachtwoord wel.
-- Handmatige runtime-test wordt vóór PR expliciet uitgevoerd.
-- `dotnet build` slaagt.
+- ✅ Wachtwoord wijzigen via `/settings` werkt na onboarding.
+- ✅ Na wijziging werkt het nieuwe wachtwoord.
+- ✅ Handmatige runtime-test uitgevoerd door gebruiker op 2026-05-25.
+
+Open voor latere hardening indien nodig:
+
+- Onjuist huidig wachtwoord expliciet hertesten.
+- Mismatch bevestiging expliciet hertesten.
+- Te kort wachtwoord expliciet hertesten volgens bestaande regels.
 
 ### US4: Settings Pagina Ordenen Voor Beheer
 
+**Status:** Goedgekeurd voor implementatie op branch `feature/settings-page-organization` op 2026-05-25.
+
+**User story:** Als eigenaar wil ik dat de Settings-pagina is gegroepeerd in een uitklapbare accordion met Account, Boot en Operationeel, zodat ik instellingen snel kan vinden zonder door een lange pagina met losse formulieren te moeten scrollen.
+
 **Doel:** `/settings` wordt logisch gegroepeerd, zodat gebruiker onderscheid ziet tussen account/bootbeheer en operationele instellingen.
 
-Mogelijke indeling:
+UX-richting:
+
+- Gebruik een accordion-weergave.
+- Account is standaard open.
+- Boot en Operationeel zijn standaard ingeklapt.
+- De gebruiker kan groepen open- en dichtklappen.
+- De accordion is alleen presentatie/structuur; bestaande formulieren blijven functioneel hetzelfde.
+
+Indeling:
 
 - Account
   - eigenaargegevens;
@@ -208,13 +224,64 @@ Mogelijke indeling:
   - sampling/raw opslag;
   - bijlagenpad.
 
+Scope:
+
+- `/settings` herstructureren naar een accordion-indeling.
+- Bestaande secties verplaatsen naar de juiste groep.
+- Bestaande save-flows behouden:
+  - eigenaarprofiel opslaan;
+  - wachtwoord wijzigen;
+  - bootgegevens opslaan;
+  - operationele instellingen opslaan.
+- Nederlandse labels, foutmeldingen en succesmeldingen behouden.
+- UI moet bruikbaar blijven op desktop en mobiel.
+- Gebruik bestaande Bootstrap/Blazor-stijl; geen nieuw design framework.
+
+Niet-doelen:
+
+- Geen nieuwe accountfunctionaliteit.
+- Geen wijziging aan wachtwoordlogica.
+- Geen wijziging aan eigenaarprofiel-, bootprofiel- of operationele services.
+- Geen nieuwe databasevelden of migraties.
+- Geen brede design-system refactor.
+- Geen extra settings-groepen zoals Systeem, Back-up of Notificaties.
+
 Acceptatiecriteria:
 
-- Settings is scanbaar en niet verwarrend.
-- Bestaande operationele instellingen blijven werken.
-- Geen nested cards of brede visuele refactor zonder noodzaak.
-- UI is bruikbaar op desktop en mobiel.
-- Handmatige UI-test vóór PR.
+- Settings toont een accordion met Account, Boot en Operationeel.
+- Account is standaard open bij het laden van `/settings`.
+- Boot en Operationeel zijn standaard ingeklapt.
+- De gebruiker kan elke groep open- en dichtklappen.
+- Eigenaarprofiel opslaan werkt nog.
+- Wachtwoord wijzigen werkt nog.
+- Bootgegevens opslaan werkt nog.
+- Operationele instellingen opslaan werkt nog.
+- Bestaande Nederlandse meldingen blijven intact.
+- `dotnet build` slaagt.
+- Handmatige UI-test vóór commit/PR:
+  - `/settings` openen;
+  - controleren dat Account open is;
+  - Boot en Operationeel openklappen;
+  - alle secties visueel controleren;
+  - minimaal één bestaande save-flow per groep nalopen.
+
+**Implementatie (2026-05-25):**
+
+- `BootManager.Web/Components/Pages/Settings.razor` herstructureert de bestaande vier losse cards naar een accordion met drie groepen:
+  - Account: eigenaarprofiel en wachtwoord wijzigen.
+  - Boot: bootgegevens.
+  - Operationeel: operationele instellingen.
+- De accordion wordt bewust via Blazor-state aangestuurd met `@onclick`, niet via Bootstrap collapse JavaScript. Dit voorkomt afhankelijkheid van de gemengde huidige UI-stack met Bootstrap 5 CSS en Bootstrap 4/SB Admin scripts.
+- Bootstrap accordion classes blijven alleen voor styling gebruikt: `.accordion`, `.accordion-item`, `.accordion-header`, `.accordion-button`, `.accordion-body`, `.accordion-collapse`, `.collapse` en `.show`.
+- Alle bestaande state, handlers, validatie, service-aanroepen en Nederlandse meldingen blijven inhoudelijk gelijk.
+- Geen migrations, DTO-wijzigingen of service-wijzigingen.
+- Settings-pagina blijft responsive op desktop en mobiel.
+
+Legacy coverage:
+
+- Geen nieuwe legacy-functionaliteit; dit is UX/structuur op bestaande dekking.
+- Raakt indirect `US0.4`, `US0.6`, `US1.2` en `US8.x`.
+- Verwachte coverage-status verandert niet door deze story.
 
 ## Aanbevolen Volgorde
 

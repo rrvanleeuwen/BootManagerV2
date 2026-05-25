@@ -23,6 +23,12 @@ workflow. In particular:
 
 - Codex must not change application code unless the user explicitly asks Codex
   to implement or fix something directly.
+- This restriction also applies to small review fixes, warnings, whitespace,
+  build errors, and quick corrections in application code. Codex must not make
+  those application-code edits itself unless the user explicitly asks Codex to
+  do so.
+- If Codex finds that Copilot output needs a code fix, Codex should provide a
+  focused Copilot prompt or explicitly ask whether Codex may edit the code.
 - Codex should normally create scoped Copilot prompts, review Copilot output,
   formulate acceptance tests, and guide the branch/PR flow.
 - If Codex finds a bug during review, Codex should first provide review advice

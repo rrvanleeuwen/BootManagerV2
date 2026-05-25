@@ -170,7 +170,7 @@
   - Role-based access control (Admin, User, Viewer)
   - Secure owner profile management
 
-- [x] **Owner Profile & Vessel Settings (US2: Bootgegevens wijzigen)** *(slice gestart 2026-05-25)*
+- [x] **Owner Profile & Vessel Settings (US1/US2/US3 afgerond)** *(slice gestart 2026-05-25)*
   - **Aanleiding 2026-05-25:** Na onboarding zijn eigenaargegevens, bootgegevens en wachtwoordbeheer niet duidelijk genoeg als normale beheerflow beschikbaar. Bootgegevens uit onboarding moeten achteraf wijzigbaar zijn; wachtwoord wijzigen moet expliciet gevalideerd en goed vindbaar blijven.
   - [x] **US1 (2026-05-25):** Eigenaargegevens wijzigen in instellingen
     - `/settings` toont huidige eigenaarnaam en e-mailadres uit encrypted owner payload.
@@ -195,14 +195,23 @@
     - Onboardinggegevens kunnen achteraf worden aangepast.
     - `dotnet build` slaagt.
     - **Handmatige test vóór PR:** Settings openen, bootgegevens wijzigen/opslaan, refresh, leeg veld testen.
-  - **Open voor vervolgslices:**
-    - **US3:** Wachtwoord wijzigen verifiëren en UX verbeteren.
-    - **US4:** Settings pagina logisch ordenen in Account, Boot en Operationeel.
+  - [x] **US3 (2026-05-25):** Wachtwoord wijzigen verifiëren
+    - Handmatig getest door gebruiker: wachtwoord wijzigen in Settings werkt.
+    - Legacy `US0.4` is hiermee administratief afgedekt voor de huidige single-owner scope; pincode blijft buiten de normale V2-flow.
+  - [x] **US4 (2026-05-25):** Settings pagina ordenen met accordion
+    - Bestaande `/settings` pagina herstructureerd naar Bootstrap 5 accordion-indeling.
+    - Drie groepen: Account, Boot, Operationeel.
+    - Account standaard open (collapse show); Boot en Operationeel standaard ingeklapt (collapse).
+    - Account bevat: Eigenaarprofiel, Wachtwoord wijzigen.
+    - Boot bevat: Bootgegevens.
+    - Operationeel bevat: Operationele instellingen.
+    - Alle bestaande formulieren, handlers, state en validatie behouden.
+    - Geen businesslogica-wijzigingen; alleen visuele/structurele reorganisatie.
+    - Alle saves werken nog: eigenaarprofiel, wachtwoord, bootgegevens, operationele instellingen.
+    - Nederlandse meldingen intact.
+    - `dotnet build` slaagt.
+    - Settings.razor is het enige gewijzigde bestand.
   - Zie: [.docs/epics/owner-profile-settings.md](epics/owner-profile-settings.md)
-
-- [ ] **Owner Profile & Vessel Settings (US3/US4)** *(vervolg slices)*
-  - US3: Wachtwoord wijzigen verifiëren en UX verbeteren.
-  - US4: Settings pagina logisch ordenen.
 
 - [ ] **Query API Enhancements**
   - Date range filtering on measurements
@@ -215,6 +224,16 @@
   - Map integration for Position data
 
 #### Medium Priority
+
+- [ ] **UI Framework Modernization**
+  - **Aanleiding 2026-05-25:** BootManager gebruikt lokaal Bootstrap 5 CSS, terwijl `MainLayout.razor` Bootstrap 4.6.2 scripts, jQuery en SB Admin 2 laadt. Dit kan interactieproblemen veroorzaken bij componenten zoals accordions, dropdowns en modals.
+  - **Doel:** Bootstrap/SB Admin-afhankelijkheden opschonen en één duidelijke UI-basis kiezen.
+  - **Opties later onderzoeken:**
+    - volledig Bootstrap 5;
+    - een Blazor component library;
+    - eigen lichte Blazor-componenten bovenop Bootstrap CSS.
+  - **Niet onderdeel van US4:** Settings accordion wordt nu klein opgelost met Blazor-state, zonder frameworkmigratie.
+  - **Acceptatie later:** regressietest van navbar, dropdowns, modals, layout en pagina-interacties.
 
 - [ ] **Raspberry Pi/Docker deployment & veilige shutdown**
   - **Aanleiding 2026-05-23:** BootManager moet later op een Raspberry Pi in Docker kunnen draaien. Bij direct stroomloos maken kan een Raspberry Pi/SD-kaart en SQLite-database corrupt raken.

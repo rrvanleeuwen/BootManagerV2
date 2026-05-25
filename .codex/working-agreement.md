@@ -15,6 +15,9 @@ prompts, review en documentatie.
   - documentatie bijwerken als de gebruiker daarom vraagt of als dat onderdeel is van de begeleidende workflow.
 - Als Codex tijdens review een bug vindt, formuleert Codex eerst een prompt of reviewadvies voor Copilot.
 - Alleen bij expliciete opdracht zoals "pas dit zelf aan", "implementeer dit" of "fix dit in de code" mag Codex code wijzigen.
+- Deze beperking geldt ook voor kleine reviewfixes, waarschuwingen, whitespace, buildfouten en "even snel" correcties in applicatiecode. Codex mag zulke applicatiecodewijzigingen niet zelf doorvoeren zonder expliciete opdracht.
+- Als na Copilot-output nog een codewijziging nodig is, geeft Codex een gerichte Copilot-prompt of vraagt expliciet of Codex de code zelf mag aanpassen.
+- Documentatiebestanden in `.docs`, `.codex`, `AGENTS.md` en handoff-documenten mag Codex wel bijwerken als onderdeel van de afgesproken regie- en documentatieworkflow.
 
 ## Scopebewaking
 

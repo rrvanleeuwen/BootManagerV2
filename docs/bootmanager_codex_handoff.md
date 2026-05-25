@@ -222,6 +222,7 @@ Helpt met:
 - toetsen of Copilot iets heeft gemaakt zoals verwacht
 - formuleren van acceptatietests
 - beoordelen of een stap een logisch commit/push-moment is
+- geen applicatiecode aanpassen zonder expliciete opdracht van de gebruiker, ook niet voor kleine reviewfixes, warnings, whitespace of buildfouten
 
 #### Copilot in Visual Studio
 Doet het echte codewerk op basis van een goed afgebakende prompt.
@@ -268,6 +269,7 @@ Per stap werkt Codex idealiter als volgt:
    - compileerbaarheid
    - semantische juistheid
    - scopebewaking
+   - als een codefix nodig is: geef een gerichte Copilot-prompt of vraag expliciet of Codex de applicatiecode zelf mag aanpassen
 
 6. **Acceptatietests geven**
    - build

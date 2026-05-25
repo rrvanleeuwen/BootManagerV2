@@ -17,201 +17,273 @@
 
 <h3>Instellingen</h3>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <h5>Eigenaarprofiel</h5>
+<div class="accordion" id="settingsAccordion">
+    <!-- Account Group -->
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="@GetAccordionButtonClass(_accountOpen)" type="button" @onclick="@(() => ToggleAccordion("account"))" aria-expanded="@GetAriaExpanded(_accountOpen)" aria-controls="accountCollapse">
+                Account
+            </button>
+        </h2>
+        <div id="accountCollapse" class="@GetAccordionContentClass(_accountOpen)">
+            <div class="accordion-body">
+                <!-- Eigenaarprofiel -->
+                <div class="mb-4">
+                    <h5>Eigenaarprofiel</h5>
 
-        @if (_ownerProfileBusy && _ownerProfileEditModel is null)
-        {
-            <p>Laden...</p>
-        }
-        else if (_ownerProfileEditModel is not null)
-        {
-            <EditForm Model="_ownerProfileEditModel" OnValidSubmit="HandleOwnerProfileSubmit">
-                <DataAnnotationsValidator />
-                <ValidationSummary />
+                    @if (_ownerProfileBusy && _ownerProfileEditModel is null)
+                    {
+                        <p>Laden...</p>
+                    }
+                    else if (_ownerProfileEditModel is not null)
+                    {
+                        <EditForm Model="_ownerProfileEditModel" OnValidSubmit="HandleOwnerProfileSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
 
-                <div class="mb-2">
-                    <label>Naam <span class="text-danger">*</span></label>
-                    <InputText class="form-control" @bind-Value="_ownerProfileEditModel.Name" />
-                    <small class="form-text text-muted">Verplicht veld.</small>
+                            <div class="mb-2">
+                                <label>Naam <span class="text-danger">*</span></label>
+                                <InputText class="form-control" @bind-Value="_ownerProfileEditModel.Name" />
+                                <small class="form-text text-muted">Verplicht veld.</small>
+                            </div>
+                            <div class="mb-2">
+                                <label>E-mail <span class="text-muted">(optioneel)</span></label>
+                                <InputText class="form-control" type="email" @bind-Value="_ownerProfileEditModel.Email" />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" disabled="@_ownerProfileBusy">@(_ownerProfileBusy ? "Bezig..." : "Opslaan")</button>
+                        </EditForm>
+                        @if (!string.IsNullOrEmpty(_ownerProfileError))
+                        {
+                            <div class="alert alert-danger mt-2">@_ownerProfileError</div>
+                        }
+                        @if (_ownerProfileSuccess)
+                        {
+                            <div class="alert alert-success mt-2">@(_ownerProfileSuccessMessage ?? "Eigenaarprofiel opgeslagen.")</div>
+                        }
+                    }
                 </div>
-                <div class="mb-2">
-                    <label>E-mail <span class="text-muted">(optioneel)</span></label>
-                    <InputText class="form-control" type="email" @bind-Value="_ownerProfileEditModel.Email" />
+
+                <!-- Wachtwoord wijzigen -->
+                <div>
+                    <h5>Wachtwoord wijzigen</h5>
+                    <EditForm Model="pwdModel" OnSubmit="HandlePasswordSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <div class="mb-2">
+                            <label>Huidig wachtwoord</label>
+                            <InputText class="form-control" type="password" @bind-Value="pwdModel.CurrentPassword" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Nieuw wachtwoord</label>
+                            <InputText class="form-control" type="password" @bind-Value="pwdModel.NewPassword" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Bevestig nieuw wachtwoord</label>
+                            <InputText class="form-control" type="password" @bind-Value="pwdModel.ConfirmNewPassword" />
+                        </div>
+                        <button type="submit" class="btn btn-primary" disabled="@_pwdBusy">@(_pwdBusy ? "Bezig..." : "Wijzig wachtwoord")</button>
+                    </EditForm>
+                    @if (!string.IsNullOrEmpty(pwdError)) { <div class="text-danger">@pwdError</div> }
+                    @if (pwdSuccess) { <div class="text-success">Wachtwoord gewijzigd.</div> }
                 </div>
-
-                <button type="submit" class="btn btn-primary" disabled="@_ownerProfileBusy">@(_ownerProfileBusy ? "Bezig..." : "Opslaan")</button>
-            </EditForm>
-            @if (!string.IsNullOrEmpty(_ownerProfileError))
-            {
-                <div class="alert alert-danger mt-2">@_ownerProfileError</div>
-            }
-            @if (_ownerProfileSuccess)
-            {
-                <div class="alert alert-success mt-2">@(_ownerProfileSuccessMessage ?? "Eigenaarprofiel opgeslagen.")</div>
-            }
-        }
-    </div>
-</div>
-
-<div class="card mb-3">
-    <div class="card-body">
-        <h5>Wachtwoord wijzigen</h5>
-        <EditForm Model="pwdModel" OnSubmit="HandlePasswordSubmit">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-            <div class="mb-2">
-                <label>Huidig wachtwoord</label>
-                <InputText class="form-control" type="password" @bind-Value="pwdModel.CurrentPassword" />
             </div>
-            <div class="mb-2">
-                <label>Nieuw wachtwoord</label>
-                <InputText class="form-control" type="password" @bind-Value="pwdModel.NewPassword" />
-            </div>
-            <div class="mb-2">
-                <label>Bevestig nieuw wachtwoord</label>
-                <InputText class="form-control" type="password" @bind-Value="pwdModel.ConfirmNewPassword" />
-            </div>
-            <button type="submit" class="btn btn-primary" disabled="@_pwdBusy">@(_pwdBusy ? "Bezig..." : "Wijzig wachtwoord")</button>
-        </EditForm>
-        @if (!string.IsNullOrEmpty(pwdError)) { <div class="text-danger">@pwdError</div> }
-        @if (pwdSuccess) { <div class="text-success">Wachtwoord gewijzigd.</div> }
+        </div>
     </div>
-</div>
 
-<div class="card mt-3">
-    <div class="card-body">
-        <h5>Bootgegevens</h5>
+    <!-- Boot Group -->
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="@GetAccordionButtonClass(_bootOpen)" type="button" @onclick="@(() => ToggleAccordion("boot"))" aria-expanded="@GetAriaExpanded(_bootOpen)" aria-controls="bootCollapse">
+                Boot
+            </button>
+        </h2>
+        <div id="bootCollapse" class="@GetAccordionContentClass(_bootOpen)">
+            <div class="accordion-body">
+                <!-- Bootgegevens -->
+                <h5>Bootgegevens</h5>
 
-        @if (_vesselBusy && _vesselModel is null)
-        {
-            <p>Laden...</p>
-        }
-        else if (_vesselModel is not null)
-        {
-            <EditForm Model="_vesselEditModel" OnValidSubmit="HandleVesselSubmit">
-                <DataAnnotationsValidator />
-                <ValidationSummary />
-
-                <div class="mb-2">
-                    <label>Bootnaam <span class="text-danger">*</span></label>
-                    <InputText class="form-control" @bind-Value="_vesselEditModel.VesselName" />
-                    <small class="form-text text-muted">Verplicht veld.</small>
-                </div>
-                <div class="mb-2">
-                    <label>Thuishaven <span class="text-muted">(optioneel)</span></label>
-                    <InputText class="form-control" @bind-Value="_vesselEditModel.HomePort" />
-                </div>
-                <div class="mb-2">
-                    <label>Roepnaam <span class="text-muted">(optioneel)</span></label>
-                    <InputText class="form-control" @bind-Value="_vesselEditModel.CallSign" />
-                </div>
-                <div class="mb-2">
-                    <label>MMSI <span class="text-muted">(optioneel)</span></label>
-                    <InputText class="form-control" @bind-Value="_vesselEditModel.Mmsi" />
-                </div>
-
-                <button type="submit" class="btn btn-primary" disabled="@_vesselBusy">@(_vesselBusy ? "Bezig..." : "Opslaan")</button>
-            </EditForm>
-            @if (!string.IsNullOrEmpty(_vesselError))
-            {
-                <div class="alert alert-danger mt-2">@_vesselError</div>
-            }
-            @if (_vesselSuccess)
-            {
-                <div class="alert alert-success mt-2">@(_vesselSuccessMessage ?? "Bootgegevens opgeslagen.")</div>
-            }
-        }
-    </div>
-</div>
-
-<div class="card mt-3">
-    <div class="card-body">
-        <h5>Operationele instellingen</h5>
-
-        @if (_opsBusy && _opsModel is null)
-        {
-            <p>Laden...</p>
-        }
-        else if (_opsModel is not null)
-        {
-            <EditForm Model="_opsModel" OnValidSubmit="HandleOpsSubmit">
-                <DataAnnotationsValidator />
-                <ValidationSummary />
-
-                <h6 class="mt-2">Netwerk / Ingest</h6>
-                <div class="mb-2">
-                    <label>Luisteradres</label>
-                    <InputText class="form-control" @bind-Value="_opsModel.ListenAddress" />
-                    <small class="form-text text-muted">IP-adres waarop de ingest-service luistert (bijv. 0.0.0.0).</small>
-                </div>
-                <div class="mb-2">
-                    <label>Luisterpoort</label>
-                    <InputNumber class="form-control" @bind-Value="_opsModel.ListenPort" />
-                </div>
-                <div class="mb-2">
-                    <label>Alternatieve poort <span class="text-muted">(optioneel)</span></label>
-                    <InputNumber class="form-control" @bind-Value="_opsModel.AlternativeListenPort" />
-                </div>
-                <div class="mb-2">
-                    <label>API basis-URL</label>
-                    <InputText class="form-control" @bind-Value="_opsModel.ApiBaseUrl" />
-                    <small class="form-text text-muted">Basis-URL van de BootManager Web API.</small>
-                </div>
-
-                <h6 class="mt-3">Opslag / Sampling</h6>
-                <div class="mb-2">
-                    <label>Raw opslagmodus</label>
-                    <InputSelect class="form-select" @bind-Value="_opsModel.RawStorageMode">
-                        <option value="@RawStorageMode.All">Alles opslaan</option>
-                        <option value="@RawStorageMode.Sampled">Sampling (interval)</option>
-                        <option value="@RawStorageMode.OffAfterSuccessfulParse">Uit na geslaagde parse</option>
-                    </InputSelect>
-                </div>
-                <div class="mb-2">
-                    <label>Standaard sample-interval (seconden)</label>
-                    <InputNumber class="form-control" @bind-Value="_opsModel.DefaultSampleIntervalSeconds" />
-                    <small class="form-text text-muted">Alleen relevant bij modus Sampling (1–3600).</small>
-                </div>
-                <div class="mb-2 form-check">
-                    <InputCheckbox class="form-check-input" @bind-Value="_opsModel.CaptureLoggingEnabled" id="captureLogging" />
-                    <label class="form-check-label" for="captureLogging">Capture logging inschakelen</label>
-                </div>
-
-                <h6 class="mt-3">Logboekbijlagen</h6>
-                <div class="mb-2">
-                    <label>Directory voor bijlagen</label>
-                    <InputText class="form-control" @bind-Value="_opsModel.LogbookAttachmentsDirectory" />
-                    <small class="form-text text-muted">Pad waar bijlagen worden opgeslagen (bijv. data/logbook-attachments of /mnt/data/attachments op Raspberry Pi).</small>
-                </div>
-
-                <button type="submit" class="btn btn-primary" disabled="@_opsBusy">@(_opsBusy ? "Bezig..." : "Opslaan")</button>
-            </EditForm>
-            @if (!string.IsNullOrEmpty(_opsError)) 
-            { 
-                <div class="alert alert-danger mt-2">@_opsError</div> 
-            }
-            @if (_opsSuccess) 
-            { 
-                <div class="alert alert-success mt-2">@(_opsSuccessMessage ?? "Instellingen opgeslagen.")</div> 
-            }
-            @if (!string.IsNullOrEmpty(_opsReloadMessage))
-            {
-                @if (_opsReloadMessage.Contains("Let op:") || _opsReloadMessage.Contains("niet bereikbaar"))
+                @if (_vesselBusy && _vesselModel is null)
                 {
-                    <div class="alert alert-warning mt-2">@_opsReloadMessage</div>
+                    <p>Laden...</p>
                 }
-                else
+                else if (_vesselModel is not null)
                 {
-                    <div class="alert alert-info mt-2">@_opsReloadMessage</div>
+                    <EditForm Model="_vesselEditModel" OnValidSubmit="HandleVesselSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-2">
+                            <label>Bootnaam <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_vesselEditModel.VesselName" />
+                            <small class="form-text text-muted">Verplicht veld.</small>
+                        </div>
+                        <div class="mb-2">
+                            <label>Thuishaven <span class="text-muted">(optioneel)</span></label>
+                            <InputText class="form-control" @bind-Value="_vesselEditModel.HomePort" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Roepnaam <span class="text-muted">(optioneel)</span></label>
+                            <InputText class="form-control" @bind-Value="_vesselEditModel.CallSign" />
+                        </div>
+                        <div class="mb-2">
+                            <label>MMSI <span class="text-muted">(optioneel)</span></label>
+                            <InputText class="form-control" @bind-Value="_vesselEditModel.Mmsi" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@_vesselBusy">@(_vesselBusy ? "Bezig..." : "Opslaan")</button>
+                    </EditForm>
+                    @if (!string.IsNullOrEmpty(_vesselError))
+                    {
+                        <div class="alert alert-danger mt-2">@_vesselError</div>
+                    }
+                    @if (_vesselSuccess)
+                    {
+                        <div class="alert alert-success mt-2">@(_vesselSuccessMessage ?? "Bootgegevens opgeslagen.")</div>
+                    }
                 }
-            }
-        }
+            </div>
+        </div>
+    </div>
+
+    <!-- Operationeel Group -->
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="@GetAccordionButtonClass(_operationalOpen)" type="button" @onclick="@(() => ToggleAccordion("operational"))" aria-expanded="@GetAriaExpanded(_operationalOpen)" aria-controls="operationalCollapse">
+                Operationeel
+            </button>
+        </h2>
+        <div id="operationalCollapse" class="@GetAccordionContentClass(_operationalOpen)">
+            <div class="accordion-body">
+                <!-- Operationele instellingen -->
+                <h5>Operationele instellingen</h5>
+
+                @if (_opsBusy && _opsModel is null)
+                {
+                    <p>Laden...</p>
+                }
+                else if (_opsModel is not null)
+                {
+                    <EditForm Model="_opsModel" OnValidSubmit="HandleOpsSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <h6 class="mt-2">Netwerk / Ingest</h6>
+                        <div class="mb-2">
+                            <label>Luisteradres</label>
+                            <InputText class="form-control" @bind-Value="_opsModel.ListenAddress" />
+                            <small class="form-text text-muted">IP-adres waarop de ingest-service luistert (bijv. 0.0.0.0).</small>
+                        </div>
+                        <div class="mb-2">
+                            <label>Luisterpoort</label>
+                            <InputNumber class="form-control" @bind-Value="_opsModel.ListenPort" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Alternatieve poort <span class="text-muted">(optioneel)</span></label>
+                            <InputNumber class="form-control" @bind-Value="_opsModel.AlternativeListenPort" />
+                        </div>
+                        <div class="mb-2">
+                            <label>API basis-URL</label>
+                            <InputText class="form-control" @bind-Value="_opsModel.ApiBaseUrl" />
+                            <small class="form-text text-muted">Basis-URL van de BootManager Web API.</small>
+                        </div>
+
+                        <h6 class="mt-3">Opslag / Sampling</h6>
+                        <div class="mb-2">
+                            <label>Raw opslagmodus</label>
+                            <InputSelect class="form-select" @bind-Value="_opsModel.RawStorageMode">
+                                <option value="@RawStorageMode.All">Alles opslaan</option>
+                                <option value="@RawStorageMode.Sampled">Sampling (interval)</option>
+                                <option value="@RawStorageMode.OffAfterSuccessfulParse">Uit na geslaagde parse</option>
+                            </InputSelect>
+                        </div>
+                        <div class="mb-2">
+                            <label>Standaard sample-interval (seconden)</label>
+                            <InputNumber class="form-control" @bind-Value="_opsModel.DefaultSampleIntervalSeconds" />
+                            <small class="form-text text-muted">Alleen relevant bij modus Sampling (1–3600).</small>
+                        </div>
+                        <div class="mb-2 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="_opsModel.CaptureLoggingEnabled" id="captureLogging" />
+                            <label class="form-check-label" for="captureLogging">Capture logging inschakelen</label>
+                        </div>
+
+                        <h6 class="mt-3">Logboekbijlagen</h6>
+                        <div class="mb-2">
+                            <label>Directory voor bijlagen</label>
+                            <InputText class="form-control" @bind-Value="_opsModel.LogbookAttachmentsDirectory" />
+                            <small class="form-text text-muted">Pad waar bijlagen worden opgeslagen (bijv. data/logbook-attachments of /mnt/data/attachments op Raspberry Pi).</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@_opsBusy">@(_opsBusy ? "Bezig..." : "Opslaan")</button>
+                    </EditForm>
+                    @if (!string.IsNullOrEmpty(_opsError))
+                    {
+                        <div class="alert alert-danger mt-2">@_opsError</div>
+                    }
+                    @if (_opsSuccess)
+                    {
+                        <div class="alert alert-success mt-2">@(_opsSuccessMessage ?? "Instellingen opgeslagen.")</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_opsReloadMessage))
+                    {
+                        @if (_opsReloadMessage.Contains("Let op:") || _opsReloadMessage.Contains("niet bereikbaar"))
+                        {
+                            <div class="alert alert-warning mt-2">@_opsReloadMessage</div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mt-2">@_opsReloadMessage</div>
+                        }
+                    }
+                }
+            </div>
+        </div>
     </div>
 </div>
 
 @code {
+    // Accordion state
+    private bool _accountOpen = true;
+    private bool _bootOpen = false;
+    private bool _operationalOpen = false;
+
+    private string GetAccordionButtonClass(bool isOpen) => isOpen ? "accordion-button" : "accordion-button collapsed";
+    private string GetAccordionContentClass(bool isOpen) => isOpen ? "accordion-collapse collapse show" : "accordion-collapse collapse";
+    private string GetAriaExpanded(bool isOpen) => isOpen ? "true" : "false";
+
+    private void ToggleAccordion(string group)
+    {
+        var wasOpen = group switch
+        {
+            "account" => _accountOpen,
+            "boot" => _bootOpen,
+            "operational" => _operationalOpen,
+            _ => false
+        };
+
+        _accountOpen = false;
+        _bootOpen = false;
+        _operationalOpen = false;
+
+        if (wasOpen)
+        {
+            return;
+        }
+
+        switch (group)
+        {
+            case "account":
+                _accountOpen = true;
+                break;
+            case "boot":
+                _bootOpen = true;
+                break;
+            case "operational":
+                _operationalOpen = true;
+                break;
+        }
+    }
+
     private BootManager.Application.Authentication.DTOs.ChangePasswordRequestDto pwdModel = new();
 
     private string? pwdError;
@@ -422,7 +494,7 @@
                 Email = ownerProfile.Email
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             _ownerProfileError = "Eigenaarprofiel kon niet worden geladen. Probeer later opnieuw.";
             _ownerProfileEditModel = null;
@@ -461,7 +533,7 @@
         {
             _ownerProfileError = "Er is een fout opgetreden bij het opslaan van het eigenaarprofiel. Probeer later opnieuw.";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             _ownerProfileError = "Er is een onverwachte fout opgetreden bij het opslaan van het eigenaarprofiel. Probeer later opnieuw.";
         }
