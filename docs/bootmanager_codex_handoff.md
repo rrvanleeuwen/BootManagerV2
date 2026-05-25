@@ -498,6 +498,13 @@ Gebruik bij nieuwe werkstappen bij voorkeur deze aanpak:
 ### Eerst analyseren
 - lees actuele code
 - lees `.docs`
+- raadpleeg bij elk nieuw idee of elke volgende-story keuze de legacy-scope analyse:
+  - `.docs/legacy-analysis/scope-inventory.md`
+  - `.docs/legacy-analysis/mapped-epics.md`
+  - `.docs/legacy-analysis/legacy-coverage-register.md`
+  - `.docs/legacy-analysis/proposed-backlog.md`
+  - `.docs/legacy-analysis/implemented-or-obsolete.md`
+- bepaal expliciet of het idee al in de legacy-scope staat, al in BootManagerV2 bestaat, deels bestaat, geparkeerd is, afhankelijk is van andere modules of nieuwe scope is
 - controleer build/test-status als dat relevant is
 - bepaal of docs, tests en code nog in sync zijn
 
@@ -516,6 +523,7 @@ Na Copilot-output:
 - architectuur checken
 - build/test checken
 - documentatie en datums checken
+- legacy-dekking checken en `legacy-coverage-register.md` bijwerken voor geraakte legacy US-nummers
 - acceptatietest geven
 - commit/push-moment expliciet benoemen
 

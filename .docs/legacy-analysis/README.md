@@ -37,19 +37,30 @@ Beperking:
 
 Bekende OCR-gaps:
 
-- Delen van Epic 2 begin, waarschijnlijk US2.1 en US2.2.
-- Begin van Epic 4, waarschijnlijk US4.1.
-- Begin van Epic 5, waarschijnlijk US5.1.
-- Begin van Epic 7, waarschijnlijk US7.1 t/m US7.8.
-- Begin van Epic 9, waarschijnlijk US9.1 t/m US9.5.
+Geen bekende OCR-gaps meer voor de beschikbare Word-exportbestanden. Alle bekende gaten uit de OCR-analyse zijn met de Word-bronnen gecontroleerd of opgelost.
+
+Opgelost via Word-bron:
+
+- Epic 2 US2.1 en US2.2 zijn verwerkt uit `BootManager_Epic2_Inventarisbeheer.docx`.
+- Epic 4 US4.1 is verwerkt uit `BootManager_Epic4_Documentbeheer.docx`; dezelfde Word-bron bevat aanvullend US4.13.
+- Epic 5 US5.1 is verwerkt uit `BootManager_Epic5_Logboek.docx`.
+- Epic 7 US7.1 t/m US7.8 zijn verwerkt uit `BootManager_Epic7_Dashboard.docx`.
+- Epic 9 US9.1 t/m US9.5 zijn verwerkt uit `BootManager_Epic9_Integratie.docx`.
 
 ## Outputbestanden
 
 - `scope-inventory.md` - ruwe legacy scope per epic.
 - `mapped-epics.md` - mapping legacy scope naar huidige BootManagerV2-status.
+- `legacy-coverage-register.md` - story-level afvinkregister voor legacy US-dekking.
 - `implemented-or-obsolete.md` - legacy stories die al klaar, deels klaar of bewust niet meer relevant zijn.
 - `proposed-backlog.md` - voorgestelde BootManagerV2 epics/user stories in huidige stijl.
 - `word-source-progress.md` - voortgang per Word-exportbestand.
+
+## Coverage Bijhouden
+
+`legacy-coverage-register.md` is het primaire afvinkregister. Bij iedere afgeronde BootManagerV2-functionaliteit moet worden gecontroleerd welke legacy US-nummers geraakt worden. Werk daarna de status bij naar `Done`, `Partial`, `Open`, `Parked`, `Replaced` of `Obsolete`.
+
+Dit register is bedoeld om dubbele analyse en dubbele user stories te voorkomen.
 
 ## Word-Verwerking
 

@@ -16,6 +16,24 @@ prompts, review en documentatie.
 - Als Codex tijdens review een bug vindt, formuleert Codex eerst een prompt of reviewadvies voor Copilot.
 - Alleen bij expliciete opdracht zoals "pas dit zelf aan", "implementeer dit" of "fix dit in de code" mag Codex code wijzigen.
 
+## Scopebewaking
+
+- Bij elk nieuw idee van de gebruiker, elk verzoek om een vervolgstory en elke situatie waarin Codex zelf een volgende stap voorstelt, controleert Codex actief de legacy-scope analyse zonder dat de gebruiker daar expliciet om hoeft te vragen.
+- De vaste scopebronnen zijn:
+  - `.docs/legacy-analysis/scope-inventory.md` voor de volledige legacy functionele scope;
+  - `.docs/legacy-analysis/mapped-epics.md` voor mapping naar BootManagerV2-status;
+  - `.docs/legacy-analysis/legacy-coverage-register.md` voor story-level afvinkstatus per legacy US;
+  - `.docs/legacy-analysis/proposed-backlog.md` voor voorgestelde BootManagerV2-slices;
+  - `.docs/legacy-analysis/implemented-or-obsolete.md` voor wat al afgedekt, vervangen, geparkeerd of niet meer relevant is.
+- Codex bepaalt eerst of een idee:
+  - al in legacy-scope gedefinieerd is;
+  - al geheel of gedeeltelijk in BootManagerV2 bestaat;
+  - bewust geparkeerd is;
+  - afhankelijk is van andere modules;
+  - of echt nieuwe scope is.
+- Daarna formuleert Codex pas een voorstel, Copilot-prompt of vervolgstap, passend bij de huidige BootManagerV2-architectuur en roadmap.
+- Bij afronding van functionaliteit werkt Codex `legacy-coverage-register.md` bij voor alle geraakte legacy US-nummers. Een story is pas administratief afgerond als de legacy-dekking is gecontroleerd en, waar nodig, afgevinkt of als `Partial` bijgewerkt.
+
 ## Testadvies voor commit/PR
 
 - Bij UI-wijzigingen, onboarding/auth-flow, deployment/configuratie, databasegedrag of andere runtimegevoelige
