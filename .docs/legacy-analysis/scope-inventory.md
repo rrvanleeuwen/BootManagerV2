@@ -2,6 +2,12 @@
 
 Bron: OCR van `.docs/legacy-input/BootmanagerEPICS.pdf` en globale inspectie van `BootNETManager`.
 
+Aanvulling 2026-05-25:
+
+- `BootManager_Softwarevisie_v0.7.docx` is als eerste Word-bron verwerkt.
+- Dit bestand bevestigt de brede functionele scope uit de OCR-analyse.
+- Technische architectuur uit deze visie is bewust niet overgenomen als richting voor BootManagerV2.
+
 ## Hoofdscope Uit Legacy PDF
 
 De oude applicatievisie beschrijft BootManager als integraal boordbeheersysteem met:
@@ -16,6 +22,16 @@ De oude applicatievisie beschrijft BootManager als integraal boordbeheersysteem 
 - offline werking met SQLite;
 - optionele cloud/synchronisatie;
 - rapportage, notificaties en AI/herkenning.
+
+De Word-versie bevestigt aanvullend deze functionele accenten:
+
+- meerdere boten, bootfoto's en visuele bootindeling waren legacy-scope;
+- opslaglocaties zijn hiërarchisch bedoeld: gebied plus opslagruimte;
+- voorraad bevat hoeveelheid, eenheid, houdbaarheidsdatum, locatie, foto, barcode/QR en export;
+- passageplanning berekent benodigde voorraad op basis van reisduur, bemanning en verbruik;
+- documenten hebben type, beschrijving, vervaldatum en lokale opslag;
+- onderhoud bevat kosten, onderdelen, uitvoerder, schema's en herinneringen;
+- offline werking, back-up naar USB/netwerkschijf en responsive gebruik waren expliciete niet-functionele doelen.
 
 ## Epic 0: Installatie & Authenticatie
 
