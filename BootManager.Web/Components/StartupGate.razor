@@ -2,8 +2,8 @@
 Component: StartupGate
 Purpose:
 - Acts as a startup guard that runs once on first render and routes the user to the correct entry page:
-  - If this is the first run (no owner profile exists): navigate to "/register-owner".
-  - Otherwise: navigate to "/login".
+  - If this is the first run (no owner profile exists): navigate to "/login" (bootstrap owner is created automatically at startup).
+  - Otherwise: navigate to "/login" if not authenticated, or "/dashboard" if already authenticated.
 
 How it works:
 - Uses OnAfterRenderAsync(firstRender: true) so navigation occurs after the first UI render (safe for NavigationManager redirect).
@@ -49,14 +49,14 @@ Testing guidance:
         if (!firstRender || _checked) return;
 
         var relative = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
-        var firstRun = await RegistrationService.CheckFirstRunAsync();
 
-        // 1) First run: always go to register page
+        // 1) First run: navigate to login (bootstrap owner is already created at startup)
+        var firstRun = await RegistrationService.CheckFirstRunAsync();
         if (firstRun.IsFirstRun)
         {
             _checked = true;
-            if (!string.Equals(relative, "register-owner", StringComparison.OrdinalIgnoreCase))
-                Nav.NavigateTo("/register-owner", replace: true);
+            if (!string.Equals(relative, "login", StringComparison.OrdinalIgnoreCase))
+                Nav.NavigateTo("/login", replace: true);
             return;
         }
 
