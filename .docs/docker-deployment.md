@@ -203,6 +203,12 @@ Alle configuratie gebeurt via environment variables in `docker-compose.yml`. Gee
 | `Ingest__ControlApi__ListenAddress` | `0.0.0.0` | Bind adres control API (in container) |
 | `Ingest__ControlApi__ListenPort` | `5010` | Control API poort |
 
+De Ingest control API gebruikt intern `HttpListener`. Als `Ingest__ControlApi__ListenAddress`
+op `0.0.0.0` staat, vertaalt BootManager dit naar de HttpListener-prefix
+`http://*:5010/`. Dit is bewust: Docker bindt de poort aan de buitenkant nog steeds
+localhost-only via `127.0.0.1:5010:5010`, terwijl de listener binnen de container op
+alle containerinterfaces kan luisteren voor verkeer vanuit het Compose-netwerk.
+
 Om configuratie aan te passen, edit `docker-compose.yml` en herstart:
 
 ```bash

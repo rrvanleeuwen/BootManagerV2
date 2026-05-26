@@ -57,14 +57,13 @@ public class IngestControlServer : IHostedService
             return;
         }
 
-        _logger.LogInformation(
-            "Starting IngestControlServer on {ListenAddress}:{ListenPort}...",
-            controlApiOptions.ListenAddress, controlApiOptions.ListenPort);
-
         try
         {
             _listener = new HttpListener();
-            var prefix = $"http://{controlApiOptions.ListenAddress}:{controlApiOptions.ListenPort}/";
+            var prefix = BuildHttpListenerPrefix(controlApiOptions.ListenAddress, controlApiOptions.ListenPort);
+
+            _logger.LogInformation("Starting IngestControlServer on {Prefix}...", prefix);
+
             _listener.Prefixes.Add(prefix);
             _listener.Start();
 
@@ -78,6 +77,29 @@ public class IngestControlServer : IHostedService
             _logger.LogError(ex, "Failed to start IngestControlServer: {Message}", ex.Message);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Bouwt de HttpListener-prefix voor de control API zonder netwerkresources te openen.
+    /// Normaliseert een leeg adres naar localhost en vertaalt 0.0.0.0 naar de wildcardhost
+    /// die HttpListener cross-platform verwacht.
+    /// </summary>
+    internal static string BuildHttpListenerPrefix(string? listenAddress, int listenPort)
+    {
+        var host = string.IsNullOrWhiteSpace(listenAddress)
+            ? "127.0.0.1"
+            : listenAddress.Trim();
+
+        if (host == "0.0.0.0")
+        {
+            host = "*";
+        }
+        else if (host.Contains(':') && !host.StartsWith('[') && !host.EndsWith(']'))
+        {
+            host = $"[{host}]";
+        }
+
+        return $"http://{host}:{listenPort}/";
     }
 
     /// <summary>
