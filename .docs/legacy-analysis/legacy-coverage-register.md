@@ -28,7 +28,7 @@ Bij afronding van een story of PR:
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
 | US0.1 Installatie uitvoeren | Done | Eerste Raspberry Pi 4 Docker Compose deployment-smoke-test geslaagd op 2026-05-26: OS Lite 64-bit, SSH, GitHub SSH clone, `.env`, ARM64 Docker build, Web healthy, Ingest up, app via netwerk bereikbaar en reboot-test geslaagd. Productiehardening zoals backup/restore en veilige shutdown blijft onder systeembeheer open. |
-| US0.2 Registratie eerste eigenaar | Replaced | Vervangen door bootstrap owner + verplichte onboarding. |
+| US0.2 Registratie eerste eigenaar | Replaced | Vervangen door bootstrap owner + verplichte onboarding. Legacy `/register-owner` route en menu-item verwijderd via PR #64 op 2026-05-26. |
 | US0.3 Inloggen als eigenaar | Done | Wachtwoord-only login aanwezig. |
 | US0.4 Wachtwoord of pincode wijzigen | Done | Wachtwoord wijzigen in Settings is technisch aanwezig en handmatig positief getest op 2026-05-25. Pincode is bewust uit de normale BootManagerV2-flow verwijderd/vervangen. |
 | US0.5 Herstel van toegang | Replaced | Back-upcode/master-key vervangen door operationele resetprocedure. |

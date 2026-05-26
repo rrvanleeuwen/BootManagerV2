@@ -91,14 +91,16 @@ Coverage rule:
 
 ## Current Branch And PR Context
 
-- Current branch is `feature/register-owner-cleanup`.
-- No PR has been created for the Register Owner cleanup yet.
-- Development and pre-PR validation for this story are happening on the development computer, not on the Raspberry Pi.
-- The Raspberry Pi must remain on/pull only `master` after a change is merged or pushed there and the user is explicitly told to update it.
+- Current branch is `master`.
+- PR #64 (`feature/register-owner-cleanup`) was merged on 2026-05-26 with merge commit `a441ca8`.
+- Local `master` has been fast-forwarded from `origin/master` after the merge.
+- The Raspberry Pi must remain on/pull only `master`; update it only when the user is explicitly told the exact commands.
 - Recent relevant commits on `master`:
+  - `a441ca8 Merge pull request #64 from rrvanleeuwen/feature/register-owner-cleanup`
+  - `ab54cbb Remove legacy register owner route`
+  - `47d5ab9 Document Pi master-only update rule`
   - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
   - `124c7af Fix Docker base image tags for ARM64`
-  - `975019e Merge pull request #63 from rrvanleeuwen/feature/settings-page-organization`
 
 ## Processed Word Files
 
