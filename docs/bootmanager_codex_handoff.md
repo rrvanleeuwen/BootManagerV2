@@ -432,11 +432,15 @@ Deviation/Variation/Reference zitten wel in payloadstructuur, maar hoeven nog ni
 
 We zijn geëindigd op:
 
-- branch: `feature/nmea0183-parser-layer`
-- NMEA 0183 Fase 1 (ingest foundation) is afgerond en getest
-- NMEA 0183 Fase 2 (parserlaag) is geïmplementeerd: `Nmea0183ParserService`, `INmea0183ParserService`, `Nmea0183ParseResultDto`
-- `dotnet build` geslaagd; `dotnet test` geslaagd (1 niet-gerelateerde authenticatietest gefaald, pre-existent)
-- Runtime-tests zijn niet uitgevoerd voor Fase 2
+- branch: `master`
+- NMEA 0183 Fase 1 t/m 3c, simulator NMEA 0183 output en runtime/SQLite acceptatietest zijn afgerond
+- Owner/settings/onboarding beheerflows zijn afgerond
+- Eerste Raspberry Pi 4 Docker Compose deployment-smoke-test is geslaagd op 2026-05-26
+- Laatste relevante deploymentfixes:
+  - `124c7af Fix Docker base image tags for ARM64`
+  - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
+- Pi-updateflow: `git pull`, `docker compose build`, `docker compose up -d`, `docker compose ps`, `/health` controleren
+- Volgende hardwarestap: echte boot UDP-broadcasttest met YDEN-03/Teltonika op poort `10110`
 
 Werkende NMEA2000 slices (ongewijzigd):
 - Battery
@@ -473,9 +477,26 @@ De TCP-poort lijkt bedoeld voor de eigen YDEN-software; BootManager gebruikt de 
 - Echte boot UDP-test met YDEN-03 op poort 2000/10110
 - Expliciete **schijnbare wind** als aparte slice
 
-### Later: Raspberry Pi/Docker deployment en veilige shutdown
+### Raspberry Pi/Docker deployment en veilige shutdown
 
-BootManager moet later op een Raspberry Pi in Docker kunnen draaien. Dit is haalbaar, maar moet bewust ontworpen worden:
+De eerste Raspberry Pi 4 Docker Compose deployment-smoke-test is geslaagd op 2026-05-26.
+
+Gevalideerd:
+
+- Raspberry Pi 4 Model B met 32 GB SD en Raspberry Pi OS Lite 64-bit.
+- SSH via `bootmanager-pi.local`.
+- GitHub private repo via SSH-key op de Pi.
+- Pi bouwt Docker images lokaal vanaf `master`; geen zip-workflow.
+- Lokale `.env` bevat `BOOTMANAGER_ENCRYPTION_KEY`, `BOOTMANAGER_JWT_KEY` en `BOOTMANAGER_BOOTSTRAP_PASSWORD`; secrets horen niet in GitHub.
+- Docker ARM64 build werkt na commit `124c7af` met multi-arch .NET base images zonder `-arm64` suffix.
+- Ingest control API werkt na commit `4ef3d73`; `0.0.0.0` wordt intern `http://*:5010/` voor `HttpListener`.
+- `bootmanager-web` draait healthy op poort `5000`.
+- `bootmanager-ingest` draait met UDP `10110` en control API `127.0.0.1:5010`.
+- `/health` geeft `HTTP 200` met `{"status":"ok"}`.
+- App is bereikbaar vanaf laptop via `http://<pi-ip>:5000`.
+- Reboot-test geslaagd; beide containers komen automatisch terug.
+
+Resterende aandachtspunten:
 
 - UDP ingest vereist expliciete Docker-netwerkkeuze: poorten mappen of `host networking`.
 - Web en Ingest kunnen in containers niet vanzelf via `localhost` met elkaar praten; gebruik service names, gedeeld Docker-netwerk of host networking.
@@ -485,6 +506,7 @@ BootManager moet later op een Raspberry Pi in Docker kunnen draaien. Dit is haal
 - Omdat een Raspberry Pi/SD-kaart niet goed tegen hard uitschakelen kan, is een latere owner/admin UI-story gewenst: "Systeem veilig afsluiten".
 - Die UI-knop moet via een beperkte lokale helper/service werken, niet via vrije shell-commando's vanuit Web.
 - De gebruiker moet melding krijgen dat de stroom pas los mag als de Raspberry Pi volledig uit is.
+- 32 GB SD en 1 GB RAM zijn voldoende voor weekendtest/proof-of-concept; productie/pilot vraagt liever eMMC/NVMe/SSD en 4 GB of 8 GB RAM.
 
 ---
 
@@ -551,7 +573,7 @@ Na Copilot-output:
 
 ## 14. Samenvatting in één alinea
 
-Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM), Fase 3c (RMC/GGA positie + motion), simulator NMEA 0183 output en de runtime/SQLite acceptatietest fase 3a-3c zijn afgerond. TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig niet nodig; BootManager richt zich op de bewezen UDP NMEA 0183 route. Een logische volgende stap is echte boot UDP-test of ontwerpkeuze rond conflict/deduplicatie en protocoltraceerbaarheid.
+Fase 1 (ingest foundation), Fase 2 (parserlaag), Fase 3a (VHW/MTW/DBT/DPT), Fase 3b (MWV/HDT/HDM), Fase 3c (RMC/GGA positie + motion), simulator NMEA 0183 output en de runtime/SQLite acceptatietest fase 3a-3c zijn afgerond. De eerste Raspberry Pi 4 Docker Compose deployment-smoke-test is geslaagd: Web en Ingest draaien op ARM64, `/health` is OK, de app is via het LAN bereikbaar en de reboot-test is geslaagd. TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig niet nodig; BootManager richt zich op de bewezen UDP NMEA 0183 route. Een logische volgende stap is de echte boot UDP-broadcasttest met YDEN-03/Teltonika of ontwerpkeuze rond conflict/deduplicatie en protocoltraceerbaarheid.
 
 ---
 

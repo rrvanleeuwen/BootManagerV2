@@ -1,36 +1,51 @@
 # Raspberry Pi Deployment Plan
 
-Doel: BootManager headless draaien op een Raspberry Pi, eerst zonder Docker. Docker kan later, maar voor de eerste deployment is een gewone Linux-service beter te begrijpen en te debuggen.
+Doel: BootManager headless draaien op een Raspberry Pi. De eerste geslaagde deployment gebruikt Docker Compose; systemd blijft een latere optie voor situaties waar directe hostservices gewenst zijn.
 
 ## Huidige uitgangssituatie
 
-- Beschikbaar apparaat: Raspberry Pi 3 B+.
-- Beschikbare SD-kaart: 8GB.
-- Geen monitor of toetsenbord beschikbaar.
-- Toegang moet dus headless via netwerk en SSH.
-- De bestaande SD-kaart kan vervangen of opnieuw beschreven worden.
+- Eerste geslaagde test: Raspberry Pi 4 Model B met 32 GB microSD.
+- OS: Raspberry Pi OS Lite 64-bit.
+- Hostname: `bootmanager-pi`.
+- Gebruiker tijdens test: `roelof`.
+- Toegang headless via SSH vanaf prive-laptop.
+- GitHub private repo via SSH-key op de Pi.
+- Docker images lokaal gebouwd op de Pi.
+- GitHub `master` blijft leidend; de Pi hoort een schone afspiegeling van `origin/master` te zijn.
 
 ## Belangrijke keuze
 
-Gebruik bij voorkeur een grotere microSD-kaart dan 8GB.
+Gebruik bij voorkeur minimaal een 32 GB microSD-kaart voor tests. Voor langdurige logging of productie is SD-opslag niet ideaal.
 
-Raspberry Pi OS Lite kan klein draaien, maar 8GB is krap zodra het volgende samenkomt:
+Raspberry Pi OS Lite kan klein draaien, maar opslag loopt op zodra het volgende samenkomt:
 - besturingssysteem;
-- .NET runtime;
-- BootManager publish-output;
+- Docker images en build cache;
 - SQLite database;
 - logboekbijlagen;
 - capture logs;
 - systeemlogs en updates.
 
-Praktisch advies: 32GB of groter, liefst een betrouwbare A1/A2 microSD-kaart.
+Praktisch advies:
+
+- Weekendtest/proof-of-concept: 32 GB microSD is voldoende.
+- Langere pilot/productie: Compute Module/industrial Pi met eMMC, NVMe of SSD.
+- RAM: 1 GB werkt voor de basistest, maar 4 GB of 8 GB blijft aanbevolen.
+
+Gemeten tijdens de eerste Pi 4-test:
+
+- Root filesystem 29 GB, 6.0 GB gebruikt, 22 GB beschikbaar.
+- Docker images 2.302 GB.
+- Docker build cache 2.58 GB, waarvan 2.234 GB reclaimable.
+- RAM totaal 905 MiB, 338 MiB gebruikt, 567 MiB beschikbaar.
+- Swap 904 MiB, 0 B gebruikt.
+- Load average ongeveer `0.07, 0.10, 0.06`.
 
 ## Aanbevolen eerste installatie
 
-- OS: Raspberry Pi OS Lite, 64-bit als beschikbaar voor de Pi 3 B+.
+- OS: Raspberry Pi OS Lite 64-bit.
 - Geen desktopomgeving.
 - SSH aanzetten tijdens het flashen met Raspberry Pi Imager.
-- Ethernet gebruiken voor de eerste boot.
+- Ethernet gebruiken voor de eerste boot waar mogelijk; Wi-Fi kan voor thuisnetwerk worden ingesteld.
 - Hostname: `bootmanager-pi`.
 - Gebruiker: nog te kiezen tijdens installatie.
 
@@ -38,7 +53,7 @@ Waarom:
 - Lite bespaart ruimte en geheugen.
 - SSH is nodig omdat er geen scherm/toetsenbord is.
 - Ethernet voorkomt wifi-problemen tijdens de eerste setup.
-- 64-bit sluit het beste aan op `linux-arm64` deployments. Als 64-bit op de gekozen Pi/OS onpraktisch blijkt, vallen we terug naar `linux-arm`.
+- 64-bit sluit aan op ARM64 Docker builds. De .NET Docker base images gebruiken multi-architecture tags; Docker kiest op de Pi automatisch ARM64.
 
 ## BootManager runtime-model
 
@@ -55,7 +70,26 @@ BootManager bestaat uit minimaal twee processen:
    - Stuurt data naar de Web API.
    - Heeft een control API op `127.0.0.1:5010`.
 
-Voor de eerste deployment starten we waarschijnlijk eerst alleen `BootManager.Web`. Daarna voegen we `Ingest` toe als tweede service.
+De eerste Docker Compose deployment startte Web en Ingest samen. `bootmanager-ingest` wacht daarbij op de healthcheck van `bootmanager-web`.
+
+Geteste poorten:
+
+- Web UI/API: hostpoort `5000/tcp`.
+- Ingest UDP: hostpoort `10110/udp`.
+- Ingest control API: `127.0.0.1:5010->5010/tcp`, lokaal op de host gebonden.
+
+Healthcheck:
+
+```bash
+curl -i http://localhost:5000/health
+```
+
+Verwacht:
+
+```text
+HTTP/1.1 200 OK
+{"status":"ok"}
+```
 
 ## Eerste-start flow
 
@@ -155,37 +189,41 @@ Productievoorstel:
 }
 ```
 
-## Publish-strategie
+## Docker Compose strategie
 
-Eerste voorkeur: framework-dependent publish.
+De gevalideerde route is Docker Compose vanaf een clone van de GitHub repo op de Pi.
 
-Voor Web:
+Installatie/update:
 
-```powershell
-dotnet publish BootManager.Web/BootManager.Web.csproj -c Release -r linux-arm64 --self-contained false -o .publish/raspi/web
+```bash
+cd ~/BootManagerV2
+git pull
+docker compose build
+docker compose up -d
+docker compose ps
+curl -i http://localhost:5000/health
 ```
 
-Voor Ingest:
+Belangrijke keuzes:
 
-```powershell
-dotnet publish src/BootManager.Tools.Ingest/BootManager.Tools.Ingest.csproj -c Release -r linux-arm64 --self-contained false -o .publish/raspi/ingest
-```
+- Geen zip-workflow.
+- Geen werklaptop nodig na clone; de Pi bouwt images lokaal.
+- Geen lokale afwijkingen op de Pi; wijzigingen gaan via `master`.
+- `.env` blijft lokaal per apparaat en wordt niet gecommit.
 
-Als we 32-bit Raspberry Pi OS gebruiken:
+Bekende fixes uit eerste test:
 
-```powershell
-dotnet publish BootManager.Web/BootManager.Web.csproj -c Release -r linux-arm --self-contained false -o .publish/raspi/web
-dotnet publish src/BootManager.Tools.Ingest/BootManager.Tools.Ingest.csproj -c Release -r linux-arm --self-contained false -o .publish/raspi/ingest
-```
+- Commit `124c7af`: .NET Docker base images gebruiken multi-arch tags zonder niet-bestaande `-arm64` suffix.
+- Commit `4ef3d73`: `IngestControlServer` vertaalt `0.0.0.0` naar HttpListener-prefix `http://*:5010/`.
+- Tijdelijke DNS-fout `Could not resolve 'ports.ubuntu.com'` verdween na opnieuw bouwen nadat host- en Docker-DNS werkten.
 
-Waarom niet meteen self-contained:
-- self-contained neemt veel meer ruimte in op de SD-kaart;
-- 8GB is krap;
-- framework-dependent is overzichtelijker zolang we de .NET runtime op de Pi installeren.
+## Publish-strategie zonder Docker
+
+Framework-dependent publish naar systemd services is niet de eerste gevalideerde route meer, maar blijft mogelijk voor latere low-level deployments. Zie eerdere publish-commando's in gitgeschiedenis als deze route opnieuw nodig wordt.
 
 ## Services
 
-Uiteindelijk willen we twee `systemd` services:
+Als Docker Compose niet passend blijkt, kunnen we later twee `systemd` services maken:
 
 - `bootmanager-web.service`
 - `bootmanager-ingest.service`
@@ -204,32 +242,33 @@ Voordeel:
 
 Als de UI vanaf andere apparaten bereikbaar moet zijn, moet de webapp luisteren op `0.0.0.0:5000`, niet alleen op `localhost`.
 
-## Volgorde voor de echte installatiedag
+## Volgorde voor installatiedag met Docker Compose
 
 1. Nieuwe microSD-kaart flashen met Raspberry Pi OS Lite.
 2. SSH, hostname en gebruiker vooraf instellen in Raspberry Pi Imager.
-3. Pi via ethernet aansluiten en booten.
+3. Pi via ethernet of voorbereid Wi-Fi aansluiten en booten.
 4. IP-adres vinden in router of via hostname `bootmanager-pi.local`.
 5. Eerste SSH-login testen.
 6. Systeem updaten.
-7. .NET runtime installeren of publish-strategie heroverwegen.
-8. Mappen aanmaken onder `/opt`, `/var/lib`, `/var/log`.
-9. Web publish-output overzetten.
-10. Web config instellen.
-11. Web handmatig starten.
-12. Web UI testen vanaf laptop.
-13. Web als `systemd` service installeren.
-14. Daarna pas Ingest toevoegen en UDP-testen.
+7. Docker installeren via de officiele Debian repository of `get.docker.com`.
+8. User toevoegen aan de `docker` groep en opnieuw inloggen.
+9. GitHub SSH-key aanmaken en public key aan GitHub toevoegen.
+10. Repo clonen via `git@github.com:rrvanleeuwen/BootManagerV2.git`.
+11. Lokale `.env` maken met `BOOTMANAGER_ENCRYPTION_KEY`, `BOOTMANAGER_JWT_KEY` en `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
+12. `docker compose config --services` controleren.
+13. `docker compose build`.
+14. `docker compose up -d`.
+15. `docker compose ps` en `/health` controleren.
+16. Web UI testen vanaf laptop via `http://<pi-ip>:5000`.
+17. Reboot-test uitvoeren en containers/health opnieuw controleren.
 
 ## Open vragen voor de volgende sessie
 
-- Kopen/gebruiken we een grotere SD-kaart?
-- Gaan we Raspberry Pi OS Lite 64-bit gebruiken?
-- Welke hostname en Linux-gebruikersnaam wil je?
-- Welke poort wil je voor de web UI?
-- Moet BootManager alleen thuisnetwerk-bereikbaar zijn of later ook van buitenaf?
-- Gaat Ingest op dezelfde Pi draaien als Web?
-- Waar komen NMEA-data vandaan: echte boot-hardware, simulator, of later?
+- Boot-test met YDEN UDP broadcast op het bootnetwerk/Teltonika.
+- Definitieve hardwarekeuze voor productie/pilot: SD versus eMMC/NVMe/SSD, 4 GB/8 GB RAM.
+- Backup/restore-procedure voor database, bijlagen en logs.
+- Veilige shutdown-flow vanuit UI/helper-service.
+- Monitoring van opslag, RAM en containerstatus in de applicatie.
 
 ## Reset bij vergeten wachtwoord
 
@@ -245,9 +284,9 @@ Voor deze epic is er geen in-app recovery. Als de enige gebruiker niet meer kan 
 
 Deze reset wist de actieve applicatie-state in de database. Bewaar backups zolang je oude logboek- of meetdata nog nodig kunt hebben. Bootgegevens wijzigen na onboarding is later een aparte story.
 
-## Docker Compose Deployment (alternatief)
+## Docker Compose Deployment
 
-Voor eenvoudige containerisatie op de Pi kan Docker Compose gebruikt worden. Dit biedt:
+Docker Compose is de eerste gevalideerde deploymentroute op de Pi. Dit biedt:
 
 - Reproduceerbare deployments zonder handmatige service-configuratie;
 - eenvoudig volume management voor database, logs en bijlagen;
@@ -255,10 +294,10 @@ Voor eenvoudige containerisatie op de Pi kan Docker Compose gebruikt worden. Dit
 - network isolation;
 - gemakkelijk schalen naar meerdere Pi's.
 
-Zie `.docs/docker-deployment.md` voor volledige details.
+Zie `.docs/docker-deployment.md` en `.docs/pi-first-install-runbook.md` voor volledige details.
 
-Voordeel Docker Compose: sneller testen en reproduceerbaar.
-Voordeel systemd services: directe lage-level controle, slanker resource-gebruik.
+Voordeel Docker Compose: reproduceerbaar, getest op ARM64 en geschikt voor pull/build/up workflows op de Pi.
+Voordeel systemd services: directe lage-level controle en mogelijk slanker resource-gebruik.
 
 De voorkeur kan per use-case verschillen. Beide methoden zijn ondersteund.
 

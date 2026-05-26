@@ -7,6 +7,9 @@ This folder contains comprehensive documentation for the BootManager project.
 ### Getting Started
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design, layering, data flow, vertical slices pattern
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Setup, development workflow, adding new features, debugging
+- **[pi-first-install-runbook.md](pi-first-install-runbook.md)** - Step-by-step first install on Raspberry Pi with Docker Compose
+- **[docker-deployment.md](docker-deployment.md)** - Docker Compose deployment, update procedure, ports, troubleshooting and YDEN boot-test notes
+- **[raspberry-pi-deployment.md](raspberry-pi-deployment.md)** - Raspberry Pi deployment plan and validated Pi 4 status
 - **[../.codex/working-agreement.md](../.codex/working-agreement.md)** - Codex/Copilot workflow agreement for this repository
 
 ### Project Status
@@ -139,5 +142,5 @@ See **[TODO.md](TODO.md)** for complete status and roadmap.
 
 ---
 
-**Documentation Last Updated:** 2026-05-24
-**Current Status:** Alle huidige slices (Battery, Depth, Wind, Motion, Position, Heading) zijn volledig geïmplementeerd inclusief migraties
+**Documentation Last Updated:** 2026-05-26
+**Current Status:** Raspberry Pi 4 Docker Compose deployment-smoke-test geslaagd; Web en Ingest draaien op ARM64, healthcheck en reboot-test zijn gevalideerd

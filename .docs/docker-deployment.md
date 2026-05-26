@@ -2,6 +2,35 @@
 
 Doel: BootManager als containerized applicatie op Raspberry Pi (of andere Linux-systemen) draaien met Docker Compose, zonder handmatige service-configuratie.
 
+## Gevalideerde Status
+
+De eerste Raspberry Pi Docker Compose deployment is geslaagd op 2026-05-26.
+
+Geteste omgeving:
+
+- Raspberry Pi 4 Model B.
+- 32 GB microSD.
+- Raspberry Pi OS Lite 64-bit.
+- Hostname: `bootmanager-pi`.
+- Gebruiker: `roelof`.
+- GitHub private repo via SSH-key op de Pi.
+- Docker images lokaal gebouwd op de Pi; geen zip-workflow en geen werklaptop nodig.
+- Repo op de Pi staat op `master` en moet een afspiegeling van `origin/master` blijven.
+
+Gevalideerd:
+
+- SSH vanaf laptop naar `roelof@bootmanager-pi.local`.
+- `uname -m` gaf `aarch64`.
+- GitHub SSH-toegang en clone via `git@github.com:rrvanleeuwen/BootManagerV2.git`.
+- `docker compose config --services` toont `bootmanager-web` en `bootmanager-ingest`.
+- `docker compose build` werkt op ARM64.
+- `docker compose up -d` start beide containers.
+- `bootmanager-web` is `healthy`.
+- `bootmanager-ingest` blijft `Up`.
+- `curl -i http://localhost:5000/health` geeft `HTTP/1.1 200 OK` met `{"status":"ok"}`.
+- App is bereikbaar vanaf een laptop via `http://<pi-ip>:5000`.
+- Reboot-test geslaagd: na `sudo reboot` kwamen beide containers automatisch terug en bleef `/health` OK.
+
 ## Overzicht
 
 Docker Compose orchestreert twee services:
@@ -34,6 +63,11 @@ Voor Raspberry Pi OS:
 - Installeer Docker: https://docs.docker.com/engine/install/debian/
 - Voeg user toe aan docker group: `usermod -aG docker $USER`
 
+Tijdens de eerste Pi 4-test waren de versies:
+
+- Docker: `Docker version 29.5.2`
+- Docker Compose: `Docker Compose version v5.1.4`
+
 ## Build
 
 De Dockerfiles gebruiken multi-stage builds om images klein te houden:
@@ -50,6 +84,22 @@ docker compose build bootmanager-ingest
 ```
 
 **Opmerking:** Build kan 5-10 minuten duren op de eerste keer, zeker op RPi. Daarna zijn layers gecached.
+
+De .NET runtime base images moeten multi-architecture tags gebruiken. Gebruik dus:
+
+- `mcr.microsoft.com/dotnet/aspnet:8.0-jammy`
+- `mcr.microsoft.com/dotnet/runtime:8.0-jammy`
+
+Gebruik geen niet-bestaande `8.0-jammy-arm64` tags. Docker kiest op een Raspberry Pi automatisch de ARM64-variant van de multi-arch tag. De SDK-image `mcr.microsoft.com/dotnet/sdk:8.0` blijft ongewijzigd.
+
+Als een build tijdelijk faalt met DNS-fouten zoals `Could not resolve 'ports.ubuntu.com'`, controleer eerst host- en Docker-DNS:
+
+```bash
+docker run --rm alpine nslookup ports.ubuntu.com
+docker run --rm alpine ping -c 3 ports.ubuntu.com
+```
+
+Als die checks slagen, kan `docker compose build` opnieuw uitvoeren voldoende zijn. Tijdens de eerste Pi-test bleek dit een tijdelijke registry/build-netwerkfout, geen structurele Dockerfile-fout.
 
 ## Start
 
@@ -88,6 +138,11 @@ Na start is:
 - Web UI bereikbaar op: http://localhost:5000 (of http://<pi-hostname>:5000)
 - Ingest luistert op: UDP 10110
 - Ingest control API beschikbaar op: 127.0.0.1:5010 (alleen op dezelfde host)
+
+Werkende containerstatus tijdens de Pi 4-test:
+
+- `bootmanager-web`: `Up` / `healthy`, `0.0.0.0:5000->5000/tcp` en `[::]:5000->5000/tcp`.
+- `bootmanager-ingest`: `Up`, `0.0.0.0:10110->10110/udp`, `[::]:10110->10110/udp` en `127.0.0.1:5010->5010/tcp`.
 
 ## Eerste Start En Onboarding
 
@@ -277,6 +332,50 @@ GET /health
 
 Docker Compose gebruikt deze endpoint om te bepalen of de webcontainer klaar is. `bootmanager-ingest` wacht daardoor met starten tot de webservice gezond is.
 
+Controleer handmatig:
+
+```bash
+curl -i http://localhost:5000/health
+```
+
+Verwacht resultaat:
+
+```text
+HTTP/1.1 200 OK
+{"status":"ok"}
+```
+
+## Updateprocedure
+
+GitHub `master` is leidend. De Pi hoort geen lokale afwijkingen te bevatten.
+
+Bij nieuwe code op `master`:
+
+```bash
+cd ~/BootManagerV2
+git pull
+docker compose build
+docker compose up -d
+docker compose ps
+curl -i http://localhost:5000/health
+```
+
+Alleen containers herstarten zonder nieuwe code:
+
+```bash
+cd ~/BootManagerV2
+docker compose restart
+docker compose ps
+```
+
+Logs bekijken:
+
+```bash
+cd ~/BootManagerV2
+docker compose logs -f bootmanager-web
+docker compose logs -f bootmanager-ingest
+```
+
 ## Shutdown-knop
 
 Er is geen shutdown-knop in deze skeleton. Redenen:
@@ -342,6 +441,59 @@ echo "test" | nc -u localhost 10110
 docker compose logs -f bootmanager-ingest
 ```
 
+### YDEN UDP broadcast boot-test
+
+De YDEN stuurt UDP broadcast naar een poort, niet naar een vast Pi-IP. Daarom hoeft de YDEN waarschijnlijk geen Raspberry Pi IP-adres ingesteld te krijgen.
+
+Voorwaarden:
+
+- YDEN en Raspberry Pi zitten in hetzelfde LAN/subnet.
+- De YDEN UDP-poort komt overeen met de Ingest listener, standaard `10110`.
+- Broadcast gaat normaal niet over router-, VLAN- of gastnetwerkgrenzen.
+
+Checklist op de boot:
+
+```bash
+# Pi-IP controleren
+hostname -I
+
+# App openen vanaf laptop/tablet
+# http://<pi-ip>:5000
+
+# Containers controleren
+cd ~/BootManagerV2
+docker compose ps
+
+# Ingest logs volgen
+docker compose logs -f bootmanager-ingest
+
+# UDP broadcast controleren
+sudo apt install -y tcpdump
+sudo tcpdump -i any udp port 10110
+```
+
+Interpretatie:
+
+- Als `tcpdump` pakketten toont maar BootManager niets verwerkt, zit het probleem vermoedelijk in Ingest/configuratie/parser.
+- Als `tcpdump` niets toont, zit het probleem vermoedelijk in netwerk/YDEN/Teltonika/subnet/broadcast.
+
+### IngestControlServer crasht op HttpListener
+
+Symptoom:
+
+```text
+System.Net.HttpListenerException (50): The request is not supported.
+Starting IngestControlServer on 0.0.0.0:5010...
+```
+
+Oorzaak: `HttpListener` accepteert op Linux/.NET niet betrouwbaar een prefix zoals `http://0.0.0.0:5010/`.
+
+Oplossing in `master`:
+
+- Commit `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`.
+- BootManager vertaalt `0.0.0.0` intern naar `http://*:5010/`.
+- Geen lokale Docker Compose workaround nodig.
+
 ### Database-permissie errors
 
 Volumes hebben soms permission issues op Linux:
@@ -369,13 +521,35 @@ Raspberry Pi heeft beperkte schijfruimte. Let op:
 - Zet capture uit of limiteer: `Ingest__CaptureLogging__Enabled=false`
 - Verwijder oude logs: `docker compose exec bootmanager-web sh -c 'find /var/log/bootmanager -type f -mtime +7 -delete'`
 
+Eerste Pi 4-test met 32 GB SD:
+
+- Root filesystem: 29 GB.
+- Gebruikt: 6.0 GB.
+- Beschikbaar: 22 GB.
+- Gebruik: 22%.
+- Docker images: 3 totaal, 2 actief, 2.302 GB.
+- Docker build cache: 2.58 GB, waarvan 2.234 GB reclaimable.
+
+Conclusie: 32 GB SD is voldoende voor een weekendtest/proof-of-concept. Voor langdurige logging of productie is een Compute Module/industrial Pi met eMMC, NVMe of SSD beter.
+
 ### 2. Geheugen
 
-Pi 3 B+ heeft 1GB RAM. Docker Compose gebruikt ~50-100MB. Applicatie zelf:
+Pi 3 B+ of een 1 GB Pi 4 heeft weinig marge, maar de eerste Pi 4-test op 1 GB RAM was acceptabel. Docker Compose gebruikt ~50-100MB. Applicatie zelf:
 - Web service: ~100-200MB (ASP.NET Core)
 - Ingest: ~50MB (console app)
 
 Total ~150-350MB, dus behapbaar.
+
+Gemeten tijdens de eerste Pi 4-test:
+
+- RAM totaal: 905 MiB.
+- RAM gebruikt: 338 MiB.
+- RAM beschikbaar: 567 MiB.
+- Swap totaal: 904 MiB.
+- Swap gebruikt: 0 B.
+- Load average ongeveer `0.07, 0.10, 0.06`.
+
+Conclusie: 1 GB is acceptabel voor weekendtest/proof-of-concept. Voor productie of langere pilots blijft 4 GB of 8 GB aanbevolen.
 
 Monitoren:
 ```bash
@@ -409,10 +583,14 @@ docker stats
    docker --version
    ```
 
-2. **Clone/Upload code:**
+2. **Clone code via GitHub SSH:**
    ```bash
-   git clone https://github.com/rrvanleeuwen/BootManagerV2 bootmanager
-   cd bootmanager
+   ssh-keygen -t ed25519 -C "bootmanager-pi"
+   cat ~/.ssh/id_ed25519.pub
+   # Voeg de public key toe aan GitHub.
+   ssh -T git@github.com
+   git clone git@github.com:rrvanleeuwen/BootManagerV2.git
+   cd BootManagerV2
    ```
 
 3. **Build images (local of via CI/CD push):**

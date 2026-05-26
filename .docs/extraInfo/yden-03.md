@@ -50,6 +50,35 @@ Ingest hoeft het IP-adres van de YDEN-03 niet te kennen.
 Luisteren op `0.0.0.0` (of een configureerbaar lokaal adres) is voldoende.
 De remote endpoint (YDEN-03 IP) kan als `Source` worden vastgelegd op het `NetworkMessage`.
 
+Tijdens de Raspberry Pi deploymentvoorbereiding is bevestigd dat de boot-test waarschijnlijk via UDP broadcast verloopt. De YDEN hoeft dan geen vast Raspberry Pi IP-adres te kennen.
+
+Voorwaarden:
+
+- YDEN-03 en Raspberry Pi zitten in hetzelfde LAN/subnet.
+- De UDP-poort op de YDEN komt overeen met de Ingest listener, standaard `10110`.
+- Broadcast gaat normaal niet over router-, VLAN- of gastnetwerkgrenzen.
+
+Boot-test checklist op de Pi:
+
+```bash
+hostname -I
+cd ~/BootManagerV2
+docker compose ps
+docker compose logs -f bootmanager-ingest
+```
+
+In een tweede SSH-sessie:
+
+```bash
+sudo apt install -y tcpdump
+sudo tcpdump -i any udp port 10110
+```
+
+Interpretatie:
+
+- Als `tcpdump` pakketten toont maar BootManager niets verwerkt, zit het probleem vermoedelijk in Ingest/configuratie/parser.
+- Als `tcpdump` niets toont, zit het probleem vermoedelijk in netwerk/YDEN/Teltonika/subnet/broadcast.
+
 ---
 
 ## TCP

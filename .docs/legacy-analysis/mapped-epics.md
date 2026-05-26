@@ -21,7 +21,7 @@ Word-verificatie:
 
 Mapping:
 
-- Installatie uitvoeren: 🟡 Docker/Raspberry Pi documentatie is aanwezig; echte Docker/Pi smoke test staat nog open.
+- Installatie uitvoeren: ✅ eerste Raspberry Pi 4 Docker Compose smoke test is geslaagd op 2026-05-26; productiehardening blijft onder systeembeheer/back-up/shutdown open.
 - Eerste eigenaar registreren: ✅ vervangen door bootstrap owner + verplichte onboarding.
 - Inloggen als eigenaar: ✅ wachtwoord-only login bestaat.
 - Wachtwoord/pincode wijzigen: 🟡 pincode is bewust uit de normale flow verwijderd; wachtwoord wijzigen bestaat technisch in Settings maar moet UX/runtime opnieuw gevalideerd worden.
@@ -193,13 +193,13 @@ Mapping:
 - Instellingenpagina: ✅ aanwezig.
 - Operationele ingest/sampling/settings: ✅ aanwezig.
 - Sensorintegratie configureren: 🟡 ingest settings deels aanwezig.
-- Raspberry Pi/Docker docs: ✅ documentatie aanwezig, smoke test nog open.
+- Raspberry Pi/Docker docs: ✅ documentatie aanwezig en eerste Pi 4 Docker Compose smoke test geslaagd op 2026-05-26.
 - Back-up/herstel: ⏳ alleen procedureel beschreven, geen UI.
 - Eenheden/taal/regio: ⏳ niet aanwezig.
 - Gebruikersrollen: 🧊 buiten single-owner scope.
 - Cloudinstellingen/synchronisatie/offline toggle: 🧊 geparkeerd.
 - Systeemactie-logboek/export/import/default reset: ⏳ relevant later.
-- Raspberry Pi systeeminformatie en veilige device-operaties passen bij de bestaande Raspberry Pi/Docker deploymentlijn.
+- Raspberry Pi systeeminformatie is deels procedureel afgedekt met resourcechecks uit de eerste deploymenttest; in-app Pi status en veilige device-operaties blijven open.
 - Offline-modusbeheer is pas zinvol als er echte synchronisatieprocessen zijn; huidige lokale-first werking is al offlinevriendelijk.
 
 ## Epic 9: Integraties & Synchronisatie

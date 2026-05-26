@@ -224,6 +224,8 @@ Per NMEA 0183 sentence-type een verticale slice toevoegen, analoog aan de bestaa
 
 **Status:** ~~Runtime/SQLite acceptatietest voor NMEA 0183 fase 3a-3c~~ ✅ Afgerond (2026-05-18, handmatig via simulator NMEA0183-modus). TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig geparkeerd; UDP volstaat voor BootManager.
 
+**Status 2026-05-26:** Raspberry Pi 4 Docker Compose deployment-smoke-test is geslaagd. Ingest draait op de Pi met UDP `10110/udp`; de app is via het LAN bereikbaar. De volgende hardwarestap is de echte boot UDP-broadcasttest met YDEN-03/Teltonika. Zie `.docs/extraInfo/yden-03.md` en `.docs/docker-deployment.md` voor de `tcpdump` checklist.
+
 Kandidaat-sentences (volgorde op basis van prioriteit):
 
 | Sentence | Meetwaarde(n) | Mapping naar bestaande entity |

@@ -543,6 +543,6 @@ Alle core user stories zijn nu voltooid. De onboarding-flow is operationeel en h
 
 ## Volgende Keer Hier Starten
 
-De First-Run Onboarding & Auth Simplification epic is gereed voor deploymentvalidatie.
+De First-Run Onboarding & Auth Simplification epic is deploymentklaar. De eerste Raspberry Pi 4 Docker Compose deployment-smoke-test is op 2026-05-26 geslaagd met lokale `.env`, ARM64 Docker build, Web healthcheck, draaiende Ingest-container en geslaagde reboot-test.
 
-Logische vervolgstap: voer een Docker Compose smoke test uit met een verse database en `.env` met `BOOTMANAGER_BOOTSTRAP_PASSWORD`, of pak daarna de volgende roadmap-story op buiten deze epic.
+Open blijft alleen eventuele aanvullende onboarding-validatie met een volledig verse database op de Pi zelf. De bredere deploymentbasis is gevalideerd; een logische vervolgstap ligt buiten deze epic, bijvoorbeeld de echte boot UDP-broadcasttest met YDEN-03 of een volgende roadmap-story.

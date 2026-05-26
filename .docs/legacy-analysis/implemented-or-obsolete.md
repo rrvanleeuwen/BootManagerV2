@@ -6,6 +6,9 @@ Status: eerste triage (2026-05-25).
 
 ### Installatie/Auth/Onboarding
 
+- Legacy US0.1 Installatie uitvoeren:
+  - Afgedekt door eerste succesvolle Raspberry Pi 4 Docker Compose deployment-smoke-test op 2026-05-26.
+  - Gevalideerd: OS Lite 64-bit, SSH, GitHub SSH clone, lokale `.env`, ARM64 Docker build, Web/Ingest containers, healthcheck, netwerkbereikbaarheid en reboot.
 - Legacy US0.2 Registratie eerste eigenaar:
   - Vervangen door bootstrap owner + first-run onboarding.
 - Legacy US0.3 Inloggen als eigenaar:

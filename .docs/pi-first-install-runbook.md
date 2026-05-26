@@ -27,6 +27,23 @@ Controlepunt:
 - Raspberry Pi Imager start.
 - Ethernetpoort op router is beschikbaar.
 
+## Gevalideerde installatie
+
+Dit runbook is op 2026-05-26 succesvol doorlopen op:
+
+- Raspberry Pi 4 Model B.
+- 32 GB microSD.
+- Raspberry Pi OS Lite 64-bit.
+- Hostname: `bootmanager-pi`.
+- User: `roelof`.
+- SSH vanaf prive-laptop.
+- GitHub private repo via SSH-key op de Pi.
+- Docker images lokaal gebouwd op de Pi.
+- Web en Ingest gestart via Docker Compose.
+- Reboot-test geslaagd.
+
+De gemeten Pi leek een 1 GB-model. Dat is voldoende voor een weekendtest/proof-of-concept, maar voor productie of langere pilots blijft 4 GB of 8 GB aanbevolen.
+
 ## 1. SD-kaart flashen
 
 Open Raspberry Pi Imager.
@@ -43,11 +60,11 @@ Stel in:
 
 - Hostname: `bootmanager-pi`
 - SSH: enabled
-- Username: zelf kiezen
+- Username: zelf kiezen; eerste test gebruikte `roelof`
 - Password: zelf kiezen
 - Locale/timezone: Europe/Amsterdam
 - Keyboard: niet kritisch voor headless, maar kies Nederlands/US naar voorkeur
-- WiFi: optioneel; eerste setup liever via ethernet
+- WiFi: instellen als ethernet niet direct beschikbaar is; eerste boot via ethernet blijft betrouwbaarder
 
 Schrijf de SD-kaart.
 
@@ -132,6 +149,7 @@ Controlepunt:
 
 - Output is zichtbaar.
 - Noteer of het systeem 64-bit lijkt (`aarch64`) of 32-bit (`armv7l`).
+- Eerste Pi 4-test: `uname -m` gaf `aarch64`.
 
 ## 5. Systeem bijwerken
 
@@ -155,7 +173,7 @@ Controlepunt:
 
 ## 6. Docker installeren
 
-Voer op de Pi uit:
+Gebruik bij voorkeur de officiele Docker Debian repository. De korte installatieroute is:
 
 ```bash
 curl -fsSL https://get.docker.com | sh
@@ -185,6 +203,10 @@ Waarom:
 Controlepunt:
 
 - Beide Docker-commando's geven een versie terug.
+- Eerste Pi 4-test:
+  - `Docker version 29.5.2`
+  - `Docker Compose version v5.1.4`
+- `docker ps` werkt zonder `sudo`.
 
 ## 7. Kleine Docker-test
 
@@ -202,24 +224,41 @@ Controlepunt:
 
 - Je ziet een “Hello from Docker!”-achtige melding.
 
-## 8. BootManager code ophalen
+## 8. GitHub SSH-key en BootManager code ophalen
 
-Kies een werkmap:
+Maak op de Pi een SSH-key voor GitHub:
 
 ```bash
-mkdir -p ~/src
-cd ~/src
-git clone https://github.com/rrvanleeuwen/BootManagerV2.git
+ssh-keygen -t ed25519 -C "bootmanager-pi"
+cat ~/.ssh/id_ed25519.pub
+```
+
+Voeg de public key toe aan GitHub. Voeg nooit de private key toe aan GitHub, documentatie of chat.
+
+Test GitHub SSH:
+
+```bash
+ssh -T git@github.com
+```
+
+Clone daarna de private repo:
+
+```bash
+cd ~
+git clone git@github.com:rrvanleeuwen/BootManagerV2.git
 cd BootManagerV2
 ```
 
 Waarom:
 
 - De Pi bouwt de Docker images uit de repo.
+- GitHub `master` blijft leidend.
+- De Pi hoort geen lokale afwijkingen te bevatten; update altijd via `git pull`.
 
 Controlepunt:
 
 - `ls` toont onder andere `docker-compose.yml`, `Dockerfile` en `Dockerfile.ingest`.
+- `git status --short --branch` toont `master` zonder wijzigingen.
 
 ## 9. Secrets instellen
 
@@ -245,6 +284,7 @@ Waarom:
 - BootManager heeft een encryptiesleutel en JWT signing key nodig.
 - Een lege productie-installatie heeft expliciet een bootstrap-wachtwoord nodig.
 - `.env` wordt niet gecommit.
+- Geheime waarden horen niet in GitHub.
 
 Controlepunt:
 
@@ -255,7 +295,7 @@ Controlepunt:
 Voer uit:
 
 ```bash
-docker compose config
+docker compose config --services
 ```
 
 Waarom:
@@ -265,6 +305,9 @@ Waarom:
 Controlepunt:
 
 - Geen foutmelding.
+- De services zijn:
+  - `bootmanager-web`
+  - `bootmanager-ingest`
 
 ## 11. Images bouwen
 
@@ -287,6 +330,16 @@ Controlepunt:
 
 - Build eindigt zonder foutmelding.
 
+Bekende build-valkuilen:
+
+- .NET base images gebruiken multi-arch tags zoals `8.0-jammy`; gebruik geen niet-bestaande `8.0-jammy-arm64` tags.
+- Een tijdelijke fout `Could not resolve 'ports.ubuntu.com'` kan verdwijnen na opnieuw bouwen als host- en Docker-DNS werken.
+- DNS-check:
+  ```bash
+  docker run --rm alpine nslookup ports.ubuntu.com
+  docker run --rm alpine ping -c 3 ports.ubuntu.com
+  ```
+
 ## 12. Containers starten
 
 Voer uit:
@@ -305,6 +358,22 @@ Controlepunt:
 
 - `bootmanager-web` draait.
 - `bootmanager-ingest` draait of wacht logisch op Web health.
+- Eerste Pi 4-test:
+  - `bootmanager-web`: `Up` / `healthy`, poort `5000/tcp`.
+  - `bootmanager-ingest`: `Up`, UDP `10110/udp`, control API `127.0.0.1:5010->5010/tcp`.
+
+Controleer health:
+
+```bash
+curl -i http://localhost:5000/health
+```
+
+Verwacht:
+
+```text
+HTTP/1.1 200 OK
+{"status":"ok"}
+```
 
 ## 13. Web UI testen
 
@@ -327,6 +396,7 @@ Waarom:
 Controlepunt:
 
 - BootManager webpagina opent.
+- Eerste Pi 4-test: app was bereikbaar via `http://192.168.2.29:5000`.
 
 ## 13a. Eerste login en onboarding
 
@@ -376,6 +446,27 @@ Controlepunt:
 
 - Geen herhalende startup errors.
 
+## 14a. Updateprocedure
+
+Bij nieuwe code op `master`:
+
+```bash
+cd ~/BootManagerV2
+git pull
+docker compose build
+docker compose up -d
+docker compose ps
+curl -i http://localhost:5000/health
+```
+
+Alleen herstarten zonder nieuwe code:
+
+```bash
+cd ~/BootManagerV2
+docker compose restart
+docker compose ps
+```
+
 ## 15. Stoppen en herstarten
 
 Stoppen:
@@ -400,7 +491,83 @@ Waarom:
 
 - `down -v` verwijdert volumes en dus mogelijk database/bijlagen/logs.
 
-## 16. Wat we later pas doen
+Reboot-test:
+
+```bash
+sudo reboot
+```
+
+Na opnieuw inloggen:
+
+```bash
+cd ~/BootManagerV2
+docker compose ps
+curl -i http://localhost:5000/health
+```
+
+Controlepunt:
+
+- Beide containers komen automatisch terug.
+- `bootmanager-web` blijft `healthy`.
+- `bootmanager-ingest` blijft `Up`.
+- `/health` geeft opnieuw `200 OK`.
+
+## 16. Boot/YDEN test
+
+De YDEN stuurt UDP broadcast naar een poort. Meestal hoeft de YDEN dus geen vast Pi-IP ingesteld te krijgen.
+
+Voorwaarden:
+
+- YDEN en Raspberry Pi zitten in hetzelfde LAN/subnet.
+- UDP-poort komt overeen met de Ingest listener, standaard `10110`.
+- Broadcast gaat normaal niet over router-, VLAN- of gastnetwerkgrenzen.
+
+Checklist:
+
+```bash
+hostname -I
+cd ~/BootManagerV2
+docker compose ps
+docker compose logs -f bootmanager-ingest
+```
+
+In een tweede SSH-sessie:
+
+```bash
+sudo apt install -y tcpdump
+sudo tcpdump -i any udp port 10110
+```
+
+Interpretatie:
+
+- `tcpdump` toont pakketten, maar BootManager verwerkt niets: kijk naar Ingest/configuratie/parser.
+- `tcpdump` toont niets: kijk naar netwerk/YDEN/Teltonika/subnet/broadcast.
+
+## 17. Resourcechecks
+
+Na eerste start:
+
+```bash
+df -h
+docker system df
+free -h
+uptime
+```
+
+Eerste Pi 4-test:
+
+- Root filesystem 29 GB, 6.0 GB gebruikt, 22 GB beschikbaar.
+- Docker images 2.302 GB, build cache 2.58 GB.
+- RAM totaal 905 MiB, 338 MiB gebruikt, 567 MiB beschikbaar.
+- Swap 904 MiB, 0 B gebruikt.
+- Load average ongeveer `0.07, 0.10, 0.06`.
+
+Conclusie:
+
+- 32 GB SD is voldoende voor weekendtest/proof-of-concept.
+- Voor productie liever Compute Module/industrial Pi, eMMC/NVMe/SSD en 4 GB of 8 GB RAM.
+
+## 18. Wat we later pas doen
 
 Niet in de eerste installatieronde:
 
@@ -411,7 +578,7 @@ Niet in de eerste installatieronde:
 - Docker image registry;
 - echte NMEA hardware koppelen.
 
-## 16a. Reset bij vergeten wachtwoord
+## 18a. Reset bij vergeten wachtwoord
 
 Er is geen normale pincode-, recovery- of master-key flow meer in de UI.
 
@@ -439,7 +606,7 @@ Let op:
 
 Die onderwerpen komen pas nadat de basis betrouwbaar draait.
 
-## 17. Als iets misgaat
+## 19. Als iets misgaat
 
 Stop en verzamel:
 

@@ -238,12 +238,28 @@
 - [ ] **Raspberry Pi/Docker deployment & veilige shutdown**
   - **Aanleiding 2026-05-23:** BootManager moet later op een Raspberry Pi in Docker kunnen draaien. Bij direct stroomloos maken kan een Raspberry Pi/SD-kaart en SQLite-database corrupt raken.
   - **Doel:** Docker deployment ontwerpen met correcte netwerkkeuzes voor UDP ingest, persistente volumes voor database/logs en een veilige afsluitflow.
+  - **Status 2026-05-26:** eerste Raspberry Pi 4 Docker Compose deployment is geslaagd:
+    - Raspberry Pi OS Lite 64-bit op Raspberry Pi 4 Model B met 32 GB SD.
+    - SSH vanaf laptop werkt via `bootmanager-pi.local`.
+    - GitHub private repo werkt via SSH-key op de Pi.
+    - Repo staat schoon op `master` en wordt bijgewerkt via `git pull`.
+    - Docker en Docker Compose geinstalleerd; images lokaal op ARM64 gebouwd.
+    - `.env` lokaal aangemaakt met encryption key, JWT key en bootstrap password; secrets blijven buiten GitHub.
+    - `bootmanager-web` draait healthy op poort `5000/tcp`.
+    - `bootmanager-ingest` draait met UDP `10110/udp` en control API `127.0.0.1:5010`.
+    - `/health` geeft `HTTP 200` met `{"status":"ok"}`.
+    - App is bereikbaar vanaf laptop via `http://<pi-ip>:5000`.
+    - Reboot-test geslaagd: beide containers kwamen automatisch terug.
+    - 32 GB SD en 1 GB RAM zijn acceptabel voor weekendtest/proof-of-concept; productie/pilot vraagt liever eMMC/NVMe/SSD en 4 GB of 8 GB RAM.
+  - **Docker fixes 2026-05-26:**
+    - `124c7af`: .NET runtime base images gebruiken multi-arch `8.0-jammy` tags zonder niet-bestaande `-arm64` suffix.
+    - `4ef3d73`: Ingest `HttpListener` vertaalt `0.0.0.0` naar prefix `http://*:5010/`.
   - **Aandachtspunten:**
-    - UDP-poorten correct mappen of bewust `host networking` gebruiken.
-    - Web en Ingest praten binnen Docker niet vanzelf via `localhost`; gebruik service names/netwerkconfiguratie of host networking.
-    - SQLite/database en capture logs moeten op persistente volumes staan.
+    - UDP-poorten correct mappen of bewust `host networking` gebruiken. **Status:** Docker Compose port mapping voor `10110/udp` is gevalideerd.
+    - Web en Ingest praten binnen Docker niet vanzelf via `localhost`; gebruik service names/netwerkconfiguratie of host networking. **Status:** service name `bootmanager-web` en Ingest control URL via Compose-netwerk zijn gevalideerd.
+    - SQLite/database en capture logs moeten op persistente volumes staan. **Status:** volumes zijn ingericht en containers starten ermee; langdurige retentie/backup blijft open.
     - Ingest/Web moeten netjes reageren op container shutdown (`SIGTERM`) en open writes afsluiten.
-    - Control API blijft intern/lokaal bereikbaar, niet publiek.
+    - Control API blijft intern/lokaal bereikbaar, niet publiek. **Status:** hostbinding `127.0.0.1:5010:5010` is gevalideerd.
   - **Latere UI-story:** owner/admin knop "Systeem afsluiten" met bevestiging. Web mag niet rechtstreeks vrije shell-commando's uitvoeren; gebruik een beperkte lokale helper/service die Docker/OS veilig afsluit.
   - **Gebruikersmelding:** "Wacht tot de Raspberry Pi volledig uit is voordat je de stroom loshaalt."
 
@@ -419,12 +435,12 @@ Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 - Bijlagen uploaden.
 - Query API enhancements voor meetdata over tijdvakken.
 
-## Deployment Checklist (Future)
+## Deployment Checklist
 
 - [ ] Production database setup (not SQLite)
-- [ ] Raspberry Pi Docker deployment ontwerp
-- [ ] Persistent volumes voor database en logs
-- [ ] UDP ingest netwerkkeuze: port mapping versus host networking
+- [x] Raspberry Pi Docker deployment ontwerp en eerste Pi 4 smoke test
+- [x] Persistent volumes voor database en logs ingericht in Docker Compose
+- [x] UDP ingest netwerkkeuze: port mapping gevalideerd op `10110/udp`
 - [ ] Veilige shutdown-flow voor Raspberry Pi vanuit UI/helper-service
 - [ ] Authentication implementation
 - [ ] Rate limiting & API security

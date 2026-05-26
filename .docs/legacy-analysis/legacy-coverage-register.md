@@ -27,7 +27,7 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US0.1 Installatie uitvoeren | Partial | Docker/Raspberry Pi documentatie aanwezig; echte Docker/Pi smoke test open. |
+| US0.1 Installatie uitvoeren | Done | Eerste Raspberry Pi 4 Docker Compose deployment-smoke-test geslaagd op 2026-05-26: OS Lite 64-bit, SSH, GitHub SSH clone, `.env`, ARM64 Docker build, Web healthy, Ingest up, app via netwerk bereikbaar en reboot-test geslaagd. Productiehardening zoals backup/restore en veilige shutdown blijft onder systeembeheer open. |
 | US0.2 Registratie eerste eigenaar | Replaced | Vervangen door bootstrap owner + verplichte onboarding. |
 | US0.3 Inloggen als eigenaar | Done | Wachtwoord-only login aanwezig. |
 | US0.4 Wachtwoord of pincode wijzigen | Done | Wachtwoord wijzigen in Settings is technisch aanwezig en handmatig positief getest op 2026-05-25. Pincode is bewust uit de normale BootManagerV2-flow verwijderd/vervangen. |
@@ -185,7 +185,7 @@ Bij afronding van een story of PR:
 | US8.3 Taal en regio instellen | Open | Niet aanwezig. |
 | US8.4 Gebruikersrollen beheren | Parked | Multi-user/rollen geparkeerd. |
 | US8.5 Sensorintegratie configureren | Partial | Operationele ingest settings aanwezig; bredere sensorconfig open. |
-| US8.6 Raspberry Pi-configuratie beheren | Open | Docs aanwezig; UI/status open. |
+| US8.6 Raspberry Pi-configuratie beheren | Partial | Pi deployment runbook en resourcechecks gedocumenteerd; eerste metingen voor opslag/RAM/load vastgelegd. In-app Pi systeemstatus/configuratiebeheer blijft open. |
 | US8.7 Gebruikersbeheer | Parked | Multi-user geparkeerd. |
 | US8.8 Back-up maken en herstellen | Open | Procedureel beschreven; UI/helper open. |
 | US8.9 Cloudinstellingen beheren | Parked | Cloud-sync geparkeerd. |

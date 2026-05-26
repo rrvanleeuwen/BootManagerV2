@@ -1,10 +1,37 @@
 # Current Codex Handoff
 
-Updated: 2026-05-25.
+Updated: 2026-05-26.
 
 ## Current Task
 
-Legacy BootManager Word exports from `.docs/legacy-input/` have now all been processed into the current BootManagerV2 documentation.
+Legacy BootManager Word exports from `.docs/legacy-input/` have all been processed into the current BootManagerV2 documentation.
+
+The first Raspberry Pi 4 Docker Compose deployment-smoke-test has succeeded:
+
+- Raspberry Pi 4 Model B, 32 GB SD, Raspberry Pi OS Lite 64-bit.
+- SSH access via `bootmanager-pi.local`.
+- GitHub private repo access via SSH-key on the Pi.
+- Pi builds Docker images locally from `master`; no zip workflow.
+- Required local `.env`: `BOOTMANAGER_ENCRYPTION_KEY`, `BOOTMANAGER_JWT_KEY`, `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
+- Docker ARM64 build works after commit `124c7af` removed non-existent `-arm64` .NET base image tags.
+- Ingest control API works after commit `4ef3d73` maps `0.0.0.0` to HttpListener prefix `http://*:5010/`.
+- `bootmanager-web` is healthy on port 5000.
+- `bootmanager-ingest` is up with UDP 10110 and localhost-bound control API 5010.
+- `/health` returns `HTTP 200` with `{"status":"ok"}`.
+- App is reachable on the LAN via `http://<pi-ip>:5000`.
+- Reboot test succeeded; both containers came back automatically.
+- 32 GB SD and 1 GB RAM are acceptable for weekend test/proof-of-concept, but production/pilot should prefer eMMC/NVMe/SSD and 4 GB or 8 GB RAM.
+
+Relevant docs updated:
+
+- `.docs/docker-deployment.md`
+- `.docs/pi-first-install-runbook.md`
+- `.docs/raspberry-pi-deployment.md`
+- `.docs/extraInfo/yden-03.md`
+- `.docs/TODO.md`
+- `.docs/legacy-analysis/legacy-coverage-register.md`
+- `.docs/legacy-analysis/mapped-epics.md`
+- `.docs/legacy-analysis/implemented-or-obsolete.md`
 
 Standing instruction from the user:
 
@@ -34,11 +61,12 @@ Coverage rule:
 
 ## Current Branch And PR Context
 
-- PR `#61` was merged and local `master` was fast-forwarded to merge commit `170d02f9c6516f23f43e2e0f28dabad8e0a7a551`.
-- Current branch: `feature/owner-profile-settings-us1`
-- This branch was created from current `master`.
-- The approved US1 user story for owner name/e-mail management is saved in `.docs/epics/owner-profile-settings.md`.
-- The next step is to give Copilot the prompt for US1, unless the user changes scope first.
+- Current branch should be `master`.
+- Recent relevant commits on `master`:
+  - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
+  - `124c7af Fix Docker base image tags for ARM64`
+  - `975019e Merge pull request #63 from rrvanleeuwen/feature/settings-page-organization`
+- Current documentation task should be committed with message `Document successful Raspberry Pi deployment runbook`.
 
 ## Processed Word Files
 
@@ -114,4 +142,4 @@ Next file to process after user approval:
 
 ## Current Worktree Expectation
 
-There are expected uncommitted documentation changes on `feature/owner-profile-settings-us1` recording the approved US1 story and the rule that approved user stories must be stored in epic files before Copilot prompts.
+After committing the Raspberry Pi documentation update, the worktree should be clean on `master`.
