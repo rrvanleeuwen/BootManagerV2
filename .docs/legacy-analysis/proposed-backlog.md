@@ -296,6 +296,34 @@ Uitbreiding op bestaande settings/deployment-docs.
 
 Mogelijke stories:
 
+### US-SYS0: Gecontroleerde Database Reset Voor Pi Testinstallatie
+
+Als ontwikkelaar/helpdesk wil ik via een veilige onderhoudsprocedure de lokale BootManager database kunnen resetten, zodat ik een Raspberry Pi testinstallatie opnieuw door bootstrap login en onboarding kan laten lopen zonder handmatig Docker volumes of databasebestanden te verwijderen.
+
+Aanleiding:
+
+- De eerste Raspberry Pi Docker Compose deployment werkt.
+- Voor herhaalde tests is handmatig verwijderen van de SQLite database of `docker compose down -v` te foutgevoelig.
+- De Pi moet een schone afspiegeling van GitHub `master` blijven; lokale workarounds zijn ongewenst.
+
+Scope:
+
+- operator-only via SSH/lokale beheercontext;
+- bestaande database eerst timestamped bewaren of back-uppen;
+- actieve database resetten zonder `.env`, Git checkout, bijlagen, capture logs of volledige Docker volumes te verwijderen;
+- containers netjes stoppen/starten;
+- bootstrap login en onboarding opnieuw laten starten.
+
+Legacy-impact:
+
+- raakt `US0.5`, `US8.8` en `US8.14`;
+- is geen volledige backup/restore UI en geen publieke factory-reset knop.
+
+Status:
+
+- Vastgelegd in `.docs/epics/system-operations.md`.
+- Hoog geprioriteerd voor de eerstvolgende systeembeheer/deployment-slice.
+
 ### US-SYS1: Backup Maken Van Lokale Data
 
 Als eigenaar wil ik een back-up kunnen maken van SQLite database, bijlagen en configuratie, zodat ik geen data verlies.

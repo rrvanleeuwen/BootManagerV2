@@ -19,6 +19,14 @@
 
 #### High Priority
 
+- [ ] **System Operations & Recovery – gecontroleerde Pi database reset**
+  - **Aanleiding 2026-05-26:** Na de eerste geslaagde Raspberry Pi Docker Compose deployment is een veilige resetflow nodig voor ontwikkel-, test- en helpdeskscenario's. Handmatig databasebestanden verwijderen of `docker compose down -v` gebruiken is op de Pi te foutgevoelig.
+  - **Status:** user story `SYS-RESET-1` is vastgelegd in `.docs/epics/system-operations.md` en moet binnenkort worden opgepakt.
+  - **Doel:** operator-only reset via SSH/lokale beheercontext waarmee de actieve SQLite database eerst timestamped wordt bewaard of geback-upt, waarna BootManager opnieuw door bootstrap login en onboarding kan lopen.
+  - **Niet-doel:** geen publieke webknop, geen remote reset endpoint, geen algemene backup/restore UI, geen verwijdering van `.env`, Git checkout, bijlagen, capture logs of volledige Docker volumes.
+  - **Legacy-impact:** raakt `US0.5`, `US8.8` en `US8.14`; volledige backup/restore en standaardinstellingen herstellen blijven latere stories.
+  - **Voorgestelde volgende actie:** maak hiervoor de eerstvolgende systeembeheer/deployment feature-branch en genereer daarna pas de Copilot-prompt.
+
 - [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
   - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.
   - **Status 2026-05-23 (slice 2):** Ingest haalt bij startup operationele instellingen op via `GET /api/operationalsettings/ingest`. appsettings.json blijft fallback als Web niet bereikbaar is. Settings worden niet live herladen tijdens runtime.

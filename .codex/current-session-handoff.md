@@ -33,6 +33,14 @@ Relevant docs updated:
 - `.docs/legacy-analysis/mapped-epics.md`
 - `.docs/legacy-analysis/implemented-or-obsolete.md`
 
+New near-term story decision:
+
+- The user identified a need to reset a Raspberry Pi test installation without manually deleting the SQLite database or Docker volumes.
+- This has been accepted as high-priority deployment/operability scope, not an end-user web feature.
+- Story saved in `.docs/epics/system-operations.md` as `SYS-RESET-1: Gecontroleerde Database Reset Voor Pi Testinstallatie`.
+- Roadmap/backlog references updated in `.docs/TODO.md`, `.docs/legacy-analysis/proposed-backlog.md`, and `.docs/README.md`.
+- Next logical implementation step: create/select a feature branch from current `master`, then generate a Copilot prompt for `SYS-RESET-1` only after confirming branch/status. Do not implement broader backup/restore UI, web factory reset, or safe shutdown in this story.
+
 Standing instruction from the user:
 
 1. When the user proposes an idea, check the full legacy scope automatically before answering.

@@ -10,6 +10,7 @@ This folder contains comprehensive documentation for the BootManager project.
 - **[pi-first-install-runbook.md](pi-first-install-runbook.md)** - Step-by-step first install on Raspberry Pi with Docker Compose
 - **[docker-deployment.md](docker-deployment.md)** - Docker Compose deployment, update procedure, ports, troubleshooting and YDEN boot-test notes
 - **[raspberry-pi-deployment.md](raspberry-pi-deployment.md)** - Raspberry Pi deployment plan and validated Pi 4 status
+- **[epics/system-operations.md](epics/system-operations.md)** - System operations, recovery and the planned controlled Pi database reset story
 - **[../.codex/working-agreement.md](../.codex/working-agreement.md)** - Codex/Copilot workflow agreement for this repository
 
 ### Project Status
