@@ -1,6 +1,6 @@
 # Epic: First-Run Onboarding & Auth Simplification
 
-Status: ontwerp vastgesteld. US1, US2, US3, US4, US5 gereed (2026-05-24). US6 gereed (2026-05-25).
+Status: ontwerp vastgesteld. US1, US2, US3, US4, US5 gereed (2026-05-24). US6 gereed (2026-05-25). US7 vastgelegd als bugfix-story op 2026-05-26.
 
 Doel: BootManager krijgt een simpele, robuuste single-owner eerste-start flow. Bij een lege database maakt de applicatie automatisch één bootstrap owner aan. De gebruiker logt in met een geconfigureerd bootstrap wachtwoord, wordt daarna verplicht door onboarding geleid, vult eigenaar- en bootgegevens in, en wijzigt direct het wachtwoord.
 
@@ -513,6 +513,67 @@ Acceptatiecriteria:
 - ✅ Docs beschrijven reset bij vergeten wachtwoord.
 - ✅ `dotnet build` slaagt.
 
+### US7: Legacy Register Owner Route En Menu Verwijderen
+
+**Status:** Vastgelegd op 2026-05-26 naar aanleiding van Raspberry Pi test vóór eerste login/onboarding. Nog niet geïmplementeerd.
+
+**User story:** Als eigenaar die BootManager voor het eerst opstart wil ik geen oude "Register Owner"-route of menuoptie meer zien, zodat de eerste-start flow uitsluitend via bootstrap login en verplichte onboarding loopt.
+
+**Aanleiding:**
+
+Tijdens de Raspberry Pi test, voordat er was ingelogd en voordat onboarding was uitgevoerd, stond in het menu nog een item **Register Owner**. Klikken daarop navigeerde naar `/register-owner`. Dat hoort niet meer bij de huidige BootManagerV2-flow.
+
+Legacy/context:
+
+- Legacy `US0.2 Registratie eerste eigenaar` is in BootManagerV2 vervangen door bootstrap owner + verplichte onboarding.
+- Vrije eerste-owner registratie via `/register-owner` hoort niet meer beschikbaar te zijn.
+- Multi-user/rollenregistratie blijft geparkeerd.
+
+**Scope:**
+
+- Verwijder de zichtbare menuoptie "Register Owner" uit de navigatie.
+- Zorg dat `/register-owner` niet meer bereikbaar is als normale gebruikersroute.
+- Verwijder of neutraliseer de legacy `RegisterOwner.razor` pagina.
+- Verwijder de oude `StartupGate` redirect naar `/register-owner`; first-run hoort via bootstrap owner + `/login` + `/onboarding` te lopen.
+- Controleer dat de bestaande bootstrap/onboarding flow intact blijft.
+- Voeg of actualiseer tests waar passend, bijvoorbeeld voor route-/gate-gedrag of menuverwachting.
+- Werk documentatie bij als codeverwijzingen naar `/register-owner` wijzigen.
+
+**Buiten scope:**
+
+- Geen wijziging aan bootstrap owner aanmaak.
+- Geen wijziging aan `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
+- Geen nieuwe registratieflow.
+- Geen multi-user, rollen of crew accounts.
+- Geen opruiming van alle technische legacy services/DTOs tenzij strikt nodig om de route veilig te verwijderen.
+- Geen wijziging aan Pi database reset story.
+
+**Acceptatiecriteria:**
+
+- Het menu toont geen "Register Owner" item meer.
+- Handmatig openen van `/register-owner` toont geen oude registratiepagina meer.
+- Bij lege database maakt BootManager nog steeds automatisch één bootstrap owner aan.
+- Login met bootstrap wachtwoord leidt nog steeds naar verplichte `/onboarding`.
+- Onboarding afronden leidt nog steeds naar `/dashboard`.
+- Auth/login routes blijven werken.
+- `dotnet build` slaagt.
+- Relevante unit/componenttests slagen of worden bijgewerkt.
+
+**Legacy coverage impact:**
+
+- `US0.2 Registratie eerste eigenaar` blijft `Replaced`; deze story verwijdert resterende UI/route-restanten van de oude registratieaanpak.
+- `US0.3 Inloggen als eigenaar` blijft `Done`; login blijft wachtwoord-only.
+- `US1.3` en verdere multi-user stories blijven `Parked`.
+
+**Handmatige testnotities:**
+
+- Test bij voorkeur op een verse of geresette database.
+- Vóór login: controleer dat "Register Owner" niet in het menu staat.
+- Open `/register-owner` handmatig en controleer dat de oude registratiepagina niet bruikbaar is.
+- Log in met `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
+- Controleer dat `/onboarding` verplicht opent.
+- Rond onboarding af en controleer dat dashboard/settings/logboek normaal bereikbaar zijn.
+
 ## Operationele Resetprocedure Bij Vergeten Wachtwoord
 
 Voor deze epic bouwen we geen in-app recovery.
@@ -536,13 +597,14 @@ Later kan een aparte story een nettere factory-reset of owner-reset command toev
 4. ✅ US5: vessel profile datalaag. (2026-05-24)
 5. ✅ US4: onboardingformulier dat owner + vessel + wachtwoord afrondt. (2026-05-24)
 6. ✅ US6: docs/deployment-config. (2026-05-25)
+7. 🔜 US7: legacy Register Owner route en menu verwijderen. (vastgelegd 2026-05-26)
 
 US4 hangt af van US5 voor opslag van bootgegevens. Daarom is het praktisch om US5 vóór of samen met US4 te implementeren, maar de user-facing flow blijft US4.
 
-Alle core user stories zijn nu voltooid. De onboarding-flow is operationeel en helpt de eindgebruiker door de eerste-start setup. US6 heeft de documentatie en deployment-config bijgewerkt voor Docker, Raspberry Pi en eerste installatie.
+Alle core user stories zijn nu voltooid. De onboarding-flow is operationeel en helpt de eindgebruiker door de eerste-start setup. US6 heeft de documentatie en deployment-config bijgewerkt voor Docker, Raspberry Pi en eerste installatie. US7 is een kleine bugfix-story om resterende legacy registratie-UI te verwijderen.
 
 ## Volgende Keer Hier Starten
 
 De First-Run Onboarding & Auth Simplification epic is deploymentklaar. De eerste Raspberry Pi 4 Docker Compose deployment-smoke-test is op 2026-05-26 geslaagd met lokale `.env`, ARM64 Docker build, Web healthcheck, draaiende Ingest-container en geslaagde reboot-test.
 
-Open blijft alleen eventuele aanvullende onboarding-validatie met een volledig verse database op de Pi zelf. De bredere deploymentbasis is gevalideerd; een logische vervolgstap ligt buiten deze epic, bijvoorbeeld de echte boot UDP-broadcasttest met YDEN-03 of een volgende roadmap-story.
+Open voor deze epic: US7 uitvoeren, omdat de Raspberry Pi test aantoonde dat de oude `/register-owner` flow nog via het menu zichtbaar is. Daarna ligt een logische vervolgstap buiten deze epic, bijvoorbeeld `SYS-RESET-1`, de echte boot UDP-broadcasttest met YDEN-03 of een volgende roadmap-story.

@@ -19,6 +19,14 @@
 
 #### High Priority
 
+- [ ] **First-Run Onboarding – legacy Register Owner route verwijderen**
+  - **Aanleiding 2026-05-26:** Tijdens Raspberry Pi test vóór login/onboarding stond in het menu nog **Register Owner**. Klikken navigeert naar `/register-owner`. Dit is oude vrije registratie en hoort niet meer bij de huidige bootstrap owner + verplichte onboarding flow.
+  - **Status:** user story `US7: Legacy Register Owner Route En Menu Verwijderen` is vastgelegd in `.docs/epics/first-run-onboarding.md` en moet als kleine bugfix binnenkort worden opgepakt.
+  - **Doel:** menu-item en route naar oude registratieflow verwijderen of neutraliseren, terwijl bootstrap login en verplichte onboarding intact blijven.
+  - **Niet-doel:** geen nieuwe registratieflow, geen multi-user/rollen, geen wijziging aan bootstrap owner of `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
+  - **Legacy-impact:** `US0.2 Registratie eerste eigenaar` blijft `Replaced`; deze story verwijdert resterende UI/route-restanten van de oude aanpak.
+  - **Voorgestelde volgende actie:** maak hiervoor de eerstvolgende onboarding/auth bugfix-branch en genereer daarna de Copilot-prompt.
+
 - [ ] **System Operations & Recovery – gecontroleerde Pi database reset**
   - **Aanleiding 2026-05-26:** Na de eerste geslaagde Raspberry Pi Docker Compose deployment is een veilige resetflow nodig voor ontwikkel-, test- en helpdeskscenario's. Handmatig databasebestanden verwijderen of `docker compose down -v` gebruiken is op de Pi te foutgevoelig.
   - **Status:** user story `SYS-RESET-1` is vastgelegd in `.docs/epics/system-operations.md` en moet binnenkort worden opgepakt.

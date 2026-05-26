@@ -472,6 +472,7 @@ TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig **niet nodig**.
 De TCP-poort lijkt bedoeld voor de eigen YDEN-software; BootManager gebruikt de bewezen UDP NMEA 0183 route.
 
 ### Mogelijke volgende stappen
+- First-Run Onboarding bugfix: legacy `Register Owner` menu-item en `/register-owner` route verwijderen/neutraliseren. Tijdens de Raspberry Pi test vóór login/onboarding bleek deze oude vrije registratieflow nog bereikbaar. Deze story staat als US7 in `.docs/epics/first-run-onboarding.md` en moet vóór verdere onboarding/deployment polish worden opgepakt.
 - System Operations & Recovery: gecontroleerde Pi database reset (`SYS-RESET-1`) zodat ontwikkelaar/helpdesk een Docker Compose testinstallatie opnieuw door bootstrap login en onboarding kan laten lopen zonder handmatig databasebestanden of volumes te verwijderen. Deze story is hoog geprioriteerd voor deployment/operability en staat in `.docs/epics/system-operations.md`.
 - Digitaal logboek: ontbrekende logmomenten zichtbaar maken. Er bestaat al `Draft`/`Confirmed`, badges, accorderen, print-filtering en meetdatasuggesties. Volgende slice moet klein blijven: banner/melding voor verlopen logmoment + knop om een `Draft`-regel voor dat logmoment aan te maken. Nog geen browser push notifications.
 - Conflict/deduplicatiebeleid tussen NMEA2000 en NMEA0183 measurements

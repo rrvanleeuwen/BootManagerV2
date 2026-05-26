@@ -44,6 +44,16 @@ Relevant docs updated:
 
 New near-term story decision:
 
+- The user found a pre-login Raspberry Pi issue: the menu still shows `Register Owner`, and clicking it opens `/register-owner`.
+- This is old free first-owner registration and conflicts with the current bootstrap owner + mandatory onboarding flow.
+- Story saved in `.docs/epics/first-run-onboarding.md` as `US7: Legacy Register Owner Route En Menu Verwijderen`.
+- Roadmap reference added in `.docs/TODO.md`.
+- This should be treated as a small high-priority onboarding/auth bugfix before `SYS-RESET-1`.
+- Relevant code locations found during documentation triage:
+  - `BootManager.Web/Components/Layout/NavMenu.razor` has a `register-owner` link.
+  - `BootManager.Web/Components/StartupGate.razor` still redirects first-run to `/register-owner`.
+  - `BootManager.Web/Components/Pages/RegisterOwner.razor` still defines `@page "/register-owner"`.
+  - `OwnerRegistrationService` and DTOs still exist as technical legacy; do not broadly refactor unless needed for route removal.
 - The user identified a need to reset a Raspberry Pi test installation without manually deleting the SQLite database or Docker volumes.
 - This has been accepted as high-priority deployment/operability scope, not an end-user web feature.
 - Story saved in `.docs/epics/system-operations.md` as `SYS-RESET-1: Gecontroleerde Database Reset Voor Pi Testinstallatie`.
