@@ -23,7 +23,7 @@ RUN dotnet publish "BootManager.Web/BootManager.Web.csproj" \
 	-o /app/publish
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy-arm64
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy
 WORKDIR /app
 
 RUN apt-get update && \
