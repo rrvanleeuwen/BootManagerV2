@@ -349,6 +349,8 @@ HTTP/1.1 200 OK
 
 GitHub `master` is leidend. De Pi hoort geen lokale afwijkingen te bevatten.
 
+De Pi pullt alleen `master`, nooit feature-branches. Zolang een wijziging op een feature-branch staat en nog geen PR/merge naar `master` heeft gehad, vindt ontwikkeling en pre-PR validatie plaats op de ontwikkelcomputer/devomgeving. Codex mag in die fase niet suggereren dat de Pi de wijziging al heeft of moet testen.
+
 De Pi hoeft niet automatisch na iedere push naar `master` direct een `git pull` te doen. Bij documentatie-only wijzigingen is een Pi-update meestal niet nodig. Als een update op de Pi nodig is, geeft Codex expliciet de exacte SSH-commando's en vermeldt Codex of containers opnieuw gebouwd, alleen herstart of helemaal niet aangepast moeten worden.
 
 Beslisregel:

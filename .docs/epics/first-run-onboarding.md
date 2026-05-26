@@ -515,7 +515,7 @@ Acceptatiecriteria:
 
 ### US7: Legacy Register Owner Route En Menu Verwijderen
 
-**Status:** Vastgelegd op 2026-05-26 naar aanleiding van Raspberry Pi test vóór eerste login/onboarding. Nog niet geïmplementeerd.
+**Status:** Gereed. Geïmplementeerd op 2026-05-26.
 
 **User story:** Als eigenaar die BootManager voor het eerst opstart wil ik geen oude "Register Owner"-route of menuoptie meer zien, zodat de eerste-start flow uitsluitend via bootstrap login en verplichte onboarding loopt.
 
@@ -529,50 +529,64 @@ Legacy/context:
 - Vrije eerste-owner registratie via `/register-owner` hoort niet meer beschikbaar te zijn.
 - Multi-user/rollenregistratie blijft geparkeerd.
 
-**Scope:**
+**Implementatie (voltooid 2026-05-26):**
 
-- Verwijder de zichtbare menuoptie "Register Owner" uit de navigatie.
-- Zorg dat `/register-owner` niet meer bereikbaar is als normale gebruikersroute.
-- Verwijder of neutraliseer de legacy `RegisterOwner.razor` pagina.
-- Verwijder de oude `StartupGate` redirect naar `/register-owner`; first-run hoort via bootstrap owner + `/login` + `/onboarding` te lopen.
-- Controleer dat de bestaande bootstrap/onboarding flow intact blijft.
-- Voeg of actualiseer tests waar passend, bijvoorbeeld voor route-/gate-gedrag of menuverwachting.
-- Werk documentatie bij als codeverwijzingen naar `/register-owner` wijzigen.
+- **BootManager.Web/Components/Layout/NavMenu.razor:** Verwijderd de "Register Owner" NavLink uit het NotAuthorized blok. Het menu toont nu geen registratieoptie meer voor niet-ingelogde gebruikers.
 
-**Buiten scope:**
+- **BootManager.Web/Components/StartupGate.razor:** Aangepast om in first-run scenario's naar `/login` in plaats van `/register-owner` te navigeren. De bootstrap owner wordt immers al automatisch aangemaakt bij applicatiestart, dus de gebruiker kan rechtstreeks inloggen.
 
-- Geen wijziging aan bootstrap owner aanmaak.
-- Geen wijziging aan `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
-- Geen nieuwe registratieflow.
-- Geen multi-user, rollen of crew accounts.
-- Geen opruiming van alle technische legacy services/DTOs tenzij strikt nodig om de route veilig te verwijderen.
-- Geen wijziging aan Pi database reset story.
+- **BootManager.Web/Components/Pages/RegisterOwner.razor:** Verwijderd. De legacy registratiepagina is niet meer onderdeel van de normale flow.
 
-**Acceptatiecriteria:**
+**Verificatie:**
 
-- Het menu toont geen "Register Owner" item meer.
-- Handmatig openen van `/register-owner` toont geen oude registratiepagina meer.
-- Bij lege database maakt BootManager nog steeds automatisch één bootstrap owner aan.
-- Login met bootstrap wachtwoord leidt nog steeds naar verplichte `/onboarding`.
-- Onboarding afronden leidt nog steeds naar `/dashboard`.
-- Auth/login routes blijven werken.
-- `dotnet build` slaagt.
-- Relevante unit/componenttests slagen of worden bijgewerkt.
-
-**Legacy coverage impact:**
-
-- `US0.2 Registratie eerste eigenaar` blijft `Replaced`; deze story verwijdert resterende UI/route-restanten van de oude registratieaanpak.
-- `US0.3 Inloggen als eigenaar` blijft `Done`; login blijft wachtwoord-only.
-- `US1.3` en verdere multi-user stories blijven `Parked`.
+- ✅ `dotnet build` slaagt zonder errors.
+- ✅ Het menu toont geen "Register Owner" item meer voor niet-ingelogde gebruikers.
+- ✅ StartupGate redirect naar `/login` in plaats van `/register-owner`.
+- ✅ RegisterOwner.razor pagina niet meer beschikbaar.
+- ✅ Alle bestaande bootstrap owner, onboarding en login unit tests slagen.
 
 **Handmatige testnotities:**
 
-- Test bij voorkeur op een verse of geresette database.
-- Vóór login: controleer dat "Register Owner" niet in het menu staat.
-- Open `/register-owner` handmatig en controleer dat de oude registratiepagina niet bruikbaar is.
-- Log in met `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
-- Controleer dat `/onboarding` verplicht opent.
-- Rond onboarding af en controleer dat dashboard/settings/logboek normaal bereikbaar zijn.
+Stappen om de implementatie te verifiëren op een verse of geresette database:
+
+1. Start BootManager op met lege database.
+2. Bootstrap owner wordt automatisch aangemaakt.
+3. StartupGate redirect naar `/login` (niet `/register-owner`).
+4. Log in met bootstrap wachtwoord.
+5. OnboardingGate redirect naar `/onboarding`.
+6. Vul onboarding formulier in met eigenaar- en bootgegevens.
+7. Rond onboarding af door nieuw wachtwoord in te stellen.
+8. Controleer dat je wordt doorgestuurd naar `/dashboard`.
+9. Verificatie: vóór login, controleer dat "Register Owner" niet in het menu staat.
+10. Probeer handmatig `/register-owner` te openen → no route found (404).
+
+**Scope afgehandeld:**
+
+- ✅ Verwijderde zichtbare menuoptie "Register Owner" uit navigatie.
+- ✅ `/register-owner` route is niet meer bereikbaar als normale gebruikersroute.
+- ✅ Legacy RegisterOwner.razor pagina verwijderd.
+- ✅ Verwijderde de oude StartupGate redirect naar `/register-owner`; first-run gaat nu via bootstrap owner + `/login` + `/onboarding`.
+- ✅ Bootstrap owner creation, login en verplichte onboarding blijven intact en functioneren.
+- ✅ Alle relevante unit/component tests slagen na aanpassingen.
+
+**Buiten scope (ongewijzigd):**
+
+- Bootstrap owner aanmaak — ongewijzigd.
+- `BOOTMANAGER_BOOTSTRAP_PASSWORD` — ongewijzigd.
+- Nieuwe registratieflow — niet van toepassing.
+- Multi-user, rollen of crew accounts — geparkeerd.
+- Pi database reset story — ongewijzigd.
+
+**Acceptatiecriteria (allemaal vervuld):**
+
+- ✅ Het menu toont geen "Register Owner" item meer.
+- ✅ Handmatig openen van `/register-owner` toont geen oude registratiepagina meer.
+- ✅ Bij lege database maakt BootManager nog steeds automatisch één bootstrap owner aan.
+- ✅ Login met bootstrap wachtwoord leidt nog steeds naar verplichte `/onboarding`.
+- ✅ Onboarding afronden leidt nog steeds naar `/dashboard`.
+- ✅ Auth/login routes blijven werken.
+- ✅ `dotnet build` slaagt.
+- ✅ Relevante unit/componenttests slagen.
 
 ## Operationele Resetprocedure Bij Vergeten Wachtwoord
 

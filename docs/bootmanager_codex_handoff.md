@@ -439,7 +439,8 @@ We zijn geëindigd op:
 - Laatste relevante deploymentfixes:
   - `124c7af Fix Docker base image tags for ARM64`
   - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
-- Pi-updateafspraak: de Pi hoeft niet automatisch na iedere push te pullen. Bij documentatie-only wijzigingen meestal geen Pi-update. Als een Pi-update nodig is, moet Codex exact zeggen welke SSH-commando's nodig zijn en of containers opnieuw gebouwd, alleen herstart of ongemoeid moeten blijven.
+- Pi-updateafspraak: de Pi pullt alleen `master`, nooit feature-branches. Zolang een wijziging op een feature-branch staat en er nog geen PR/merge naar `master` is, test de gebruiker op de ontwikkelcomputer/devomgeving. Codex mag dan niet suggereren dat de Pi die wijziging al heeft of moet testen.
+- De Pi hoeft niet automatisch na iedere push te pullen. Bij documentatie-only wijzigingen meestal geen Pi-update. Als een Pi-update nodig is, moet Codex exact zeggen welke SSH-commando's nodig zijn en of containers opnieuw gebouwd, alleen herstart of ongemoeid moeten blijven.
 - Pi-updateflow bij code/containerwijzigingen: `git pull`, `docker compose build`, `docker compose up -d`, `docker compose ps`, `/health` controleren
 - Volgende hardwarestap: echte boot UDP-broadcasttest met YDEN-03/Teltonika op poort `10110`
 
