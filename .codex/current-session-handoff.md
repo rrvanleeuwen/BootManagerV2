@@ -45,23 +45,23 @@ Relevant docs updated:
 - `.docs/legacy-analysis/mapped-epics.md`
 - `.docs/legacy-analysis/implemented-or-obsolete.md`
 
-New near-term story decision:
+Current completed story:
 
-- The user found a pre-login Raspberry Pi issue: the menu still shows `Register Owner`, and clicking it opens `/register-owner`.
-- This is old free first-owner registration and conflicts with the current bootstrap owner + mandatory onboarding flow.
-- Story saved in `.docs/epics/first-run-onboarding.md` as `US7: Legacy Register Owner Route En Menu Verwijderen`.
-- Roadmap reference added in `.docs/TODO.md`.
-- This should be treated as a small high-priority onboarding/auth bugfix before `SYS-RESET-1`.
-- Relevant code locations found during documentation triage:
-  - `BootManager.Web/Components/Layout/NavMenu.razor` has a `register-owner` link.
-  - `BootManager.Web/Components/StartupGate.razor` still redirects first-run to `/register-owner`.
-  - `BootManager.Web/Components/Pages/RegisterOwner.razor` still defines `@page "/register-owner"`.
-  - `OwnerRegistrationService` and DTOs still exist as technical legacy; do not broadly refactor unless needed for route removal.
+- `US7: Legacy Register Owner Route En Menu Verwijderen` is complete.
+- PR #64 was merged into `master` on 2026-05-26.
+- The legacy `Register Owner` menu item and `/register-owner` page were removed.
+- `StartupGate` now routes first-run to `/login`; bootstrap owner + mandatory onboarding remains the only first-start flow.
+- The user manually tested the feature locally and approved it.
+- The Raspberry Pi has now been updated from `master` by the user after the merge.
+
+Next near-term story decision:
+
 - The user identified a need to reset a Raspberry Pi test installation without manually deleting the SQLite database or Docker volumes.
 - This has been accepted as high-priority deployment/operability scope, not an end-user web feature.
 - Story saved in `.docs/epics/system-operations.md` as `SYS-RESET-1: Gecontroleerde Database Reset Voor Pi Testinstallatie`.
 - Roadmap/backlog references updated in `.docs/TODO.md`, `.docs/legacy-analysis/proposed-backlog.md`, and `.docs/README.md`.
-- Next logical implementation step: create/select a feature branch from current `master`, then generate a Copilot prompt for `SYS-RESET-1` only after confirming branch/status. Do not implement broader backup/restore UI, web factory reset, or safe shutdown in this story.
+- Next session should pick up `SYS-RESET-1`.
+- Next logical implementation step: check legacy scope, confirm `master` is clean/up to date, create/select a feature branch from current `master`, restate the approved user story briefly if needed, then generate a Copilot prompt for `SYS-RESET-1`. Do not implement broader backup/restore UI, web factory reset, or safe shutdown in this story.
 
 Standing instruction from the user:
 
@@ -94,8 +94,11 @@ Coverage rule:
 - Current branch is `master`.
 - PR #64 (`feature/register-owner-cleanup`) was merged on 2026-05-26 with merge commit `a441ca8`.
 - Local `master` has been fast-forwarded from `origin/master` after the merge.
+- Documentation completion commit `ab38c00 Record Register Owner cleanup completion` was pushed to `origin/master`.
+- User reports the Raspberry Pi has been updated from `master` after the merge.
 - The Raspberry Pi must remain on/pull only `master`; update it only when the user is explicitly told the exact commands.
 - Recent relevant commits on `master`:
+  - `ab38c00 Record Register Owner cleanup completion`
   - `a441ca8 Merge pull request #64 from rrvanleeuwen/feature/register-owner-cleanup`
   - `ab54cbb Remove legacy register owner route`
   - `47d5ab9 Document Pi master-only update rule`
