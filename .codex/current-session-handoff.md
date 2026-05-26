@@ -25,6 +25,9 @@ The first Raspberry Pi 4 Docker Compose deployment-smoke-test has succeeded:
 Pi update instruction from user:
 
 - Do not assume the Raspberry Pi must pull immediately after every push.
+- The Raspberry Pi only pulls `master`. Never tell the user to pull or test a feature branch on the Pi.
+- Feature-branch implementation and pre-PR validation happen on the development computer/local dev environment, not on the Pi.
+- Do not imply that the Pi already has a feature-branch change before that change has been merged/pushed to `origin/master`.
 - For docs-only changes, normally do not tell the user to update the Pi.
 - If a Pi update is needed, explicitly tell the user the exact SSH commands and whether containers must be rebuilt, only restarted, or left running.
 - Use this default command set only when code/container changes need to run on the Pi:
@@ -88,12 +91,14 @@ Coverage rule:
 
 ## Current Branch And PR Context
 
-- Current branch should be `master`.
+- Current branch is `feature/register-owner-cleanup`.
+- No PR has been created for the Register Owner cleanup yet.
+- Development and pre-PR validation for this story are happening on the development computer, not on the Raspberry Pi.
+- The Raspberry Pi must remain on/pull only `master` after a change is merged or pushed there and the user is explicitly told to update it.
 - Recent relevant commits on `master`:
   - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
   - `124c7af Fix Docker base image tags for ARM64`
   - `975019e Merge pull request #63 from rrvanleeuwen/feature/settings-page-organization`
-- Current documentation task should be committed with message `Document successful Raspberry Pi deployment runbook`.
 
 ## Processed Word Files
 

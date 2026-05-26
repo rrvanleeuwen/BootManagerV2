@@ -195,6 +195,8 @@ De gevalideerde route is Docker Compose vanaf een clone van de GitHub repo op de
 
 Update-afspraak:
 
+- De Pi pullt alleen `master`, nooit feature-branches.
+- Zolang een wijziging op een feature-branch staat en nog niet naar `master` is gemerged/gepusht, wordt die wijziging op de ontwikkelcomputer/devomgeving getest.
 - De Pi hoeft niet automatisch na iedere push naar `master` te pullen.
 - Bij documentatie-only wijzigingen blijft de Pi meestal ongemoeid.
 - Als een Pi-update nodig is, geeft Codex de exacte SSH-commando's en benoemt of `docker compose build`, `docker compose up -d`, `docker compose restart` of alleen een controle nodig is.

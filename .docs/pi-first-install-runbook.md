@@ -450,6 +450,8 @@ Controlepunt:
 
 Update de Pi niet automatisch na iedere GitHub-push. Bij documentatie-only wijzigingen is dat meestal niet nodig. Als een Pi-update nodig is, hoort Codex precies te zeggen welke commando's je in de SSH-sessie moet uitvoeren en of een rebuild nodig is.
 
+De Pi pullt alleen `master`, nooit feature-branches. Ontwikkeling en pre-PR validatie gebeuren op de ontwikkelcomputer of lokale devomgeving. Pas nadat een wijziging naar `origin/master` is gemerged/gepusht en Codex expliciet zegt dat de Pi moet worden bijgewerkt, voer je onderstaande updateprocedure op de Pi uit.
+
 Vuistregels:
 
 - Alleen documentatie op `master`: geen Pi-pull nodig.
