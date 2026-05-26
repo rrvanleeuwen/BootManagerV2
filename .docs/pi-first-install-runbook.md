@@ -448,7 +448,16 @@ Controlepunt:
 
 ## 14a. Updateprocedure
 
-Bij nieuwe code op `master`:
+Update de Pi niet automatisch na iedere GitHub-push. Bij documentatie-only wijzigingen is dat meestal niet nodig. Als een Pi-update nodig is, hoort Codex precies te zeggen welke commando's je in de SSH-sessie moet uitvoeren en of een rebuild nodig is.
+
+Vuistregels:
+
+- Alleen documentatie op `master`: geen Pi-pull nodig.
+- Code, Dockerfile, dependencies of Compose-config op `master`: pull en meestal opnieuw bouwen.
+- Alleen `.env` of runtimeconfig gewijzigd: geen imagebuild, wel Compose opnieuw toepassen.
+- Alleen proces herstarten: `docker compose restart`.
+
+Bij nieuwe code op `master` waarvoor Codex expliciet aangeeft dat de Pi moet worden bijgewerkt:
 
 ```bash
 cd ~/BootManagerV2

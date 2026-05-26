@@ -22,6 +22,15 @@ The first Raspberry Pi 4 Docker Compose deployment-smoke-test has succeeded:
 - Reboot test succeeded; both containers came back automatically.
 - 32 GB SD and 1 GB RAM are acceptable for weekend test/proof-of-concept, but production/pilot should prefer eMMC/NVMe/SSD and 4 GB or 8 GB RAM.
 
+Pi update instruction from user:
+
+- Do not assume the Raspberry Pi must pull immediately after every push.
+- For docs-only changes, normally do not tell the user to update the Pi.
+- If a Pi update is needed, explicitly tell the user the exact SSH commands and whether containers must be rebuilt, only restarted, or left running.
+- Use this default command set only when code/container changes need to run on the Pi:
+  `cd ~/BootManagerV2`, `git pull`, `docker compose build`, `docker compose up -d`, `docker compose ps`, `curl -i http://localhost:5000/health`.
+  For restart-only: `cd ~/BootManagerV2`, `docker compose restart`, `docker compose ps`.
+
 Relevant docs updated:
 
 - `.docs/docker-deployment.md`

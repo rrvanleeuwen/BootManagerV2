@@ -349,7 +349,16 @@ HTTP/1.1 200 OK
 
 GitHub `master` is leidend. De Pi hoort geen lokale afwijkingen te bevatten.
 
-Bij nieuwe code op `master`:
+De Pi hoeft niet automatisch na iedere push naar `master` direct een `git pull` te doen. Bij documentatie-only wijzigingen is een Pi-update meestal niet nodig. Als een update op de Pi nodig is, geeft Codex expliciet de exacte SSH-commando's en vermeldt Codex of containers opnieuw gebouwd, alleen herstart of helemaal niet aangepast moeten worden.
+
+Beslisregel:
+
+- Alleen documentatie gewijzigd: geen Pi-pull nodig, tenzij de documentatie lokaal op de Pi gelezen moet worden.
+- Applicatiecode, Dockerfile, projectbestand, NuGet dependency of `docker-compose.yml` gewijzigd: `git pull`, daarna meestal `docker compose build` en `docker compose up -d`.
+- Alleen runtimeconfiguratie via `.env` of `docker-compose.yml` gewijzigd: geen imagebuild nodig, wel `docker compose up -d`.
+- Alleen containers herstarten zonder codewijziging: `docker compose restart`.
+
+Wanneer Codex zegt dat de Pi bijgewerkt moet worden met nieuwe code:
 
 ```bash
 cd ~/BootManagerV2

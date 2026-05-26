@@ -193,7 +193,13 @@ Productievoorstel:
 
 De gevalideerde route is Docker Compose vanaf een clone van de GitHub repo op de Pi.
 
-Installatie/update:
+Update-afspraak:
+
+- De Pi hoeft niet automatisch na iedere push naar `master` te pullen.
+- Bij documentatie-only wijzigingen blijft de Pi meestal ongemoeid.
+- Als een Pi-update nodig is, geeft Codex de exacte SSH-commando's en benoemt of `docker compose build`, `docker compose up -d`, `docker compose restart` of alleen een controle nodig is.
+
+Installatie/update wanneer nieuwe code of containerconfig op de Pi nodig is:
 
 ```bash
 cd ~/BootManagerV2

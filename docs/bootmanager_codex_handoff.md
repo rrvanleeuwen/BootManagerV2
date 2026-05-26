@@ -439,7 +439,8 @@ We zijn geëindigd op:
 - Laatste relevante deploymentfixes:
   - `124c7af Fix Docker base image tags for ARM64`
   - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
-- Pi-updateflow: `git pull`, `docker compose build`, `docker compose up -d`, `docker compose ps`, `/health` controleren
+- Pi-updateafspraak: de Pi hoeft niet automatisch na iedere push te pullen. Bij documentatie-only wijzigingen meestal geen Pi-update. Als een Pi-update nodig is, moet Codex exact zeggen welke SSH-commando's nodig zijn en of containers opnieuw gebouwd, alleen herstart of ongemoeid moeten blijven.
+- Pi-updateflow bij code/containerwijzigingen: `git pull`, `docker compose build`, `docker compose up -d`, `docker compose ps`, `/health` controleren
 - Volgende hardwarestap: echte boot UDP-broadcasttest met YDEN-03/Teltonika op poort `10110`
 
 Werkende NMEA2000 slices (ongewijzigd):
