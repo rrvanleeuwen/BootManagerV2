@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-05-26.
+Updated: 2026-05-27.
 
 ## Current Task
 
@@ -45,23 +45,30 @@ Relevant docs updated:
 - `.docs/legacy-analysis/mapped-epics.md`
 - `.docs/legacy-analysis/implemented-or-obsolete.md`
 
-Current completed story:
+Current completed stories:
 
-- `US7: Legacy Register Owner Route En Menu Verwijderen` is complete.
-- PR #64 was merged into `master` on 2026-05-26.
-- The legacy `Register Owner` menu item and `/register-owner` page were removed.
-- `StartupGate` now routes first-run to `/login`; bootstrap owner + mandatory onboarding remains the only first-start flow.
-- The user manually tested the feature locally and approved it.
-- The Raspberry Pi has now been updated from `master` by the user after the merge.
+- `US7: Legacy Register Owner Route En Menu Verwijderen` is complete and was merged via PR #64 on 2026-05-26.
+- `SYS-RESET-1: Gecontroleerde Database Reset Voor Pi Testinstallatie` is complete and was merged via PR #65 on 2026-05-27.
+- `SYS-RESET-1` was manually validated on the Raspberry Pi on `master`:
+  - reset script executed successfully;
+  - timestamped backup was created;
+  - `bootmanager-web` returned to healthy state;
+  - bootstrap login worked again;
+  - onboarding was forced again;
+  - after onboarding, only the newly chosen password worked.
+- After that validation, a follow-up master commit `1db5534` documented the explicit `sudo` requirement for `scripts/reset-database.sh`.
 
 Next near-term story decision:
 
-- The user identified a need to reset a Raspberry Pi test installation without manually deleting the SQLite database or Docker volumes.
-- This has been accepted as high-priority deployment/operability scope, not an end-user web feature.
-- Story saved in `.docs/epics/system-operations.md` as `SYS-RESET-1: Gecontroleerde Database Reset Voor Pi Testinstallatie`.
-- `SYS-RESET-1` is inmiddels geïmplementeerd, via PR #65 gemerged naar `master`, en handmatig gevalideerd op Raspberry Pi op 2026-05-27.
-- Gevalideerd op de Pi: reset-script draaide succesvol, timestamped backup werd aangemaakt, `bootmanager-web` werd weer healthy, bootstrap login werkte opnieuw, onboarding werd afgedwongen, en daarna werkte alleen het nieuw gekozen wachtwoord.
-- Volledige backup/restore UI, web factory reset en safe shutdown blijven expliciet buiten scope en open voor latere systeembeheer-stories.
+- The next logical story is now the digital logbook trip-header improvement already captured in `.docs/epics/digital-logbook.md`:
+  `vertrek- en aankomstmoment met datum en tijd`.
+- This fits legacy `US5.6 Logboekheader invullen` and supports later `US5.14 Logboek afronden bij aankomst`.
+- The digital logbook epic itself was refreshed during this session so it better reflects already implemented slices versus still-open follow-up work.
+- Broader system operations topics remain open for later:
+  - full backup/restore UI;
+  - web factory reset;
+  - safe shutdown;
+  - system action log.
 
 Standing instruction from the user:
 
@@ -93,17 +100,19 @@ Coverage rule:
 
 - Current branch is `master`.
 - PR #64 (`feature/register-owner-cleanup`) was merged on 2026-05-26 with merge commit `a441ca8`.
-- Local `master` has been fast-forwarded from `origin/master` after the merge.
-- Documentation completion commit `ab38c00 Record Register Owner cleanup completion` was pushed to `origin/master`.
-- User reports the Raspberry Pi has been updated from `master` after the merge.
+- PR #65 (`feature/pi-database-reset`) was merged on 2026-05-27 with merge commit `c0b7590`.
+- Local `master` has been fast-forwarded from `origin/master` after PR #65.
+- Follow-up master commit `1db5534 Document sudo requirement for Pi reset script` was pushed to `origin/master` after the Raspberry Pi test.
+- The user tested the reset flow on the Raspberry Pi after PR #65 and confirmed it worked.
+- The Raspberry Pi still only pulls `master`; never use it for feature-branch validation.
 - The Raspberry Pi must remain on/pull only `master`; update it only when the user is explicitly told the exact commands.
 - Recent relevant commits on `master`:
+  - `1db5534 Document sudo requirement for Pi reset script`
+  - `c0b7590 Merge pull request #65 from rrvanleeuwen/feature/pi-database-reset`
+  - `2bc30ca Add Pi database reset runbook and logbook epic updates`
+  - `f8e93c4 Update current handoff after Pi sync`
   - `ab38c00 Record Register Owner cleanup completion`
   - `a441ca8 Merge pull request #64 from rrvanleeuwen/feature/register-owner-cleanup`
-  - `ab54cbb Remove legacy register owner route`
-  - `47d5ab9 Document Pi master-only update rule`
-  - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
-  - `124c7af Fix Docker base image tags for ARM64`
 
 ## Processed Word Files
 
@@ -179,4 +188,4 @@ Next file to process after user approval:
 
 ## Current Worktree Expectation
 
-After committing the Raspberry Pi documentation update, the worktree should be clean on `master`.
+At session end, the worktree should be clean on `master` except for intentional documentation updates if the handoff file has just been edited and not yet committed.
