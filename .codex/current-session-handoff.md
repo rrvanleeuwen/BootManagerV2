@@ -59,9 +59,9 @@ Next near-term story decision:
 - The user identified a need to reset a Raspberry Pi test installation without manually deleting the SQLite database or Docker volumes.
 - This has been accepted as high-priority deployment/operability scope, not an end-user web feature.
 - Story saved in `.docs/epics/system-operations.md` as `SYS-RESET-1: Gecontroleerde Database Reset Voor Pi Testinstallatie`.
-- Roadmap/backlog references updated in `.docs/TODO.md`, `.docs/legacy-analysis/proposed-backlog.md`, and `.docs/README.md`.
-- Next session should pick up `SYS-RESET-1`.
-- Next logical implementation step: check legacy scope, confirm `master` is clean/up to date, create/select a feature branch from current `master`, restate the approved user story briefly if needed, then generate a Copilot prompt for `SYS-RESET-1`. Do not implement broader backup/restore UI, web factory reset, or safe shutdown in this story.
+- `SYS-RESET-1` is inmiddels geïmplementeerd, via PR #65 gemerged naar `master`, en handmatig gevalideerd op Raspberry Pi op 2026-05-27.
+- Gevalideerd op de Pi: reset-script draaide succesvol, timestamped backup werd aangemaakt, `bootmanager-web` werd weer healthy, bootstrap login werkte opnieuw, onboarding werd afgedwongen, en daarna werkte alleen het nieuw gekozen wachtwoord.
+- Volledige backup/restore UI, web factory reset en safe shutdown blijven expliciet buiten scope en open voor latere systeembeheer-stories.
 
 Standing instruction from the user:
 

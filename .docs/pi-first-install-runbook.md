@@ -606,7 +606,7 @@ Gebruik het gecontroleerde reset-script:
 
 ```bash
 cd ~/BootManagerV2
-bash scripts/reset-database.sh
+sudo bash scripts/reset-database.sh
 ```
 
 Het script:
@@ -616,6 +616,8 @@ Het script:
 4. Verwijdert actieve database file.
 5. Start containers opnieuw.
 6. Wacht tot health check OK is.
+
+Gebruik hier expliciet `sudo`, omdat het script direct met Docker volume mountpoints op host-niveau werkt.
 
 Na reset:
 

@@ -290,7 +290,7 @@ Via Docker Compose (aanbevolen):
 
 ```bash
 cd ~/BootManagerV2
-bash scripts/reset-database.sh
+sudo bash scripts/reset-database.sh
 ```
 
 Het script:
@@ -299,6 +299,8 @@ Het script:
 - Maakt timestamped backup van de database.
 - Verwijdert de actieve database file.
 - Start containers opnieuw en wacht tot health check OK is.
+
+Gebruik hier expliciet `sudo`, omdat het script direct met Docker volume mountpoints op de host werkt.
 
 Na reset:
 1. Log in met `BOOTMANAGER_BOOTSTRAP_PASSWORD`.

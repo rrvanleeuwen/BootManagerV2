@@ -27,13 +27,13 @@
   - **Legacy-impact:** `US0.2 Registratie eerste eigenaar` blijft `Replaced`; deze story verwijdert resterende UI/route-restanten van de oude aanpak.
   - **Verificatie:** handmatig lokaal goedgekeurd door gebruiker; `dotnet build BootManager.sln` geslaagd; gerichte onboarding/registration/startup unit tests geslaagd.
 
-- [ ] **System Operations & Recovery – gecontroleerde Pi database reset**
+- [x] **System Operations & Recovery – gecontroleerde Pi database reset**
   - **Aanleiding 2026-05-26:** Na de eerste geslaagde Raspberry Pi Docker Compose deployment is een veilige resetflow nodig voor ontwikkel-, test- en helpdeskscenario's. Handmatig databasebestanden verwijderen of `docker compose down -v` gebruiken is op de Pi te foutgevoelig.
-  - **Status:** user story `SYS-RESET-1` is vastgelegd in `.docs/epics/system-operations.md` en moet binnenkort worden opgepakt.
+  - **Status:** `SYS-RESET-1` is geïmplementeerd, via PR #65 gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27.
   - **Doel:** operator-only reset via SSH/lokale beheercontext waarmee de actieve SQLite database eerst timestamped wordt bewaard of geback-upt, waarna BootManager opnieuw door bootstrap login en onboarding kan lopen.
   - **Niet-doel:** geen publieke webknop, geen remote reset endpoint, geen algemene backup/restore UI, geen verwijdering van `.env`, Git checkout, bijlagen, capture logs of volledige Docker volumes.
   - **Legacy-impact:** raakt `US0.5`, `US8.8` en `US8.14`; volledige backup/restore en standaardinstellingen herstellen blijven latere stories.
-  - **Voorgestelde volgende actie:** maak hiervoor de eerstvolgende systeembeheer/deployment feature-branch en genereer daarna pas de Copilot-prompt.
+  - **Verificatie:** reset-script succesvol uitgevoerd op de Pi; backupbestand aangemaakt; `/health` opnieuw OK; bootstrap login en onboarding opnieuw bevestigd; nieuw wachtwoord werkte en bootstrap-wachtwoord daarna niet meer.
 
 - [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
   - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.

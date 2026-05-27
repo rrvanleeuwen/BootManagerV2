@@ -665,11 +665,13 @@ Op de Pi, via SSH of lokale shell:
 cd ~/BootManagerV2
 
 # 2. Voer reset script uit
-bash scripts/reset-database.sh
+sudo bash scripts/reset-database.sh
 
 # 3. Script vraagt bevestiging. Typ 'yes' om door te gaan.
 # Wacht tot containers opnieuw zijn gestart en health check slaagt.
 ```
+
+Het script moet met `sudo` worden gestart, omdat het direct werkt met Docker volume mountpoints onder `/var/lib/docker/volumes/`.
 
 ### Na reset
 

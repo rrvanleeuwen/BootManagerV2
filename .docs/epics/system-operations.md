@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 **implemented in branch** `feature/pi-database-reset` on 2026-05-27. **Pending manual Raspberry Pi validation** before administrative completion.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27.
 
 ## Aanleiding
 
@@ -35,9 +35,7 @@ BootManager krijgt kleine, gecontroleerde operationele hulpmiddelen voor Raspber
 
 ### SYS-RESET-1: Gecontroleerde Database Reset Voor Pi Testinstallatie
 
-**Status:** 🔄 **Implemented in branch, pending manual Raspberry Pi validation.**
-
-**Branch:** `feature/pi-database-reset`
+**Status:** ✅ Geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op 2026-05-27.
 
 **Implementation Status (2026-05-27):**
 
@@ -47,6 +45,7 @@ Code, script, and documentation are complete. The following have been delivered:
 
 1. **`scripts/reset-database.sh`** (new)
    - Bash operator script for Raspberry Pi
+   - Moet expliciet met `sudo` worden gestart
    - Dynamically detects Docker volume name (not hardcoded)
    - Safety checks: Docker/Compose availability, docker-compose.yml present
    - User confirmation prompt before any destructive action
@@ -72,22 +71,22 @@ Code, script, and documentation are complete. The following have been delivered:
    - Reset procedure overview and scenarios
    - Cross-references to detailed docs
 
-**What Requires Manual Pi Validation (Pending):**
+**Pi Validatie Uitgevoerd (2026-05-27):**
 
-The following acceptance criteria require actual execution on a Raspberry Pi running Docker Compose to verify:
+Handmatige validatie is uitgevoerd op een Raspberry Pi Docker Compose installatie op `master`.
 
-- [ ] Operator can execute reset script without `docker compose down -v`
-- [ ] Script correctly detects Docker volume name (project-prefixed, not hardcoded)
-- [ ] Timestamped database backup is created successfully
-- [ ] Active database file is removed cleanly
-- [ ] Containers restart and reach healthy state
-- [ ] Health check returns HTTP 200 after restart
-- [ ] Login with `BOOTMANAGER_BOOTSTRAP_PASSWORD` works with fresh database
-- [ ] First login forces `/onboarding` flow
-- [ ] After onboarding, bootstrap password no longer works
-- [ ] New password set during onboarding works for subsequent logins
-- [ ] `.env`, Git checkout, attachments, logs remain untouched
-- [ ] Backup files persist at expected location with correct timestamp format
+- [x] Operator kon reset script uitvoeren zonder `docker compose down -v`
+- [x] Script detecteerde correct het Docker volume met project-prefix (`bootmanagerv2_bootmanager-db`)
+- [x] Timestamped database backup werd succesvol aangemaakt
+- [x] Actieve database file werd clean verwijderd
+- [x] Containers startten opnieuw en bereikten gezonde status
+- [x] Health check gaf opnieuw HTTP 200
+- [x] Login met `BOOTMANAGER_BOOTSTRAP_PASSWORD` werkte op de verse database
+- [x] Eerste login stuurde correct naar `/onboarding`
+- [x] Na onboarding werkte bootstrap-wachtwoord niet meer
+- [x] Nieuw wachtwoord werkte voor daaropvolgende login
+- [x] `.env`, Git checkout, attachments en logs bleven ongemoeid voor zover gevalideerd in deze resetflow
+- [x] Backupbestand bleef aanwezig met verwacht timestamp-formaat
 
 **Manual Validation Steps (to be performed on Pi):**
 
@@ -99,7 +98,7 @@ curl -i http://localhost:5000/health
 docker volume ls | grep bootmanager-db
 
 # 2. Execute reset script
-bash scripts/reset-database.sh
+sudo bash scripts/reset-database.sh
 # Type 'yes' at confirmation prompt
 # Observe container stop, database backup, removal, and restart
 
@@ -129,22 +128,20 @@ ls -la BootManager.Web/data/logbook-attachments 2>/dev/null || echo "No attachme
 docker volume ls | grep bootmanager-logs  # Should exist
 ```
 
-**Administrative Status:**
+**Administratieve Status:**
 
-This story is **not yet administratively complete**. After successful manual validation on Pi:
+Deze story is administratief afgerond:
 
-1. Run the manual validation steps above
-2. Document observations in session notes
-3. Update this epic with validation results
-4. Mark legacy coverage when validation confirms behavior
-5. Create PR with validation confirmation
+1. Implementatie is via PR #65 naar `master` gemerged.
+2. Raspberry Pi validatie is succesvol uitgevoerd op `master`.
+3. Reset, health check, bootstrap login, onboarding en nieuw wachtwoord zijn handmatig bevestigd.
 
-**Legacy Coverage Impact (Pending Validation):**
+**Legacy Coverage Impact:**
 
-- `US0.5 Herstel van toegang`: Status will remain `Replaced` after Pi validation confirms operational reset works
-- `US8.8 Back-up maken en herstellen`: Status remains `Open` (this is reset-backup only, not full restore)
-- `US8.14 Standaardinstellingen herstellen`: Status remains `Open` (CLI reset, no UI settings reset)
-- `US8.11 Systeemactie-logboek`: Status remains `Open` (logging not yet implemented)
+- `US0.5 Herstel van toegang`: `Replaced` en nu handmatig gevalideerd via operationele resetprocedure op de Pi
+- `US8.8 Back-up maken en herstellen`: blijft `Open` (dit is reset-backup, geen volledige restore)
+- `US8.14 Standaardinstellingen herstellen`: blijft `Open` (CLI reset, geen algemene UI-instellingen-reset)
+- `US8.11 Systeemactie-logboek`: blijft `Open` (logging nog niet geïmplementeerd)
 
 **User Story:** Als ontwikkelaar/helpdesk wil ik via een veilige onderhoudsprocedure de lokale BootManager database kunnen resetten, zodat ik een Raspberry Pi testinstallatie opnieuw door bootstrap login en onboarding kan laten lopen zonder handmatig Docker volumes of databasebestanden te verwijderen.
 

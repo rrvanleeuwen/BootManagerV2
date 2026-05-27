@@ -5,7 +5,7 @@
 # Purpose: Reset the BootManager SQLite database to a clean state without destroying
 #          Docker volumes, .env, Git checkout, attachments, or capture logs.
 #
-# Usage:   cd ~/BootManagerV2 && bash scripts/reset-database.sh
+# Usage:   cd ~/BootManagerV2 && sudo bash scripts/reset-database.sh
 #
 # WARNING: This script will disconnect the running application from its current database.
 #          The active database will be backed up with a timestamp before removal.
@@ -36,6 +36,15 @@ log_warn() {
 
 log_error() {
 	echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+# Require root because the script works directly with Docker volume mountpoints under /var/lib/docker/volumes.
+require_root() {
+	if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+		log_error "This script must be run with sudo."
+		log_error "Use: cd ~/BootManagerV2 && sudo bash scripts/reset-database.sh"
+		exit 1
+	fi
 }
 
 # Check prerequisites
@@ -267,6 +276,7 @@ main() {
 	log_info "Repository: BootManagerV2 on Raspberry Pi"
 	log_info ""
 
+	require_root
 	check_prerequisites
 	confirm_reset
 
