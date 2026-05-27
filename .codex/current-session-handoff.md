@@ -67,7 +67,7 @@ Next near-term story decision:
   - missing-moments and detail periods still aligned to the true departure moment;
   - print view showed departure and arrival consistently without duplicate date fields.
 - Legacy `US5.6 Logboekheader invullen` remains `Partial`, but now explicitly covers departure and arrival as full date+time in logbook and print context.
-- The digital logbook closeout flow for `US5.14 Logboek afronden bij aankomst` is now complete on branch `feature/logbook-arrival-closeout`.
+- The digital logbook closeout flow for `US5.14 Logboek afronden bij aankomst` was merged to `master` via PR #68 on 2026-05-27.
 - It was manually validated in the local dev environment:
   - an open trip without arrival time could be completed with a required arrival datetime;
   - an open trip with existing arrival time could be completed without data loss;
@@ -75,6 +75,9 @@ Next near-term story decision:
   - completed trips no longer produced missing-moments behavior;
   - print view remained usable after closeout.
 - Legacy `US5.14 Logboek afronden bij aankomst` is now functionally covered.
+- During implementation an EF migration mismatch and a local dev SQLite schema mismatch were found and fixed before merge.
+  - The broken intermediate migration state was never deployed to the Raspberry Pi.
+  - Because the Pi was offline long before this story and only pulls `master`, this specific local-dev migration issue is not expected there.
 - The next logical follow-up story inside the digital logbook is now route map and/or true PDF/CSV export.
 - For Raspberry Pi deployment hardening, `SYS-DEPLOY-LEAN-1` is now captured in `.docs/epics/system-operations.md` and should be brought back explicitly before the first deployment for a different boat owner / different Pi.
 - Broader system operations topics remain open for later:
@@ -114,12 +117,20 @@ Coverage rule:
 - Current branch is `master`.
 - PR #64 (`feature/register-owner-cleanup`) was merged on 2026-05-26 with merge commit `a441ca8`.
 - PR #65 (`feature/pi-database-reset`) was merged on 2026-05-27 with merge commit `c0b7590`.
-- Local `master` has been fast-forwarded from `origin/master` after PR #65.
+- PR #66 (`feature/logbook-trip-header-datetimes`) was merged on 2026-05-27 with merge commit `0a8c067`.
+- PR #67 (`feature/pi-minimal-deployment-checkout-story`) was merged on 2026-05-27 with merge commit `367ef17`.
+- PR #68 (`feature/logbook-arrival-closeout`) was merged on 2026-05-27 with merge commit `0a5ac57`.
+- Local `master` has been fast-forwarded from `origin/master` after PR #68 and the worktree is clean.
 - Follow-up master commit `1db5534 Document sudo requirement for Pi reset script` was pushed to `origin/master` after the Raspberry Pi test.
 - The user tested the reset flow on the Raspberry Pi after PR #65 and confirmed it worked.
 - The Raspberry Pi still only pulls `master`; never use it for feature-branch validation.
 - The Raspberry Pi must remain on/pull only `master`; update it only when the user is explicitly told the exact commands.
 - Recent relevant commits on `master`:
+  - `0a5ac57 Merge pull request #68 from rrvanleeuwen/feature/logbook-arrival-closeout`
+  - `5299b73 Add logbook trip closeout flow`
+  - `367ef17 Merge pull request #67 from rrvanleeuwen/feature/pi-minimal-deployment-checkout-story`
+  - `6f52c2a Add lean Pi deployment story`
+  - `0a8c067 Merge pull request #66 from rrvanleeuwen/feature/logbook-trip-header-datetimes`
   - `1db5534 Document sudo requirement for Pi reset script`
   - `c0b7590 Merge pull request #65 from rrvanleeuwen/feature/pi-database-reset`
   - `2bc30ca Add Pi database reset runbook and logbook epic updates`
