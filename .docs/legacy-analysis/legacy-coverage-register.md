@@ -31,7 +31,7 @@ Bij afronding van een story of PR:
 | US0.2 Registratie eerste eigenaar | Replaced | Vervangen door bootstrap owner + verplichte onboarding. Legacy `/register-owner` route en menu-item verwijderd via PR #64 op 2026-05-26. |
 | US0.3 Inloggen als eigenaar | Done | Wachtwoord-only login aanwezig. |
 | US0.4 Wachtwoord of pincode wijzigen | Done | Wachtwoord wijzigen in Settings is technisch aanwezig en handmatig positief getest op 2026-05-25. Pincode is bewust uit de normale BootManagerV2-flow verwijderd/vervangen. |
-| US0.5 Herstel van toegang | Replaced | Back-upcode/master-key vervangen door operationele resetprocedure. |
+| US0.5 Herstel van toegang | Replaced | Back-upcode/master-key vervangen door operationele resetprocedure via `scripts/reset-database.sh` (2026-05-27 implemented, pending Pi validation). Script: veilige database reset, dynamische volume detectie, timestamped backup, bevestigingsprompt, bootstrap onboarding hersteld. Validatie stappen gedocumenteerd in `.docs/epics/system-operations.md`. Status: Replaced (geïmplementeerd, wacht op Pi runtime test voor administratieve afronding). |
 | US0.6 Eigenaarprofiel beheren | Done | Wachtwoord wijzigen beschikbaar in Settings; bootgegevens wijzigen op 2026-05-25 via IVesselProfileService; eigenaargegevens (naam/e-mail) wijzigen in Settings geïmplementeerd op 2026-05-25 via IOwnerSettingsService met encrypted payload. Naam verplicht, e-mail optioneel. |
 
 ## Epic 1: Bootbeheer & Gebruikersbeheer
