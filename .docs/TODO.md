@@ -282,6 +282,7 @@
     - Control API blijft intern/lokaal bereikbaar, niet publiek. **Status:** hostbinding `127.0.0.1:5010:5010` is gevalideerd.
   - **Latere UI-story:** owner/admin knop "Systeem afsluiten" met bevestiging. Web mag niet rechtstreeks vrije shell-commando's uitvoeren; gebruik een beperkte lokale helper/service die Docker/OS veilig afsluit.
   - **Gebruikersmelding:** "Wacht tot de Raspberry Pi volledig uit is voordat je de stroom loshaalt."
+  - **Nieuwe latere system-operations story:** `SYS-DEPLOY-LEAN-1` moet opnieuw expliciet opgepakt worden zodra BootManager richting een eerste deployment voor een andere bootbezitter en dus een andere Pi gaat.
 
 - [ ] **Extended Heading Fields**
   - Deviation storage (magnetic correction)

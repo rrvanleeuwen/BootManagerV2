@@ -68,6 +68,7 @@ Next near-term story decision:
   - print view showed departure and arrival consistently without duplicate date fields.
 - Legacy `US5.6 Logboekheader invullen` remains `Partial`, but now explicitly covers departure and arrival as full date+time in logbook and print context.
 - The next logical follow-up story is now `US5.14 Logboek afronden bij aankomst`.
+- For Raspberry Pi deployment hardening, `SYS-DEPLOY-LEAN-1` is now captured in `.docs/epics/system-operations.md` and should be brought back explicitly before the first deployment for a different boat owner / different Pi.
 - Broader system operations topics remain open for later:
   - full backup/restore UI;
   - web factory reset;

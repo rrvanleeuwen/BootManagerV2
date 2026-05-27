@@ -156,3 +156,49 @@ Deze story is een kleine operator-slice en vervangt niet:
 - veilige shutdown vanuit UI/helper-service.
 
 Die onderwerpen blijven aparte systeembeheerstories.
+
+---
+
+### SYS-DEPLOY-LEAN-1: Pi Deployment Zonder Ontwikkel- En Documentatiebestanden
+
+**Status:** Goedgekeurd voor latere uitwerking op 2026-05-27.
+
+**User Story:** Als beheerder van de Raspberry Pi-installatie wil ik een deployment-checkout gebruiken zonder projectdocumentatie, legacy-analyse en andere niet-benodigde ontwikkelbestanden in de actieve Pi-werkmap, zodat de Pi alleen de minimaal benodigde BootManager-bestanden bevat voor build en runtime.
+
+**Scope:**
+
+- Bepalen en vastleggen welke repo-inhoud echt nodig is op de Pi voor `master`-pull, `docker compose build` en `docker compose up`.
+- Een concrete deployment-aanpak kiezen voor een “lean” Pi-checkout.
+- De gekozen aanpak documenteren en opneembaar maken in de bestaande Pi/deployment-runbooks.
+- Expliciet benoemen wat het effect is op werkmap-inhoud, update-commando’s en beheerbaarheid.
+
+**Buiten scope:**
+
+- Geen brede herstructurering van de hele repository.
+- Geen verandering aan functionele applicatiefeatures.
+- Geen onmiddellijke overstap naar een volledige CI/CD- of container-registry-oplossing, tenzij dat expliciet de gekozen aanpak wordt in een latere story.
+- Geen automatische verwijdering van bestanden op bestaande Pi-installaties zonder duidelijke operatorstappen.
+
+**Acceptatiecriteria:**
+
+- Er is een expliciete keuze gemaakt tussen bijvoorbeeld sparse-checkout, deploy-artifact of andere afgeslankte deployment-aanpak.
+- De documentatie legt uit wat wel en niet op de Pi terechtkomt.
+- De documentatie legt uit hoe een Pi-update daarna exact uitgevoerd moet worden.
+- Bekend is of `.md`/legacy-bestanden alleen uit de werkmap verdwijnen of ook echt niet meer via de deploymentstroom meegaan.
+- De gekozen aanpak past bij de afspraak dat de Pi alleen `master` volgt.
+
+**Legacy coverage impact:**
+
+- Geen directe legacy-user-story die hiermee volledig wordt afgevinkt.
+- Raakt het dichtst aan `US8.6 Raspberry Pi-configuratie beheren`, maar vooral als BootManagerV2-specifieke deployment-hardening.
+- Verwachte legacy-status: waarschijnlijk geen directe statuswijziging, hoogstens extra onderbouwing bij bestaande `Partial` system/deployment-dekking.
+
+**Handmatige testnotities:**
+
+- Verifiëren welke bestanden na eerste setup of update echt in de Pi-werkmap staan.
+- Verifiëren dat `docker compose build` en `docker compose up -d` blijven werken met de gekozen aanpak.
+- Verifiëren dat een update vanaf `master` nog reproduceerbaar is zonder handmatige repo-reparaties.
+
+**Planning-opmerking:**
+
+- Deze story moet opnieuw expliciet in beeld komen zodra BootManager richting een eerste deployment voor een andere bootbezitter en dus een andere Raspberry Pi gaat.
