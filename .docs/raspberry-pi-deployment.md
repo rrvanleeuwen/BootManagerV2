@@ -278,19 +278,50 @@ Als de UI vanaf andere apparaten bereikbaar moet zijn, moet de webapp luisteren 
 - Veilige shutdown-flow vanuit UI/helper-service.
 - Monitoring van opslag, RAM en containerstatus in de applicatie.
 
-## Reset bij vergeten wachtwoord
+## Onderhoud en Operaties
 
-Voor deze epic is er geen in-app recovery. Als de enige gebruiker niet meer kan inloggen:
+### Gecontroleerde Database Reset (Implemented, Pending Pi Validation)
 
-1. Zorg voor fysieke/admin toegang tot de Pi.
-2. Stop `BootManager.Web` en `BootManager.Tools.Ingest` of de Docker containers.
-3. Maak een backup van `/var/lib/bootmanager/bootmanager.db` of van het Docker volume.
-4. Hernoem of verwijder daarna pas de actieve SQLite database.
-5. Controleer dat `Bootstrap:DefaultPassword` opnieuw is ingesteld.
-6. Start BootManager opnieuw.
-7. Doorloop opnieuw de bootstrap login en onboarding.
+⚠️ **Status:** Script is implemented and documented. Manual validation on Raspberry Pi Docker Compose installation is pending (scheduled for next session after Pi testing).
 
-Deze reset wist de actieve applicatie-state in de database. Bewaar backups zolang je oude logboek- of meetdata nog nodig kunt hebben. Bootgegevens wijzigen na onboarding is later een aparte story.
+Voor test- en helpdesk-scenario's kun je de BootManager database veilig resetten zonder volledige reinstallatie.
+
+Via Docker Compose (aanbevolen):
+
+```bash
+cd ~/BootManagerV2
+bash scripts/reset-database.sh
+```
+
+Het script:
+- Vraagt bevestiging voordat iets wijzigt.
+- Stopt containers netjes.
+- Maakt timestamped backup van de database.
+- Verwijdert de actieve database file.
+- Start containers opnieuw en wacht tot health check OK is.
+
+Na reset:
+1. Log in met `BOOTMANAGER_BOOTSTRAP_PASSWORD`.
+2. Doorloop onboarding en kies nieuw wachtwoord.
+3. Bootstrap-wachtwoord werkt daarna niet meer.
+
+Wat wordt behouden:
+- `.env` configuratie
+- Git repository
+- Logboekbijlagen
+- Capture- en applicatielogs
+
+Wat wordt reset:
+- SQLite database inhoud (met timestamped backup)
+
+Voor volledige details en handmatige validatiestappen: zie `.docs/docker-deployment.md` sectie "Gecontroleerde Database Reset" en `.docs/epics/system-operations.md`.
+
+### Scenario's voor reset
+
+- Testinstallatie opnieuw doorlopen (onboarding, clean slate).
+- Vergeten wachtwoord (enige gebruiker kan niet meer inloggen).
+- Onboarding opnieuw starten na ontwikkelingen.
+- Helpdesk-ondersteuning: testgebruiker herstarten.
 
 ## Docker Compose Deployment
 

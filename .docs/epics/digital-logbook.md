@@ -1,7 +1,7 @@
 # Epic: Digitaal Logboek
 
-**Datum:** 2026-05-24 (latest: Draft-suggesties herzien voor veiligheid)
-**Status:** Voorgesteld, klaar voor eerste implementatie-slice
+**Datum:** 2026-05-24 (latest update: 2026-05-27)
+**Status:** Actief epic. Basislogboek en meerdere vervolgslices zijn geïmplementeerd; vervolgwerk richt zich nu op header/completion-polish, routekaart, passagekoppeling en export/statistieken.
 
 ---
 
@@ -24,6 +24,32 @@ De UI moet geen technisch datadashboard worden als eerste stap. Het primaire doe
 BootManager toont automatisch verzamelde bootdata in een logboekvorm die lijkt op het bestaande papieren/PDF-logboek, met ruimte voor handmatige aanvulling door de gebruiker.
 
 Automatische sensorwaarden blijven gekoppeld aan de onderliggende measurements. Handmatige invoer wordt apart opgeslagen en mag niet stilzwijgend door nieuwe sensorwaarden worden overschreven.
+
+## Huidige Stand
+
+De volgende onderdelen zijn inmiddels gerealiseerd:
+
+- Logbook trips en logbook entries als basis van het digitale logboek.
+- `/logbook` overzichtspagina met reisselectie en logboektabel.
+- Meetdatasuggesties voor logboekregels.
+- Read-only detailpagina per logboekregel, later herontworpen als accordeerhulpmiddel.
+- Browser-printweergave per reis, met alleen `Confirmed` regels.
+- `Draft` / `Confirmed` akkoordflow.
+- Missing moments banner met enkelvoudige en bulk-aanmaak van conceptregels.
+- Veiligere draft-suggesties: alleen meetdata binnen het logtijdvak.
+- Verwijderen van logboekregels.
+- Bijlagen per logboekregel, inclusief upload/download/verwijderen en teller in lijst/detail.
+- Responsive kaartweergave, client-side filters en mobiele infinite scroll/paging.
+- Accorderen direct vanuit de detailpagina.
+
+Belangrijkste open vervolgslices:
+
+- vertrek- en aankomstmoment met datum+tijd;
+- logboek afronden bij aankomst;
+- routekaart;
+- passagekoppeling;
+- rijkere statistieken;
+- echte PDF/CSV-export.
 
 ---
 
@@ -99,6 +125,8 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 
 ### Story 1 - Reis aanmaken en beheren
 
+**Status:** Grotendeels gerealiseerd.
+
 **Als** eigenaar  
 **wil ik** een reis kunnen aanmaken met vertrek-, aankomst- en bootgegevens  
 **zodat** logboekregels aan een duidelijke vaartocht gekoppeld zijn.
@@ -112,6 +140,8 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 
 ### Story 2 - Logboekoverzicht per reis
 
+**Status:** Gerealiseerd.
+
 **Als** gebruiker  
 **wil ik** per reis een overzicht zien in tabelvorm zoals het voorbeeldlogboek  
 **zodat** ik snel het verloop van de tocht kan lezen.
@@ -124,6 +154,8 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 - De layout is compact en geschikt voor laptop/tablet.
 
 ### Story 3 - Automatische uurregels uit meetdata
+
+**Status:** Deels gerealiseerd.
 
 **Als** gebruiker  
 **wil ik** dat BootManager automatisch per uur een logboekregel voorstelt  
@@ -141,6 +173,8 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 - Gebruiker kan automatische waarden overschrijven.
 
 ### Story 4 - Handmatige logboeknotities
+
+**Status:** Gerealiseerd.
 
 **Als** gebruiker  
 **wil ik** per logboekregel opmerkingen en zeilvoering kunnen invullen  
@@ -188,6 +222,8 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 
 ### Story 6 - Automatisch samenvatten per tijdvak
 
+**Status:** Deels gerealiseerd.
+
 **Als** gebruiker  
 **wil ik** dat BootManager per uur een compacte samenvatting maakt  
 **zodat** het logboek leesbaar blijft ondanks veel sensorregels.
@@ -202,6 +238,8 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 
 ### Story 7 - Bijlagen bij logboekregels
 
+**Status:** Gerealiseerd.
+
 **Als** gebruiker  
 **wil ik** bijlagen kunnen koppelen aan een logboekregel  
 **zodat** foto's, documenten of notities bij een moment in de tocht bewaard blijven.
@@ -214,6 +252,8 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 - UI laat zien of er bijlagen aanwezig zijn.
 
 ### Story 8 - Logboek print/PDF-layout
+
+**Status:** Deels gerealiseerd.
 
 **Als** gebruiker  
 **wil ik** het digitale logboek kunnen bekijken of exporteren in een layout die lijkt op het bestaande logboek  
@@ -228,9 +268,9 @@ Print/PDF-layout is belangrijk, maar niet nodig voor de eerste implementatie-sli
 
 ---
 
-## Aanbevolen Eerste Implementatie-Slice
+## Eerste Implementatie-Slice
 
-Start met Story 1, Story 2 en een eenvoudige basis van Story 3.
+Deze eerste slice is inmiddels gerealiseerd en later uitgebreid met meerdere vervolgslices.
 
 ### Scope
 
@@ -254,12 +294,12 @@ Start met Story 1, Story 2 en een eenvoudige basis van Story 3.
 
 ### Acceptatiecriteria Eerste Slice
 
-- Gebruiker kan een reis aanmaken en opnieuw openen.
-- Gebruiker ziet een logboektabel met de kolommen uit het voorbeeld.
-- Gebruiker kan per regel opmerkingen/zeilvoering invullen en bewaren.
-- Pagina is voorbereid om bestaande meetdata te gebruiken; daadwerkelijke automatische vulling mag in een vervolgslice.
-- Ontbrekende meetdata veroorzaakt lege cellen, geen foutmelding.
-- `dotnet build` slaagt.
+- Gebruiker kan een reis aanmaken en opnieuw openen. ✅
+- Gebruiker ziet een logboektabel met de kolommen uit het voorbeeld. ✅
+- Gebruiker kan per regel opmerkingen/zeilvoering invullen en bewaren. ✅
+- Pagina is voorbereid om bestaande meetdata te gebruiken; daadwerkelijke automatische vulling mag in een vervolgslice. ✅ Later uitgebreid met meetdatasuggesties.
+- Ontbrekende meetdata veroorzaakt lege cellen, geen foutmelding. ✅
+- `dotnet build` slaagt. ✅
 
 ---
 
@@ -332,10 +372,10 @@ Geïmplementeerd als browser-printvriendelijke HTML/CSS weergave.
 
 ---
 
-## Volgende slice: ontbrekende logmomenten zichtbaar maken
+## Slicevoorstel destijds: ontbrekende logmomenten zichtbaar maken
 
 **Datum:** 2026-05-23  
-**Status:** Voorstel voor eerstvolgende logboekstap
+**Status:** Inmiddels gerealiseerd in latere slices.
 
 ### Wat bestaat al
 - `Draft`/`Confirmed` akkoordflow voor logboekregels.
@@ -1241,6 +1281,58 @@ Gebruikers kunnen een Draft-logboekregel direct accorderen vanuit de detailpagin
   - Geïnjectioneerd: `ILogbookService LogbookService`.
   - State: `_confirming` (bool), `_confirmationError` (string?).
   - Method: `OnConfirmEntry()` – aanroepen service, herladen detail, fout afhandelen.
+
+---
+
+## Voorgestelde vervolgstorie: vertrek- en aankomstmoment met datum en tijd
+
+**Datum:** 2026-05-27  
+**Status:** Voorgesteld
+
+**User story:** Als eigenaar wil ik bij een logboekreis niet alleen een startdatum en einddatum, maar een volledig vertrek- en aankomstmoment met datum en tijd kunnen vastleggen, zodat de reisadministratie aansluit op de werkelijke situatie aan boord en logboekregels correct ten opzichte van vertrek en aankomst kunnen worden geïnterpreteerd.
+
+**Aanleiding:**
+
+- In de huidige logboekflow zijn start en eind van een tocht te grof als alleen datum.
+- Aan boord is het exacte tijdstip relevant voor vertrek, aankomst, loginterval en interpretatie van logboekregels.
+- De bestaande logboek- en detailflow gebruikt al tijdvakken en lokale boordtijd, dus de reisheader moet daar semantisch op aansluiten.
+
+**Scope:**
+
+- Logboekreis moet vertrek en aankomst als datum+tijd kunnen opslaan en bewerken.
+- De aanmaak- en bewerk-UI voor een reis moet invoer van datum en tijd ondersteunen voor beide velden.
+- Bestaande weergaven van reisheader en gerelateerde logboekcontext moeten het vertrek- en aankomstmoment duidelijk tonen.
+- Logica die `DepartureUtc` of aankomstmoment gebruikt voor logtijdvakken of reiscontext moet met het volledige tijdstip blijven werken.
+- Bestaande opgeslagen reizen met alleen datumgebaseerde waarden moeten veilig naar het nieuwe model gemigreerd of compatibel ingelezen worden.
+
+**Buiten scope:**
+
+- Geen nieuwe automatische berekening van aankomst of reisduur buiten wat nu al bestaat.
+- Geen uitbreiding van logboekstatistieken, motoruren, brandstofverbruik of passagekoppeling.
+- Geen timezone-keuze of meervoudige tijdzones per reis.
+- Geen wijziging aan losse logboekregel-tijdstippen buiten de impact van het verbeterde reismoment.
+
+**Acceptatiecriteria:**
+
+- Bij het aanmaken van een reis kan de gebruiker zowel datum als tijd invoeren voor vertrek.
+- Bij het aanmaken van een reis kan de gebruiker zowel datum als tijd invoeren voor aankomst, of dit veld leeg laten als de reis nog loopt.
+- Bij het bewerken van een reis blijven vertrek- en aankomstmoment als datum+tijd wijzigbaar.
+- Reisheader en relevante detailweergaven tonen datum+tijd in plaats van alleen datum waar dit functioneel nodig is.
+- Logboekdetail en missing-moments-logica blijven correct werken wanneer vertrek niet op `00:00` ligt.
+- `dotnet build` slaagt.
+
+**Legacy coverage impact:**
+
+- `US5.6 Logboekheader invullen`: gaat richting betere dekking; status blijft waarschijnlijk `Partial` totdat de volledige legacy-header compleet is.
+- `US5.14 Logboek afronden bij aankomst`: sluit beter aan doordat een expliciet aankomstmoment correct kan worden vastgelegd, maar die story blijft inhoudelijk open.
+- `US5.3 Motoruren en brandstof in header`: ongewijzigd; deze story raakt alleen datum/tijd van vertrek en aankomst.
+
+**Handmatige testnotities:**
+
+- Maak een nieuwe reis aan met vertrek op een niet-heel uur, bijvoorbeeld `2026-05-27 14:35`.
+- Controleer dat dit moment na opslaan correct zichtbaar blijft in de UI.
+- Voeg logboekregels toe en controleer dat detailperiodes en missing-moments-berekening vanaf het juiste vertrekmoment werken.
+- Werk de reis later bij met een aankomstmoment inclusief tijd en controleer dat ook dit correct zichtbaar en persistent is.
 
 ---
 

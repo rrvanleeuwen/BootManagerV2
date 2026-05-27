@@ -210,10 +210,12 @@ Volumes worden automatisch aangemaakt door Docker.
 
 Op de host zijn ze meestal hier terug te vinden:
 ```
-/var/lib/docker/volumes/bootmanager-db/_data/
-/var/lib/docker/volumes/bootmanager-attachments/_data/
-/var/lib/docker/volumes/bootmanager-logs/_data/
+/var/lib/docker/volumes/<project>_bootmanager-db/_data/
+/var/lib/docker/volumes/<project>_bootmanager-attachments/_data/
+/var/lib/docker/volumes/<project>_bootmanager-logs/_data/
 ```
+
+(Vervang `<project>` door je Docker Compose projectnaam, meestal de directoryaam in lowercase.)
 
 De bijlagenmap volgt de huidige applicatiestandaard `data/logbook-attachments`. Omdat de container met `/app` als werkmap draait, wordt dit gemount als `/app/data/logbook-attachments`.
 
@@ -624,6 +626,126 @@ docker stats
    ```bash
    docker compose logs -f
    ```
+
+## Gecontroleerde Database Reset (Testinstallatie)
+
+Voor test- en helpdeskscenario's kun je de BootManager database veilig resetten zonder Docker Compose volumes of Git repo aan te raken.
+
+### Wanneer gebruiken
+
+- Testinstallatie terug naar eerste-start toestand zetten.
+- Onboarding opnieuw doorlopen met schone data.
+- Bestaande logboekgegevens verwijderen zonder volledige reinstallatie.
+- Helpdesk-ondersteuning voor gebruikerstest herstarten.
+
+### Wat gebeurt er
+
+Het reset-script:
+1. Stopt containers netjes (`docker compose stop`).
+2. Maakt een timestamped backup van de huidige database.
+3. Verwijdert de actieve SQLite database file.
+4. Start containers opnieuw.
+5. BootManager.Web past migraties toe en creëert bootstrap owner opnieuw.
+
+### Wat wordt behouden
+
+- `.env` configuratie
+- Git repository status (`master` branch)
+- Docker images en build cache
+- Logboekbijlagen (`bootmanager-attachments` volume)
+- Capture en applicatielogs (`bootmanager-logs` volume)
+- Alle Docker volumes (alleen inhoud van `bootmanager-db` wordt vervangen)
+
+### Procedure op Raspberry Pi
+
+Op de Pi, via SSH of lokale shell:
+
+```bash
+# 1. Ga naar repo root
+cd ~/BootManagerV2
+
+# 2. Voer reset script uit
+bash scripts/reset-database.sh
+
+# 3. Script vraagt bevestiging. Typ 'yes' om door te gaan.
+# Wacht tot containers opnieuw zijn gestart en health check slaagt.
+```
+
+### Na reset
+
+Controleer container status:
+```bash
+docker compose ps
+```
+
+Controleer gezondheidscheck:
+```bash
+curl -i http://localhost:5000/health
+```
+
+Verwacht antwoord:
+```
+HTTP/1.1 200 OK
+{"status":"ok"}
+```
+
+Toegang tot applicatie:
+```
+http://localhost:5000  (lokaal op Pi)
+http://<pi-hostname>:5000  (van ander apparaat)
+```
+
+Login:
+1. Gebruik `BOOTMANAGER_BOOTSTRAP_PASSWORD` (uit `.env` file)
+2. Je wordt doorgestuurd naar `/onboarding`
+3. Vul eigenaar- en installatie-gegevens in
+4. Kies een nieuw permanente wachtwoord
+5. Na onboarding werkt bootstrap-wachtwoord niet meer
+
+### Backed-up databases
+
+Alle vorige databases worden bewaard met een timestamp. De locatie varieert afhankelijk van je Docker Compose project:
+
+```bash
+# Bepaal de werkelijke volume naam uit docker compose config
+PROJECT_NAME=$(docker compose config 2>/dev/null | grep -m1 "name:" | sed 's/.*name: //' | xargs) || PROJECT_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+VOLUME="${PROJECT_NAME}_bootmanager-db"
+
+# Haal het volume mountpoint op
+VOLUME_PATH=$(docker volume inspect "$VOLUME" -f '{{.Mountpoint}}' 2>/dev/null)
+
+# Bekijk backup bestanden
+ls -lh "$VOLUME_PATH"/bootmanager.db*
+```
+
+Backup-naamformaat: `bootmanager.db.backup.YYYYMMDD_HHMMSS`
+
+### Waarschuwing
+
+- Na reset zijn alle gebruikers, instellingen en logboekgegevens uit de database verwijderd.
+- Dit kan niet ongedaan worden gemaakt via de UI.
+- Backup files kunnen handmatig ter plekke worden gerehabiliteerd als noodprocedure, maar dat valt buiten standaard ondersteuning.
+
+### Problemen
+
+**Health check faalt na reset:**
+```bash
+# Controleer logs
+docker compose logs bootmanager-web | tail -50
+
+# Containers opnieuw starten
+docker compose restart
+```
+
+**Database backup weg:**
+- Backups bevinden zich in de Docker volume directory van het actieve Compose-project, bijvoorbeeld `/var/lib/docker/volumes/<project>_bootmanager-db/_data/`
+- Bepaal de werkelijke locatie via `docker volume inspect "$VOLUME" -f '{{.Mountpoint}}'`
+- Deze worden niet verwijderd door het reset script, alleen de actieve `bootmanager.db` file
+
+**Onboarding loopt vast:**
+- Controleer applicatie logs: `docker compose logs bootmanager-web`
+- Controleer dat BOOTMANAGER_BOOTSTRAP_PASSWORD is ingesteld in `.env`
+- Voer reset opnieuw uit
 
 ## Nog te onderzoeken
 

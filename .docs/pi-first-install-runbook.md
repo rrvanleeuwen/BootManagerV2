@@ -589,30 +589,72 @@ Niet in de eerste installatieronde:
 - Docker image registry;
 - echte NMEA hardware koppelen.
 
-## 18a. Reset bij vergeten wachtwoord
+## 18a. Gecontroleerde Database Reset
 
 Er is geen normale pincode-, recovery- of master-key flow meer in de UI.
 
-Als de enige gebruiker niet meer kan inloggen:
+### Scenario's voor database reset
 
-1. Zorg voor SSH/admin toegang tot de Pi.
-2. Stop containers:
-   ```bash
-   docker compose stop
-   ```
-3. Maak eerst een backup van de database in het Docker volume.
-4. Hernoem of verwijder daarna de actieve SQLite database.
-5. Controleer dat `.env` nog een geldig `BOOTMANAGER_BOOTSTRAP_PASSWORD` bevat.
-6. Start opnieuw:
-   ```bash
-   docker compose up -d
-   ```
-7. Doorloop opnieuw eerste login en onboarding.
+- Testinstallatie opnieuw doorlopen met schone database.
+- Vergeten wachtwoord: enige gebruiker kan niet meer inloggen.
+- Onboarding opnieuw starten na ontwikkelingen.
+- Helpdesk-ondersteuning: testgebruiker herstarten.
+
+### Automatische reset procedure
+
+Gebruik het gecontroleerde reset-script:
+
+```bash
+cd ~/BootManagerV2
+bash scripts/reset-database.sh
+```
+
+Het script:
+1. Vraagt bevestiging (typ 'yes' om door te gaan).
+2. Stopt containers netjes.
+3. Maakt timestamped backup van huidige database.
+4. Verwijdert actieve database file.
+5. Start containers opnieuw.
+6. Wacht tot health check OK is.
+
+Na reset:
+
+1. Log in met `BOOTMANAGER_BOOTSTRAP_PASSWORD` (uit `.env`).
+2. Doorloop onboarding en kies nieuw wachtwoord.
+3. Bootstrap-wachtwoord werkt daarna niet meer.
+4. Normale login met het nieuwe wachtwoord wordt actief.
+
+### Wat wordt behouden
+
+- `.env` configuratie
+- Git repository
+- Logboekbijlagen
+- Capture- en applicatielogs
+- Docker volumes (behalve database inhoud)
+
+### Backup-locatie
+
+Vorige databases worden timestamped bewaard. De locatie varieert afhankelijk van je Docker Compose project:
+
+```bash
+# Bepaal de werkelijke volume naam uit docker compose config
+PROJECT_NAME=$(docker compose config 2>/dev/null | grep -m1 "name:" | sed 's/.*name: //' | xargs) || PROJECT_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+VOLUME="${PROJECT_NAME}_bootmanager-db"
+
+# Haal het volume mountpoint op
+VOLUME_PATH=$(docker volume inspect "$VOLUME" -f '{{.Mountpoint}}' 2>/dev/null)
+
+# Bekijk backup bestanden
+ls -lh "$VOLUME_PATH"/bootmanager.db*
+```
+
+Meer informatie: zie `.docs/docker-deployment.md` sectie "Gecontroleerde Database Reset".
 
 Let op:
 
 - Dit is een operationele factory-reset van de actieve database.
-- Bewaar backups als logboek- of meetdata nog nodig kan zijn.
+- Database inhoud en gebruikersgegevens gaan verloren.
+- Backups blijven beschikbaar voor noodgebruik.
 - Bootgegevens wijzigen na onboarding is later een aparte story.
 
 Die onderwerpen komen pas nadat de basis betrouwbaar draait.
