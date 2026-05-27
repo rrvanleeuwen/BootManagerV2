@@ -441,6 +441,7 @@ De basis voor het eindgebruikerslogboek is geïmplementeerd:
 - Meetdatasuggesties op basis van bestaande measurements.
   - **2026-05-24:** Draft-regels gebruiken nu ALLEEN meetdata BINNEN het logtijdvak (kritieke veiligheidsfix).
   - Handmatige regels behouden "laatst bekende vóór logmoment" voor gebruikergemak.
+- **2026-05-27:** trip-header ondersteunt nu vertrek- en aankomstmoment als datum+tijd in logboek en printweergave.
 - Read-only detailpagina per logboekregel met samples en samenvattingen.
   - Toont opgeslagen waarden, periode-samples en bronmetingen apart.
   - Lege Draft-regels tonen correct "Geen data" wanneer geen meetdata in logtijdvak.

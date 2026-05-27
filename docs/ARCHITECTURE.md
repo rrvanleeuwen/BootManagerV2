@@ -1,9 +1,9 @@
 # BootManager V2 - Technische Architectuur & Procesdocumentatie
 
-**Laatste update:** maart 2026  
-**Status:** Werk in uitvoering (feature/NetwerkData/Interpretation)  
+**Laatste update:** 2026-05-27  
+**Status:** Actieve architectuurdocumentatie; meerdere kernslices zijn inmiddels geïmplementeerd op `master`  
 **Target Framework:** .NET 8  
-**Platform:** Blazor WebAssembly / ASP.NET Core
+**Platform:** Blazor Web App met interactieve server-rendering / ASP.NET Core
 
 ---
 
@@ -44,9 +44,9 @@ BootManager V2 is een .NET 8-applicatie gebouwd met **Blazor** voor het beheren 
 | Component | Technologie |
 |-----------|-------------|
 | Framework | .NET 8 |
-| Web | Blazor WebAssembly / ASP.NET Core |
+| Web | Blazor Web App met interactieve server-rendering / ASP.NET Core |
 | ORM | Entity Framework Core 8 |
-| Database | SQL Server / PostgreSQL |
+| Database | SQLite |
 | Authentication | JWT Bearer tokens |
 | API-style | RESTful (JSON) |
 | Dependency Injection | Microsoft.Extensions.DependencyInjection |

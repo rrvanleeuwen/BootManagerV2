@@ -280,9 +280,9 @@ Als de UI vanaf andere apparaten bereikbaar moet zijn, moet de webapp luisteren 
 
 ## Onderhoud en Operaties
 
-### Gecontroleerde Database Reset (Implemented, Pending Pi Validation)
+### Gecontroleerde Database Reset (Implemented, Pi Validation Completed)
 
-⚠️ **Status:** Script is implemented and documented. Manual validation on Raspberry Pi Docker Compose installation is pending (scheduled for next session after Pi testing).
+✅ **Status:** Script is geïmplementeerd, gedocumenteerd en handmatig gevalideerd op een Raspberry Pi Docker Compose installatie op `master` op 2026-05-27.
 
 Voor test- en helpdesk-scenario's kun je de BootManager database veilig resetten zonder volledige reinstallatie.
 

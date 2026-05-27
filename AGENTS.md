@@ -67,6 +67,13 @@ When a BootManagerV2 feature is completed, Codex must update
 the story as administratively complete. If coverage is partial, keep the status
 as `Partial` and record what remains open.
 
+Before commit/push/PR, Codex must also proactively check which related project
+documents now need status updates because of the completed story. This includes
+the relevant `.docs/epics/*.md` file, `.docs/TODO.md`, handoff documents and
+other directly affected status-tracking docs. Codex should update every
+reasonably afvinkbare/admin-complete status on its own; the user should not
+need to ask for this cleanup explicitly.
+
 For implementation work, Codex must not jump directly from branch creation to a
 Copilot prompt. After creating or selecting the feature branch, Codex must first
 formulate a concise user story together with scope, out-of-scope items,

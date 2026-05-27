@@ -36,6 +36,7 @@ prompts, review en documentatie.
   - of echt nieuwe scope is.
 - Daarna formuleert Codex pas een voorstel, Copilot-prompt of vervolgstap, passend bij de huidige BootManagerV2-architectuur en roadmap.
 - Bij afronding van functionaliteit werkt Codex `legacy-coverage-register.md` bij voor alle geraakte legacy US-nummers. Een story is pas administratief afgerond als de legacy-dekking is gecontroleerd en, waar nodig, afgevinkt of als `Partial` bijgewerkt.
+- Vóór commit/push/PR controleert Codex proactief welke story-, epic-, TODO-, handoff- en coverage-statussen door de afgeronde wijziging afvinkbaar of bijwerkbaar zijn, en werkt die zelf bij. De gebruiker hoeft Codex daar niet expliciet aan te herinneren.
 
 ## User story vóór Copilot-prompt
 
@@ -67,6 +68,7 @@ prompts, review en documentatie.
 
 - Als de gebruiker zegt dat een user story goed is, dan werkt Codex documentatie bij waar nodig,
   commit de afgeronde wijzigingen, pusht de branch en maakt een PR.
+- "Documentatie bijwerken waar nodig" betekent minimaal: alle direct geraakte epic-statussen, TODO-statussen, handoff-statussen en legacy coverage-items nalopen en bijwerken voordat Codex de wijziging commitwaardig of PR-klaar noemt.
 - Als de gebruiker daarna meldt dat de PR gemerged is, dan controleert Codex de PR, schakelt lokaal
   terug naar `master`, haalt de laatste `master` op en controleert dat de werkmap schoon is.
 - Daarna gaat Codex automatisch door naar de volgende actie:

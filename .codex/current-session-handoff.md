@@ -60,7 +60,7 @@ Current completed stories:
 
 Next near-term story decision:
 
-- The digital logbook trip-header improvement for `vertrek- en aankomstmoment met datum en tijd` is now complete on branch `feature/logbook-trip-header-datetimes`.
+- The digital logbook trip-header improvement for `vertrek- en aankomstmoment met datum en tijd` was merged to `master` via PR #66 on 2026-05-27.
 - It was manually validated in the local dev environment:
   - trip creation with a non-round departure time persisted correctly;
   - later arrival time persisted correctly;

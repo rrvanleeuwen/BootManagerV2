@@ -611,14 +611,14 @@ Later kan een aparte story een nettere factory-reset of owner-reset command toev
 4. ✅ US5: vessel profile datalaag. (2026-05-24)
 5. ✅ US4: onboardingformulier dat owner + vessel + wachtwoord afrondt. (2026-05-24)
 6. ✅ US6: docs/deployment-config. (2026-05-25)
-7. 🔜 US7: legacy Register Owner route en menu verwijderen. (vastgelegd 2026-05-26)
+7. ✅ US7: legacy Register Owner route en menu verwijderen. (2026-05-26)
 
 US4 hangt af van US5 voor opslag van bootgegevens. Daarom is het praktisch om US5 vóór of samen met US4 te implementeren, maar de user-facing flow blijft US4.
 
-Alle core user stories zijn nu voltooid. De onboarding-flow is operationeel en helpt de eindgebruiker door de eerste-start setup. US6 heeft de documentatie en deployment-config bijgewerkt voor Docker, Raspberry Pi en eerste installatie. US7 is een kleine bugfix-story om resterende legacy registratie-UI te verwijderen.
+Alle core user stories zijn nu voltooid. De onboarding-flow is operationeel en helpt de eindgebruiker door de eerste-start setup. US6 heeft de documentatie en deployment-config bijgewerkt voor Docker, Raspberry Pi en eerste installatie. US7 heeft de resterende legacy registratie-UI verwijderd.
 
 ## Volgende Keer Hier Starten
 
 De First-Run Onboarding & Auth Simplification epic is deploymentklaar. De eerste Raspberry Pi 4 Docker Compose deployment-smoke-test is op 2026-05-26 geslaagd met lokale `.env`, ARM64 Docker build, Web healthcheck, draaiende Ingest-container en geslaagde reboot-test.
 
-Open voor deze epic: US7 uitvoeren, omdat de Raspberry Pi test aantoonde dat de oude `/register-owner` flow nog via het menu zichtbaar is. Daarna ligt een logische vervolgstap buiten deze epic, bijvoorbeeld `SYS-RESET-1`, de echte boot UDP-broadcasttest met YDEN-03 of een volgende roadmap-story.
+Open voor deze epic: geen verdere kernstories. Logische vervolgstappen liggen nu buiten deze epic, bijvoorbeeld `SYS-RESET-1` (inmiddels ook afgerond), de echte boot UDP-broadcasttest met YDEN-03 of een volgende roadmap-story.

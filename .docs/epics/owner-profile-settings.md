@@ -198,7 +198,7 @@ Open voor latere hardening indien nodig:
 
 ### US4: Settings Pagina Ordenen Voor Beheer
 
-**Status:** Goedgekeurd voor implementatie op branch `feature/settings-page-organization` op 2026-05-25.
+**Status:** ✅ Geïmplementeerd op 2026-05-25.
 
 **User story:** Als eigenaar wil ik dat de Settings-pagina is gegroepeerd in een uitklapbare accordion met Account, Boot en Operationeel, zodat ik instellingen snel kan vinden zonder door een lange pagina met losse formulieren te moeten scrollen.
 
