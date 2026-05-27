@@ -60,10 +60,14 @@ Current completed stories:
 
 Next near-term story decision:
 
-- The next logical story is now the digital logbook trip-header improvement already captured in `.docs/epics/digital-logbook.md`:
-  `vertrek- en aankomstmoment met datum en tijd`.
-- This fits legacy `US5.6 Logboekheader invullen` and supports later `US5.14 Logboek afronden bij aankomst`.
-- The digital logbook epic itself was refreshed during this session so it better reflects already implemented slices versus still-open follow-up work.
+- The digital logbook trip-header improvement for `vertrek- en aankomstmoment met datum en tijd` is now complete on branch `feature/logbook-trip-header-datetimes`.
+- It was manually validated in the local dev environment:
+  - trip creation with a non-round departure time persisted correctly;
+  - later arrival time persisted correctly;
+  - missing-moments and detail periods still aligned to the true departure moment;
+  - print view showed departure and arrival consistently without duplicate date fields.
+- Legacy `US5.6 Logboekheader invullen` remains `Partial`, but now explicitly covers departure and arrival as full date+time in logbook and print context.
+- The next logical follow-up story is now `US5.14 Logboek afronden bij aankomst`.
 - Broader system operations topics remain open for later:
   - full backup/restore UI;
   - web factory reset;

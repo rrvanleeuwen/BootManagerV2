@@ -44,7 +44,6 @@ De volgende onderdelen zijn inmiddels gerealiseerd:
 
 Belangrijkste open vervolgslices:
 
-- vertrek- en aankomstmoment met datum+tijd;
 - logboek afronden bij aankomst;
 - routekaart;
 - passagekoppeling;
@@ -1284,21 +1283,22 @@ Gebruikers kunnen een Draft-logboekregel direct accorderen vanuit de detailpagin
 
 ---
 
-## Voorgestelde vervolgstorie: vertrek- en aankomstmoment met datum en tijd
+## Slice: bestaande vertrek- en aankomstdatum uitgebreid naar datum+tijd (2026-05-27)
 
 **Datum:** 2026-05-27  
-**Status:** Voorgesteld
+**Status:** Geïmplementeerd en handmatig gevalideerd
 
-**User story:** Als eigenaar wil ik bij een logboekreis niet alleen een startdatum en einddatum, maar een volledig vertrek- en aankomstmoment met datum en tijd kunnen vastleggen, zodat de reisadministratie aansluit op de werkelijke situatie aan boord en logboekregels correct ten opzichte van vertrek en aankomst kunnen worden geïnterpreteerd.
+**User story:** Als eigenaar wil ik dat de huidige vertrek- en aankomstdatum in de logboek trip-header wordt uitgebreid naar volledige datum- en tijdregistratie, zodat ik per reis het echte vertrek- en aankomstmoment kan vastleggen en logboekregels correct ten opzichte van vertrek en aankomst kunnen worden geïnterpreteerd.
 
 **Aanleiding:**
 
-- In de huidige logboekflow zijn start en eind van een tocht te grof als alleen datum.
+- In de huidige logboekflow bestaan vertrek en aankomst al, maar nog te grof als alleen datum.
 - Aan boord is het exacte tijdstip relevant voor vertrek, aankomst, loginterval en interpretatie van logboekregels.
 - De bestaande logboek- en detailflow gebruikt al tijdvakken en lokale boordtijd, dus de reisheader moet daar semantisch op aansluiten.
 
 **Scope:**
 
+- De bestaande datum-only velden voor vertrek en aankomst worden aangepast naar datum+tijd, niet vervangen door parallelle nieuwe velden.
 - Logboekreis moet vertrek en aankomst als datum+tijd kunnen opslaan en bewerken.
 - De aanmaak- en bewerk-UI voor een reis moet invoer van datum en tijd ondersteunen voor beide velden.
 - Bestaande weergaven van reisheader en gerelateerde logboekcontext moeten het vertrek- en aankomstmoment duidelijk tonen.
@@ -1317,22 +1317,32 @@ Gebruikers kunnen een Draft-logboekregel direct accorderen vanuit de detailpagin
 - Bij het aanmaken van een reis kan de gebruiker zowel datum als tijd invoeren voor vertrek.
 - Bij het aanmaken van een reis kan de gebruiker zowel datum als tijd invoeren voor aankomst, of dit veld leeg laten als de reis nog loopt.
 - Bij het bewerken van een reis blijven vertrek- en aankomstmoment als datum+tijd wijzigbaar.
+- Er ontstaan geen dubbele of concurrerende velden voor vertrek of aankomst in de trip-header.
 - Reisheader en relevante detailweergaven tonen datum+tijd in plaats van alleen datum waar dit functioneel nodig is.
 - Logboekdetail en missing-moments-logica blijven correct werken wanneer vertrek niet op `00:00` ligt.
 - `dotnet build` slaagt.
 
+**Implementatie:**
+
+- Trip-selectie en reisformulier in `/logbook` tonen vertrek en aankomst nu als datum+tijd.
+- De logboek-UI gebruikt lokale boordtijd voor invoer en weergave; intern blijft opslag UTC via `BoordtijdHelper`.
+- De bestaande datum-only betekenis van vertrek en aankomst is behouden; er zijn geen parallelle extra velden toegevoegd.
+- Relevante print-headerweergaven tonen vertrek en aankomst nu ook als datum+tijd.
+
 **Legacy coverage impact:**
 
-- `US5.6 Logboekheader invullen`: gaat richting betere dekking; status blijft waarschijnlijk `Partial` totdat de volledige legacy-header compleet is.
+- `US5.6 Logboekheader invullen`: blijft `Partial`, maar de dekking is uitgebreid met vertrek- en aankomstmoment als datum+tijd in de trip-header en printcontext.
 - `US5.14 Logboek afronden bij aankomst`: sluit beter aan doordat een expliciet aankomstmoment correct kan worden vastgelegd, maar die story blijft inhoudelijk open.
 - `US5.3 Motoruren en brandstof in header`: ongewijzigd; deze story raakt alleen datum/tijd van vertrek en aankomst.
 
-**Handmatige testnotities:**
+**Verificatie:**
 
 - Maak een nieuwe reis aan met vertrek op een niet-heel uur, bijvoorbeeld `2026-05-27 14:35`.
 - Controleer dat dit moment na opslaan correct zichtbaar blijft in de UI.
 - Voeg logboekregels toe en controleer dat detailperiodes en missing-moments-berekening vanaf het juiste vertrekmoment werken.
 - Werk de reis later bij met een aankomstmoment inclusief tijd en controleer dat ook dit correct zichtbaar en persistent is.
+- Open de afdrukweergave en controleer dat vertrek en aankomst daar correct en zonder dubbele datumvelden zichtbaar zijn.
+- `dotnet build` slaagt zonder warnings of errors.
 
 ---
 
