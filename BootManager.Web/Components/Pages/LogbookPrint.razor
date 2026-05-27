@@ -31,7 +31,11 @@ else
     <div class="print-header mb-3">
         <h4 class="mb-1">Scheepsdagboek — @_trip.Name</h4>
         <div class="row g-1 small">
-            <div class="col-auto"><strong>Datum:</strong> @BoordtijdHelper.NaarLokaal(_trip.DepartureUtc).ToString("dd-MM-yyyy")</div>
+            <div class="col-auto"><strong>Vertrek:</strong> @BoordtijdHelper.NaarLokaal(_trip.DepartureUtc).ToString("dd-MM-yyyy HH:mm")</div>
+            @if (_trip.ArrivalUtc.HasValue)
+            {
+                <div class="col-auto ms-3"><strong>Aankomst:</strong> @BoordtijdHelper.NaarLokaal(_trip.ArrivalUtc.Value).ToString("dd-MM-yyyy HH:mm")</div>
+            }
             @if (!string.IsNullOrWhiteSpace(_trip.VesselName))
             {
                 <div class="col-auto ms-3"><strong>Boot:</strong> @_trip.VesselName</div>

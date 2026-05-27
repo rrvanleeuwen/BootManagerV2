@@ -36,7 +36,7 @@ else
                         <option value="">— kies een reis —</option>
                         @foreach (var t in _trips)
                         {
-                            <option value="@t.Id" selected="@(_selectedTrip?.Id == t.Id)">@t.Name (@t.DepartureUtc.ToString("dd-MM-yyyy"))</option>
+                            <option value="@t.Id" selected="@(_selectedTrip?.Id == t.Id)">@t.Name (@BoordtijdHelper.NaarLokaal(t.DepartureUtc).ToString("dd-MM-yyyy HH:mm"))</option>
                         }
                     </select>
                 </div>
@@ -52,12 +52,12 @@ else
                             <InputText class="form-control form-control-sm" @bind-Value="_tripForm.Name" />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Vertrek (UTC)</label>
-                            <InputDate class="form-control form-control-sm" @bind-Value="_tripForm.DepartureUtc" />
+                            <label class="form-label">Vertrek</label>
+                            <InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_tripForm.DepartureDateTimeLocal" />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Aankomst (UTC)</label>
-                            <InputDate class="form-control form-control-sm" @bind-Value="_tripForm.ArrivalUtcInput" />
+                            <label class="form-label">Aankomst</label>
+                            <InputDate Type="InputDateType.DateTimeLocal" class="form-control form-control-sm" @bind-Value="_tripForm.ArrivalDateTimeLocal" />
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Vertrekhaven</label>
@@ -1400,8 +1400,21 @@ else
     private class TripFormModel
     {
         public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Vertrek: lokale boordtijd voor weergave en invoer. Wordt bij opslaan naar UTC geconverteerd.
+        /// </summary>
+        public DateTime DepartureDateTimeLocal { get; set; } = BoordtijdHelper.NaarLokaal(DateTime.UtcNow).Date;
+
+        /// <summary>
+        /// Aankomst: lokale boordtijd voor weergave en invoer. Null als reis nog loopt. Wordt bij opslaan naar UTC geconverteerd.
+        /// </summary>
+        public DateTime? ArrivalDateTimeLocal { get; set; }
+
+        // Interne UTC-opslag (niet direct gebonden in formulier)
         public DateTime DepartureUtc { get; set; } = DateTime.UtcNow.Date;
         public DateTime? ArrivalUtcInput { get; set; }
+
         public string? DeparturePort { get; set; }
         public string? DestinationPort { get; set; }
         public string? VesselName { get; set; }
@@ -1415,12 +1428,27 @@ else
         public decimal? TotalSailingHours { get; set; }
         public int LogIntervalMinutes { get; set; } = 60;
 
-        public TripFormModel() { }
+        public TripFormModel() 
+        {
+            DepartureDateTimeLocal = BoordtijdHelper.NaarLokaal(DateTime.UtcNow).Date;
+            DepartureUtc = DateTime.UtcNow.Date;
+        }
+
         public TripFormModel(LogbookTripDto dto)
         {
             Name = dto.Name;
+
+            // Converteer UTC naar lokale boordtijd voor weergave
+            DepartureDateTimeLocal = BoordtijdHelper.NaarLokaal(dto.DepartureUtc);
             DepartureUtc = dto.DepartureUtc;
+
+            // Converteer ArrivalUtc naar lokaal als het bestaat
+            if (dto.ArrivalUtc.HasValue)
+            {
+                ArrivalDateTimeLocal = BoordtijdHelper.NaarLokaal(dto.ArrivalUtc.Value);
+            }
             ArrivalUtcInput = dto.ArrivalUtc;
+
             DeparturePort = dto.DeparturePort;
             DestinationPort = dto.DestinationPort;
             VesselName = dto.VesselName;
@@ -1438,8 +1466,10 @@ else
         public CreateLogbookTripDto ToCreateDto() => new()
         {
             Name = Name,
-            DepartureUtc = DepartureUtc,
-            ArrivalUtc = ArrivalUtcInput,
+            DepartureUtc = BoordtijdHelper.NaarUtc(DepartureDateTimeLocal),
+            ArrivalUtc = ArrivalDateTimeLocal.HasValue 
+                ? BoordtijdHelper.NaarUtc(ArrivalDateTimeLocal.Value)
+                : null,
             DeparturePort = DeparturePort,
             DestinationPort = DestinationPort,
             VesselName = VesselName,

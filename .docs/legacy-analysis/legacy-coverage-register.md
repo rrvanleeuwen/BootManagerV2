@@ -128,7 +128,7 @@ Bij afronding van een story of PR:
 | US5.3 Motoruren en brandstof in header | Partial | Reisheader/samenvatting aanwezig; motoruren/brandstof afronding open. |
 | US5.4 Notities en gebeurtenissen toevoegen | Done | Opmerkingen/zeilvoering per logregel aanwezig. |
 | US5.5 Logboek koppelen aan passage | Open | Passageplanning ontbreekt. |
-| US5.6 Logboekheader invullen | Partial | Trip header bestaat; volledige legacy-header nalopen. |
+| US5.6 Logboekheader invullen | Partial | Trip header bestaat; vertrek- en aankomstmoment ondersteunen nu datum+tijd in logboek en printweergave. Volledige legacy-header nog nalopen. |
 | US5.7 Logregels met nautische velden | Partial | Veel velden en measurement suggestions aanwezig; barometer/temperatuur/legacy-volledigheid open. |
 | US5.8 Bijlagen toevoegen aan logregel | Done | Logbook attachments aanwezig. |
 | US5.9 Klassiek format en routekaart | Partial | Tabel/printweergave aanwezig; routekaart ontbreekt. |

@@ -85,8 +85,12 @@
     - `dotnet build` slaagt.
     - Printweergave ongewijzigd: Confirmed-only filters blijven intact.
   - **Huidige printweergave:** `/logbook/trips/{tripId:int}/print` toont alleen logboekinhoud in een printvriendelijke layout; PDF loopt via browser print. Alleen Confirmed-regels worden afgedrukt.
+  - **Status 2026-05-27 (trip-header datum+tijd):** vertrek- en aankomstmoment in de trip-header ondersteunen nu datum+tijd in `/logbook` en in de print-header.
+    - **UI-sematiek:** weergave en invoer gebruiken lokale boordtijd; opslag blijft intern UTC.
+    - **Scopegrens bewaakt:** bestaande vertrek- en aankomstbetekenis uitgebreid, zonder parallelle dubbele velden.
+    - **Validatie:** handmatig getest met niet-heel vertrekmoment, latere aankomsttijd, missing-moments/detailperiodes en printweergave.
   - **Huidige missing-moments-feature (2026-05-24):** banner boven logboektabel toont totaalaantal gemiste logmomenten en compacte lijst (max 5 zichtbaar + "+ meer"); knop "Conceptregels aanmaken" maakt tot 24 Draft-regels in één beurt aan met automatische meetdatasuggesties (alleen periode-data); herberekening van banner na batch. Delete-knop (🗑) per regel met bevestigingsdialoog; na verwijdering herbereken banner.
-  - **Volgende slice:** gerelateerde features als detailweergave verbeteren of browser push notifications.
+  - **Volgende slice:** logboek afronden bij aankomst (`US5.14`) ligt nu het meest voor de hand.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 - [ ] **First-Run Onboarding & Auth Simplification** *(epic – gefaseerd)*
