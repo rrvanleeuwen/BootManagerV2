@@ -31,6 +31,15 @@ public interface ILogbookService
     Task UpdateTripAsync(int tripId, CreateLogbookTripDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Rondt een reis administratief af en markeert deze als voltooid.
+    /// Vereist een geldig aankomstmoment (mag niet null zijn).
+    /// </summary>
+    /// <param name="tripId">ID van de af te ronden reis.</param>
+    /// <param name="arrivalTimeUtc">Aankomstmoment (UTC). Verplicht; mag niet null zijn.</param>
+    /// <exception cref="InvalidOperationException">Gegooid als de reis niet gevonden wordt, al voltooid is, of geen aankomstmoment wordt verstrekt.</exception>
+    Task CompleteTripAsync(int tripId, DateTime arrivalTimeUtc, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Retourneert alle logboekregels voor een reis gesorteerd op tijdstempel oplopend.
     /// </summary>
     Task<IReadOnlyList<LogbookEntryDto>> GetEntriesAsync(int tripId, CancellationToken cancellationToken = default);

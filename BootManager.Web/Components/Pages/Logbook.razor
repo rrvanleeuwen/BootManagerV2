@@ -226,8 +226,19 @@ else
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Logboekregels — @_selectedTrip.Name</span>
                 <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="/logbook/trips/@_selectedTrip.Id/print" target="_blank">🖨 Afdrukweergave</a>
-                    <button class="btn btn-sm btn-outline-success" @onclick="NieuweRegel">+ Nieuwe regel</button>
+                    @if (_selectedTrip.Status == LogbookTripStatus.Open)
+                    {
+                        <button class="btn btn-sm btn-danger" @onclick="OpenCompleteModal" title="Reis afronden bij aankomst">
+                            ⊗ Beëindig reis
+                        </button>
+                        <a class="btn btn-sm btn-outline-secondary" href="/logbook/trips/@_selectedTrip.Id/print" target="_blank">🖨 Afdrukweergave</a>
+                        <button class="btn btn-sm btn-outline-success" @onclick="NieuweRegel">+ Nieuwe regel</button>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Afgesloten</span>
+                        <a class="btn btn-sm btn-outline-secondary" href="/logbook/trips/@_selectedTrip.Id/print" target="_blank">🖨 Afdrukweergave</a>
+                    }
                 </div>
             </div>
             <div class="card-body p-0">
@@ -734,6 +745,56 @@ else
     </div>
 }
 
+<!-- Modal voor reisvoltooiing -->
+@if (_showCompleteModal)
+{
+    <div class="modal d-block" style="background-color: rgba(0,0,0,0.5);" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reis afronden</h5>
+                    <button type="button" class="btn-close" @onclick="CloseCompleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>U staat op het punt de reis <strong>@_selectedTrip?.Name</strong> administratief af te ronden.</p>
+
+                    @if (_selectedTrip?.ArrivalUtc == null)
+                    {
+                        <div class="alert alert-info">
+                            <small>Aankomstmoment nog niet ingesteld. U kunt dit hieronder vastleggen.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Aankomstmoment (lokaal)</label>
+                            <InputDate Type="InputDateType.DateTimeLocal" 
+                                      class="form-control" 
+                                      @bind-Value="_completeModalArrivalTimeLocal" />
+                        </div>
+                    }
+                    else
+                    {
+                        <p>Aankomstmoment: <strong>@BoordtijdHelper.NaarLokaal(_selectedTrip.ArrivalUtc.Value).ToString("dd-MM-yyyy HH:mm")</strong></p>
+                    }
+
+                    <p class="text-muted small mt-3">Na afronden is deze reis administratief voltooid en zal duidelijk als 'Afgesloten' worden weergegeven.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseCompleteModal">Annuleren</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmCompleteTrip" disabled="@_completingTrip">
+                        @if (_completingTrip)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span><span>Bezig met afronden...</span>
+                        }
+                        else
+                        {
+                            <span>Reis afronden</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool _loading = true;
     private string? _foutmelding;
@@ -755,6 +816,11 @@ else
     // Variabelen voor verwijderingsbevestiging
     private int? _entryIdToDelete;
     private string? _entryTimeToDelete;
+
+    // Variabelen voor reisvoltooiing
+    private bool _showCompleteModal = false;
+    private DateTime? _completeModalArrivalTimeLocal;
+    private bool _completingTrip = false;
 
     // Variabelen voor upload-modal
     private bool _showUploadModal = false;
@@ -1306,6 +1372,77 @@ else
     {
         _entryIdToDelete = null;
         _entryTimeToDelete = null;
+    }
+
+    /// <summary>
+    /// Opent het modal voor reisvoltooiing
+    /// </summary>
+    private void OpenCompleteModal()
+    {
+        if (_selectedTrip == null) return;
+        _showCompleteModal = true;
+        // Zet aankomstmoment lokaal als dat nog niet bestaat
+        _completeModalArrivalTimeLocal = _selectedTrip.ArrivalUtc.HasValue 
+            ? BoordtijdHelper.NaarLokaal(_selectedTrip.ArrivalUtc.Value) 
+            : BoordtijdHelper.NaarLokaal(DateTime.UtcNow);
+    }
+
+    /// <summary>
+    /// Sluit het modal voor reisvoltooiing
+    /// </summary>
+    private void CloseCompleteModal()
+    {
+        _showCompleteModal = false;
+        _completeModalArrivalTimeLocal = null;
+        _completingTrip = false;
+    }
+
+    /// <summary>
+    /// Bevestigt de reisvoltooiing
+    /// </summary>
+    private async Task ConfirmCompleteTrip()
+    {
+        if (_selectedTrip == null) return;
+        try
+        {
+            _completingTrip = true;
+
+            // Bepaal aankomstmoment: verplicht (moet ingevuld zijn in modal)
+            DateTime arrivalUtc;
+            if (_completeModalArrivalTimeLocal.HasValue)
+            {
+                arrivalUtc = BoordtijdHelper.NaarUtc(_completeModalArrivalTimeLocal.Value);
+            }
+            else
+            {
+                _foutmelding = "Aankomstmoment is verplicht voor het afronden van een reis.";
+                _completingTrip = false;
+                return;
+            }
+
+            // Roep service aan (arrivalUtc is nu verplicht)
+            await LogbookService.CompleteTripAsync(_selectedTrip.Id, arrivalUtc);
+
+            // Herlaad de gekozen reis
+            var updated = await LogbookService.GetTripAsync(_selectedTrip.Id);
+            if (updated != null)
+            {
+                _selectedTrip = updated;
+                var idx = _trips.FindIndex(t => t.Id == updated.Id);
+                if (idx >= 0) _trips[idx] = updated;
+            }
+
+            _foutmelding = null;
+            CloseCompleteModal();
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Reis afronden mislukt: {ex.Message}";
+        }
+        finally
+        {
+            _completingTrip = false;
+        }
     }
 
     private void OpenUploadModal(int entryId)

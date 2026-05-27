@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BootManager.Core.Enums;
 
 namespace BootManager.Core.Entities;
 
@@ -100,6 +101,11 @@ public class LogbookTrip
     public DateTime UpdatedAtUtc { get; private set; }
 
     /// <summary>
+    /// Status van de reis: Open (lopend) of Completed (afgesloten).
+    /// </summary>
+    public LogbookTripStatus Status { get; private set; } = LogbookTripStatus.Open;
+
+    /// <summary>
     /// Navigatiekolommen: logboekregels behorend bij deze reis.
     /// </summary>
     public ICollection<LogbookEntry> Entries { get; private set; } = new List<LogbookEntry>();
@@ -191,4 +197,22 @@ public class LogbookTrip
         LogIntervalMinutes = logIntervalMinutes;
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Rondt de reis administratief af en markeert deze als voltooid.
+    /// Vereist een geldig aankomstmoment. Stelt ArrivalUtc in als die nog null is.
+    /// </summary>
+    /// <param name="arrivalTimeUtc">Aankomstmoment (UTC). Verplicht; mag niet null zijn.</param>
+    /// <exception cref="InvalidOperationException">Gegooid als de reis al is voltooid of als geen aankomstmoment wordt verstrekt.</exception>
+    public void CompleteTrip(DateTime arrivalTimeUtc)
+    {
+        if (Status == LogbookTripStatus.Completed)
+            throw new InvalidOperationException("Deze reis is al voltooid.");
+
+        // Zet aankomstmoment in (altijd, vervang bestaande waarde niet)
+        ArrivalUtc = arrivalTimeUtc;
+        Status = LogbookTripStatus.Completed;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 }
+

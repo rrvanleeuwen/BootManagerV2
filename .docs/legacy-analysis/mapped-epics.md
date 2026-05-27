@@ -133,7 +133,7 @@ Mapping:
 - Passagekoppeling: ⏳ niet aanwezig.
 - Cloud-sync: 🧊 geparkeerd.
 - Offline lokale werking is grotendeels passend bij BootManagerV2; later moet worden bewaakt dat logboekacties geen internetafhankelijkheid krijgen.
-- US5.14 logboek afronden bij aankomst is een goede vervolgslice voor het bestaande digitale logboek.
+- US5.14 logboek afronden bij aankomst: ✅ aanwezig als expliciete closeout-flow met verplichte aankomsttijd en afgesloten reisstatus.
 
 ## Epic 6: Onderhoudsbeheer
 

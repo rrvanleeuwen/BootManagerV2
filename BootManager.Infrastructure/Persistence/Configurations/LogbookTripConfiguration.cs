@@ -1,4 +1,5 @@
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -32,6 +33,7 @@ public class LogbookTripConfiguration : IEntityTypeConfiguration<LogbookTrip>
         b.Property(x => x.EngineHoursEnd).HasColumnType("TEXT");
         b.Property(x => x.Fuel).HasMaxLength(64);
         b.Property(x => x.TotalSailingHours).HasColumnType("TEXT");
+        b.Property(x => x.Status).IsRequired().HasDefaultValue(LogbookTripStatus.Open);
         b.Property(x => x.CreatedAtUtc).IsRequired();
         b.Property(x => x.UpdatedAtUtc).IsRequired();
 

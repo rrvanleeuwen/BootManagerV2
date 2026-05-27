@@ -1,5 +1,6 @@
 using BootManager.Application.Logbook.DTOs;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using System;
@@ -113,6 +114,17 @@ public class LogbookService : ILogbookService
         await _tripRepo.UpdateAsync(entity, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task CompleteTripAsync(int tripId, DateTime arrivalTimeUtc, CancellationToken cancellationToken = default)
+    {
+        var entity = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
+            ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
+
+        entity.CompleteTrip(arrivalTimeUtc);
+        await _tripRepo.UpdateAsync(entity, cancellationToken);
+        _logger.LogInformation("Logboek reis {TripId} afgerond op {ArrivalTime}.", tripId, arrivalTimeUtc.ToString("u"));
+    }
+
      /// <inheritdoc />
     public async Task<IReadOnlyList<LogbookEntryDto>> GetEntriesAsync(int tripId, CancellationToken cancellationToken = default)
     {
@@ -189,6 +201,10 @@ public class LogbookService : ILogbookService
         var trip = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
             ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
 
+        // Blokkeer aanroep voor afgeronde reizen
+        if (trip.Status == LogbookTripStatus.Completed)
+            throw new InvalidOperationException("Kan volgende logmoment niet bepalen: deze reis is afgesloten.");
+
         var entries = await _entryRepo.ListAsync(e => e.LogbookTripId == tripId, cancellationToken);
 
         // Bepaal basis: laatste logboekregel of vertrek
@@ -207,6 +223,10 @@ public class LogbookService : ILogbookService
     {
         var trip = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
             ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
+
+        // Blokkeer aanroep voor afgeronde reizen
+        if (trip.Status == LogbookTripStatus.Completed)
+            throw new InvalidOperationException("Kan geen draft-regeltoevoegen: deze reis is afgesloten.");
 
         // Haal meetdatasuggesties op, exclusief oude "laatst bekende" waarden (alleen logtijdvak-data)
         var suggestions = await _suggestionService.GetSuggestionsAsync(tripId, entryTimeUtc, onlyPeriodData: true, cancellationToken);
@@ -251,6 +271,7 @@ public class LogbookService : ILogbookService
         Fuel = t.Fuel,
         TotalSailingHours = t.TotalSailingHours,
         LogIntervalMinutes = t.LogIntervalMinutes,
+        Status = t.Status,
         CreatedAtUtc = t.CreatedAtUtc,
         UpdatedAtUtc = t.UpdatedAtUtc
     };
@@ -260,6 +281,10 @@ public class LogbookService : ILogbookService
     {
         var trip = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
             ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
+
+        // Blokkeer aanroep voor afgeronde reizen
+        if (trip.Status == LogbookTripStatus.Completed)
+            return new MissedLogMomentsDto { TotalCount = 0, MissedMoments = new List<MissedMomentDto>() };
 
         var entries = await _entryRepo.ListAsync(e => e.LogbookTripId == tripId, cancellationToken);
 
