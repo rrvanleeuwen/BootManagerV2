@@ -44,7 +44,6 @@ De volgende onderdelen zijn inmiddels gerealiseerd:
 
 Belangrijkste open vervolgslices:
 
-- logboek afronden bij aankomst;
 - routekaart;
 - passagekoppeling;
 - rijkere statistieken;
@@ -1332,7 +1331,7 @@ Gebruikers kunnen een Draft-logboekregel direct accorderen vanuit de detailpagin
 **Legacy coverage impact:**
 
 - `US5.6 Logboekheader invullen`: blijft `Partial`, maar de dekking is uitgebreid met vertrek- en aankomstmoment als datum+tijd in de trip-header en printcontext.
-- `US5.14 Logboek afronden bij aankomst`: sluit beter aan doordat een expliciet aankomstmoment correct kan worden vastgelegd, maar die story blijft inhoudelijk open.
+- `US5.14 Logboek afronden bij aankomst`: voorbereid door expliciet aankomstmoment; closeout-flow volgt in aparte slice.
 - `US5.3 Motoruren en brandstof in header`: ongewijzigd; deze story raakt alleen datum/tijd van vertrek en aankomst.
 
 **Verificatie:**
@@ -1343,6 +1342,66 @@ Gebruikers kunnen een Draft-logboekregel direct accorderen vanuit de detailpagin
 - Werk de reis later bij met een aankomstmoment inclusief tijd en controleer dat ook dit correct zichtbaar en persistent is.
 - Open de afdrukweergave en controleer dat vertrek en aankomst daar correct en zonder dubbele datumvelden zichtbaar zijn.
 - `dotnet build` slaagt zonder warnings of errors.
+
+---
+
+## Slice: logboek afronden bij aankomst (2026-05-27)
+
+**Datum:** 2026-05-27  
+**Status:** Geïmplementeerd en handmatig gevalideerd
+
+**User story:** Als eigenaar wil ik een lopende logboekreis expliciet kunnen afronden bij aankomst, zodat de reis administratief voltooid is en niet meer als open tocht behandeld wordt.
+
+**Scope:**
+
+- Een lopende logboekreis moet een expliciete afrondingsactie bij aankomst krijgen.
+- Die afrondingsactie moet direct vanuit het logboekscherm beschikbaar zijn als een opvallende knop met afwijkende kleur, zodat duidelijk is dat dit een bijzondere afsluitactie is.
+- Die actie gebruikt het bestaande aankomstmoment als basis, of laat de gebruiker dit tijdens afronden invullen als het nog ontbreekt.
+- Na afronden is voor de gebruiker duidelijk zichtbaar dat de reis niet meer loopt.
+- De logboekflow moet afgeronde reizen logisch blijven tonen en bestaande gegevens behouden.
+- De oplossing moet aansluiten op de bestaande trip-header met vertrek/aankomst datum+tijd.
+
+**Buiten scope:**
+
+- Geen automatische aankomstdetectie op basis van sensordata.
+- Geen passageplanningkoppeling.
+- Geen nieuwe export- of rapportageflow.
+- Geen uitgebreide statistiek- of routekaartuitbreiding.
+- Geen multi-user goedkeuringsflow of extra rollenlogica.
+
+**Acceptatiecriteria:**
+
+- Een gebruiker kan een lopende reis expliciet afronden.
+- In het logboekscherm is voor een open reis een duidelijk opvallende knop zichtbaar met afwijkende kleur voor deze afsluitactie, met tekst `Beëindig reis`.
+- Als geen aankomstmoment is ingevuld, kan de gebruiker dat tijdens de afrondingsflow alsnog vastleggen.
+- Na afronden blijft het aankomstmoment correct zichtbaar en persistent.
+- Een afgeronde reis is in de UI duidelijk als afgerond herkenbaar.
+- Bestaande logboekregels en detailweergaven van die reis blijven bruikbaar.
+- De wijziging past binnen de bestaande logboekarchitectuur en bestaande trip-entiteit.
+- `dotnet build` slaagt.
+
+**Implementatie:**
+
+- `LogbookTrip` heeft nu een expliciete status `Open` / `Completed`.
+- In het logboekscherm is voor open reizen een opvallende knop `Beëindig reis` toegevoegd.
+- Tijdens afronden wordt een aankomstmoment verplicht vastgelegd of bevestigd.
+- Afgesloten reizen tonen geen open-reisactie meer voor nieuwe logregels.
+- Missing-moments- en draft-logica behandelen afgesloten reizen niet meer als lopend.
+
+**Legacy coverage impact:**
+
+- `US5.14 Logboek afronden bij aankomst`: nu functioneel afgedekt als expliciete closeout-flow voor lopende reizen.
+- `US5.6 Logboekheader invullen`: kan indirect meeliften, maar blijft waarschijnlijk `Partial` omdat de volledige legacy-header breder is.
+- `US5.11 Statistieken en samenvatting`: ongewijzigd, behalve eventuele bestaande samenvattingsvelden die al bij de reis horen.
+
+**Verificatie:**
+
+- Maak of open een lopende reis zonder aankomstmoment en rond die af; controleer dat aankomstdatum+tijd correct wordt vastgelegd.
+- Open een reis met al ingevuld aankomstmoment en rond die af; controleer dat de reisstatus zichtbaar verandert zonder gegevensverlies.
+- Controleer dat logboekregels, detailpagina’s en printweergave van een afgeronde reis blijven werken.
+- Controleer dat een afgeronde reis niet meer aanvoelt als “nog lopend” in de logboek-UI.
+- Controleer dat afgesloten reizen geen `+ Nieuwe regel` of missing-momentsgedrag meer hebben.
+- `dotnet build` slaagt.
 
 ---
 

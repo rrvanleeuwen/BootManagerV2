@@ -42,7 +42,7 @@ Word-verificatie Epic 5:
 
 - `BootManager_Epic5_Logboek.docx` bevestigt US5.1 t/m US5.14 volledig.
 - US5.1 is handmatig logboek invoeren met weerinformatie.
-- Open blijft vooral: passagekoppeling, routekaart, brandstof/motoruren afronding, uitgebreide statistieken, echte PDF/CSV-export en afrondingsflow bij aankomst.
+- Open blijft vooral: passagekoppeling, routekaart, brandstof/motoruren afronding, uitgebreide statistieken en echte PDF/CSV-export.
 
 ### Systeem/Configuratie
 

@@ -89,8 +89,12 @@
     - **UI-sematiek:** weergave en invoer gebruiken lokale boordtijd; opslag blijft intern UTC.
     - **Scopegrens bewaakt:** bestaande vertrek- en aankomstbetekenis uitgebreid, zonder parallelle dubbele velden.
     - **Validatie:** handmatig getest met niet-heel vertrekmoment, latere aankomsttijd, missing-moments/detailperiodes en printweergave.
+  - **Status 2026-05-27 (reis afronden bij aankomst):** open reizen kunnen nu expliciet worden afgesloten via opvallende knop `Beëindig reis`.
+    - **Domeinregel:** afronden vereist een aankomstmoment; reizen hebben expliciete status `Open` / `Completed`.
+    - **Gedrag:** afgesloten reizen tonen geen `+ Nieuwe regel` meer en krijgen geen missing-moments/draftgedrag meer.
+    - **Validatie:** handmatig getest voor reis zonder aankomstmoment, reis met bestaand aankomstmoment, afgesloten status en printweergave.
   - **Huidige missing-moments-feature (2026-05-24):** banner boven logboektabel toont totaalaantal gemiste logmomenten en compacte lijst (max 5 zichtbaar + "+ meer"); knop "Conceptregels aanmaken" maakt tot 24 Draft-regels in één beurt aan met automatische meetdatasuggesties (alleen periode-data); herberekening van banner na batch. Delete-knop (🗑) per regel met bevestigingsdialoog; na verwijdering herbereken banner.
-  - **Volgende slice:** logboek afronden bij aankomst (`US5.14`) ligt nu het meest voor de hand.
+  - **Volgende slice:** routekaart of echte PDF/CSV-export zijn nu logische vervolgstappen binnen het digitale logboek.
   - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 - [ ] **First-Run Onboarding & Auth Simplification** *(epic – gefaseerd)*

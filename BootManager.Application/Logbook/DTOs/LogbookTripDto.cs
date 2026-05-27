@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BootManager.Core.Enums;
 
 namespace BootManager.Application.Logbook.DTOs;
 
@@ -55,6 +56,9 @@ public class LogbookTripDto
 
     /// <summary>Loginterval in minuten.</summary>
     public int LogIntervalMinutes { get; set; }
+
+    /// <summary>Status van de reis (Open / Completed).</summary>
+    public LogbookTripStatus Status { get; set; }
 
     /// <summary>Tijdstempel (UTC) waarop de reis is aangemaakt.</summary>
     public DateTime CreatedAtUtc { get; set; }

@@ -136,7 +136,7 @@ Bij afronding van een story of PR:
 | US5.11 Statistieken en samenvatting | Partial | Samenvattingsvelden deels aanwezig; uitgebreide statistieken open. |
 | US5.12 Offline werking | Done | Lokale SQLite-first werking. |
 | US5.13 Cloud-synchronisatie | Parked | Cloud-sync geparkeerd. |
-| US5.14 Logboek afronden bij aankomst | Open | Goede vervolgslice voor digitale logboek. |
+| US5.14 Logboek afronden bij aankomst | Done | Lopende reizen kunnen nu expliciet administratief worden afgerond met verplicht aankomstmoment; afgesloten reizen krijgen status `Completed` en worden niet meer als open reis behandeld in logboekflow. |
 
 ## Epic 6: Onderhoudsbeheer
 

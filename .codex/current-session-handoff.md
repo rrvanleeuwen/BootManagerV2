@@ -67,7 +67,15 @@ Next near-term story decision:
   - missing-moments and detail periods still aligned to the true departure moment;
   - print view showed departure and arrival consistently without duplicate date fields.
 - Legacy `US5.6 Logboekheader invullen` remains `Partial`, but now explicitly covers departure and arrival as full date+time in logbook and print context.
-- The next logical follow-up story is now `US5.14 Logboek afronden bij aankomst`.
+- The digital logbook closeout flow for `US5.14 Logboek afronden bij aankomst` is now complete on branch `feature/logbook-arrival-closeout`.
+- It was manually validated in the local dev environment:
+  - an open trip without arrival time could be completed with a required arrival datetime;
+  - an open trip with existing arrival time could be completed without data loss;
+  - completed trips no longer showed open-trip actions such as adding new entries;
+  - completed trips no longer produced missing-moments behavior;
+  - print view remained usable after closeout.
+- Legacy `US5.14 Logboek afronden bij aankomst` is now functionally covered.
+- The next logical follow-up story inside the digital logbook is now route map and/or true PDF/CSV export.
 - For Raspberry Pi deployment hardening, `SYS-DEPLOY-LEAN-1` is now captured in `.docs/epics/system-operations.md` and should be brought back explicitly before the first deployment for a different boat owner / different Pi.
 - Broader system operations topics remain open for later:
   - full backup/restore UI;
