@@ -185,12 +185,12 @@ Bij afronding van een story of PR:
 | US8.3 Taal en regio instellen | Open | Niet aanwezig. |
 | US8.4 Gebruikersrollen beheren | Parked | Multi-user/rollen geparkeerd. |
 | US8.5 Sensorintegratie configureren | Partial | Operationele ingest settings aanwezig; bredere sensorconfig open. |
-| US8.6 Raspberry Pi-configuratie beheren | Partial | Pi deployment runbook en resourcechecks gedocumenteerd; eerste metingen voor opslag/RAM/load vastgelegd. Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde health, ingest, API, parsing en measurement-opslag op `master @ 1db5534`. In-app Pi systeemstatus/configuratiebeheer, diagnostics en langdurige observatie blijven open. |
+| US8.6 Raspberry Pi-configuratie beheren | Partial | Pi deployment runbook en resourcechecks gedocumenteerd; eerste metingen voor opslag/RAM/load vastgelegd. Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde health, ingest, API, parsing en measurement-opslag op `master @ 1db5534`. `SYS-ANALYSIS-1` voegt een lokale technische analysepagina toe voor tijdsvenster-aantallen en JSON/CSV-export, maar volledige in-app Pi systeemstatus/configuratiebeheer, persistent warning/error-overzicht en langdurige observatie blijven open. |
 | US8.7 Gebruikersbeheer | Parked | Multi-user geparkeerd. |
 | US8.8 Back-up maken en herstellen | Open | Procedureel beschreven; UI/helper open. |
 | US8.9 Cloudinstellingen beheren | Parked | Cloud-sync geparkeerd. |
 | US8.10 Automatische synchronisatie plannen | Parked | Cloud-sync geparkeerd. |
-| US8.11 Logboek van systeemacties bekijken | Open | Niet aanwezig. |
+| US8.11 Logboek van systeemacties bekijken | Open | Niet aanwezig als persistent systeemactie-logboek. `SYS-ANALYSIS-1` toont technische analyse en export, maar warnings/errors en systeemacties worden nog niet duurzaam als logboek opgeslagen. |
 | US8.12 Offline modus beheren | Parked | Pas zinvol bij sync; lokale-first werking bestaat. |
 | US8.13 Systeeminstellingen exporteren/importeren | Open | Niet aanwezig. |
 | US8.14 Standaardinstellingen herstellen | Open | Niet aanwezig. |

@@ -1,3 +1,4 @@
+using BootManager.Application.Analysis.Services;
 using BootManager.Application.Authentication.Services;
 using BootManager.Application.OperationalSettings.Services;
 using BootManager.Application.Logbook.Services;
@@ -37,6 +38,9 @@ public static class DependencyInjection
 
         // Registratie van VesselProfile application-service
         services.AddScoped<IVesselProfileService, VesselProfileService>();
+
+        // Registratie van Analysis application-service
+        services.AddScoped<IAnalysisService, AnalysisService>();
 
         // Registratie van NetworkMessage application-service (gebruik generieke repository)
         services.AddScoped<INetworkMessageService, NetworkMessageService>();

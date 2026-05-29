@@ -389,6 +389,15 @@ public class OnboardingServiceTests
             return Task.FromResult(_owners.Any(compiled));
         }
 
+        public Task<int> CountAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        {
+            if (predicate is null)
+                return Task.FromResult(_owners.Count);
+
+            var compiled = predicate.Compile();
+            return Task.FromResult(_owners.Count(compiled));
+        }
+
         public Task AddAsync(OwnerProfile entity, CancellationToken ct = default)
         {
             _owners.Add(entity);

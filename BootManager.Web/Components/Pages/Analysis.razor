@@ -1,0 +1,206 @@
+@page "/analysis"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Analysis.DTOs
+@using BootManager.Application.Analysis.Services
+@inject IAnalysisService AnalysisService
+@inject IJSRuntime JS
+
+<h2 class="mb-3">Technische Analyse</h2>
+
+    <div class="card mb-4">
+    <div class="card-header">
+        <span>Analyse-venster</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <label class="form-label">Van (lokaal) *</label>
+                <input type="datetime-local" class="form-control" @bind="_startLocal" @bind:format="yyyy-MM-ddTHH:mm" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Tot (lokaal) *</label>
+                <input type="datetime-local" class="form-control" @bind="_endLocal" @bind:format="yyyy-MM-ddTHH:mm" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-primary w-100" @onclick="FetchAnalysis" disabled="@_loading">
+                    @if (_loading)
+                    {
+                        <span>Laden...</span>
+                    }
+                    else
+                    {
+                        <span>Analyseren</span>
+                    }
+                </button>
+            </div>
+        </div>
+        <small class="text-muted d-block mt-2">Selecteer een tijdsvenster en klik Analyseren om diagnostische gegevens op te halen.</small>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@if (_summary != null)
+{
+    <div class="card mb-4">
+        <div class="card-header">
+            <span>Samenvatting voor @_summary.StartUtc:O t/m @_summary.EndUtc:O</span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Ruw Overzicht</h5>
+                    <div class="mb-2">
+                        <strong>Totaal NetworkMessages:</strong>
+                        <span class="badge bg-primary">@_summary.TotalNetworkMessages</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5>Waarschuwingen / Errors</h5>
+                    <small class="text-muted">@_summary.WarningErrorsStatus</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_summary.MeasurementCounts.Count > 0)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <span>Opgeslagen Metingen per Type</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Meettype</th>
+                                <th class="text-end">Aantaal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var mc in _summary.MeasurementCounts)
+                            {
+                                <tr>
+                                    <td>@mc.MeasurementType</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-success">@mc.Count</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-header">
+            <span>Export</span>
+        </div>
+        <div class="card-body">
+            <p>Exporteer de analyse-samenvatting in het gewenste formaat:</p>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="DownloadCSV" disabled="@_exporting">
+                @if (_exporting)
+                {
+                    <span>Bezig...</span>
+                }
+                else
+                {
+                    <span>📥 Download CSV</span>
+                }
+            </button>
+            <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="DownloadJSON" disabled="@_exporting">
+                @if (_exporting)
+                {
+                    <span>Bezig...</span>
+                }
+                else
+                {
+                    <span>📥 Download JSON</span>
+                }
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private DateTime _startLocal = DateTime.Now.AddHours(-24);
+    private DateTime _endLocal = DateTime.Now;
+    private AnalysisSummaryDto? _summary;
+    private string _error = "";
+    private bool _loading = false;
+    private bool _exporting = false;
+
+    private async Task FetchAnalysis()
+    {
+        _loading = true;
+        _error = "";
+
+        try
+        {
+            var startUtc = _startLocal.ToUniversalTime();
+            var endUtc = _endLocal.ToUniversalTime();
+
+            if (startUtc >= endUtc)
+            {
+                _error = "Begintijd moet voor eindtijd liggen.";
+                return;
+            }
+
+            var request = new AnalysisTimeWindowDto { StartUtc = startUtc, EndUtc = endUtc };
+            _summary = await AnalysisService.GetAnalysisSummaryAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Fout bij ophalen analysegegevens: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task DownloadCSV()
+    {
+        await DownloadExport("csv");
+    }
+
+    private async Task DownloadJSON()
+    {
+        await DownloadExport("json");
+    }
+
+    private async Task DownloadExport(string exportType)
+    {
+        if (_summary == null) return;
+
+        _exporting = true;
+        try
+        {
+            var content = exportType == "csv" 
+                ? AnalysisService.ExportAsCSV(_summary)
+                : AnalysisService.ExportAsJSON(_summary);
+
+            var fileExtension = exportType == "csv" ? "csv" : "json";
+            var fileName = $"analysis-{_summary.StartUtc:yyyyMMdd-HHmm}-{_summary.EndUtc:yyyyMMdd-HHmm}.{fileExtension}";
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+            await using var stream = new MemoryStream(bytes);
+            using var streamRef = new DotNetStreamReference(stream);
+            await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Fout bij export: {ex.Message}";
+        }
+        finally
+        {
+            _exporting = false;
+        }
+    }
+}

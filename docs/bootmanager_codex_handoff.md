@@ -263,6 +263,9 @@ Per stap werkt Codex idealiter als volgt:
    - laat Copilot de bestaande structuur en instructies gebruiken om de implementatiedetails te bepalen
    - neem bij nieuwe features expliciet op dat relevante `.docs` documentatie moet worden bijgewerkt
    - neem bij documentatie-updates expliciet op dat datums de actuele sessiedatum moeten gebruiken en niet automatisch oude documentdatums mogen overnemen
+   - als de user story al door de gebruiker is goedgekeurd en al in het relevante epic-bestand staat, vermeld dit expliciet in de prompt
+   - zeg in dat geval expliciet dat Copilot de story niet opnieuw hoeft te tonen en niet opnieuw om goedkeuring hoeft te vragen
+   - stuur Copilot dan door naar: kort plan -> implementeren -> build/test/checks -> handmatige teststappen en oplevernotities
 
 5. **Copilot-output beoordelen**
    - architectuur
@@ -437,13 +440,14 @@ We zijn geëindigd op:
 - Owner/settings/onboarding beheerflows zijn afgerond
 - Eerste Raspberry Pi 4 Docker Compose deployment-smoke-test is geslaagd op 2026-05-26
 - Eerste echte Raspberry Pi-veldtest met bootdata is geslaagd op 2026-05-29 op `master @ 1db5534`
+- Technische analysepagina (`SYS-ANALYSIS-1`) is op 2026-05-29 lokaal geïmplementeerd en handmatig getest op branch `feature/technical-analysis-page`; merge naar `master` en Pi-validatie volgen via PR.
 - Laatste relevante deploymentfixes:
   - `124c7af Fix Docker base image tags for ARM64`
   - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
 - Pi-updateafspraak: de Pi pullt alleen `master`, nooit feature-branches. Zolang een wijziging op een feature-branch staat en er nog geen PR/merge naar `master` is, test de gebruiker op de ontwikkelcomputer/devomgeving. Codex mag dan niet suggereren dat de Pi die wijziging al heeft of moet testen.
 - De Pi hoeft niet automatisch na iedere push te pullen. Bij documentatie-only wijzigingen meestal geen Pi-update. Als een Pi-update nodig is, moet Codex exact zeggen welke SSH-commando's nodig zijn en of containers opnieuw gebouwd, alleen herstart of ongemoeid moeten blijven.
 - Pi-updateflow bij code/containerwijzigingen: `git pull`, `docker compose build`, `docker compose up -d`, `docker compose ps`, `/health` controleren
-- Volgende hardwarestap: de technische echte-boot UDP-test is nu bevestigd; logische vervolgkeuze is diagnostics, UI-validatie of langdurige observatie op de Pi.
+- Volgende hardwarestap: de technische echte-boot UDP-test is nu bevestigd en lokale analyse-export werkt; logische vervolgkeuze is ingest-toggle, Pi-validatie van de analysepagina, diagnostics, UI-validatie of langdurige observatie op de Pi.
 
 Extra gevalideerd op 2026-05-29 tijdens de eerste echte boot-test:
 
@@ -489,7 +493,7 @@ TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig **niet nodig**.
 De TCP-poort lijkt bedoeld voor de eigen YDEN-software; BootManager gebruikt de bewezen UDP NMEA 0183 route.
 
 ### Mogelijke volgende stappen
-- Technische analysepagina in de webinterface voor tijdsvenster, raw/verwerkt/opgeslagen status, warnings/errors en downloadbare analyse-output
+- Pi-validatie van de technische analysepagina na merge naar `master`
 - Ingest verwerken aan/uit via de webinterface om havenlogging bewust te kunnen stoppen
 - Live dashboard met actuele waarden zoals wind, windhoek, positie, koers, diepte en andere beschikbare metingen
 - Digitaal logboek: routekaart en/of echte PDF/CSV-export zijn nu de meest logische vervolgslices.

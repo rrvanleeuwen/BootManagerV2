@@ -37,9 +37,10 @@
 
 - [ ] **System Operations & Recovery – eerste echte Pi-veldtest verwerken en diagnostics kiezen**
   - **Aanleiding 2026-05-29:** Eerste echte veldtest aan boord met Raspberry Pi op `master @ 1db5534` was technisch geslaagd: health OK, echte boordnetwerkdata ontvangen, `HTTP 201` op `api/networkmessages`, raw opslag en meerdere measurement-tabellen bevestigd.
-  - **Open observaties:** `sqlite3` ontbreekt op Pi/container; veel `GGA` warnings bij fixkwaliteit `0`; UI-validatie van live data ontbreekt nog; langdurige WAL/retentie/capture-logvalidatie staat nog open.
+  - **Status 2026-05-29:** `SYS-ANALYSIS-1` is geïmplementeerd op branch `feature/technical-analysis-page` en lokaal handmatig getest. De webinterface toont analyse-aantallen per tijdsvenster en kan JSON/CSV exporteren; test-export staat in `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
+  - **Afgevinkt:** `SYS-ANALYSIS-1` technische analysepagina in de webinterface is afgerond voor lokale dev-validatie; PR/merge en Pi-validatie volgen nog.
+  - **Open observaties:** `sqlite3` ontbreekt op Pi/container; veel `GGA` warnings bij fixkwaliteit `0`; warnings/errors worden nog niet persistent als analyseerbare events opgeslagen; langdurige WAL/retentie/capture-logvalidatie staat nog open.
   - **Vervolgkeuzes in `.docs/epics/system-operations.md`:**
-    - `SYS-ANALYSIS-1` technische analysepagina in de webinterface
     - `SYS-CTRL-1` ingest verwerken aan/uit via de webinterface
     - `SYS-DIAG-1` Pi diagnostics zonder handmatige sqlite3-inspectie
     - `SYS-LOG-1` loggingprofiel voor Pi-veldtest/productie
@@ -49,7 +50,7 @@
     - `SYS-CAPTURE-1` capture logs valideren voor rotatie en replay
     - `SYS-FIELD-2` veldtestprocedure voor vergelijking met boordinstrumenten
   - **Terminologie:** documentatie expliciet gelijk houden: fysieke bron `NMEA2000/SeaTalkNG`, ontvangen payloads `NMEA 0183 UDP` via gateway.
-  - **Aanbevolen volgorde:** eerst analysepagina, daarna ingest-toggle, daarna live dashboard.
+  - **Aanbevolen volgorde:** na analysepagina eerst ingest-toggle, daarna live dashboard.
 
 - [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
   - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.

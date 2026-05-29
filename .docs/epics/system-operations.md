@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29; vervolgwerk voor diagnostics, loggingprofiel en langdurige observatie is vastgelegd.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is lokaal geïmplementeerd en gevalideerd op 2026-05-29; Pi-validatie na merge en vervolgwerk voor ingest-toggle, diagnostics, loggingprofiel en langdurige observatie blijven open.
 
 ## Aanleiding
 
@@ -437,7 +437,7 @@ Waargenomen aandachtspunten:
 
 ### SYS-ANALYSIS-1: Technische analysepagina in de webinterface
 
-**Status:** Voorgesteld op 2026-05-29 als aanbevolen eerstvolgende slice.
+**Status:** ✅ Geïmplementeerd op feature branch `feature/technical-analysis-page` en lokaal handmatig gevalideerd op 2026-05-29. PR/merge naar `master` en Pi-validatie na merge nog af te ronden.
 
 **User Story:** Als beheerder wil ik in de webinterface kunnen zien wat er in een gekozen tijdsbestek is binnengekomen, wat is verwerkt, wat in de database staat en welke warnings/errors optraden, zodat ik Pi-tests zonder SSH of losse shellcommando's kan analyseren.
 
@@ -471,6 +471,26 @@ Waargenomen aandachtspunten:
 
 - Bij voorkeur uitvoeren op de Pi met live of recent opgeslagen data.
 - Verifiëren dat downloadbestanden bruikbaar zijn voor latere gezamenlijke analyse.
+
+**Implementation Status (2026-05-29):**
+
+- Analysefunctionaliteit is toegevoegd via een Application-service (`IAnalysisService`) en Blazor-pagina; de pagina gebruikt geen self-HTTP-call naar de eigen applicatie.
+- De analysepagina is bereikbaar vanuit de webinterface en toont per gekozen tijdsvenster aantallen voor ruwe `NetworkMessages` en opgeslagen measurement-typen.
+- Export naar JSON en CSV werkt via de bestaande Blazor JavaScript-downloadhelper.
+- Database-aantallen worden via `IRepository.CountAsync(...)` opgehaald, zodat de analyse geen volledige lijsten hoeft te laden om alleen aantallen te bepalen.
+- Test-export is vastgelegd als `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
+- Lokale handmatige test bevestigde dat de pagina aantallen per meettype toont en dat export na harde browser-refresh (`Ctrl+F5`) werkt.
+
+**Beperkingen / vervolgwerk:**
+
+- Warnings en errors worden nog niet persistent als analyseerbare events opgeslagen; de pagina meldt dit expliciet.
+- Pi-validatie na merge naar `master` blijft nodig voordat deze story volledig als Pi-veldtest afgerond geldt.
+- Diepere loganalyse, GPS-fixdiagnostics en langdurige opslagobservatie blijven aparte vervolgstories (`SYS-LOG-1`, `SYS-GPS-1`, `SYS-DATA-1`, `SYS-CAPTURE-1`).
+
+**Legacy coverage impact:**
+
+- Verbetert `US8.6 Raspberry Pi-configuratie beheren` door in-app technische analyse/diagnostics toe te voegen, maar status blijft `Partial` zolang volledige Pi-systeemstatus/configuratiebeheer en langdurige observatie open zijn.
+- Raakt `US8.11 Logboek van systeemacties bekijken`, maar vinkt deze niet af omdat systeemacties, warnings en errors nog niet persistent als logboek beschikbaar zijn.
 
 ---
 
