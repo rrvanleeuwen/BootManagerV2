@@ -73,6 +73,7 @@ prompts, review en documentatie.
 - Als de gebruiker zegt dat een user story goed is, dan werkt Codex documentatie bij waar nodig,
   commit de afgeronde wijzigingen, pusht de branch en maakt een PR.
 - "Documentatie bijwerken waar nodig" betekent minimaal: alle direct geraakte epic-statussen, TODO-statussen, handoff-statussen en legacy coverage-items nalopen en bijwerken voordat Codex de wijziging commitwaardig of PR-klaar noemt.
+- Daarbij hoort expliciet afvinken: als een user story, slice of checklist-item door de afgeronde wijziging klaar is, markeert Codex die als afgerond (`[x]`, `✅`, `Done`, `Replaced` of passende status). Als een overkoepelend item bewust open blijft, noteert Codex welke substory is afgerond en waarom het hoofditem nog open blijft.
 - Als de gebruiker daarna meldt dat de PR gemerged is, dan controleert Codex de PR, schakelt lokaal
   terug naar `master`, haalt de laatste `master` op en controleert dat de werkmap schoon is.
 - Daarna gaat Codex automatisch door naar de volgende actie:
