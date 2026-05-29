@@ -345,6 +345,25 @@ Als eigenaar wil ik CPU, geheugen, opslag en netwerkstatus zien, zodat ik de ins
 
 Als eigenaar wil ik recente systeemacties zien, zoals back-ups, updates en fouten.
 
+### US-SYS6: Technische analysepagina voor Pi-tests
+
+Als beheerder wil ik in de webinterface kunnen zien wat er in een gekozen tijdsbestek is binnengekomen, verwerkt en opgeslagen, inclusief warnings/errors en downloadbare analyse-uitvoer, zodat Pi-tests zonder SSH of losse shellcommando's onderzocht kunnen worden.
+
+Bronverfijning uit veldtest 2026-05-29:
+
+- behoefte om shell-checks uit Docker logs en databasecontroles naar de webinterface te brengen;
+- behoefte aan download van relevante analysegegevens voor latere gezamenlijke analyse;
+- behoefte om te zien welke data binnenkwam, verwerkt werd en daadwerkelijk in de database staat.
+
+### US-SYS7: Ingest verwerken aan of uit zetten
+
+Als gebruiker wil ik in de webinterface kunnen aangeven of ingest nieuwe data actief moet verwerken, zodat de Pi niet ongevraagd dagenlang haven- of waldata blijft loggen wanneer dat niet gewenst is.
+
+Bronverfijning uit veldtest 2026-05-29:
+
+- gebruiker wil een duidelijke toggle voor logging/verwerking aan of uit;
+- deze behoefte sluit aan op bestaande operationele instellingen en ingest-control-flow.
+
 ### US-SYS5: Eenheden En Regio-instellingen
 
 Als eigenaar wil ik eenheden en datum/tijdnotatie instellen, zodat metingen consistent worden weergegeven.
@@ -375,6 +394,16 @@ Bronverfijning uit Epic 7 Word:
 
 - legacy-dashboard toont actieve boot, locatie, datum, tijd, stroomvoorziening en netwerkstatus;
 - BootManagerV2 kan eerst focussen op single-vessel status en bestaande ingest/settings-status.
+
+### US-DASH0: Live meetdashboard vanuit bestaande measurements
+
+Als gebruiker wil ik actuele waarden zoals wind, windhoek, positie, koers, diepte en andere beschikbare metingen direct in de webinterface zien, zodat ik zonder technische hulpmiddelen direct inzicht heb in wat BootManager nu meet.
+
+Bronverfijning uit veldtest 2026-05-29:
+
+- gebruiker wil NMEA-meters of vergelijkbare visuele weergaven voor wind, koers en diepte;
+- waar meters niet logisch zijn, moeten duidelijke tekstwaarden getoond worden;
+- deze eerste dashboardstap moet actuele waardeweergave prioriteren boven historische grafieken of technische diagnostiek.
 
 ### US-DASH2: Logboekactiviteit Widget
 

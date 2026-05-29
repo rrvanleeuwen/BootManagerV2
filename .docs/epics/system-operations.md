@@ -435,6 +435,78 @@ Waargenomen aandachtspunten:
 
 ---
 
+### SYS-ANALYSIS-1: Technische analysepagina in de webinterface
+
+**Status:** Voorgesteld op 2026-05-29 als aanbevolen eerstvolgende slice.
+
+**User Story:** Als beheerder wil ik in de webinterface kunnen zien wat er in een gekozen tijdsbestek is binnengekomen, wat is verwerkt, wat in de database staat en welke warnings/errors optraden, zodat ik Pi-tests zonder SSH of losse shellcommando's kan analyseren.
+
+**Scope:**
+
+- Een webpagina voor technische analyse of beheeranalyse toevoegen.
+- Een tijdsvenster kunnen kiezen voor analyse.
+- Minimaal zichtbaar maken:
+  - welke ruwe data binnenkwam;
+  - welke data is verwerkt;
+  - welke measurement-typen zijn opgeslagen;
+  - welke warnings/errors relevant waren;
+  - samenvattende status van databasevulling voor de belangrijkste tabellen.
+- Download van relevante analyse-uitvoer mogelijk maken, zodat deze later samen onderzocht kan worden.
+
+**Buiten scope:**
+
+- Geen algemene databasebeheerpagina.
+- Geen vrije shelltoegang vanuit de webinterface.
+- Geen volledige logviewer voor alle infrastructuurlogs van het systeem.
+
+**Acceptatiecriteria:**
+
+- Beheerder kan in de webinterface een tijdsvenster selecteren en analysegegevens zien.
+- De pagina toont minimaal raw/verwerkt/opgeslagen/error-samenvatting.
+- Relevante analyse-informatie kan worden gedownload.
+- Verwachte warnings zoals GPS-fixproblemen zijn herkenbaar in de output.
+- Handmatige test op Pi of lokale testomgeving bevestigt dat de pagina helpt om dezelfde soort checks te doen als eerder via SSH.
+
+**Handmatige testnotities:**
+
+- Bij voorkeur uitvoeren op de Pi met live of recent opgeslagen data.
+- Verifiëren dat downloadbestanden bruikbaar zijn voor latere gezamenlijke analyse.
+
+---
+
+### SYS-CTRL-1: Ingest verwerken aan of uit kunnen zetten via de webinterface
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als gebruiker wil ik in de webinterface kunnen aangeven of ingest nieuwe data actief moet verwerken, zodat BootManager niet onnodig data blijft loggen wanneer de boot stil in de haven ligt en ik daar niet om vraag.
+
+**Scope:**
+
+- Een duidelijke toggle of bedieningsoptie bieden in de webinterface.
+- Huidige runtime-status zichtbaar maken: verwerken aan of uit.
+- Gedrag expliciet maken: wat stopt precies, bijvoorbeeld actieve verwerking, raw opslag of beide.
+- Aansluiten op bestaande operationele instellingen- en ingest-control-architectuur.
+
+**Buiten scope:**
+
+- Geen brede scheduler of automatische havenmodus.
+- Geen complexe regels op basis van locatie, tijd of beweging in deze eerste slice.
+
+**Acceptatiecriteria:**
+
+- Gebruiker kan via de webinterface ingestverwerking aan of uit zetten.
+- De huidige status is zichtbaar en eenduidig.
+- Bij uitgeschakelde verwerking stopt de bedoelde logging/verwerking aantoonbaar zoals ontworpen.
+- Bij opnieuw inschakelen hervat de verwerking zonder handmatige repo- of containeringrepen.
+- Handmatige test bevestigt dat haven-scenario's minder ongevraagde data-opslag opleveren.
+
+**Handmatige testnotities:**
+
+- Test op Pi of lokale Docker-omgeving.
+- Controleer gedrag zowel direct na uitschakelen als na opnieuw inschakelen.
+
+---
+
 ### SYS-DEPLOY-LEAN-1: Pi Deployment Zonder Ontwikkel- En Documentatiebestanden
 
 **Status:** Goedgekeurd voor latere uitwerking op 2026-05-27.

@@ -98,6 +98,8 @@ Next near-term story decision:
   - safe shutdown;
   - system action log.
 - For Raspberry Pi/system operations, the next explicit choice is no longer whether the Pi receives real boat data; that is now confirmed. The next system-operations follow-up should be one of:
+  - a web-based technical analysis page;
+  - an ingest on/off control in the web UI;
   - Pi diagnostics without manual `sqlite3`;
   - logging profile cleanup for Pi/field-test use;
   - GPS fix diagnostics around `GGA`/`RMC`;
@@ -105,6 +107,7 @@ Next near-term story decision:
   - longer-duration database/WAL/retention observation;
   - capture-log validation and replay readiness;
   - a reusable field-test checklist against Raymarine/Axiom/on-board instruments.
+  - After those operator-oriented steps, the next user-facing UI track is a live dashboard showing current measurements.
 
 Standing instruction from the user:
 
