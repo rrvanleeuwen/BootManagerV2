@@ -11,13 +11,18 @@ namespace BootManager.Tools.Ingest.Services;
 /// Implementatie van <see cref="IIngestCaptureLogger"/> die per ontvangen ingest-regel
 /// een NDJSON-record wegschrijft naar een timestamped logbestand.
 /// Aangemaakt bestand: <c>{Directory}/{FilePrefix}-yyyyMMdd-HHmmss.ndjson</c>.
-/// Als capture logging uitgeschakeld is, worden er geen bestanden aangemaakt of geschreven.
+/// Als capture logging uitgeschakeld is (via appsettings of runtime), worden er geen bestanden aangemaakt of geschreven.
+///
+/// De effectieve status wordt bepaald door: appsettings CaptureLogging.Enabled AND runtime CaptureLoggingEnabled.
+/// Beide moeten true zijn voor capture logging om actief te zijn.
 /// </summary>
 public class IngestCaptureLogger : IIngestCaptureLogger
 {
     private readonly CaptureLoggingOptions _options;
+    private readonly IIngestRuntimeSettings _runtimeSettings;
     private readonly ILogger<IngestCaptureLogger> _logger;
     private StreamWriter? _writer;
+    private bool _isEffectivelyEnabled;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -27,23 +32,40 @@ public class IngestCaptureLogger : IIngestCaptureLogger
     /// <summary>
     /// Initialiseert een nieuwe instantie van <see cref="IngestCaptureLogger"/>.
     /// </summary>
-    /// <param name="options">Ingest-opties inclusief capture logging configuratie.</param>
+    /// <param name="options">Ingest-opties inclusief capture logging configuratie (appsettings).</param>
+    /// <param name="runtimeSettings">Runtime settings die CaptureLoggingEnabled bevatten (uit database).</param>
     /// <param name="logger">Logger voor diagnostische meldingen.</param>
-    public IngestCaptureLogger(IOptions<IngestOptions> options, ILogger<IngestCaptureLogger> logger)
+    public IngestCaptureLogger(
+        IOptions<IngestOptions> options,
+        IIngestRuntimeSettings runtimeSettings,
+        ILogger<IngestCaptureLogger> logger)
     {
         _options = options.Value.CaptureLogging;
+        _runtimeSettings = runtimeSettings;
         _logger = logger;
+        _isEffectivelyEnabled = false;
     }
 
     /// <inheritdoc/>
-    public bool IsEnabled => _options.Enabled;
+    public bool IsEnabled => _isEffectivelyEnabled;
 
     /// <inheritdoc/>
     public Task InitializeAsync()
     {
-        if (!_options.Enabled)
+        // Determine effective state: both appsettings AND runtime must be true
+        var appSettingsEnabled = _options.Enabled;
+        var runtimeEnabled = _runtimeSettings.CaptureLoggingEnabled;
+        _isEffectivelyEnabled = appSettingsEnabled && runtimeEnabled;
+
+        // If either is disabled, do not create file
+        if (!_isEffectivelyEnabled)
         {
-            _logger.LogInformation("Capture logging is uitgeschakeld.");
+            var reason = appSettingsEnabled
+                ? "database/runtime setting disabled"
+                : "appsettings CaptureLogging.Enabled=false";
+            _logger.LogInformation(
+                "Capture logging is disabled ({Reason}). Appsettings={AppSettings}, Database={Database}",
+                reason, appSettingsEnabled, runtimeEnabled);
             return Task.CompletedTask;
         }
 
@@ -64,12 +86,15 @@ public class IngestCaptureLogger : IIngestCaptureLogger
                 AutoFlush = true
             };
 
-            _logger.LogInformation("Capture logging ingeschakeld. Logbestand: {FilePath}", filePath);
+            _logger.LogInformation(
+                "Capture logging enabled (appsettings={AppSettings}, database={Database}). Output file: {FilePath}",
+                appSettingsEnabled, runtimeEnabled, filePath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Fout bij initialiseren van capture logging. Capture logging wordt uitgeschakeld.");
+            _logger.LogError(ex, "Error initializing capture logging. Capture logging will be disabled.");
             _writer = null;
+            _isEffectivelyEnabled = false;
         }
 
         return Task.CompletedTask;
@@ -78,7 +103,8 @@ public class IngestCaptureLogger : IIngestCaptureLogger
     /// <inheritdoc/>
     public async Task WriteAsync(CaptureRecord record)
     {
-        if (_writer is null)
+        // Check both conditions at write time (runtime can change)
+        if (!_options.Enabled || !_runtimeSettings.CaptureLoggingEnabled || _writer is null)
         {
             return;
         }
@@ -90,7 +116,7 @@ public class IngestCaptureLogger : IIngestCaptureLogger
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Fout bij schrijven naar capture log. Verwerking gaat door.");
+            _logger.LogError(ex, "Error writing to capture log. Processing continues.");
         }
     }
 

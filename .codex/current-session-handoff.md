@@ -100,21 +100,27 @@ Next near-term story decision:
   - Test export evidence is stored at `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
   - Pi export evidence is stored at `veldtests/analysis-20260528-1635-20260529-1635.json` and `veldtests/analysis-20260528-1635-20260529-1635.csv`; both show `431021` raw `NetworkMessages` for the selected 24-hour window.
   - Persistent warning/error storage is still open; the page reports this limitation.
-- `SYS-CTRL-1: Ingest verwerken aan/uit via dashboard/logboek` is implemented on branch `feature/ingest-processing-toggle` and locally manually validated on 2026-05-29.
+- `SYS-CTRL-1: Ingest verwerken aan/uit via dashboard/logboek` was merged via PR #71 and manually validated on the Raspberry Pi on 2026-05-29.
   - Dashboard shows ingest status/toggle and no longer exposes broad operational settings.
   - Toggle uses the reload flow so the running Ingest process applies `IngestProcessingEnabled` without restart.
   - Logbook shows a warning bar while ingest processing is disabled.
   - Creating a new trip while ingest processing is disabled shows a confirmation modal.
   - `BootManager.Tools.Ingest` still has no Infrastructure/database reference and only uses Web API/control-flow.
   - Disabled-mode skips before parsing/capture/sampling/API post and logs only throttled summaries.
-  - User manually tested and approved the behavior locally.
+  - Pi validation confirmed that after correcting `apiBaseUrl` to `http://bootmanager-web:5000`, `IngestProcessingEnabled=False` caused incoming UDP lines to be skipped without API posts.
+- `SYS-CTRL-2: Ingest reload robuust maken tegen foutieve ApiBaseUrl` is implemented on branch `feature/ingest-reload-config-resilience` and locally manually approved by the user on 2026-05-29.
+  - `POST /reload-settings` now tries configured/bootstrap `Ingest__ApiBaseUrl` first and uses mutable runtime `ApiBaseUrl` only as fallback.
+  - `IngestCaptureLogger` now requires both appsettings capture logging and runtime/database `CaptureLoggingEnabled` to be true before creating/writing capture logs.
+  - New unit tests cover capture logging enabled/disabled combinations and reload URL fallback behavior.
+  - Architecture check: `BootManager.Tools.Ingest` still has no Infrastructure/database reference.
+  - Verification: `dotnet build BootManager.sln` passed with 0 warnings/errors; targeted `IngestTools|OperationalSettings` tests passed 35/35.
 - Broader system operations topics remain open for later:
   - full backup/restore UI;
   - web factory reset;
   - safe shutdown;
   - system action log.
-- For Raspberry Pi/system operations, the next explicit choice is no longer whether the Pi receives real boat data, whether local technical analysis is feasible, or whether ingest can be toggled locally; those are now confirmed. The next system-operations follow-up should be one of:
-  - Pi validation of `SYS-CTRL-1`;
+- For Raspberry Pi/system operations, the next explicit choice is no longer whether the Pi receives real boat data, whether local technical analysis is feasible, or whether ingest can be toggled locally; those are now confirmed. After `SYS-CTRL-2` is merged, the next system-operations follow-up should be one of:
+  - short Pi validation of `SYS-CTRL-2` reload/capture logging behavior;
   - Pi diagnostics without manual `sqlite3`;
   - logging profile cleanup for Pi/field-test use;
   - GPS fix diagnostics around `GGA`/`RMC`;

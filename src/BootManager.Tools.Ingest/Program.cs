@@ -25,9 +25,6 @@ var builder = Host.CreateDefaultBuilder(args)
     {
         services.Configure<IngestOptions>(context.Configuration.GetSection("Ingest"));
 
-        // Registreer capture logger als singleton (één bestand per ingest-sessie)
-        services.AddSingleton<IIngestCaptureLogger, IngestCaptureLogger>();
-
         // Registreer client voor ophalen operationele instellingen bij BootManager.Web
         services.AddHttpClient<IOperationalSettingsClientService, OperationalSettingsClientService>();
 
@@ -46,6 +43,16 @@ var builder = Host.CreateDefaultBuilder(args)
                 true,  // IngestProcessingEnabled default to true
                 options.ListenAddress,
                 options.ListenPort);
+        });
+
+        // Registreer capture logger als singleton (één bestand per ingest-sessie)
+        // Nu AFTER runtimeSettings, zodat CaptureLoggingEnabled kan worden gelezen
+        services.AddSingleton<IIngestCaptureLogger>(provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<IngestOptions>>();
+            var runtimeSettings = provider.GetRequiredService<IIngestRuntimeSettings>();
+            var logger = provider.GetRequiredService<ILogger<IngestCaptureLogger>>();
+            return new IngestCaptureLogger(options, runtimeSettings, logger);
         });
 
         // Registreer sampling policy als singleton
@@ -109,10 +116,21 @@ if (remoteSettings is not null)
     samplingPolicy.Update(runtimeSettings.RawStorageMode, remoteSettings.DefaultSampleIntervalSeconds);
     runtimeSettings.DefaultSampleIntervalSeconds = remoteSettings.DefaultSampleIntervalSeconds;
 
+    // Log initial configuration from database
     logger.LogInformation(
         "Runtime-instellingen overschreven vanuit BootManager.Web: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}, CaptureLoggingEnabled={CaptureLoggingEnabled}, IngestProcessingEnabled={IngestProcessingEnabled}, RawStorageMode={RawStorageMode}, DefaultSampleIntervalSeconds={SampleInterval}.",
         ingestOptions.ListenAddress, ingestOptions.ListenPort, runtimeSettings.ApiBaseUrl, runtimeSettings.CaptureLoggingEnabled, runtimeSettings.IngestProcessingEnabled, runtimeSettings.RawStorageMode, runtimeSettings.DefaultSampleIntervalSeconds);
     logger.LogInformation("Configuratiebron: BootManager.Web (database).");
+
+    // Inform about CaptureLoggingEnabled combination
+    if (remoteSettings.CaptureLoggingEnabled != ingestOptions.CaptureLogging.Enabled)
+    {
+        logger.LogInformation(
+            "CaptureLoggingEnabled: Database={DatabaseValue}, Appsettings={AppSettingsValue}. Effective result: capture logging {EffectiveState}. " +
+            "For capture logging to be active, BOTH appsettings CaptureLogging.Enabled AND database CaptureLoggingEnabled must be true.",
+            remoteSettings.CaptureLoggingEnabled, ingestOptions.CaptureLogging.Enabled,
+            (remoteSettings.CaptureLoggingEnabled && ingestOptions.CaptureLogging.Enabled) ? "ENABLED" : "DISABLED");
+    }
 }
 else
 {
