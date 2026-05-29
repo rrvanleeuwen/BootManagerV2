@@ -36,6 +36,9 @@ public class OperationalSettings
     /// <summary>Schakel capture-logging in of uit.</summary>
     public bool CaptureLoggingEnabled { get; private set; } = false;
 
+    /// <summary>Schakel ingest-verwerking in of uit. Als false, accepteert Ingest UDP-verkeer maar post niets naar de API.</summary>
+    public bool IngestProcessingEnabled { get; private set; } = true;
+
     /// <summary>Directory voor opslag van logboekbijlagen. Relatief of absoluut pad.</summary>
     public string LogbookAttachmentsDirectory { get; private set; } = "data/logbook-attachments";
 
@@ -61,6 +64,7 @@ public class OperationalSettings
             RawStorageMode = RawStorageMode.All,
             DefaultSampleIntervalSeconds = 10,
             CaptureLoggingEnabled = false,
+            IngestProcessingEnabled = true,
             LogbookAttachmentsDirectory = "data/logbook-attachments",
             CreatedUtc = createdUtc
         };
@@ -76,6 +80,7 @@ public class OperationalSettings
         RawStorageMode rawStorageMode,
         int defaultSampleIntervalSeconds,
         bool captureLoggingEnabled,
+        bool ingestProcessingEnabled,
         string logbookAttachmentsDirectory,
         DateTime updatedUtc)
     {
@@ -86,6 +91,7 @@ public class OperationalSettings
         RawStorageMode = rawStorageMode;
         DefaultSampleIntervalSeconds = defaultSampleIntervalSeconds;
         CaptureLoggingEnabled = captureLoggingEnabled;
+        IngestProcessingEnabled = ingestProcessingEnabled;
         LogbookAttachmentsDirectory = logbookAttachmentsDirectory;
         UpdatedUtc = updatedUtc;
     }

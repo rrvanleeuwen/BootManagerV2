@@ -447,7 +447,7 @@ We zijn geëindigd op:
 - Pi-updateafspraak: de Pi pullt alleen `master`, nooit feature-branches. Zolang een wijziging op een feature-branch staat en er nog geen PR/merge naar `master` is, test de gebruiker op de ontwikkelcomputer/devomgeving. Codex mag dan niet suggereren dat de Pi die wijziging al heeft of moet testen.
 - De Pi hoeft niet automatisch na iedere push te pullen. Bij documentatie-only wijzigingen meestal geen Pi-update. Als een Pi-update nodig is, moet Codex exact zeggen welke SSH-commando's nodig zijn en of containers opnieuw gebouwd, alleen herstart of ongemoeid moeten blijven.
 - Pi-updateflow bij code/containerwijzigingen: `git pull`, `docker compose build`, `docker compose up -d`, `docker compose ps`, `/health` controleren
-- Volgende hardwarestap: de technische echte-boot UDP-test en Pi-validatie van de analysepagina zijn bevestigd; logische vervolgkeuze is ingest-toggle, verdere diagnostics, UI-validatie of langdurige observatie op de Pi.
+- Volgende hardwarestap: de technische echte-boot UDP-test en Pi-validatie van de analysepagina zijn bevestigd. `SYS-CTRL-1` is lokaal gevalideerd en moet na merge nog op de Pi worden gevalideerd; daarna zijn live dashboard, verdere diagnostics, UI-validatie of langdurige observatie logische vervolgstappen.
 
 Extra gevalideerd op 2026-05-29 tijdens de eerste echte boot-test:
 
@@ -493,7 +493,7 @@ TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig **niet nodig**.
 De TCP-poort lijkt bedoeld voor de eigen YDEN-software; BootManager gebruikt de bewezen UDP NMEA 0183 route.
 
 ### Mogelijke volgende stappen
-- Ingest verwerken aan/uit via de webinterface om havenlogging bewust te kunnen stoppen
+- Pi-validatie van `SYS-CTRL-1`: ingest-verwerking via dashboard aan/uit, logboekwaarschuwing, nieuwe-reis-popup en disabled-mode zonder oplopende database-aantallen
 - Live dashboard met actuele waarden zoals wind, windhoek, positie, koers, diepte en andere beschikbare metingen
 - Digitaal logboek: routekaart en/of echte PDF/CSV-export zijn nu de meest logische vervolgslices.
 - Conflict/deduplicatiebeleid tussen NMEA2000 en NMEA0183 measurements

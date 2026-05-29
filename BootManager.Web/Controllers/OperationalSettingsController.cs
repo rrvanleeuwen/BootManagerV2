@@ -50,6 +50,7 @@ public class OperationalSettingsController : ControllerBase
             ListenPort = settings.ListenPort,
             ApiBaseUrl = settings.ApiBaseUrl,
             CaptureLoggingEnabled = settings.CaptureLoggingEnabled,
+            IngestProcessingEnabled = settings.IngestProcessingEnabled,
             RawStorageMode = settings.RawStorageMode.ToString(),
             DefaultSampleIntervalSeconds = settings.DefaultSampleIntervalSeconds
         };

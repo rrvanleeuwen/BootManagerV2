@@ -59,6 +59,7 @@ public class OperationalSettingsService : IOperationalSettingsService
                 dto.RawStorageMode,
                 dto.DefaultSampleIntervalSeconds,
                 dto.CaptureLoggingEnabled,
+                dto.IngestProcessingEnabled,
                 dto.LogbookAttachmentsDirectory,
                 _clock.UtcNow);
             await _repository.AddAsync(settings, ct);
@@ -73,6 +74,7 @@ public class OperationalSettingsService : IOperationalSettingsService
                 dto.RawStorageMode,
                 dto.DefaultSampleIntervalSeconds,
                 dto.CaptureLoggingEnabled,
+                dto.IngestProcessingEnabled,
                 dto.LogbookAttachmentsDirectory,
                 _clock.UtcNow);
             await _repository.UpdateAsync(settings, ct);
@@ -89,6 +91,7 @@ public class OperationalSettingsService : IOperationalSettingsService
             RawStorageMode = s.RawStorageMode,
             DefaultSampleIntervalSeconds = s.DefaultSampleIntervalSeconds,
             CaptureLoggingEnabled = s.CaptureLoggingEnabled,
+            IngestProcessingEnabled = s.IngestProcessingEnabled,
             LogbookAttachmentsDirectory = string.IsNullOrWhiteSpace(s.LogbookAttachmentsDirectory)
                 ? DefaultLogbookAttachmentsDirectory
                 : s.LogbookAttachmentsDirectory

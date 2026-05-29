@@ -14,6 +14,7 @@ public class IngestRuntimeSettings : IIngestRuntimeSettings
     private RawStorageMode _rawStorageMode = RawStorageMode.All;
     private int _defaultSampleIntervalSeconds = 10;
     private bool _captureLoggingEnabled = false;
+    private bool _ingestProcessingEnabled = true;
     private string _listenAddress = "0.0.0.0";
     private int _listenPort = 10110;
 
@@ -24,6 +25,7 @@ public class IngestRuntimeSettings : IIngestRuntimeSettings
     /// <param name="rawStorageMode">Initiële RawStorageMode.</param>
     /// <param name="defaultSampleIntervalSeconds">Initieel sample interval in seconden.</param>
     /// <param name="captureLoggingEnabled">Of capture logging initieel is ingeschakeld.</param>
+    /// <param name="ingestProcessingEnabled">Of ingest-verwerking initieel is ingeschakeld.</param>
     /// <param name="listenAddress">IP-adres van de UDP listener (niet live aanpasbaar).</param>
     /// <param name="listenPort">Poort van de UDP listener (niet live aanpasbaar).</param>
     public IngestRuntimeSettings(
@@ -31,6 +33,7 @@ public class IngestRuntimeSettings : IIngestRuntimeSettings
         RawStorageMode rawStorageMode,
         int defaultSampleIntervalSeconds,
         bool captureLoggingEnabled,
+        bool ingestProcessingEnabled,
         string listenAddress,
         int listenPort)
     {
@@ -38,6 +41,7 @@ public class IngestRuntimeSettings : IIngestRuntimeSettings
         _rawStorageMode = rawStorageMode;
         _defaultSampleIntervalSeconds = defaultSampleIntervalSeconds;
         _captureLoggingEnabled = captureLoggingEnabled;
+        _ingestProcessingEnabled = ingestProcessingEnabled;
         _listenAddress = listenAddress;
         _listenPort = listenPort;
     }
@@ -114,6 +118,25 @@ public class IngestRuntimeSettings : IIngestRuntimeSettings
             lock (_lockObject)
             {
                 _captureLoggingEnabled = value;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool IngestProcessingEnabled
+    {
+        get
+        {
+            lock (_lockObject)
+            {
+                return _ingestProcessingEnabled;
+            }
+        }
+        set
+        {
+            lock (_lockObject)
+            {
+                _ingestProcessingEnabled = value;
             }
         }
     }

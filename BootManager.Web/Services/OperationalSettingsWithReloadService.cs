@@ -12,6 +12,13 @@ namespace BootManager.Web.Services;
 public interface IOperationalSettingsWithReloadService
 {
     /// <summary>
+    /// Haalt operationele instellingen op.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>De huidige operationele instellingen.</returns>
+    Task<OperationalSettingsDto> GetOperationalSettingsAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Slaat operationele instellingen op en triggert Ingest reload.
     /// </summary>
     /// <param name="dto">De te bewaren instellingen.</param>
@@ -39,6 +46,12 @@ public class OperationalSettingsWithReloadService : IOperationalSettingsWithRelo
         _operationalSettingsService = operationalSettingsService;
         _ingestControlClient = ingestControlClient;
         _logger = logger;
+    }
+
+    /// <inheritdoc />
+    public async Task<OperationalSettingsDto> GetOperationalSettingsAsync(CancellationToken ct = default)
+    {
+        return await _operationalSettingsService.GetAsync(ct);
     }
 
     /// <inheritdoc />
