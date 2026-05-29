@@ -7,21 +7,25 @@
 
 <h2 class="mb-3">Technische Analyse</h2>
 
-    <div class="card mb-4">
+<div class="card mb-4">
     <div class="card-header">
         <span>Analyse-venster</span>
     </div>
     <div class="card-body">
-        <div class="row g-2">
-            <div class="col-md-4">
-                <label class="form-label">Van (lokaal) *</label>
-                <input type="datetime-local" class="form-control" @bind="_startLocal" @bind:format="yyyy-MM-ddTHH:mm" />
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Van *</label>
+                <input type="text" class="form-control" placeholder="29-05-2026 20:57"
+                       value="@_startDateTimeText" @oninput="OnStartChanged" />
+                <small class="form-text text-muted">Gebruik formaat dd-MM-jjjj uu:mm.</small>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">Tot (lokaal) *</label>
-                <input type="datetime-local" class="form-control" @bind="_endLocal" @bind:format="yyyy-MM-ddTHH:mm" />
+            <div class="col-md-5">
+                <label class="form-label">Tot *</label>
+                <input type="text" class="form-control" placeholder="29-05-2026 20:57"
+                       value="@_endDateTimeText" @oninput="OnEndChanged" />
+                <small class="form-text text-muted">Gebruik formaat dd-MM-jjjj uu:mm.</small>
             </div>
-            <div class="col-md-4 d-flex align-items-end">
+            <div class="col-md-2 d-flex align-items-end">
                 <button class="btn btn-primary w-100" @onclick="FetchAnalysis" disabled="@_loading">
                     @if (_loading)
                     {
@@ -34,7 +38,10 @@
                 </button>
             </div>
         </div>
-        <small class="text-muted d-block mt-2">Selecteer een tijdsvenster en klik Analyseren om diagnostische gegevens op te halen.</small>
+        @if (!string.IsNullOrEmpty(_validationError))
+        {
+            <div class="alert alert-danger mt-3">@_validationError</div>
+        }
     </div>
 </div>
 
@@ -129,28 +136,99 @@
 }
 
 @code {
-    private DateTime _startLocal = DateTime.Now.AddHours(-24);
-    private DateTime _endLocal = DateTime.Now;
+    // String-backed text fields (dd-MM-yyyy HH:mm format)
+    private string _startDateTimeText = "";
+    private string _endDateTimeText = "";
+
+    // Parsed DateTime values (local time)
+    private DateTime _startLocal;
+    private DateTime _endLocal;
+
+    // UI state
     private AnalysisSummaryDto? _summary;
     private string _error = "";
+    private string _validationError = "";
     private bool _loading = false;
     private bool _exporting = false;
 
+    protected override void OnInitialized()
+    {
+        // Initialize with default values: 24 hours ago to now (local time)
+        _startLocal = DateTime.Now.AddHours(-24);
+        _endLocal = DateTime.Now;
+
+        // Format as dd-MM-yyyy HH:mm for display
+        var cultureInfo = System.Globalization.CultureInfo.InvariantCulture;
+        _startDateTimeText = _startLocal.ToString("dd-MM-yyyy HH:mm", cultureInfo);
+        _endDateTimeText = _endLocal.ToString("dd-MM-yyyy HH:mm", cultureInfo);
+    }
+
+    private void OnStartChanged(ChangeEventArgs e)
+    {
+        if (e.Value != null)
+        {
+            _startDateTimeText = e.Value.ToString() ?? "";
+        }
+    }
+
+    private void OnEndChanged(ChangeEventArgs e)
+    {
+        if (e.Value != null)
+        {
+            _endDateTimeText = e.Value.ToString() ?? "";
+        }
+    }
+
     private async Task FetchAnalysis()
     {
-        _loading = true;
+        _validationError = "";
         _error = "";
+
+        // Validate and parse
+        var cultureInfo = System.Globalization.CultureInfo.InvariantCulture;
+        var dateTimeFormat = "dd-MM-yyyy HH:mm";
+
+        // Check if fields are empty
+        if (string.IsNullOrWhiteSpace(_startDateTimeText))
+        {
+            _validationError = "Begintijd is verplicht.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_endDateTimeText))
+        {
+            _validationError = "Eindtijd is verplicht.";
+            return;
+        }
+
+        // Try to parse start datetime
+        if (!DateTime.TryParseExact(_startDateTimeText, dateTimeFormat, cultureInfo, System.Globalization.DateTimeStyles.None, out _startLocal))
+        {
+            _validationError = "Gebruik voor Van het formaat dd-MM-jjjj uu:mm.";
+            return;
+        }
+
+        // Try to parse end datetime
+        if (!DateTime.TryParseExact(_endDateTimeText, dateTimeFormat, cultureInfo, System.Globalization.DateTimeStyles.None, out _endLocal))
+        {
+            _validationError = "Gebruik voor Tot het formaat dd-MM-jjjj uu:mm.";
+            return;
+        }
+
+        // Check that start < end
+        if (_startLocal >= _endLocal)
+        {
+            _validationError = "Begintijd moet voor eindtijd liggen.";
+            return;
+        }
+
+        // All valid, fetch analysis
+        _loading = true;
 
         try
         {
             var startUtc = _startLocal.ToUniversalTime();
             var endUtc = _endLocal.ToUniversalTime();
-
-            if (startUtc >= endUtc)
-            {
-                _error = "Begintijd moet voor eindtijd liggen.";
-                return;
-            }
 
             var request = new AnalysisTimeWindowDto { StartUtc = startUtc, EndUtc = endUtc };
             _summary = await AnalysisService.GetAnalysisSummaryAsync(request);

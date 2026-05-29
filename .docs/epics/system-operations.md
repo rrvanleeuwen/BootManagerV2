@@ -500,7 +500,7 @@ Waargenomen aandachtspunten:
 
 ### SYS-ANALYSIS-2: Datum/tijd invoer op analysepagina betrouwbaar maken
 
-**Status:** Vastgelegd als bugfix-kandidaat op 2026-05-29.
+**Status:** Geïmplementeerd op branch `feature/analysis-date-input-fix` en handmatig geaccepteerd als pragmatische bugfix op 2026-05-29. PR/merge en Pi-validatie volgen nog.
 
 **User Story:** Als beheerder wil ik op de analysepagina de begin- en einddatum/tijd betrouwbaar kunnen wijzigen via toetsenbord en picker, zodat ik zelf een exact analysevenster kan kiezen zonder dat de velden terugvallen naar oude waarden.
 
@@ -549,6 +549,17 @@ Tijdens gebruik van de analysepagina op 2026-05-29 bleek dat beide datum/tijd-ve
 - Test lokaal met de browser/picker voor beide velden.
 - Klik daarna analyse ophalen en controleer dat het gekozen venster zichtbaar in de resultaten/export terugkomt.
 - Herhaal bij voorkeur op de Pi of tegen de Pi-webinterface na merge.
+
+**Implementation Status (2026-05-29):**
+
+- Native `datetime-local`, `date` en `time` inputs bleken onvoldoende betrouwbaar door browsersegment-gedrag tijdens deelbewerking.
+- Voor deze bugfix is gekozen voor twee gewone tekstvelden: `Van` en `Tot`.
+- Verwacht formaat is `dd-MM-jjjj uu:mm`; intern wordt exact geparset als `dd-MM-yyyy HH:mm`.
+- De pagina formatteert of normaliseert niet tijdens typen; parse/validatie gebeurt pas bij `Analyseren`.
+- Ongeldige invoer blijft zichtbaar staan en krijgt een expliciete validatiefout.
+- Dit is een pragmatische oplossing om de analysepagina bruikbaar te maken; een gebruiksvriendelijkere datum/tijd-picker kan later onderdeel zijn van een bredere UI-framework/componentkeuze.
+- Verificatie: `dotnet build BootManager.sln` geslaagd met `0` warnings/errors.
+- Handmatige test door gebruiker is akkoord bevonden, met de kanttekening dat de tekstveld-UX niet ideaal is maar acceptabel voor deze bugfix.
 
 ---
 
