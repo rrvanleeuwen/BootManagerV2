@@ -99,7 +99,7 @@ Next near-term story decision:
   - Count queries use `IRepository.CountAsync(...)` instead of loading lists only to count them.
   - Test export evidence is stored at `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
   - Pi export evidence is stored at `veldtests/analysis-20260528-1635-20260529-1635.json` and `veldtests/analysis-20260528-1635-20260529-1635.csv`; both show `431021` raw `NetworkMessages` for the selected 24-hour window.
-  - `SYS-ANALYSIS-2` was merged via PR #73 and manually accepted as a pragmatic bugfix on 2026-05-29. Native `datetime-local`, `date` and `time` controls were rejected because browser segment editing remained unreliable. The analysis page now uses two plain text fields (`Van`, `Tot`) with format `dd-MM-jjjj uu:mm`; parsing/validation happens only when clicking `Analyseren`. UX is not ideal, but acceptable for this fix.
+  - `SYS-ANALYSIS-2` was merged via PR #73 and manually validated on the Raspberry Pi on 2026-05-29. Native `datetime-local`, `date` and `time` controls were rejected because browser segment editing remained unreliable. The analysis page now uses two plain text fields (`Van`, `Tot`) with format `dd-MM-jjjj uu:mm`; parsing/validation happens only when clicking `Analyseren`. UX is not ideal, but acceptable for this fix.
   - Persistent warning/error storage is still open; the page reports this limitation.
 - `SYS-CTRL-1: Ingest verwerken aan/uit via dashboard/logboek` was merged via PR #71 and manually validated on the Raspberry Pi on 2026-05-29.
   - Dashboard shows ingest status/toggle and no longer exposes broad operational settings.
