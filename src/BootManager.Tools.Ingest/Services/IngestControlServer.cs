@@ -278,6 +278,8 @@ public class IngestControlServer : IHostedService
 
     /// <summary>
     /// POST /reload-settings - haalt nieuwste settings op en past ze live toe.
+    /// Implementeert fallback-strategie: probeer eerst configured/bootstrap URL (stabiel),
+    /// dan runtime ApiBaseUrl (mutable, kan fout zijn).
     /// </summary>
     private async Task HandlePostReloadSettings(HttpListenerResponse response)
     {
@@ -285,16 +287,40 @@ public class IngestControlServer : IHostedService
         {
             _logger.LogInformation("Reload settings request received...");
 
-            // Haal settings opnieuw op met huidige ApiBaseUrl
-            var newSettings = await _settingsClient.TryGetSettingsAsync(_runtimeSettings.ApiBaseUrl);
+            // Haal ingesteld configured/bootstrap ApiBaseUrl op
+            var configuredApiBaseUrl = _options.Value.ApiBaseUrl;
+            var runtimeApiBaseUrl = _runtimeSettings.ApiBaseUrl;
+
+            // Stap 1: Probeer eerst met configured/bootstrap URL (stabiel, aanbevolen route)
+            _logger.LogInformation("Attempting to fetch settings using configured ApiBaseUrl (bootstrap): {Url}", configuredApiBaseUrl);
+            var newSettings = await _settingsClient.TryGetSettingsAsync(configuredApiBaseUrl);
+
+            // Stap 2: Als configured URL faalt EN runtime URL verschilt, probeer runtime URL als fallback
+            if (newSettings is null && runtimeApiBaseUrl != configuredApiBaseUrl)
+            {
+                _logger.LogInformation(
+                    "Configured ApiBaseUrl ({ConfiguredUrl}) failed. Attempting fallback with runtime ApiBaseUrl: {RuntimeUrl}",
+                    configuredApiBaseUrl, runtimeApiBaseUrl);
+
+                newSettings = await _settingsClient.TryGetSettingsAsync(runtimeApiBaseUrl);
+
+                if (newSettings is not null)
+                {
+                    _logger.LogInformation(
+                        "Successfully fetched settings from fallback runtime ApiBaseUrl ({Url}).",
+                        runtimeApiBaseUrl);
+                }
+            }
 
             if (newSettings is null)
             {
-                _logger.LogWarning("Failed to fetch remote settings during reload.");
+                _logger.LogWarning(
+                    "Failed to fetch remote settings from configured ApiBaseUrl ({ConfiguredUrl}) or runtime ApiBaseUrl ({RuntimeUrl}). Reload failed.",
+                    configuredApiBaseUrl, runtimeApiBaseUrl);
                 response.StatusCode = 503; // Service unavailable
                 var errorJson = JsonSerializer.Serialize(new { 
                     success = false, 
-                    message = "Failed to fetch settings from BootManager.Web" 
+                    message = "Failed to fetch settings from BootManager.Web via configured or runtime API URLs"
                 });
                 await response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(errorJson));
                 return;

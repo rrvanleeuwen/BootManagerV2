@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is lokaal geïmplementeerd en gevalideerd op 2026-05-29; Pi-validatie na merge en vervolgwerk voor diagnostics, loggingprofiel en langdurige observatie blijven open.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-CTRL-2 is geïmplementeerd en lokaal handmatig goedgekeurd op 2026-05-29; PR/merge en Pi-validatie na merge volgen nog.
 
 ## Aanleiding
 
@@ -499,7 +499,7 @@ Waargenomen aandachtspunten:
 
 ### SYS-CTRL-1: Ingest verwerken aan of uit kunnen zetten via de webinterface
 
-**Status:** ✅ Geïmplementeerd op feature branch `feature/ingest-processing-toggle` en lokaal handmatig gevalideerd op 2026-05-29. PR/merge naar `master` en Pi-validatie na merge nog af te ronden.
+**Status:** ✅ Geïmplementeerd, gemerged naar `master` via PR #71 en handmatig gevalideerd op Raspberry Pi op 2026-05-29.
 
 **User Story:** Als gebruiker wil ik ingest-verwerking via het dashboard kunnen aan- of uitzetten en in dashboard/logboek duidelijk gewaarschuwd worden wanneer verwerking uit staat, zodat ik bewust havenlogging kan stoppen zonder per ongeluk een reis te starten of bij te houden zonder automatische meetdata.
 
@@ -564,8 +564,75 @@ Waargenomen aandachtspunten:
 
 **Open vervolg:**
 
-- Pi-validatie na merge naar `master` blijft nodig.
 - Volledige sensorconfiguratie, automatische havenmodus, scheduler, live dashboardmeters en persistent systeemactie-logboek blijven aparte stories.
+
+---
+
+### SYS-CTRL-2: Ingest reload robuust maken tegen foutieve ApiBaseUrl
+
+**Status:** ✅ Geïmplementeerd op branch `feature/ingest-reload-config-resilience` en lokaal handmatig goedgekeurd op 2026-05-29. PR/merge en Pi-validatie na merge volgen nog.
+
+**User Story:** Als beheerder wil ik dat Ingest operationele instellingen betrouwbaar kan herladen, ook als de opgeslagen `ApiBaseUrl` fout staat, zodat de Pi niet vastloopt in een situatie waarin de UI wel instellingen opslaat maar de draaiende Ingest-runtime ze niet meer kan ophalen.
+
+**Aanleiding:**
+
+Tijdens Pi-validatie na `SYS-CTRL-1` bleek dat de operationele instellingen in de database nog de dev-URL `http://localhost:5046` bevatten. Binnen de Docker-container betekent `localhost` de ingest-container zelf, waardoor Ingest geen Web API kon bereiken. De UI kon de instelling wel opslaan en de Ingest control API bereiken, maar `POST /reload-settings` probeerde de nieuwe settings op te halen via de foutieve runtime `ApiBaseUrl` en gaf daardoor `Service Unavailable`.
+
+Na handmatig herstellen van `ApiBaseUrl` naar `http://bootmanager-web:5000` en restart van `bootmanager-ingest` werkte de Pi-correct:
+
+- Ingest haalde settings op via `http://bootmanager-web:5000/api/operationalsettings/ingest`.
+- `IngestProcessingEnabled=False` werd toegepast.
+- Nieuwe UDP-regels werden geteld als skipped en niet naar de API gepost.
+
+Er bleef één extra observatie over: ondanks `CaptureLoggingEnabled=False` werd bij startup nog "Capture logging ingeschakeld" gelogd.
+
+**Scope:**
+
+- `POST /reload-settings` in Ingest mag niet uitsluitend afhankelijk zijn van de mutable runtime `ApiBaseUrl`.
+- Reload gebruikt de vaste ingest-config/bootstrap URL uit `Ingest__ApiBaseUrl` als primaire of fallback route naar BootManager.Web.
+- Als de database `ApiBaseUrl` een dev-waarde zoals `http://localhost:5046` bevat op Docker/Pi, moet dit duidelijker gelogd/gefaald worden of herstelbaar blijven via reload/restart.
+- Controleer waarom `CaptureLoggingEnabled=False` wordt opgehaald maar startup toch "Capture logging ingeschakeld" logt; fix dit als het functioneel fout is.
+- Geen directe database-access vanuit `BootManager.Tools.Ingest`; alleen Web API/control-flow blijft toegestaan.
+
+**Buiten scope:**
+
+- Geen nieuwe UI voor settings.
+- Geen automatische migratie van bestaande foutieve Pi-settings.
+- Geen persistent systeemactie-logboek.
+- Geen wijziging aan UDP listener gedrag of dashboard-toggle scope.
+
+**Acceptatiecriteria:**
+
+- Ingest reload kan settings ophalen via de vaste compose/config URL `http://bootmanager-web:5000`, ook als runtime `ApiBaseUrl` fout staat.
+- Foutieve of onbereikbare runtime `ApiBaseUrl` blokkeert herstel via reload niet blijvend.
+- Ingest blijft architecturaal gescheiden van database/Infrastructure.
+- `CaptureLoggingEnabled=False` leidt niet tot actieve capture logging, of de logging verklaart correct waarom restart nodig is.
+- Build en relevante ingest/settings tests slagen.
+- Handmatige test op Pi: foutieve `ApiBaseUrl` herstellen naar `http://bootmanager-web:5000`, reload/restart controleren, daarna toggle uit en geen nieuwe API-posts zien.
+
+**Legacy coverage impact:**
+
+- `US8.5 Sensorintegratie configureren`: blijft `Partial`, maar betrouwbaarheid van operationele ingest-config verbetert.
+- `US8.6 Raspberry Pi-configuratie beheren`: blijft `Partial`, Pi-beheer wordt robuuster.
+- `US8.11 Systeemactie-logboek`: blijft `Open`, want deze story slaat runtime events nog niet persistent op.
+
+**Handmatige testnotities:**
+
+- Lokaal of op Pi simuleren dat runtime `ApiBaseUrl` fout staat en dat reload alsnog via de vaste config/bootstrap URL kan herstellen.
+- Op de Pi controleren dat `curl -s http://localhost:5000/api/operationalsettings/ingest` `apiBaseUrl` als `http://bootmanager-web:5000` teruggeeft.
+- Na `docker compose restart bootmanager-ingest` controleren dat logs settings via `http://bootmanager-web:5000` ophalen.
+- Met ingest-verwerking uit controleren dat logs alleen skipped summaries tonen en geen nieuwe `POST /api/networkmessages` regels.
+
+**Implementation Status (2026-05-29):**
+
+- `POST /reload-settings` probeert nu eerst de vaste configured/bootstrap `Ingest__ApiBaseUrl` en gebruikt de mutable runtime `ApiBaseUrl` alleen als fallback wanneer de configured URL faalt.
+- Hiermee kan een foutieve runtime/databasewaarde zoals `http://localhost:5046` herstel via reload niet blijvend blokkeren zolang de compose/config bootstrap URL correct is.
+- `IngestCaptureLogger` gebruikt nu de effectieve combinatie van appsettings en runtime/database: capture logging is alleen actief wanneer `Ingest__CaptureLogging__Enabled=true` én `CaptureLoggingEnabled=true`.
+- Als `CaptureLoggingEnabled=false` uit de database komt, wordt geen capture-logbestand aangemaakt en schrijft Ingest niets naar capture logs, ook niet wanneer compose capture logging technisch aan heeft staan.
+- Nieuwe unit tests dekken capture logging aan/uit-combinaties en de reload URL-volgorde/fallback.
+- Architectuurcontrole: `BootManager.Tools.Ingest` heeft geen Infrastructure/database-reference en gebruikt voor instellingen alleen Web API/control-flow.
+- Verificatie: `dotnet build BootManager.sln` geslaagd met `0` warnings/errors; gerichte tests `IngestTools|OperationalSettings` geslaagd met `35/35`.
+- Handmatige lokale test door gebruiker is akkoord bevonden.
 
 ---
 
