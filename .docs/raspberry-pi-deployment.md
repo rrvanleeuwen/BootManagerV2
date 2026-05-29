@@ -13,6 +13,43 @@ Doel: BootManager headless draaien op een Raspberry Pi. De eerste geslaagde depl
 - Docker images lokaal gebouwd op de Pi.
 - GitHub `master` blijft leidend; de Pi hoort een schone afspiegeling van `origin/master` te zijn.
 
+## Gevalideerde veldteststatus
+
+Op `2026-05-29` is de eerste echte veldtest aan boord uitgevoerd met BootManagerV2 op de Raspberry Pi via Docker Compose.
+
+Context van deze test:
+
+- Pi-stand: `master @ 1db5534` (`Document sudo requirement for Pi reset script`)
+- De Pi had de resetflow uit PR #65 beschikbaar en draaide op een stabiele `master`.
+- Bootstrap/onboarding waren al uitgevoerd; er was nog geen bewust opgebouwde meetdataset nodig voor deze check.
+- De NMEA-apparatuur werd pas aangezet nadat containerstatus en health waren bevestigd.
+
+Resultaat: `geslaagd`
+
+Groen bevestigd:
+
+- `bootmanager-web` was healthy via `/health`.
+- `bootmanager-ingest` ontving echte boordnetwerkdata op UDP `10110`.
+- Ingest postte succesvol naar `http://bootmanager-web:5000/api/networkmessages`.
+- De Web API antwoordde herhaaldelijk met `HTTP 201 Created`.
+- Ruwe `NetworkMessages` werden opgeslagen in SQLite.
+- Echte NMEA 0183 sentence-types werden geparset.
+- Meerdere measurement-tabellen werden gevuld, onder meer heading, wind, speed through water, watertemperatuur, positie en motion.
+- Er zijn tijdens de gecontroleerde checks geen recente `error`, `exception` of `fail` meldingen gezien.
+
+Geel/open uit dezelfde test:
+
+- `sqlite3` ontbrak op de Pi-host en in de container, waardoor directe SQL-inspectie niet beschikbaar was.
+- Veel `GGA`-berichten met fixkwaliteit `0` gaven warnings; dit blokkeerde de keten niet, maar veroorzaakte logruis.
+- UI-validatie van live meetdata was nog niet onderdeel van deze test.
+- Langdurige duurtest, WAL-groei, retentie en capture-logvalidatie blijven open.
+
+Terminologie-afspraak:
+
+- De fysieke bron op de boot is NMEA2000/SeaTalkNG via een gateway.
+- BootManager ontvangt op de Pi momenteel NMEA 0183 UDP-sentences van die gateway.
+- Documentatie moet die twee lagen expliciet blijven onderscheiden.
+
 ## Belangrijke keuze
 
 Gebruik bij voorkeur minimaal een 32 GB microSD-kaart voor tests. Voor langdurige logging of productie is SD-opslag niet ideaal.
@@ -272,7 +309,11 @@ Als de UI vanaf andere apparaten bereikbaar moet zijn, moet de webapp luisteren 
 
 ## Open vragen voor de volgende sessie
 
-- Boot-test met YDEN UDP broadcast op het bootnetwerk/Teltonika.
+- UI-validatie van live Pi-data tegen dashboard/logboek of andere relevante schermen.
+- Pi diagnostics zonder losse `sqlite3`-installatie.
+- Loggingprofiel voor Pi-veldtest/productie, met minder EF SQL-noise en minder herhaalde `GGA`-warnings.
+- Langdurige Pi-observatie van databasegroei, WAL en retentie.
+- Capture logs en replaybaarheid expliciet valideren.
 - Definitieve hardwarekeuze voor productie/pilot: SD versus eMMC/NVMe/SSD, 4 GB/8 GB RAM.
 - Backup/restore-procedure voor database, bijlagen en logs.
 - Veilige shutdown-flow vanuit UI/helper-service.

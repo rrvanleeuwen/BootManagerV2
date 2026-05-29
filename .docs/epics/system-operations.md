@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29; vervolgwerk voor diagnostics, loggingprofiel en langdurige observatie is vastgelegd.
 
 ## Aanleiding
 
@@ -156,6 +156,354 @@ Deze story is een kleine operator-slice en vervangt niet:
 - veilige shutdown vanuit UI/helper-service.
 
 Die onderwerpen blijven aparte systeembeheerstories.
+
+---
+
+### SYS-FIELD-1: Eerste Pi-veldtest met echte bootdata documenteren en vervolgwerk snijden
+
+**Status:** Goedgekeurd voor documentatie-uitwerking op 2026-05-29.
+
+**User Story:** Als ontwikkelaar/operator wil ik de eerste echte Raspberry Pi-veldtest met boordnetwerkdata zakelijk vastleggen en vertalen naar concrete vervolgstories, zodat de gevalideerde Pi-status, beperkingen en vervolgstappen betrouwbaar in de projectdocumentatie staan.
+
+**Aanleiding:**
+
+Op 2026-05-29 is aan boord de eerste echte Raspberry Pi-veldtest uitgevoerd met BootManagerV2 via Docker Compose op `master` commit `1db5534`.
+
+Bevestigd tijdens deze test:
+
+- `bootmanager-web` was healthy via `/health`.
+- `bootmanager-ingest` ontving echte boordnetwerkdata op UDP `10110`.
+- Ingest postte berichten succesvol naar `http://bootmanager-web:5000/api/networkmessages`.
+- De Web API antwoordde herhaaldelijk met `HTTP 201 Created`.
+- Ruwe `NetworkMessages` werden opgeslagen in SQLite.
+- Meerdere NMEA 0183 sentence-types werden geparset uit echte bootdata.
+- Meerdere measurement-tabellen werden gevuld, onder meer `HeadingMeasurements`, `WindMeasurements`, `SpeedThroughWaterMeasurements`, `WaterTemperatureMeasurements`, `PositionMeasurements` en `MotionMeasurements`.
+- Er zijn geen recente `error`, `exception` of `fail` meldingen gezien.
+
+Waargenomen aandachtspunten:
+
+- `sqlite3` ontbrak zowel op de Pi-host als in de container, waardoor directe SQL-inspectie niet mogelijk was.
+- Herhaalde waarschuwingen voor `GGA` met fixkwaliteit `0` veroorzaakten logruis, maar geen crash of API-fout.
+- UI-validatie van live meetdata is nog niet uitgevoerd.
+- Langdurige observatie van databasegroei, WAL-bestand, retentie en capture logs staat nog open.
+- Terminologie moet consequent blijven: fysieke bron is NMEA2000/SeaTalkNG via gateway; BootManager ontvangt momenteel NMEA 0183 UDP-sentences.
+
+**Scope:**
+
+- De veldtest van `2026-05-29` documenteren met expliciete Pi-, branch- en commitcontext.
+- Zakelijk vastleggen wat `groen`, `geel` en `open` is aan deze test.
+- Huidige Raspberry Pi/Docker documentatie en handoff bijwerken met deze gevalideerde status.
+- Concrete vervolgstories formuleren voor diagnostics, logging, UI-validatie, retentie/WAL, capture logs en veldtestprocedure.
+
+**Buiten scope:**
+
+- Geen applicatiecodewijzigingen.
+- Geen nieuwe Pi-runtime-test uitvoeren als onderdeel van deze documentatiestap.
+- Geen reset, loggingherconfiguratie of diagnostics-endpoint implementeren.
+- Geen wijziging aan de master-only Pi-updateafspraak.
+
+**Acceptatiecriteria:**
+
+- De documentatie noemt expliciet: datum `2026-05-29`, platform `Raspberry Pi + Docker Compose`, branch/commit `master @ 1db5534`, resultaat `geslaagd`.
+- De documentatie noemt expliciet dat ingest, API, parsing, interpretatie en database-opslag tijdens de echte boot-test bevestigd zijn.
+- De documentatie noemt expliciet dat geen recente `error`, `exception` of `fail` meldingen zijn gezien.
+- De documentatie noemt expliciet dat `sqlite3` ontbrak en dat `GGA` met fixkwaliteit `0` veel warnings gaf.
+- De documentatie noemt expliciet dat UI-validatie en langdurige duurtest nog openstaan.
+- Vervolgstories zijn vastgelegd met acceptatiecriteria en testnotities.
+- De werkstap blijft documentatie-only.
+
+**Legacy coverage impact:**
+
+- Onderbouwt bestaande `Partial` dekking van `US8.6 Raspberry Pi-configuratie beheren`.
+- Raakt `US8.11 Systeemactie-logboek` en `US8.8 Back-up maken en herstellen` als open vervolggebied, zonder ze af te vinken.
+- Verandert geen legacy-user-story direct naar `Done`.
+
+**Handmatige testnotities:**
+
+- Deze story zelf vraagt alleen documentatiecontrole en `git diff`-controle.
+- Nieuwe runtime-tests volgen in aparte stories hieronder.
+
+---
+
+### SYS-DIAG-1: Pi diagnostics zonder handmatige sqlite3-inspectie
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als operator wil ik op de Raspberry Pi eenvoudig aantallen `NetworkMessages` en relevante measurement-tabellen kunnen zien zonder handmatige sqlite3-installatie, zodat ik veldtests en supportchecks sneller kan uitvoeren.
+
+**Scope:**
+
+- Een veilige read-only diagnostics route kiezen: runbook-hulpmiddel, CLI-hulpscript of intern endpoint.
+- Minimaal aantallen tonen voor `NetworkMessages` en de relevante measurement-tabellen die nu tijdens veldtests gebruikt worden.
+- Duidelijk documenteren hoe deze diagnostics op de Pi uitgevoerd worden.
+
+**Buiten scope:**
+
+- Geen algemene database-browser.
+- Geen write-acties.
+- Geen publieke internet-exposure.
+
+**Acceptatiecriteria:**
+
+- Operator kan op de Pi zonder losse sqlite3-installatie een overzicht opvragen van `NetworkMessages` en kern-measurements.
+- De gekozen route is read-only.
+- Runbook/documentatie beschrijft exact hoe de check uitgevoerd wordt.
+- Handmatige Pi-test toont dat de aantallen zichtbaar zijn na ontvangst van echte of gesimuleerde data.
+
+**Handmatige testnotities:**
+
+- Pi-veldtest of lokale Pi-achtige Docker-test.
+- Verifieer dat na draaiende ingest de aantallen oplopen.
+
+---
+
+### SYS-LOG-1: Loggingprofiel voor Pi-veldtest en productie aanscherpen
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als operator wil ik tijdens Pi-veldtests minder logruis en beter bruikbare operationele logging zien, zodat relevante waarschuwingen niet verdrinken in verwachte validatieberichten en EF SQL-noise.
+
+**Scope:**
+
+- Evalueren van logniveau voor EF SQL logging in Pi/veldtestscenario's.
+- Evalueren van logniveau of throttling voor verwachte NMEA-validatie-afwijzingen, met name `GGA` fixkwaliteit `0`.
+- Heldere operationele logging behouden voor echte fouten, health en ingest-doorvoer.
+
+**Buiten scope:**
+
+- Geen volledige logging-stackmigratie.
+- Geen observability-platform of externe logaggregatie.
+
+**Acceptatiecriteria:**
+
+- Herhaalde verwachte `GGA`-afwijzingen veroorzaken niet langer onnodig veel waarschuwingen.
+- EF SQL-logging is in Pi/veldtestmodus aantoonbaar minder dominant of beter afgeschermd.
+- Echte errors/exceptions blijven zichtbaar.
+- Een handmatige Pi-logcheck laat zien dat de logs compacter maar nog bruikbaar zijn.
+
+**Handmatige testnotities:**
+
+- Pi-veldtest met live bootdata of representatieve replay.
+- Controleer zowel ingest- als web-logs vóór en na de aanpassing.
+
+---
+
+### SYS-GPS-1: GPS-fix diagnostics voor GGA/RMC-validiteit
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als operator wil ik kunnen zien welke positieberichten geldig of ongeldig zijn en wat de laatste GPS-fixkwaliteit was, zodat ik tijdens boot-tests sneller begrijp waarom positie-opslag wel of niet plaatsvindt.
+
+**Scope:**
+
+- Inzicht geven in laatste GPS-fixkwaliteit en aantallen geldige/ongeldige positie-updates.
+- Relatie verduidelijken tussen `GGA`-fixkwaliteit, `RMC`-status en het al dan niet opslaan van `PositionMeasurements`.
+- Resultaat zichtbaar maken via diagnostics of ondersteunende logging.
+
+**Buiten scope:**
+
+- Geen brede kaart- of dashboardfeature.
+- Geen wijziging aan parser/interpreter-semantiek zonder aparte story.
+
+**Acceptatiecriteria:**
+
+- Operator kan de laatste fixkwaliteit en recente geldige/ongeldige positie-updates uitlezen.
+- Documentatie legt uit waarom `fixkwaliteit 0` geen positie-opslag oplevert.
+- Handmatige test met data zonder fix en data met geldige fix toont onderscheid.
+
+**Handmatige testnotities:**
+
+- Bij voorkeur Pi-test of replay met bekende mix van `GGA` en `RMC`.
+
+---
+
+### SYS-UI-1: Live-data UI-validatie na Pi-veldtest
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als gebruiker wil ik kunnen bevestigen dat live opgeslagen meetdata ook correct zichtbaar wordt in de BootManager-UI, zodat de technische ingestketen en de gebruikersweergave beide gevalideerd zijn.
+
+**Scope:**
+
+- Handmatige validatiestap ontwerpen voor dashboard, logboek of relevante overzichtspagina's met live data.
+- Controleren dat opgeslagen metingen zichtbaar, plausibel en consistent zijn met database/logs.
+
+**Buiten scope:**
+
+- Geen nieuwe UI bouwen.
+- Geen grafiek- of dashboardrefactor.
+
+**Acceptatiecriteria:**
+
+- Er is een concrete handmatige testprocedure voor live UI-validatie met Pi-data.
+- Minimaal één relevante UI-weergave is gevalideerd tegen live opgeslagen data.
+- Bevindingen worden vastgelegd als groen/geel/open.
+
+**Handmatige testnotities:**
+
+- Uitvoeren op de Pi of via browser tegen de Pi-installatie.
+- Vergelijken met logs en, waar mogelijk, diagnostics-aantallen.
+
+---
+
+### SYS-DATA-1: Databasegroei, WAL en retentie op Pi monitoren
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als operator wil ik zicht hebben op databasegroei, WAL-gedrag en retentie op de Raspberry Pi, zodat langdurige logging het device niet stilzwijgend vol laat lopen.
+
+**Scope:**
+
+- Observeren en documenteren hoe `bootmanager.db`, `bootmanager.db-wal` en logs groeien tijdens langere tests.
+- Eisen formuleren voor retentie, checkpointing en opslagwaarschuwingen.
+- Bepalen welke minimale health-indicatoren nodig zijn voor langdurige Pi-draaiuren.
+
+**Buiten scope:**
+
+- Geen volledige archiveringsoplossing in deze story.
+- Geen productiebreed backup/restore-systeem.
+
+**Acceptatiecriteria:**
+
+- Er is een concrete langdurige Pi-test of observatieplan voor database- en WAL-groei.
+- Documentatie benoemt drempels of aandachtspunten voor opslaggroei.
+- Vervolgkeuzes voor retentie/checkpointing zijn expliciet gemaakt of open vragen zijn helder vastgelegd.
+
+**Handmatige testnotities:**
+
+- Pi-duurtest over meerdere uren of dagdelen.
+- Vastleggen van bestandsgroottes vóór en na de test.
+
+---
+
+### SYS-CAPTURE-1: Capture logs op Pi valideren voor rotatie en replay
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als operator wil ik zeker weten dat capture logs op de Pi correct worden geschreven, terug te vinden zijn en bruikbaar blijven voor replay, zodat velddata later reproduceerbaar onderzocht kan worden.
+
+**Scope:**
+
+- Controleren dat NDJSON capture logs tijdens Pi-veldtests daadwerkelijk op het verwachte volume ontstaan.
+- Controleren hoe bestandsnaam, locatie en rotatie zich gedragen.
+- Bepalen of de capture logs bruikbaar zijn voor latere replay-validatie.
+
+**Buiten scope:**
+
+- Geen volledige replay-implementatie als die nog ontbreekt.
+- Geen algemene logviewer-UI.
+
+**Acceptatiecriteria:**
+
+- Tijdens een Pi-test ontstaat een capture logbestand op de verwachte locatie.
+- Documentatie beschrijft hoe operator dit bestand controleert.
+- Er is duidelijk of huidige rotatie/retentie voldoende is of vervolgwerk nodig heeft.
+- Capture logs zijn aantoonbaar bruikbaar of expliciet nog niet bruikbaar voor replay.
+
+**Handmatige testnotities:**
+
+- Pi-veldtest of Pi-like Docker test met `CaptureLogging.Enabled=true`.
+
+---
+
+### SYS-FIELD-2: Veldtestprocedure voor vergelijking met boordinstrumenten
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als tester wil ik een vaste veldtestchecklist hebben om BootManager-metingen te vergelijken met Raymarine/Axiom/boordinstrumenten, zodat inhoudelijke juistheid naast technische ketenwerking wordt gevalideerd.
+
+**Scope:**
+
+- Een handmatige checklist opstellen voor vergelijking van onder meer heading, wind, snelheid, watertemperatuur en positie.
+- Vastleggen welke bronleidend is en welke toleranties acceptabel zijn.
+- Onderscheid maken tussen technische ketencheck en inhoudelijke kalibratie/plausibiliteitscheck.
+
+**Buiten scope:**
+
+- Geen automatische kalibratie.
+- Geen wijziging aan sensor- of gatewayconfiguratie.
+
+**Acceptatiecriteria:**
+
+- Er is een herbruikbare checklist voor veldtests aan boord.
+- De checklist benoemt welke waarden vergeleken worden en hoe afwijkingen worden genoteerd.
+- Minimaal één toekomstige veldtest kan deze checklist direct gebruiken.
+
+**Handmatige testnotities:**
+
+- Uitvoeren aan boord met echte instrumenten.
+
+---
+
+### SYS-ANALYSIS-1: Technische analysepagina in de webinterface
+
+**Status:** Voorgesteld op 2026-05-29 als aanbevolen eerstvolgende slice.
+
+**User Story:** Als beheerder wil ik in de webinterface kunnen zien wat er in een gekozen tijdsbestek is binnengekomen, wat is verwerkt, wat in de database staat en welke warnings/errors optraden, zodat ik Pi-tests zonder SSH of losse shellcommando's kan analyseren.
+
+**Scope:**
+
+- Een webpagina voor technische analyse of beheeranalyse toevoegen.
+- Een tijdsvenster kunnen kiezen voor analyse.
+- Minimaal zichtbaar maken:
+  - welke ruwe data binnenkwam;
+  - welke data is verwerkt;
+  - welke measurement-typen zijn opgeslagen;
+  - welke warnings/errors relevant waren;
+  - samenvattende status van databasevulling voor de belangrijkste tabellen.
+- Download van relevante analyse-uitvoer mogelijk maken, zodat deze later samen onderzocht kan worden.
+
+**Buiten scope:**
+
+- Geen algemene databasebeheerpagina.
+- Geen vrije shelltoegang vanuit de webinterface.
+- Geen volledige logviewer voor alle infrastructuurlogs van het systeem.
+
+**Acceptatiecriteria:**
+
+- Beheerder kan in de webinterface een tijdsvenster selecteren en analysegegevens zien.
+- De pagina toont minimaal raw/verwerkt/opgeslagen/error-samenvatting.
+- Relevante analyse-informatie kan worden gedownload.
+- Verwachte warnings zoals GPS-fixproblemen zijn herkenbaar in de output.
+- Handmatige test op Pi of lokale testomgeving bevestigt dat de pagina helpt om dezelfde soort checks te doen als eerder via SSH.
+
+**Handmatige testnotities:**
+
+- Bij voorkeur uitvoeren op de Pi met live of recent opgeslagen data.
+- Verifiëren dat downloadbestanden bruikbaar zijn voor latere gezamenlijke analyse.
+
+---
+
+### SYS-CTRL-1: Ingest verwerken aan of uit kunnen zetten via de webinterface
+
+**Status:** Voorgesteld op 2026-05-29.
+
+**User Story:** Als gebruiker wil ik in de webinterface kunnen aangeven of ingest nieuwe data actief moet verwerken, zodat BootManager niet onnodig data blijft loggen wanneer de boot stil in de haven ligt en ik daar niet om vraag.
+
+**Scope:**
+
+- Een duidelijke toggle of bedieningsoptie bieden in de webinterface.
+- Huidige runtime-status zichtbaar maken: verwerken aan of uit.
+- Gedrag expliciet maken: wat stopt precies, bijvoorbeeld actieve verwerking, raw opslag of beide.
+- Aansluiten op bestaande operationele instellingen- en ingest-control-architectuur.
+
+**Buiten scope:**
+
+- Geen brede scheduler of automatische havenmodus.
+- Geen complexe regels op basis van locatie, tijd of beweging in deze eerste slice.
+
+**Acceptatiecriteria:**
+
+- Gebruiker kan via de webinterface ingestverwerking aan of uit zetten.
+- De huidige status is zichtbaar en eenduidig.
+- Bij uitgeschakelde verwerking stopt de bedoelde logging/verwerking aantoonbaar zoals ontworpen.
+- Bij opnieuw inschakelen hervat de verwerking zonder handmatige repo- of containeringrepen.
+- Handmatige test bevestigt dat haven-scenario's minder ongevraagde data-opslag opleveren.
+
+**Handmatige testnotities:**
+
+- Test op Pi of lokale Docker-omgeving.
+- Controleer gedrag zowel direct na uitschakelen als na opnieuw inschakelen.
 
 ---
 

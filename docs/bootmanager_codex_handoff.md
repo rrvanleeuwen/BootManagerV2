@@ -436,13 +436,29 @@ We zijn geëindigd op:
 - NMEA 0183 Fase 1 t/m 3c, simulator NMEA 0183 output en runtime/SQLite acceptatietest zijn afgerond
 - Owner/settings/onboarding beheerflows zijn afgerond
 - Eerste Raspberry Pi 4 Docker Compose deployment-smoke-test is geslaagd op 2026-05-26
+- Eerste echte Raspberry Pi-veldtest met bootdata is geslaagd op 2026-05-29 op `master @ 1db5534`
 - Laatste relevante deploymentfixes:
   - `124c7af Fix Docker base image tags for ARM64`
   - `4ef3d73 Fix IngestControlServer HttpListener prefix for wildcard binding`
 - Pi-updateafspraak: de Pi pullt alleen `master`, nooit feature-branches. Zolang een wijziging op een feature-branch staat en er nog geen PR/merge naar `master` is, test de gebruiker op de ontwikkelcomputer/devomgeving. Codex mag dan niet suggereren dat de Pi die wijziging al heeft of moet testen.
 - De Pi hoeft niet automatisch na iedere push te pullen. Bij documentatie-only wijzigingen meestal geen Pi-update. Als een Pi-update nodig is, moet Codex exact zeggen welke SSH-commando's nodig zijn en of containers opnieuw gebouwd, alleen herstart of ongemoeid moeten blijven.
 - Pi-updateflow bij code/containerwijzigingen: `git pull`, `docker compose build`, `docker compose up -d`, `docker compose ps`, `/health` controleren
-- Volgende hardwarestap: echte boot UDP-broadcasttest met YDEN-03/Teltonika op poort `10110`
+- Volgende hardwarestap: de technische echte-boot UDP-test is nu bevestigd; logische vervolgkeuze is diagnostics, UI-validatie of langdurige observatie op de Pi.
+
+Extra gevalideerd op 2026-05-29 tijdens de eerste echte boot-test:
+
+- `bootmanager-web` bleef healthy.
+- `bootmanager-ingest` ontving echte boordnetwerkdata op UDP `10110`.
+- Ingest postte succesvol naar `bootmanager-web` en kreeg herhaaldelijk `HTTP 201`.
+- Ruwe `NetworkMessages` en meerdere measurement-tabellen werden via logs bevestigd.
+- Er zijn geen recente `error`, `exception` of `fail` meldingen gezien tijdens de gerichte logchecks.
+
+Open observaties uit dezelfde test:
+
+- `sqlite3` ontbrak op Pi-host en container, waardoor directe SQL-inspectie niet beschikbaar was.
+- Herhaalde `GGA` warnings bij fixkwaliteit `0` veroorzaakten logruis, maar geen crash.
+- UI-validatie van live meetdata is nog niet uitgevoerd.
+- Langdurige observatie van WAL-groei, retentie en capture logs blijft open.
 
 Werkende NMEA2000 slices (ongewijzigd):
 - Battery
@@ -473,10 +489,16 @@ TCP-ondersteuning voor YDEN-03 poort 1456 is voorlopig **niet nodig**.
 De TCP-poort lijkt bedoeld voor de eigen YDEN-software; BootManager gebruikt de bewezen UDP NMEA 0183 route.
 
 ### Mogelijke volgende stappen
-- Digitaal logboek: `US5.14 Logboek afronden bij aankomst` is nu de meest logische vervolgslice na de afgeronde trip-header datum+tijd-verbetering.
+- Technische analysepagina in de webinterface voor tijdsvenster, raw/verwerkt/opgeslagen status, warnings/errors en downloadbare analyse-output
+- Ingest verwerken aan/uit via de webinterface om havenlogging bewust te kunnen stoppen
+- Live dashboard met actuele waarden zoals wind, windhoek, positie, koers, diepte en andere beschikbare metingen
+- Digitaal logboek: routekaart en/of echte PDF/CSV-export zijn nu de meest logische vervolgslices.
 - Conflict/deduplicatiebeleid tussen NMEA2000 en NMEA0183 measurements
 - Protocoltraceerbaarheid op measurement entities (`Protocol`-veld)
-- Echte boot UDP-test met YDEN-03 op poort 2000/10110
+- Pi diagnostics zonder handmatige `sqlite3`
+- Loggingprofiel voor Pi-veldtest/productie
+- UI-validatie van live opgeslagen meetdata
+- Langdurige Pi-observatie van databasegroei, WAL en capture logs
 - Expliciete **schijnbare wind** als aparte slice
 
 ### Raspberry Pi/Docker deployment en veilige shutdown

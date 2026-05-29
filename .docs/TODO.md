@@ -35,6 +35,22 @@
   - **Legacy-impact:** raakt `US0.5`, `US8.8` en `US8.14`; volledige backup/restore en standaardinstellingen herstellen blijven latere stories.
   - **Verificatie:** reset-script succesvol uitgevoerd op de Pi; backupbestand aangemaakt; `/health` opnieuw OK; bootstrap login en onboarding opnieuw bevestigd; nieuw wachtwoord werkte en bootstrap-wachtwoord daarna niet meer.
 
+- [ ] **System Operations & Recovery – eerste echte Pi-veldtest verwerken en diagnostics kiezen**
+  - **Aanleiding 2026-05-29:** Eerste echte veldtest aan boord met Raspberry Pi op `master @ 1db5534` was technisch geslaagd: health OK, echte boordnetwerkdata ontvangen, `HTTP 201` op `api/networkmessages`, raw opslag en meerdere measurement-tabellen bevestigd.
+  - **Open observaties:** `sqlite3` ontbreekt op Pi/container; veel `GGA` warnings bij fixkwaliteit `0`; UI-validatie van live data ontbreekt nog; langdurige WAL/retentie/capture-logvalidatie staat nog open.
+  - **Vervolgkeuzes in `.docs/epics/system-operations.md`:**
+    - `SYS-ANALYSIS-1` technische analysepagina in de webinterface
+    - `SYS-CTRL-1` ingest verwerken aan/uit via de webinterface
+    - `SYS-DIAG-1` Pi diagnostics zonder handmatige sqlite3-inspectie
+    - `SYS-LOG-1` loggingprofiel voor Pi-veldtest/productie
+    - `SYS-GPS-1` GPS-fix diagnostics voor GGA/RMC-validiteit
+    - `SYS-UI-1` live-data UI-validatie tegen opgeslagen metingen
+    - `SYS-DATA-1` databasegroei, WAL en retentie monitoren
+    - `SYS-CAPTURE-1` capture logs valideren voor rotatie en replay
+    - `SYS-FIELD-2` veldtestprocedure voor vergelijking met boordinstrumenten
+  - **Terminologie:** documentatie expliciet gelijk houden: fysieke bron `NMEA2000/SeaTalkNG`, ontvangen payloads `NMEA 0183 UDP` via gateway.
+  - **Aanbevolen volgorde:** eerst analysepagina, daarna ingest-toggle, daarna live dashboard.
+
 - [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
   - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.
   - **Status 2026-05-23 (slice 2):** Ingest haalt bij startup operationele instellingen op via `GET /api/operationalsettings/ingest`. appsettings.json blijft fallback als Web niet bereikbaar is. Settings worden niet live herladen tijdens runtime.
@@ -247,6 +263,16 @@
   - Historical trend display
   - Map integration for Position data
 
+- [ ] **Dashboard & Live Overzicht**
+  - **Aanleiding 2026-05-29:** Na de geslaagde Pi-veldtest en groene logboektest is de volgende gebruikersbehoefte om actuele meetwaarden direct in de webinterface te zien, zonder eerst SSH/logs/database-inspectie nodig te hebben.
+  - **Epicdocument:** `.docs/epics/dashboard-overview.md`
+  - **Voorgestelde eerste slices:**
+    - `DSH-LIVE-1` live dashboard met actuele meetwaarden in meters of duidelijke tekstvelden
+    - `DSH-LIVE-2` actualiteit en datastatus zichtbaar maken
+    - `DSH-LIVE-3` logboekactiviteit en snelle doorsteek vanaf dashboard
+  - **Legacy-impact:** sluit direct aan op `US7.1`, `US7.2`, `US7.3`, `US7.9` en deels `US7.13`
+  - **Opmerking:** dit spoor volgt idealiter ná de technische analysepagina en ingest-toggle.
+
 #### Medium Priority
 
 - [ ] **UI Framework Modernization**
@@ -282,6 +308,7 @@
     - UDP-poorten correct mappen of bewust `host networking` gebruiken. **Status:** Docker Compose port mapping voor `10110/udp` is gevalideerd.
     - Web en Ingest praten binnen Docker niet vanzelf via `localhost`; gebruik service names/netwerkconfiguratie of host networking. **Status:** service name `bootmanager-web` en Ingest control URL via Compose-netwerk zijn gevalideerd.
     - SQLite/database en capture logs moeten op persistente volumes staan. **Status:** volumes zijn ingericht en containers starten ermee; langdurige retentie/backup blijft open.
+    - Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde ingest, API, parsing en measurement-opslag op `master @ 1db5534`; UI-validatie, diagnostics en langdurige opslagobservatie blijven open.
     - Ingest/Web moeten netjes reageren op container shutdown (`SIGTERM`) en open writes afsluiten.
     - Control API blijft intern/lokaal bereikbaar, niet publiek. **Status:** hostbinding `127.0.0.1:5010:5010` is gevalideerd.
   - **Latere UI-story:** owner/admin knop "Systeem afsluiten" met bevestiging. Web mag niet rechtstreeks vrije shell-commando's uitvoeren; gebruik een beperkte lokale helper/service die Docker/OS veilig afsluit.
