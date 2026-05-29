@@ -28,6 +28,13 @@ public class IngestService : BackgroundService
     private UdpClient? _udpClient;
 
     /// <summary>
+    /// Throttled logging state for disabled-mode: tracks last log time and accumulated skip count.
+    /// </summary>
+    private DateTime _lastDisabledModeLogUtc = DateTime.UtcNow;
+    private int _disabledModeSkippedLineCount = 0;
+    private readonly object _disabledModeLogLock = new object();
+
+    /// <summary>
     /// Initialiseert een nieuwe instantie van <see cref="IngestService"/>.
     /// </summary>
     /// <param name="options">De ingest-opties uit configuratie.</param>
@@ -99,6 +106,7 @@ public class IngestService : BackgroundService
     /// <summary>
     /// Luistert naar inkomende UDP-berichten, verwerkt deze in regels,
     /// parseert deze naar modellen en verzendt ze naar de API.
+    /// Als IngestProcessingEnabled == false, skips parsing/capture/sampling/posting en logt periodiek.
     /// </summary>
     /// <param name="stoppingToken">Token voor het stoppen van de luisterbewerking.</param>
     private async Task ListenForMessagesAsync(CancellationToken stoppingToken)
@@ -116,6 +124,30 @@ public class IngestService : BackgroundService
 
                 if (rawLines.Count > 0)
                 {
+                    // Early check: if processing is disabled, skip all parsing/capture/sampling/API
+                    if (!_runtimeSettings.IngestProcessingEnabled)
+                    {
+                        // Accumulate skipped line count and throttle logging
+                        lock (_disabledModeLogLock)
+                        {
+                            _disabledModeSkippedLineCount += rawLines.Count;
+
+                            // Log periodically (every 60 seconds max)
+                            var now = DateTime.UtcNow;
+                            if ((now - _lastDisabledModeLogUtc).TotalSeconds >= 60)
+                            {
+                                _logger.LogInformation(
+                                    "Ingest processing disabled: skipped {SkippedLineCount} received lines in batch(es)",
+                                    _disabledModeSkippedLineCount);
+                                _disabledModeSkippedLineCount = 0;
+                                _lastDisabledModeLogUtc = now;
+                            }
+                        }
+
+                        // Continue to next packet without further processing
+                        continue;
+                    }
+
                     int successCount = 0;
                     var failedMessageIds = new List<string>();
 

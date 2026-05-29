@@ -3,6 +3,8 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
+@using BootManager.Application.OperationalSettings.DTOs
+@using BootManager.Application.OperationalSettings.Services
 @using BootManager.Core.Enums
 @using BootManager.Web.Helpers
 @using Microsoft.AspNetCore.Components.Forms
@@ -10,10 +12,19 @@
 @inject ILogbookService LogbookService
 @inject ILogbookMeasurementSuggestionService SuggestionService
 @inject ILogbookAttachmentService AttachmentService
+@inject IOperationalSettingsService OperationalSettingsService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
 <h2 class="mb-3">Scheepsdagboek</h2>
+
+@if (_operationalSettings != null && !_operationalSettings.IngestProcessingEnabled)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>⚠️ Ingest-verwerking uitgeschakeld</strong>
+        <p class="mb-0">Automatische gegevensverzameling is momenteel uitgeschakeld. Meetgegevens worden niet opgeslagen in het logboek. Zet ingest-verwerking aan op het dashboard om normale werking te hervatten.</p>
+    </div>
+}
 
 @if (_loading)
 {
@@ -795,10 +806,43 @@ else
     </div>
 }
 
+<!-- Modal voor waarschuwing nieuwe reis bij ingest-verwerking uitgeschakeld -->
+@if (_showNewTripWarningModal)
+{
+    <div class="modal d-block" style="background-color: rgba(0,0,0,0.5);" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">⚠️ Waarschuwing: Ingest-verwerking uitgeschakeld</h5>
+                    <button type="button" class="btn-close" @onclick="CancelNewTrip"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Ingest-gegevensverzameling is momenteel <strong>uitgeschakeld</strong>.</p>
+                    <p>Dit betekent dat:</p>
+                    <ul>
+                        <li>Automatische meetgegevens <strong>niet</strong> worden opgeslagen</li>
+                        <li>Handmatige logboekregels kunnen nog steeds worden ingevoerd</li>
+                        <li>U meetgegevens kunt handmatig invoeren in het logboek</li>
+                    </ul>
+                    <p class="text-muted small mb-0">
+                        Zet ingest-verwerking aan op het dashboard om automatische gegevensverzameling in te schakelen.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelNewTrip">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmNewTripDespiteIngestDisabled">Toch doorgaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
     private bool _loading = true;
     private string? _foutmelding;
     private bool _tripSaved;
+    private OperationalSettingsDto? _operationalSettings;
 
     private List<LogbookTripDto> _trips = new();
     private LogbookTripDto? _selectedTrip;
@@ -831,6 +875,9 @@ else
     private string? _modalUploadMessage;
     private bool _modalUploadSuccess = false;
 
+    // Variabelen voor bevestiging nieuwe reis (ingest-verwerking uit)
+    private bool _showNewTripWarningModal = false;
+
     // Filter-state
     private string _statusFilter = "all"; // "all", "draft", "confirmed"
     private string _attachmentFilter = "all"; // "all", "with", "without"
@@ -853,6 +900,9 @@ else
     {
         try
         {
+            // Load operational settings to check if ingest processing is enabled
+            _operationalSettings = await OperationalSettingsService.GetAsync();
+
             _trips = (await LogbookService.GetAllTripsAsync()).ToList();
             if (_trips.Count > 0)
             {
@@ -921,12 +971,46 @@ else
         await BerekenVolgendeLogmoment();
     }
 
-    private void NieuweReis()
+    private async Task NieuweReis()
+    {
+        // Check of ingest-verwerking uit staat
+        if (_operationalSettings != null && !_operationalSettings.IngestProcessingEnabled)
+        {
+            _showNewTripWarningModal = true;
+        }
+        else
+        {
+            // Ingest is aan, ga direct door
+            DoCreateNewTrip();
+        }
+    }
+
+    /// <summary>
+    /// Werkelijk proces voor nieuwe reis aanmaken.
+    /// </summary>
+    private void DoCreateNewTrip()
     {
         _selectedTrip = null;
         _entries = new();
         _tripForm = new TripFormModel();
         _tripSaved = false;
+        _showNewTripWarningModal = false;
+    }
+
+    /// <summary>
+    /// Handler voor bevestiging van nieuwe reis ondanks ingest verwerking uit.
+    /// </summary>
+    private void ConfirmNewTripDespiteIngestDisabled()
+    {
+        DoCreateNewTrip();
+    }
+
+    /// <summary>
+    /// Handler voor annuleren van nieuwe reis.
+    /// </summary>
+    private void CancelNewTrip()
+    {
+        _showNewTripWarningModal = false;
     }
 
     private async Task OpslaanReis()

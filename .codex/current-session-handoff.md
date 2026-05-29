@@ -100,13 +100,21 @@ Next near-term story decision:
   - Test export evidence is stored at `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
   - Pi export evidence is stored at `veldtests/analysis-20260528-1635-20260529-1635.json` and `veldtests/analysis-20260528-1635-20260529-1635.csv`; both show `431021` raw `NetworkMessages` for the selected 24-hour window.
   - Persistent warning/error storage is still open; the page reports this limitation.
+- `SYS-CTRL-1: Ingest verwerken aan/uit via dashboard/logboek` is implemented on branch `feature/ingest-processing-toggle` and locally manually validated on 2026-05-29.
+  - Dashboard shows ingest status/toggle and no longer exposes broad operational settings.
+  - Toggle uses the reload flow so the running Ingest process applies `IngestProcessingEnabled` without restart.
+  - Logbook shows a warning bar while ingest processing is disabled.
+  - Creating a new trip while ingest processing is disabled shows a confirmation modal.
+  - `BootManager.Tools.Ingest` still has no Infrastructure/database reference and only uses Web API/control-flow.
+  - Disabled-mode skips before parsing/capture/sampling/API post and logs only throttled summaries.
+  - User manually tested and approved the behavior locally.
 - Broader system operations topics remain open for later:
   - full backup/restore UI;
   - web factory reset;
   - safe shutdown;
   - system action log.
-- For Raspberry Pi/system operations, the next explicit choice is no longer whether the Pi receives real boat data or whether local technical analysis is feasible; both are now confirmed. The next system-operations follow-up should be one of:
-  - an ingest on/off control in the web UI;
+- For Raspberry Pi/system operations, the next explicit choice is no longer whether the Pi receives real boat data, whether local technical analysis is feasible, or whether ingest can be toggled locally; those are now confirmed. The next system-operations follow-up should be one of:
+  - Pi validation of `SYS-CTRL-1`;
   - Pi diagnostics without manual `sqlite3`;
   - logging profile cleanup for Pi/field-test use;
   - GPS fix diagnostics around `GGA`/`RMC`;

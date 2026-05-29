@@ -50,9 +50,9 @@ public class OperationalSettingsClientService : IOperationalSettingsClientServic
             }
 
             _logger.LogInformation(
-                "Operationele instellingen opgehaald via BootManager.Web: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}, CaptureLoggingEnabled={CaptureLoggingEnabled}, RawStorageMode={RawStorageMode} (nog niet toegepast), DefaultSampleIntervalSeconds={DefaultSampleIntervalSeconds} (nog niet toegepast).",
+                "Operationele instellingen opgehaald via BootManager.Web: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}, CaptureLoggingEnabled={CaptureLoggingEnabled}, IngestProcessingEnabled={IngestProcessingEnabled}, RawStorageMode={RawStorageMode} (nog niet toegepast), DefaultSampleIntervalSeconds={DefaultSampleIntervalSeconds} (nog niet toegepast).",
                 settings.ListenAddress, settings.ListenPort, settings.ApiBaseUrl,
-                settings.CaptureLoggingEnabled, settings.RawStorageMode, settings.DefaultSampleIntervalSeconds);
+                settings.CaptureLoggingEnabled, settings.IngestProcessingEnabled, settings.RawStorageMode, settings.DefaultSampleIntervalSeconds);
 
             return settings;
         }

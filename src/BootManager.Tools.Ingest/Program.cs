@@ -43,6 +43,7 @@ var builder = Host.CreateDefaultBuilder(args)
                 options.RawStorageMode,
                 options.DefaultSampleIntervalSeconds,
                 options.CaptureLogging.Enabled,
+                true,  // IngestProcessingEnabled default to true
                 options.ListenAddress,
                 options.ListenPort);
         });
@@ -89,6 +90,7 @@ if (remoteSettings is not null)
     // Let op: ListenAddress en ListenPort worden NIET live aangepast; die hebben herstart nodig
     runtimeSettings.ApiBaseUrl = remoteSettings.ApiBaseUrl;
     runtimeSettings.CaptureLoggingEnabled = remoteSettings.CaptureLoggingEnabled;
+    runtimeSettings.IngestProcessingEnabled = remoteSettings.IngestProcessingEnabled;
 
     // Parse RawStorageMode van string naar enum
     if (Enum.TryParse<RawStorageMode>(remoteSettings.RawStorageMode, ignoreCase: true, out var parsedMode))
@@ -108,8 +110,8 @@ if (remoteSettings is not null)
     runtimeSettings.DefaultSampleIntervalSeconds = remoteSettings.DefaultSampleIntervalSeconds;
 
     logger.LogInformation(
-        "Runtime-instellingen overschreven vanuit BootManager.Web: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}, CaptureLoggingEnabled={CaptureLoggingEnabled}, RawStorageMode={RawStorageMode}, DefaultSampleIntervalSeconds={SampleInterval}.",
-        ingestOptions.ListenAddress, ingestOptions.ListenPort, runtimeSettings.ApiBaseUrl, runtimeSettings.CaptureLoggingEnabled, runtimeSettings.RawStorageMode, runtimeSettings.DefaultSampleIntervalSeconds);
+        "Runtime-instellingen overschreven vanuit BootManager.Web: ListenAddress={ListenAddress}, ListenPort={ListenPort}, ApiBaseUrl={ApiBaseUrl}, CaptureLoggingEnabled={CaptureLoggingEnabled}, IngestProcessingEnabled={IngestProcessingEnabled}, RawStorageMode={RawStorageMode}, DefaultSampleIntervalSeconds={SampleInterval}.",
+        ingestOptions.ListenAddress, ingestOptions.ListenPort, runtimeSettings.ApiBaseUrl, runtimeSettings.CaptureLoggingEnabled, runtimeSettings.IngestProcessingEnabled, runtimeSettings.RawStorageMode, runtimeSettings.DefaultSampleIntervalSeconds);
     logger.LogInformation("Configuratiebron: BootManager.Web (database).");
 }
 else

@@ -1,5 +1,222 @@
 @page "/dashboard"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.OperationalSettings.DTOs
+@using BootManager.Application.OperationalSettings.Services
+@using BootManager.Web.Services
+@inject IOperationalSettingsWithReloadService OperationalSettingsWithReloadService
+@inject ILogger<Dashboard> Logger
+@inject NavigationManager NavigationManager
 
-<h3>BootManager Dashboard</h3>
-<p>Welcome (placeholder).</p>
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>BootManager Dashboard</h2>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(warningMessage))
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            @warningMessage
+            <button type="button" class="btn-close" @onclick="() => warningMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+
+    @if (ingestProcessingEnabled == false)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <strong>⚠️ Ingest-verwerking uitgeschakeld</strong>
+            <p class="mb-0">Automatische gegevensverzameling is momenteel uitgeschakeld. Geen nieuwe meetgegevens worden opgeslagen in het logboek. Zet ingest-verwerking aan om normale werking te hervatten.</p>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ingest-Verwerking</h5>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Laden...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (settings != null)
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label"><strong>Status</strong></label>
+                                <div>
+                                    @if (ingestProcessingEnabled)
+                                    {
+                                        <span class="badge bg-success p-2">🟢 Actief</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger p-2">🔴 Inactief</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label"><strong>Schakelaar</strong></label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="ingestToggle"
+                                        checked="@ingestProcessingEnabled"
+                                        @onchange="OnIngestProcessingToggled"
+                                        disabled="@isSubmitting" />
+                                    <label class="form-check-label" for="ingestToggle">
+                                        @if (ingestProcessingEnabled)
+                                        {
+                                            <span class="badge bg-success">Aan</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Uit</span>
+                                        }
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted d-block mt-2">
+                                    Schakel automatische gegevensverzameling in of uit. Wanneer inactief, worden binnenkomende meetgegevens niet opgeslagen.
+                                </small>
+                            </div>
+                        </div>
+
+                        @if (reloadWarning)
+                        {
+                            <div class="alert alert-info alert-sm mb-0">
+                                <small>
+                                    <strong>ℹ️ Opmerking:</strong> Instellingen zijn opgeslagen, maar de Ingest-tool kon niet automatisch herladen worden.
+                                    De wijziging wordt pas actief nadat u Ingest handmatig herstart.
+                                </small>
+                            </div>
+                        }
+
+                        <p class="small text-muted mb-0 mt-3">
+                            Wijzigingen worden direct doorgegeven aan Ingest (indien bereikbaar).
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Meer Instellingen</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Voor geavanceerde configuratie (API URL, luisterpoort, sample interval, opslagmodus, etc.), ga naar:</p>
+                    <a href="/settings" class="btn btn-outline-primary btn-sm">→ Instellingen</a>
+                    <p class="small text-muted mt-3 mb-0">Daar kunt u alle operationele parameters aanpassen.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private OperationalSettingsDto? settings;
+    private bool ingestProcessingEnabled;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string? errorMessage;
+    private string? successMessage;
+    private string? warningMessage;
+    private bool reloadWarning = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            settings = await OperationalSettingsWithReloadService.GetOperationalSettingsAsync();
+            ingestProcessingEnabled = settings?.IngestProcessingEnabled ?? true;
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij laden operationele instellingen");
+            errorMessage = "Kon operationele instellingen niet laden.";
+            isLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Handler voor het wisselen van de ingest-verwerkingsstatus.
+    /// Roept SaveAndReloadAsync aan om instellingen op te slaan en Ingest live bij te werken.
+    /// </summary>
+    private async Task OnIngestProcessingToggled(ChangeEventArgs e)
+    {
+        if (settings == null) return;
+
+        try
+        {
+            isSubmitting = true;
+            errorMessage = null;
+            successMessage = null;
+            warningMessage = null;
+            reloadWarning = false;
+
+            settings.IngestProcessingEnabled = (bool)e.Value!;
+
+            // Gebruik SaveAndReloadAsync om instellingen op te slaan EN Ingest live bij te werken
+            var response = await OperationalSettingsWithReloadService.SaveAndReloadAsync(settings);
+
+            if (response.SettingsSaved)
+            {
+                ingestProcessingEnabled = settings.IngestProcessingEnabled;
+                var action = settings.IngestProcessingEnabled ? "ingeschakeld" : "uitgeschakeld";
+                successMessage = $"Ingest-verwerking is {action}.";
+
+                // Controleer reload status
+                if (response.IngestReloadStatus == "unreachable" || response.IngestReloadStatus == "failed")
+                {
+                    reloadWarning = true;
+                    warningMessage = response.IngestReloadMessage ?? "Ingest kon niet automatisch herladen worden.";
+                }
+
+                Logger.LogInformation(
+                    "Ingest processing toggled to {Value}. Reload status: {ReloadStatus}",
+                    settings.IngestProcessingEnabled,
+                    response.IngestReloadStatus);
+            }
+            else
+            {
+                errorMessage = "Kon ingest-verwerking niet wijzigen.";
+                ingestProcessingEnabled = !ingestProcessingEnabled; // Revert UI
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij wijzigen ingest-verwerking");
+            errorMessage = "Kon ingest-verwerking niet wijzigen.";
+            ingestProcessingEnabled = !ingestProcessingEnabled; // Revert UI
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

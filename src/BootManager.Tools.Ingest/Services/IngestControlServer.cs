@@ -255,6 +255,7 @@ public class IngestControlServer : IHostedService
                 RawStorageMode = _runtimeSettings.RawStorageMode.ToString(),
                 DefaultSampleIntervalSeconds = _runtimeSettings.DefaultSampleIntervalSeconds,
                 CaptureLoggingEnabled = _runtimeSettings.CaptureLoggingEnabled,
+                IngestProcessingEnabled = _runtimeSettings.IngestProcessingEnabled,
                 ListenAddress = _runtimeSettings.ListenAddress,
                 ListenPort = _runtimeSettings.ListenPort,
                 ListenAddressRestartRequired = _runtimeSettings.ListenAddress != currentOptions.ListenAddress,
@@ -353,6 +354,15 @@ public class IngestControlServer : IHostedService
                 _logger.LogWarning("CaptureLoggingEnabled would change but is not yet supported for live update. Restart required.");
             }
 
+            // IngestProcessingEnabled: kan live worden aangepast
+            if (newSettings.IngestProcessingEnabled != _runtimeSettings.IngestProcessingEnabled)
+            {
+                _runtimeSettings.IngestProcessingEnabled = newSettings.IngestProcessingEnabled;
+                appliedFields.Add("IngestProcessingEnabled");
+                var action = newSettings.IngestProcessingEnabled ? "enabled" : "disabled";
+                _logger.LogInformation("Ingest processing {Action}", action);
+            }
+
             var result = new ReloadSettingsResponse
             {
                 Success = true,
@@ -402,6 +412,9 @@ public class StatusResponse
 
     [JsonPropertyName("captureLoggingEnabled")]
     public bool CaptureLoggingEnabled { get; set; }
+
+    [JsonPropertyName("ingestProcessingEnabled")]
+    public bool IngestProcessingEnabled { get; set; }
 
     [JsonPropertyName("listenAddress")]
     public string ListenAddress { get; set; } = "";

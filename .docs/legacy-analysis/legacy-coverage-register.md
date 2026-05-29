@@ -124,7 +124,7 @@ Bij afronding van een story of PR:
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
 | US5.1 Handmatig logboek invoeren met weerinformatie | Partial | Handmatige logregels bestaan; weer/barometer/temperatuur volledig nalopen. |
-| US5.2 Automatisch loggen en intervalinstelling | Partial | Missing moments + Draft-regels bestaan; echte automatische logging op NMEA interval is beperkt. |
+| US5.2 Automatisch loggen en intervalinstelling | Partial | Missing moments + Draft-regels bestaan; echte automatische logging op NMEA interval is beperkt. `SYS-CTRL-1` voegt bewuste ingest-verwerking aan/uit toe met logboekwaarschuwing en nieuwe-reis-popup wanneer automatische meetdata uit staat. |
 | US5.3 Motoruren en brandstof in header | Partial | Reisheader/samenvatting aanwezig; motoruren/brandstof afronding open. |
 | US5.4 Notities en gebeurtenissen toevoegen | Done | Opmerkingen/zeilvoering per logregel aanwezig. |
 | US5.5 Logboek koppelen aan passage | Open | Passageplanning ontbreekt. |
@@ -163,7 +163,7 @@ Bij afronding van een story of PR:
 |---|---|---|
 | US7.1 Dashboardweergave openen | Partial | Basisdashboard/home bestaat; uitgebreide widgets ontbreken. |
 | US7.2 Actieve bootinformatie | Partial | `VesselProfile` bestaat; dashboardweergave/bootfoto/multi-boot open. |
-| US7.3 Waarschuwingen en meldingen | Partial | Logboek missing-moments signaal bestaat; generiek paneel ontbreekt. |
+| US7.3 Waarschuwingen en meldingen | Partial | Logboek missing-moments signaal bestaat; `SYS-CTRL-1` voegt dashboard- en logboekwaarschuwingen toe wanneer ingest-verwerking uit staat. Generiek meldingenpaneel ontbreekt nog. |
 | US7.4 Weerinformatie en getijden | Open | Niet aanwezig. |
 | US7.5 Widget voor voorraadstatus | Open | Afhankelijk van inventory. |
 | US7.6 Widget voor onderhoudsstatus | Open | Afhankelijk van onderhoud. |
@@ -184,13 +184,13 @@ Bij afronding van een story of PR:
 | US8.2 Eenheden configureren | Open | Niet aanwezig. |
 | US8.3 Taal en regio instellen | Open | Niet aanwezig. |
 | US8.4 Gebruikersrollen beheren | Parked | Multi-user/rollen geparkeerd. |
-| US8.5 Sensorintegratie configureren | Partial | Operationele ingest settings aanwezig; bredere sensorconfig open. |
-| US8.6 Raspberry Pi-configuratie beheren | Partial | Pi deployment runbook en resourcechecks gedocumenteerd; eerste metingen voor opslag/RAM/load vastgelegd. Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde health, ingest, API, parsing en measurement-opslag op `master @ 1db5534`. `SYS-ANALYSIS-1` voegt een lokale technische analysepagina toe voor tijdsvenster-aantallen en JSON/CSV-export, maar volledige in-app Pi systeemstatus/configuratiebeheer, persistent warning/error-overzicht en langdurige observatie blijven open. |
+| US8.5 Sensorintegratie configureren | Partial | Operationele ingest settings aanwezig; `SYS-CTRL-1` voegt een centrale `IngestProcessingEnabled` instelling toe waarmee verwerking bewust aan/uit kan. Bredere sensorconfig blijft open. |
+| US8.6 Raspberry Pi-configuratie beheren | Partial | Pi deployment runbook en resourcechecks gedocumenteerd; eerste metingen voor opslag/RAM/load vastgelegd. Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde health, ingest, API, parsing en measurement-opslag op `master @ 1db5534`. `SYS-ANALYSIS-1` voegt een technische analysepagina toe; `SYS-CTRL-1` voegt dashboardbediening voor ingest-verwerking en goedkope disabled-mode toe. Volledige in-app Pi systeemstatus/configuratiebeheer, persistent warning/error-overzicht en langdurige observatie blijven open. |
 | US8.7 Gebruikersbeheer | Parked | Multi-user geparkeerd. |
 | US8.8 Back-up maken en herstellen | Open | Procedureel beschreven; UI/helper open. |
 | US8.9 Cloudinstellingen beheren | Parked | Cloud-sync geparkeerd. |
 | US8.10 Automatische synchronisatie plannen | Parked | Cloud-sync geparkeerd. |
-| US8.11 Logboek van systeemacties bekijken | Open | Niet aanwezig als persistent systeemactie-logboek. `SYS-ANALYSIS-1` toont technische analyse en export, maar warnings/errors en systeemacties worden nog niet duurzaam als logboek opgeslagen. |
+| US8.11 Logboek van systeemacties bekijken | Open | Niet aanwezig als persistent systeemactie-logboek. `SYS-ANALYSIS-1` toont technische analyse en export en `SYS-CTRL-1` toont operationele waarschuwingen, maar warnings/errors en systeemacties worden nog niet duurzaam als logboek opgeslagen. |
 | US8.12 Offline modus beheren | Parked | Pas zinvol bij sync; lokale-first werking bestaat. |
 | US8.13 Systeeminstellingen exporteren/importeren | Open | Niet aanwezig. |
 | US8.14 Standaardinstellingen herstellen | Open | Niet aanwezig. |

@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is lokaal geïmplementeerd en gevalideerd op 2026-05-29; Pi-validatie na merge en vervolgwerk voor ingest-toggle, diagnostics, loggingprofiel en langdurige observatie blijven open.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is lokaal geïmplementeerd en gevalideerd op 2026-05-29; Pi-validatie na merge en vervolgwerk voor diagnostics, loggingprofiel en langdurige observatie blijven open.
 
 ## Aanleiding
 
@@ -499,7 +499,7 @@ Waargenomen aandachtspunten:
 
 ### SYS-CTRL-1: Ingest verwerken aan of uit kunnen zetten via de webinterface
 
-**Status:** Goedgekeurd voor implementatie op 2026-05-29.
+**Status:** ✅ Geïmplementeerd op feature branch `feature/ingest-processing-toggle` en lokaal handmatig gevalideerd op 2026-05-29. PR/merge naar `master` en Pi-validatie na merge nog af te ronden.
 
 **User Story:** Als gebruiker wil ik ingest-verwerking via het dashboard kunnen aan- of uitzetten en in dashboard/logboek duidelijk gewaarschuwd worden wanneer verwerking uit staat, zodat ik bewust havenlogging kan stoppen zonder per ongeluk een reis te starten of bij te houden zonder automatische meetdata.
 
@@ -550,6 +550,22 @@ Waargenomen aandachtspunten:
 - Controleer dat uitgeschakelde verwerking geen nieuwe `NetworkMessages` of measurements oplevert.
 - Controleer dat inschakelen zonder containerrestart nieuwe opslag laat hervatten.
 - Controleer dashboardbalk, logboekbalk en popup bij nieuwe reis.
+
+**Implementation Status (2026-05-29):**
+
+- `IngestProcessingEnabled` is toegevoegd aan de operationele instellingen en via de ingest-settings API beschikbaar gemaakt.
+- Dashboard toont alleen de ingest-verwerking status/toggle en verwijst voor geavanceerde instellingen naar `/settings`.
+- Dashboard-toggle gebruikt de reload-flow zodat de draaiende Ingest runtime-instellingen live worden bijgewerkt.
+- Logboek toont een waarschuwing zolang ingest-verwerking uit staat.
+- Nieuwe reis aanmaken toont een bevestigingsmodal wanneer ingest-verwerking uit staat.
+- `BootManager.Tools.Ingest` gebruikt geen database- of Infrastructure-reference; Ingest haalt settings via Web API/control-flow op en post meetdata alleen via de bestaande Web API.
+- Disabled-mode is geoptimaliseerd: na UDP receive en line extraction wordt vroeg geskipte data geteld, zonder parsing, capture logging, sampling of API-post; logging is gethrottled.
+- Lokale handmatige test door gebruiker bevestigde dashboard-toggle, logboekwaarschuwing, popup bij nieuwe reis, live stop/start van Ingest en disabled-mode gedrag.
+
+**Open vervolg:**
+
+- Pi-validatie na merge naar `master` blijft nodig.
+- Volledige sensorconfiguratie, automatische havenmodus, scheduler, live dashboardmeters en persistent systeemactie-logboek blijven aparte stories.
 
 ---
 

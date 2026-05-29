@@ -37,6 +37,9 @@ public class OperationalSettingsDto
     /// <summary>Schakel capture-logging in of uit.</summary>
     public bool CaptureLoggingEnabled { get; set; } = false;
 
+    /// <summary>Schakel ingest-verwerking in of uit. Als false, accepteert Ingest UDP-verkeer maar post niets naar de API.</summary>
+    public bool IngestProcessingEnabled { get; set; } = true;
+
     /// <summary>Directory voor opslag van logboekbijlagen.</summary>
     [Required(ErrorMessage = "Logboekbijlagen-directory is verplicht.")]
     [MaxLength(1024)]

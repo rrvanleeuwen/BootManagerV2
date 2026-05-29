@@ -41,7 +41,6 @@
   - **Afgevinkt:** `SYS-ANALYSIS-1` technische analysepagina in de webinterface is afgerond voor lokale dev-validatie én Pi-validatie.
   - **Open observaties:** `sqlite3` ontbreekt op Pi/container; veel `GGA` warnings bij fixkwaliteit `0`; warnings/errors worden nog niet persistent als analyseerbare events opgeslagen; langdurige WAL/retentie/capture-logvalidatie staat nog open.
   - **Vervolgkeuzes in `.docs/epics/system-operations.md`:**
-    - `SYS-CTRL-1` ingest verwerken aan/uit via de webinterface
     - `SYS-DIAG-1` Pi diagnostics zonder handmatige sqlite3-inspectie
     - `SYS-LOG-1` loggingprofiel voor Pi-veldtest/productie
     - `SYS-GPS-1` GPS-fix diagnostics voor GGA/RMC-validiteit
@@ -49,8 +48,10 @@
     - `SYS-DATA-1` databasegroei, WAL en retentie monitoren
     - `SYS-CAPTURE-1` capture logs valideren voor rotatie en replay
     - `SYS-FIELD-2` veldtestprocedure voor vergelijking met boordinstrumenten
+  - **Status 2026-05-29:** `SYS-CTRL-1` is lokaal geïmplementeerd en handmatig getest op branch `feature/ingest-processing-toggle`: dashboard-toggle, live Ingest reload, logboekwaarschuwing, nieuwe-reis-popup en goedkope disabled-mode zijn bevestigd.
+  - **Afgevinkt:** `SYS-CTRL-1` ingest verwerken aan/uit via dashboard/logboek is afgerond voor lokale dev-validatie; PR/merge en Pi-validatie volgen nog.
   - **Terminologie:** documentatie expliciet gelijk houden: fysieke bron `NMEA2000/SeaTalkNG`, ontvangen payloads `NMEA 0183 UDP` via gateway.
-  - **Aanbevolen volgorde:** na analysepagina eerst ingest-toggle, daarna live dashboard.
+  - **Aanbevolen volgorde:** na ingest-toggle eerst Pi-validatie, daarna live dashboard of verdere diagnostics.
 
 - [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
   - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.

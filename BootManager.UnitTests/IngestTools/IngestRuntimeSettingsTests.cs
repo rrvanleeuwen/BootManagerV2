@@ -21,6 +21,7 @@ public class IngestRuntimeSettingsTests
             RawStorageMode.Sampled,
             15,
             true,
+            true,
             "192.168.1.1",
             2000);
 
@@ -42,6 +43,7 @@ public class IngestRuntimeSettingsTests
             RawStorageMode.All,
             10,
             false,
+            true,
             "0.0.0.0",
             10110);
 
@@ -61,6 +63,7 @@ public class IngestRuntimeSettingsTests
             RawStorageMode.All,
             10,
             false,
+            true,
             "0.0.0.0",
             10110);
 
@@ -80,6 +83,7 @@ public class IngestRuntimeSettingsTests
             RawStorageMode.Sampled,
             10,
             false,
+            true,
             "0.0.0.0",
             10110);
 
@@ -99,6 +103,7 @@ public class IngestRuntimeSettingsTests
             RawStorageMode.All,
             10,
             false,
+            true,
             "0.0.0.0",
             10110);
 
@@ -118,6 +123,7 @@ public class IngestRuntimeSettingsTests
             RawStorageMode.All,
             10,
             false,
+            true,
             "0.0.0.0",
             10110);
 
@@ -135,6 +141,7 @@ public class IngestRuntimeSettingsTests
             RawStorageMode.All,
             10,
             false,
+            true,
             "0.0.0.0",
             10110);
 
@@ -152,6 +159,7 @@ public class IngestRuntimeSettingsTests
             RawStorageMode.All,
             10,
             false,
+            true,
             "0.0.0.0",
             10110);
 
