@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-05-27.
+Updated: 2026-05-29.
 
 ## Current Task
 
@@ -57,6 +57,18 @@ Current completed stories:
   - onboarding was forced again;
   - after onboarding, only the newly chosen password worked.
 - After that validation, a follow-up master commit `1db5534` documented the explicit `sudo` requirement for `scripts/reset-database.sh`.
+- The first real Raspberry Pi field test with boat data succeeded on 2026-05-29 while the Pi was on `master @ 1db5534`.
+  - `bootmanager-web` was healthy.
+  - `bootmanager-ingest` received real boat-network traffic on UDP `10110`.
+  - Ingest posted successfully to `http://bootmanager-web:5000/api/networkmessages`.
+  - The Web API returned repeated `HTTP 201 Created`.
+  - Raw `NetworkMessages` and multiple interpreted measurement tables were confirmed via logs.
+  - No recent `error`, `exception` or `fail` messages were seen during the targeted log checks.
+  - Observed open points:
+    - `sqlite3` was not available on the Pi host or in the container, so direct SQL counts were not run;
+    - repeated `GGA` fix-quality `0` warnings created log noise but did not break the pipeline;
+    - UI validation of live data is still open;
+    - longer-duration validation for WAL growth, retention and capture logs is still open.
 
 Next near-term story decision:
 
@@ -85,6 +97,14 @@ Next near-term story decision:
   - web factory reset;
   - safe shutdown;
   - system action log.
+- For Raspberry Pi/system operations, the next explicit choice is no longer whether the Pi receives real boat data; that is now confirmed. The next system-operations follow-up should be one of:
+  - Pi diagnostics without manual `sqlite3`;
+  - logging profile cleanup for Pi/field-test use;
+  - GPS fix diagnostics around `GGA`/`RMC`;
+  - UI validation of live stored measurements;
+  - longer-duration database/WAL/retention observation;
+  - capture-log validation and replay readiness;
+  - a reusable field-test checklist against Raymarine/Axiom/on-board instruments.
 
 Standing instruction from the user:
 
@@ -122,6 +142,7 @@ Coverage rule:
 - PR #68 (`feature/logbook-arrival-closeout`) was merged on 2026-05-27 with merge commit `0a5ac57`.
 - Local `master` has been fast-forwarded from `origin/master` after PR #68 and the worktree is clean.
 - Follow-up master commit `1db5534 Document sudo requirement for Pi reset script` was pushed to `origin/master` after the Raspberry Pi test.
+- The real-data Pi field test on 2026-05-29 was performed while the Pi was still on `master @ 1db5534`; later logbook stories merged after that commit were intentionally not relevant to the field test.
 - The user tested the reset flow on the Raspberry Pi after PR #65 and confirmed it worked.
 - The Raspberry Pi still only pulls `master`; never use it for feature-branch validation.
 - The Raspberry Pi must remain on/pull only `master`; update it only when the user is explicitly told the exact commands.
@@ -212,4 +233,4 @@ Next file to process after user approval:
 
 ## Current Worktree Expectation
 
-At session end, the worktree should be clean on `master` except for intentional documentation updates if the handoff file has just been edited and not yet committed.
+At session end, the worktree should be clean on the active documentation branch except for intentional documentation updates and the untracked `veldtests/` source material if it has not been committed yet.

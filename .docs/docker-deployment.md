@@ -31,6 +31,19 @@ Gevalideerd:
 - App is bereikbaar vanaf een laptop via `http://<pi-ip>:5000`.
 - Reboot-test geslaagd: na `sudo reboot` kwamen beide containers automatisch terug en bleef `/health` OK.
 
+Aanvullende veldtestvalidatie op `2026-05-29`:
+
+- Eerste echte boot-test aan boord uitgevoerd met de Pi op `master @ 1db5534`.
+- `bootmanager-ingest` ontving echte boordnetwerkdata op UDP `10110`.
+- Ingest postte succesvol naar `http://bootmanager-web:5000/api/networkmessages`.
+- `bootmanager-web` antwoordde herhaaldelijk met `HTTP 201 Created`.
+- Ruwe `NetworkMessages` en meerdere measurement-tabellen werden gevuld.
+- Geen recente `error`, `exception` of `fail` meldingen gezien tijdens de gerichte logchecks.
+- Bekende observaties uit deze test:
+  - `sqlite3` ontbrak op host en container, dus directe SQL-counts konden niet worden uitgevoerd;
+  - veel `GGA` warnings bij fixkwaliteit `0`, zonder crash of blokkade van de keten;
+  - UI-validatie en langdurige opslagobservatie zijn nog aparte vervolgtesten.
+
 ## Overzicht
 
 Docker Compose orchestreert twee services:
@@ -457,6 +470,12 @@ docker compose logs -f bootmanager-ingest
 ### YDEN UDP broadcast boot-test
 
 De YDEN stuurt UDP broadcast naar een poort, niet naar een vast Pi-IP. Daarom hoeft de YDEN waarschijnlijk geen Raspberry Pi IP-adres ingesteld te krijgen.
+
+Terminologie:
+
+- De fysieke bron is het NMEA2000/SeaTalkNG-netwerk op de boot.
+- De gateway levert daaruit NMEA 0183 UDP-sentences aan BootManager.
+- In Docker/Pi-documentatie moet dat onderscheid expliciet blijven staan, zodat "echte bootdata" niet per ongeluk als directe NMEA2000-UDP-input wordt beschreven.
 
 Voorwaarden:
 
