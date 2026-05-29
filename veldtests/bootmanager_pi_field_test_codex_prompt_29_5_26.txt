@@ -1,0 +1,557 @@
+BootManagerV2 - Codex opdracht: verwerk Pi veldtest met echte bootdata
+
+Context
+-------
+We hebben op vrijdag 29 mei 2026 een eerste veldtest uitgevoerd met BootManagerV2 op de Raspberry Pi aan boord van de boot.
+
+Situatie vooraf:
+- De Raspberry Pi was thuis ingericht en op master gezet.
+- De Pi draait BootManagerV2 via Docker Compose.
+- De Pi stond op master met commit:
+  1db5534 Document sudo requirement for Pi reset script
+- De database was vooraf praktisch leeg:
+  - De bootstrap/eerste onboarding was uitgevoerd.
+  - Er was dus minimaal een account/bootcontext aanwezig.
+  - Verdere meetdata was nog niet bewust opgebouwd.
+- Alle NMEA-apparatuur stond eerst uit, zodat we gecontroleerd konden starten.
+- Doel van deze test:
+  - vaststellen of de Pi in het bootnetwerk goed opstart;
+  - vaststellen of de Pi echte bootdata ontvangt;
+  - vaststellen of bootmanager-ingest echte data doorstuurt naar bootmanager-web;
+  - vaststellen of bootmanager-web de berichten accepteert, parseert, interpreteert en opslaat;
+  - vastleggen welke aandachtspunten en vervolgstories hieruit volgen.
+
+Belangrijk:
+- Latere logboekstories na PR #65 waren voor deze test niet belangrijk.
+- Voor deze test was vooral belangrijk dat de Pi de database-resetfunctionaliteit had en op een stabiele master stond.
+- De Pi hoort alleen master te pullen, nooit feature branches.
+
+Git- en Pi-stand
+----------------
+Op de Pi gaf git log onder andere:
+
+1db5534 (HEAD -> master, origin/master, origin/HEAD) Document sudo requirement for Pi reset script
+c0b7590 Merge pull request #65 from rrvanleeuwen/feature/pi-database-reset
+2bc30ca (origin/feature/pi-database-reset) Add Pi database reset runbook and logbook epic updates
+f8e93c4 Update current handoff after Pi sync
+ab38c00 Record Register Owner cleanup completion
+a441ca8 Merge pull request #64 from rrvanleeuwen/feature/register-owner-cleanup
+ab54cbb (origin/feature/register-owner-cleanup) Remove legacy register owner route
+47d5ab9 Document Pi master-only update rule
+9bec6b7 Add Register Owner cleanup user story
+a12c810 Document Raspberry Pi update guidance
+
+Ook was aanwezig:
+
+-rw-rw-r-- 1 roelof roelof 8881 May 27 20:47 scripts/reset-database.sh
+
+Conclusie:
+- De Pi stond op master.
+- Lokale master was gelijk aan origin/master.
+- De database-resetfunctionaliteit uit PR #65 was aanwezig.
+- Het reset-script was aanwezig.
+- De Pi was voldoende up-to-date voor deze veldtest.
+
+Stap 1 - Docker Compose status
+------------------------------
+Uitgevoerd:
+
+cd ~/BootManagerV2
+docker compose ps
+
+Output:
+
+NAME                 IMAGE                              COMMAND                  SERVICE              CREATED        STATUS                  PORTS
+bootmanager-ingest   bootmanagerv2-bootmanager-ingest   "dotnet BootManager.…"   bootmanager-ingest   41 hours ago   Up 41 hours             127.0.0.1:5010->5010/tcp, 0.0.0.0:10110->10110/udp, [::]:10110->10110/udp
+bootmanager-web      bootmanagerv2-bootmanager-web      "dotnet BootManager.…"   bootmanager-web      41 hours ago   Up 41 hours (healthy)   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+
+Conclusie:
+- bootmanager-web draait en is healthy.
+- bootmanager-ingest draait.
+- UDP 10110 staat open voor inkomende data.
+- Web/API is bereikbaar op poort 5000.
+- Ingest control API staat op localhost:5010.
+
+Status: groen.
+
+Stap 2 - Health endpoint
+------------------------
+Uitgevoerd:
+
+curl -i http://localhost:5000/health
+
+Output:
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Fri, 29 May 2026 12:16:48 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+
+{"status":"ok"}
+
+Conclusie:
+- Web/API draait correct.
+- Kestrel antwoordt lokaal.
+- Health endpoint geeft HTTP 200.
+
+Status: groen.
+
+Stap 3 - Ingest logs vóór inschakelen apparatuur
+------------------------------------------------
+Uitgevoerd:
+
+docker compose logs --since 10m bootmanager-ingest
+
+Output:
+- Geen output.
+
+Conclusie:
+- Geen recente foutmeldingen van bootmanager-ingest.
+- Omdat de apparatuur nog uit stond, was geen output logisch.
+
+Status: groen/neutraal.
+
+Stap 4 - Apparatuur aangezet en live ingest-logs bekeken
+--------------------------------------------------------
+Uitgevoerd:
+
+docker compose logs -f bootmanager-ingest
+
+Daarna is de NMEA-apparatuur aan boord aangezet.
+
+Waarneming in logs:
+- bootmanager-ingest verwerkte pakketten.
+- bootmanager-ingest stuurde HTTP POST requests naar:
+  http://bootmanager-web:5000/api/networkmessages
+- Web API gaf herhaaldelijk HTTP 201 terug.
+- Voorbeelden uit de logs:
+
+Start processing HTTP request POST http://bootmanager-web:5000/api/networkmessages
+Sending HTTP request POST http://bootmanager-web:5000/api/networkmessages
+Received HTTP response headers after 9.7831ms - 201
+End processing HTTP request after 9.9042ms - 201
+Packet processed: 7/7 sent
+
+Andere waargenomen regels:
+- Packet processed: 2/2 sent
+- Packet processed: 6/6 sent
+- Packet processed: 1/1 sent
+- Packet processed: 5/5 sent
+- Packet processed: 9/9 sent
+- Packet processed: 4/4 sent
+- Packet processed: 3/3 sent
+
+Conclusie:
+- De Pi ontvangt echte data uit het boordnetwerk.
+- bootmanager-ingest verwerkt pakketten.
+- bootmanager-ingest stuurt berichten succesvol door naar de Web API.
+- De Web API accepteert de berichten met HTTP 201 Created.
+- De keten bootdata -> Pi -> Ingest -> Web API werkt.
+
+Status: groen.
+
+Stap 5 - Web logs controleren
+-----------------------------
+Uitgevoerd:
+
+docker compose logs --since 5m bootmanager-web | tail -80
+
+Waarneming:
+- bootmanager-web parseerde NMEA 0183 sentences.
+- Entity Framework voerde inserts uit op de tabel NetworkMessages.
+- Voorbeelden:
+
+NMEA 0183 sentence geparset: Talker=AI, Type=VDM, Velden=6
+INSERT INTO "NetworkMessages" ("Id", "MessageId", "PayloadHex", "Protocol", "RawLine", "ReceivedAtUtc", "Source")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+
+NMEA 0183 sentence geparset: Talker=YD, Type=VWR, Velden=8
+INSERT INTO "NetworkMessages" (...)
+
+NMEA 0183 sentence geparset: Talker=YD, Type=VWT, Velden=8
+INSERT INTO "NetworkMessages" (...)
+
+Conclusie:
+- Web ontvangt berichten van Ingest.
+- Web parseert NMEA 0183 sentences.
+- Ruwe NetworkMessages worden opgeslagen in SQLite.
+
+Status: groen.
+
+Stap 6 - Databasebestanden controleren
+--------------------------------------
+Uitgevoerd:
+
+docker exec -it bootmanager-web sh -c "ls -l /var/lib/bootmanager && sqlite3 /var/lib/bootmanager/bootmanager.db 'select count(*) from NetworkMessages;'"
+
+Output:
+
+total 5952
+-rw-r--r-- 1 root root 1716224 May 29 12:20 bootmanager.db
+-rw-r--r-- 1 root root   32768 May 29 12:20 bootmanager.db-shm
+-rw-r--r-- 1 root root 4173592 May 29 12:20 bootmanager.db-wal
+-rw-r--r-- 1 root root  167936 May 27 18:39 bootmanager.db.backup.20260527_203943
+sh: 1: sqlite3: not found
+
+Aanvullende controle op Pi-host:
+
+sqlite3 --version
+
+Output:
+
+-bash: sqlite3: command not found
+
+Conclusie:
+- Databasebestanden bestaan.
+- bootmanager.db, bootmanager.db-shm en bootmanager.db-wal zijn aanwezig.
+- De WAL-file was actueel en substantieel groter geworden, wat past bij actieve writes.
+- sqlite3 is niet geïnstalleerd in de container en ook niet op de Pi-host.
+- Daardoor is er in deze test geen directe SQL count uitgevoerd.
+- Dit is geen BootManager-fout, maar een ontbrekende beheer/tooling-afhankelijkheid.
+
+Status:
+- Databasebestand aanwezig en actief: groen.
+- SQL-inspectie via sqlite3: niet uitgevoerd door ontbrekende tooling.
+
+Vervolgstory mogelijk:
+- Voeg een runbook-stap of beheertooling toe voor database-inspectie op Pi.
+- Overweeg sqlite3 te installeren op de Pi als beheerhulpmiddel.
+- Overweeg een veilige read-only diagnostics endpoint of CLI-opdracht om aantallen NetworkMessages/Measurements te tonen.
+
+Stap 7 - Fouten in web logs controleren
+---------------------------------------
+Uitgevoerd:
+
+docker compose logs --since 5m bootmanager-web | grep -i -E "fail|error|exception|warn"
+
+Waarneming:
+- Er kwamen waarschuwingen van:
+  BootManager.Application.NetworkMessages.Services.NetworkMessageService
+
+Daarom extra uitgevoerd:
+
+docker compose logs --since 5m bootmanager-web | grep -i -A 2 -B 1 "warn" | head -80
+
+Outputfragment:
+
+NMEA 0183 sentence geparset: Talker=YD, Type=GGA, Velden=14
+warn: BootManager.Application.NetworkMessages.Services.NetworkMessageService[0]
+NMEA0183 GGA-interpretatie mislukt: GGA-fixkwaliteit ontbreekt of ongeldig ('0'). Alleen fixkwaliteit > 0 wordt opgeslagen.
+
+Dit herhaalde meerdere keren.
+
+Conclusie:
+- YD/GGA wordt ontvangen en geparset.
+- GGA-positie wordt niet als geldige positie opgeslagen wanneer fixkwaliteit 0 is.
+- Dit is functioneel verdedigbaar: fixkwaliteit 0 betekent geen geldige GPS-fix.
+- Dit is geen crash en geen API-fout.
+- Dit is wel een veldtestobservatie:
+  - de applicatie waarschuwt veelvuldig;
+  - bij veel GGA-berichten zonder fix kan dit tot logruis leiden;
+  - later kan bekeken worden of dit als Debug/Information gelogd moet worden, of dat waarschuwingen gebundeld/throttled moeten worden.
+
+Status:
+- Ontvangst/parsing: groen.
+- GGA valid-position-opslag: geel zolang fixkwaliteit 0 is.
+- Logniveau/ruis: aandachtspunt.
+
+Vervolgstory mogelijk:
+- Logniveau en throttling voor verwachte NMEA-validatie-afwijzingen verbeteren.
+- Dashboard/diagnostics tonen: aantal ontvangen GGA, aantal geldige GPS-fixes, laatste fixkwaliteit.
+- Onderscheid maken tussen “technisch fout” en “verwachte data zonder geldige fix”.
+
+Stap 8 - Errors/exceptions/fails controleren
+--------------------------------------------
+Uitgevoerd:
+
+docker compose logs --since 5m bootmanager-web | grep -i -E "fail|error|exception" | head -40
+
+Output:
+- geen output
+
+Later opnieuw uitgevoerd:
+
+docker compose logs --since 2m bootmanager-web | grep -i -E "error|exception|fail" | head -20
+
+Output:
+- geen output
+
+Conclusie:
+- Geen recente errors.
+- Geen exceptions.
+- Geen fail-meldingen.
+- De warnings rond GGA zijn dus geen crashende of blokkerende fouten.
+
+Status: groen.
+
+Stap 9 - Breedte van binnenkomende NMEA-data
+--------------------------------------------
+Uitgevoerd:
+
+docker compose logs --since 5m bootmanager-web | grep -i "geparset" | tail -30
+
+Output:
+
+NMEA 0183 sentence geparset: Talker=YD, Type=VWR, Velden=8
+NMEA 0183 sentence geparset: Talker=YD, Type=VWT, Velden=8
+NMEA 0183 sentence geparset: Talker=YD, Type=VDR, Velden=6
+NMEA 0183 sentence geparset: Talker=YD, Type=DTM, Velden=8
+NMEA 0183 sentence geparset: Talker=YD, Type=GLL, Velden=7
+NMEA 0183 sentence geparset: Talker=YD, Type=RMC, Velden=13
+NMEA 0183 sentence geparset: Talker=YD, Type=ROT, Velden=2
+NMEA 0183 sentence geparset: Talker=YD, Type=HDG, Velden=5
+NMEA 0183 sentence geparset: Talker=YD, Type=HDM, Velden=2
+NMEA 0183 sentence geparset: Talker=YD, Type=HDT, Velden=2
+NMEA 0183 sentence geparset: Talker=YD, Type=MWV, Velden=5
+NMEA 0183 sentence geparset: Talker=YD, Type=MWV, Velden=5
+NMEA 0183 sentence geparset: Talker=YD, Type=VLW, Velden=4
+NMEA 0183 sentence geparset: Talker=AI, Type=VDM, Velden=6
+NMEA 0183 sentence geparset: Talker=AI, Type=VDM, Velden=6
+NMEA 0183 sentence geparset: Talker=AI, Type=VDO, Velden=6
+NMEA 0183 sentence geparset: Talker=AI, Type=VDM, Velden=6
+NMEA 0183 sentence geparset: Talker=YD, Type=VTG, Velden=9
+NMEA 0183 sentence geparset: Talker=YD, Type=VHW, Velden=8
+NMEA 0183 sentence geparset: Talker=YD, Type=MTW, Velden=2
+NMEA 0183 sentence geparset: Talker=AI, Type=VDO, Velden=6
+NMEA 0183 sentence geparset: Talker=AI, Type=VDM, Velden=6
+NMEA 0183 sentence geparset: Talker=AI, Type=VDO, Velden=6
+NMEA 0183 sentence geparset: Talker=AI, Type=VDM, Velden=6
+NMEA 0183 sentence geparset: Talker=AI, Type=VDM, Velden=6
+NMEA 0183 sentence geparset: Talker=AI, Type=VDM, Velden=6
+NMEA 0183 sentence geparset: Talker=YD, Type=GSV, Velden=19
+NMEA 0183 sentence geparset: Talker=YD, Type=GSV, Velden=19
+NMEA 0183 sentence geparset: Talker=YD, Type=GSV, Velden=19
+NMEA 0183 sentence geparset: Talker=YD, Type=GSA, Velden=17
+
+Betekenis:
+- VWR / VWT / MWV: wind
+- HDG / HDM / HDT: heading/kompas
+- VTG / VHW: koers/snelheid
+- MTW: watertemperatuur
+- GLL / RMC / GSA / GSV: GPS/GNSS
+- VDM / VDO: AIS
+- ROT: rate of turn
+- VLW: distance/water log
+- DTM: datum reference
+- VDR: set/drift
+
+Conclusie:
+- Er komt een brede set echte boordnetwerkdata binnen.
+- Dit is niet alleen een losse testregel of simulatorstroom.
+- De Yacht Devices/NMEA-output levert meerdere sentence-types aan BootManager.
+- De ontvangstketen is realistisch belast.
+
+Status: groen.
+
+Stap 10 - Geïnterpreteerde metingen controleren
+-----------------------------------------------
+Uitgevoerd:
+
+docker compose logs --since 5m bootmanager-web | grep -i -E "measurement|wind|heading|position|temperature|depth|battery" | tail -80
+
+Outputfragmenten:
+
+INSERT INTO "HeadingMeasurements" ("HeadingDegrees", "MessageId", "RecordedAtUtc", "Source")
+Koersmeting opgeslagen: Source=172.18.0.1:53784, MessageId=YDHDT, Heading=32.9°
+
+INSERT INTO "WindMeasurements" ("MessageId", "RecordedAtUtc", "Source", "SpeedUnit", "WindAngleDegrees", "WindSpeed")
+Windmeting opgeslagen: Source=172.18.0.1:53784, MessageId=YDMWV, Angle=169.9°, Speed=2.3m/s
+
+INSERT INTO "SpeedThroughWaterMeasurements" ("MessageId", "RecordedAtUtc", "Source", "SpeedKnots", "SpeedMetersPerSecond", "SpeedWaterReferenceType")
+
+INSERT INTO "WaterTemperatureMeasurements" ("MessageId", "RecordedAtUtc", "Source", "TemperatureCelsius", "TemperatureInstance", "TemperatureKelvin")
+WaterTemperatureMeasurement opgeslagen: Id=389, TemperatureKelvin=294.45 K, TemperatureCelsius=21.3 °C
+
+INSERT INTO "PositionMeasurements" ("Latitude", "Longitude", "MessageId", "RecordedAtUtc", "Source")
+
+INSERT INTO "MotionMeasurements" ("CourseOverGroundDegrees", "MessageId", "RecordedAtUtc", "Source", "SpeedOverGround", "SpeedUnit")
+
+Verder herhaald:
+- HeadingMeasurements
+- WindMeasurements
+- SpeedThroughWaterMeasurements
+- WaterTemperatureMeasurements
+- PositionMeasurements
+- MotionMeasurements
+
+Concrete waarden:
+- Heading ongeveer 30.1° tot 32.9°
+- Windhoek ongeveer 169.9° tot 187.4°
+- Windsnelheid ongeveer 2.0 m/s tot 2.4 m/s
+- Watertemperatuur 21.3 °C
+- WaterTemperature Kelvin 294.45 K
+
+Conclusie:
+- Niet alleen ruwe NetworkMessages worden opgeslagen.
+- Ook geïnterpreteerde meettabellen worden gevuld.
+- Dit bewijst de volledige keten:
+  echte NMEA-data -> Ingest -> Web API -> parser -> interpreter -> database-opslag.
+- Werkend gezien:
+  - windmetingen;
+  - headingmetingen;
+  - speed-through-watermetingen;
+  - watertemperatuurmetingen;
+  - positiemetingen;
+  - motionmetingen.
+
+Status: groen.
+
+Samenvattende testconclusie
+---------------------------
+Eerste Pi-veldtest met echte bootdata: GESLAAGD.
+
+Bevestigd:
+- Raspberry Pi komt goed op in het bootnetwerk.
+- Docker Compose draait stabiel.
+- bootmanager-web is healthy.
+- bootmanager-ingest draait.
+- UDP 10110 staat open en wordt gebruikt.
+- Ingest ontvangt echte NMEA-data.
+- Ingest post succesvol naar bootmanager-web.
+- Web API accepteert berichten met HTTP 201.
+- Ruwe NetworkMessages worden opgeslagen.
+- NMEA 0183 sentences worden geparset.
+- Meerdere sentence-types komen binnen.
+- Geïnterpreteerde metingen worden opgeslagen in specifieke meettabellen.
+- Geen recente errors, exceptions of failmeldingen gezien.
+- Databasebestanden zijn aanwezig en actief.
+- Database WAL-file groeit, passend bij actieve writes.
+
+Functionele datatypes die tijdens deze test zichtbaar waren:
+- Wind
+- Heading
+- Speed through water
+- Water temperature
+- Position
+- Motion/course/speed over ground
+- AIS/raw NMEA
+- GPS/GNSS ruwe sentences
+
+Open punten / observaties
+-------------------------
+1. sqlite3 ontbreekt op de Pi en in de container
+   - Directe SQL-inspectie van aantallen records kon daardoor niet plaatsvinden.
+   - Dit is geen applicatiefout, maar wel een beheeraandachtspunt.
+   - Mogelijke story: Pi diagnostics/runbook uitbreiden met sqlite3-installatie of alternatief.
+
+2. GGA-fixkwaliteit 0 geeft veel warnings
+   - GGA wordt technisch ontvangen en geparset.
+   - Bij fixkwaliteit 0 wordt geen geldige positie opgeslagen.
+   - Dit is logisch gedrag, maar kan veel logruis geven.
+   - Mogelijke story: logniveau/throttling verbeteren voor verwachte validatie-afwijzingen.
+
+3. Positieflow vraagt later nog inhoudelijke validatie
+   - Er zijn PositionMeasurements inserts gezien.
+   - Tegelijk waren er GGA-fixkwaliteit-0 warnings.
+   - Mogelijke story: diagnostics tonen welke position sentences geldig zijn, met laatste fixkwaliteit en bron.
+
+4. UI-validatie is nog niet uitgevoerd
+   - Deze test keek naar containers, logs, API en opslag.
+   - Er is nog geen browser-/dashboardtest uitgevoerd om te controleren of metingen correct zichtbaar worden.
+   - Mogelijke story/test: UI live dashboard of data-overzicht valideren tegen opgeslagen metingen.
+
+5. Meetwaarden moeten later inhoudelijk worden vergeleken met boordapparatuur
+   - Voorbeeldwaarden zoals wind, heading en watertemperatuur lijken plausibel.
+   - Er is nog niet gecontroleerd of deze exact overeenkomen met Raymarine/Axiom/instrumenten.
+   - Mogelijke story/test: veldtestprocedure voor vergelijking BootManager versus boorddisplay.
+
+6. Logvolume is hoog
+   - Live logs liepen heel hard zodra apparatuur aan stond.
+   - Mogelijke story: loggingprofiel voor veldtest/productie verbeteren, bijvoorbeeld minder EF SQL logs, compactere ingest samenvatting, aparte diagnostics view.
+
+7. Databasegroei/WAL monitoring
+   - bootmanager.db-wal werd meerdere MB groot tijdens korte test.
+   - Dit past bij actieve writes, maar vraagt later aandacht voor langdurige logging, WAL-checkpointing, retentie en opslaglimieten.
+   - Mogelijke story: dataretentie en database health monitoring voor Pi.
+
+8. Capture logs / NDJSON zijn in deze test niet apart gevalideerd
+   - We zagen Ingest en Web logs, maar hebben niet apart gecontroleerd of capture logs op het volume correct ontstaan.
+   - Mogelijke story/test: capture-loglocatie, rotatie en replaybaarheid valideren.
+
+9. NMEA 0183 versus NMEA 2000 terminologie
+   - De fysieke bron is NMEA2000/SeaTalkNG via gateway.
+   - De applicatie ontvangt op dit moment NMEA 0183 sentences van de Yacht Devices gateway.
+   - Documentatie moet dit correct formuleren: echte bootdata uit NMEA2000-netwerk via gateway, ontvangen/verwerkt als NMEA 0183 UDP-sentences.
+
+Aanbevolen Codex-opdracht
+-------------------------
+Maak een nieuwe branch vanaf master, bijvoorbeeld:
+
+feature/document-pi-real-data-field-test
+
+Verwerk deze veldtest in de repositorydocumentatie en maak/actualiseer userstories voor vervolgwerk.
+
+Concrete opdracht aan Codex:
+1. Lees de bestaande documentatie, in ieder geval:
+   - .codex/current-session-handoff.md
+   - .docs/raspberry-pi-deployment.md
+   - .docs/docker-deployment.md
+   - .docs/epics/system-operations.md
+   - relevante docs rond NMEA ingest, network messages, measurements en field testing
+   - README.md of andere centrale documentatie als die relevant is
+
+2. Leg deze veldtest vast als gevalideerde status:
+   - datum: 2026-05-29
+   - locatie/context: aan boord, echte bootdata via NMEA/boordnetwerk
+   - platform: Raspberry Pi met Docker Compose
+   - branch/commit: master op 1db5534
+   - resultaat: geslaagd
+   - scope: ontvangst, ingest, API, parsing, interpretatie en database-opslag
+   - expliciete beperking: UI-validatie en langdurige duurtest zijn nog niet uitgevoerd
+
+3. Verwerk de testresultaten zakelijk en concreet:
+   - geen overdreven marketingtaal;
+   - duidelijk onderscheid tussen groen, geel en open;
+   - benoem dat GGA fixkwaliteit 0 waarschuwingen gaf;
+   - benoem dat sqlite3 ontbrak;
+   - benoem dat er meerdere measurement-tabellen werden gevuld;
+   - benoem dat geen errors/exceptions/fails zijn gezien.
+
+4. Maak of actualiseer userstories voor vervolgwerk, vermoedelijk in system-operations, diagnostics, field-testing of een vergelijkbare epic:
+   - Pi diagnostics: eenvoudige manier om aantallen NetworkMessages en Measurements te tonen zonder handmatige sqlite3.
+   - Loggingprofiel veldtest/productie: minder logruis, vooral EF SQL logs en herhaalde GGA warnings.
+   - GGA/fix diagnostics: zicht op laatste GPS-fixkwaliteit, geldige/ongeldige positieupdates en bron.
+   - UI-validatie live data: controleren dat opgeslagen metingen zichtbaar worden in dashboard/overzicht.
+   - Dataretentie/database health: opslaggroei, WAL, retentiebeleid en langdurige Pi-test.
+   - Capture log validatie: NDJSON/capture logs controleren, rotatie en replay.
+   - Veldtestprocedure: checklist voor vergelijken BootManager-metingen met Raymarine/Axiom/boordinstrumenten.
+   - NMEA terminology cleanup: documenteer zorgvuldig dat fysieke bron NMEA2000/SeaTalkNG is, maar ontvangen payloads NMEA 0183 sentences via gateway zijn.
+
+5. Werk .codex/current-session-handoff.md bij:
+   - huidige stand master/Pi;
+   - eerste echte Pi-veldtest geslaagd;
+   - belangrijkste bewijzen;
+   - open vervolgwerk;
+   - volgende logische stap: documentatie/userstories verwerken en daarna UI-validatie of diagnostics kiezen.
+
+6. Voer geen functionele codewijzigingen uit tenzij strikt nodig voor documentatieconsistentie.
+   - Deze opdracht is primair documentatie en planning.
+   - Maak geen database-reset, logging- of UI-implementatie in deze branch.
+   - Maak alleen userstories/acceptatiecriteria voor vervolgwerk.
+
+7. Voeg per nieuwe/gewijzigde userstory acceptatiecriteria toe.
+   - Beschrijf concrete teststappen waar mogelijk.
+   - Geef aan of het een Pi-veldtest, lokale dev-test of documentatiecheck is.
+
+8. Controleer na wijzigingen:
+   - git diff
+   - eventueel markdown consistentie
+   - geen onbedoelde codewijzigingen
+   - commitvoorstel maken, maar nog niet pushen zonder expliciete toestemming.
+
+Gewenste output van Codex:
+- Samenvatting van gewijzigde bestanden.
+- Korte lijst met nieuwe/aangepaste userstories.
+- Korte conclusie of de veldtest nu correct is vastgelegd.
+- Voorstel voor commit message.
+- Geen push uitvoeren zonder expliciete opdracht.
+
+Voorstel commit message:
+docs: record first Raspberry Pi real-data field test
+
+Korte status voor documentatie
+------------------------------
+Status veldtest: GROEN.
+
+De eerste echte Pi-test aan boord is technisch geslaagd. De Pi ontvangt bootdata uit het boordnetwerk, Ingest verwerkt en post deze naar Web API, Web API accepteert met HTTP 201, ruwe NetworkMessages en meerdere geïnterpreteerde meettypen worden opgeslagen. Er zijn geen errors/exceptions/fails gevonden. Open aandachtspunten zijn vooral diagnostics, loggingruis, sqlite3/database-inspectie, UI-validatie, GPS-fixdiagnostics, capture-logvalidatie en langdurige database-/opslagmonitoring.
