@@ -1,0 +1,16 @@
+Analysis Summary
+
+Time Window,2026-05-28T16:35:51.5282639Z,2026-05-29T16:35:51.5282714Z
+Total Network Messages,431021
+
+Measurement Counts
+Type,Count
+Wind,38468
+Motion,10283
+Position,20592
+Heading,20715
+Speed Through Water,10376
+Water Temperature,10376
+
+Notes
+"Waarschuwingen en fouten worden momenteel niet permanent opgeslagen in de database."

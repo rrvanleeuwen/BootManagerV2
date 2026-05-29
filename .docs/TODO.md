@@ -37,8 +37,8 @@
 
 - [ ] **System Operations & Recovery – eerste echte Pi-veldtest verwerken en diagnostics kiezen**
   - **Aanleiding 2026-05-29:** Eerste echte veldtest aan boord met Raspberry Pi op `master @ 1db5534` was technisch geslaagd: health OK, echte boordnetwerkdata ontvangen, `HTTP 201` op `api/networkmessages`, raw opslag en meerdere measurement-tabellen bevestigd.
-  - **Status 2026-05-29:** `SYS-ANALYSIS-1` is geïmplementeerd op branch `feature/technical-analysis-page` en lokaal handmatig getest. De webinterface toont analyse-aantallen per tijdsvenster en kan JSON/CSV exporteren; test-export staat in `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
-  - **Afgevinkt:** `SYS-ANALYSIS-1` technische analysepagina in de webinterface is afgerond voor lokale dev-validatie; PR/merge en Pi-validatie volgen nog.
+  - **Status 2026-05-29:** `SYS-ANALYSIS-1` is geïmplementeerd, via PR #70 gemerged naar `master` en handmatig op de Raspberry Pi gevalideerd. De webinterface toont analyse-aantallen per tijdsvenster en kan JSON/CSV exporteren; test-exporten staan in `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json` en `veldtests/analysis-20260528-1635-20260529-1635.*`.
+  - **Afgevinkt:** `SYS-ANALYSIS-1` technische analysepagina in de webinterface is afgerond voor lokale dev-validatie én Pi-validatie.
   - **Open observaties:** `sqlite3` ontbreekt op Pi/container; veel `GGA` warnings bij fixkwaliteit `0`; warnings/errors worden nog niet persistent als analyseerbare events opgeslagen; langdurige WAL/retentie/capture-logvalidatie staat nog open.
   - **Vervolgkeuzes in `.docs/epics/system-operations.md`:**
     - `SYS-CTRL-1` ingest verwerken aan/uit via de webinterface

@@ -92,12 +92,13 @@ Next near-term story decision:
   - Because the Pi was offline long before this story and only pulls `master`, this specific local-dev migration issue is not expected there.
 - The next logical follow-up story inside the digital logbook is now route map and/or true PDF/CSV export.
 - For Raspberry Pi deployment hardening, `SYS-DEPLOY-LEAN-1` is now captured in `.docs/epics/system-operations.md` and should be brought back explicitly before the first deployment for a different boat owner / different Pi.
-- `SYS-ANALYSIS-1: Technische analysepagina in de webinterface` is implemented on branch `feature/technical-analysis-page` and locally manually validated on 2026-05-29.
+- `SYS-ANALYSIS-1: Technische analysepagina in de webinterface` was merged to `master` via PR #70 and manually validated on the Raspberry Pi on 2026-05-29.
   - The Blazor page uses `IAnalysisService` directly instead of self-HTTP.
   - The page shows counts for raw `NetworkMessages` and measurement tables in a selected time window.
   - JSON/CSV export works via the existing Blazor download helper.
   - Count queries use `IRepository.CountAsync(...)` instead of loading lists only to count them.
   - Test export evidence is stored at `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
+  - Pi export evidence is stored at `veldtests/analysis-20260528-1635-20260529-1635.json` and `veldtests/analysis-20260528-1635-20260529-1635.csv`; both show `431021` raw `NetworkMessages` for the selected 24-hour window.
   - Persistent warning/error storage is still open; the page reports this limitation.
 - Broader system operations topics remain open for later:
   - full backup/restore UI;

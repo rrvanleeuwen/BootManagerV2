@@ -1,0 +1,32 @@
+{
+  "StartUtc": "2026-05-28T16:35:51.5282639Z",
+  "EndUtc": "2026-05-29T16:35:51.5282714Z",
+  "TotalNetworkMessages": 431021,
+  "MeasurementCounts": [
+    {
+      "MeasurementType": "Wind",
+      "Count": 38468
+    },
+    {
+      "MeasurementType": "Motion",
+      "Count": 10283
+    },
+    {
+      "MeasurementType": "Position",
+      "Count": 20592
+    },
+    {
+      "MeasurementType": "Heading",
+      "Count": 20715
+    },
+    {
+      "MeasurementType": "Speed Through Water",
+      "Count": 10376
+    },
+    {
+      "MeasurementType": "Water Temperature",
+      "Count": 10376
+    }
+  ],
+  "WarningErrorsStatus": "Waarschuwingen en fouten worden momenteel niet permanent opgeslagen in de database."
+}

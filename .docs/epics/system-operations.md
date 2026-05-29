@@ -437,7 +437,7 @@ Waargenomen aandachtspunten:
 
 ### SYS-ANALYSIS-1: Technische analysepagina in de webinterface
 
-**Status:** ✅ Geïmplementeerd op feature branch `feature/technical-analysis-page` en lokaal handmatig gevalideerd op 2026-05-29. PR/merge naar `master` en Pi-validatie na merge nog af te ronden.
+**Status:** ✅ Geïmplementeerd, gemerged naar `master` via PR #70 en handmatig gevalideerd op Raspberry Pi op 2026-05-29.
 
 **User Story:** Als beheerder wil ik in de webinterface kunnen zien wat er in een gekozen tijdsbestek is binnengekomen, wat is verwerkt, wat in de database staat en welke warnings/errors optraden, zodat ik Pi-tests zonder SSH of losse shellcommando's kan analyseren.
 
@@ -480,11 +480,14 @@ Waargenomen aandachtspunten:
 - Database-aantallen worden via `IRepository.CountAsync(...)` opgehaald, zodat de analyse geen volledige lijsten hoeft te laden om alleen aantallen te bepalen.
 - Test-export is vastgelegd als `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
 - Lokale handmatige test bevestigde dat de pagina aantallen per meettype toont en dat export na harde browser-refresh (`Ctrl+F5`) werkt.
+- Pi-validatie na merge naar `master` bevestigde dat de analysepagina op de Raspberry Pi exporteert naar JSON en CSV. Bewijsbestanden:
+  - `veldtests/analysis-20260528-1635-20260529-1635.json`
+  - `veldtests/analysis-20260528-1635-20260529-1635.csv`
+- Pi-export over het gekozen 24-uursvenster bevatte `431021` ruwe `NetworkMessages` en consistente measurement-aantallen in JSON en CSV.
 
 **Beperkingen / vervolgwerk:**
 
 - Warnings en errors worden nog niet persistent als analyseerbare events opgeslagen; de pagina meldt dit expliciet.
-- Pi-validatie na merge naar `master` blijft nodig voordat deze story volledig als Pi-veldtest afgerond geldt.
 - Diepere loganalyse, GPS-fixdiagnostics en langdurige opslagobservatie blijven aparte vervolgstories (`SYS-LOG-1`, `SYS-GPS-1`, `SYS-DATA-1`, `SYS-CAPTURE-1`).
 
 **Legacy coverage impact:**
