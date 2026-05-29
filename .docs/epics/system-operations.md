@@ -487,6 +487,7 @@ Waargenomen aandachtspunten:
 
 **Beperkingen / vervolgwerk:**
 
+- Datum/tijd-velden op de analysepagina hebben een UX-/bindingprobleem: waarden zijn niet betrouwbaar handmatig te typen of via picker te wijzigen; bij verlaten van het veld komt de oude waarde terug. Vastgelegd als `SYS-ANALYSIS-2`.
 - Warnings en errors worden nog niet persistent als analyseerbare events opgeslagen; de pagina meldt dit expliciet.
 - Diepere loganalyse, GPS-fixdiagnostics en langdurige opslagobservatie blijven aparte vervolgstories (`SYS-LOG-1`, `SYS-GPS-1`, `SYS-DATA-1`, `SYS-CAPTURE-1`).
 
@@ -494,6 +495,60 @@ Waargenomen aandachtspunten:
 
 - Verbetert `US8.6 Raspberry Pi-configuratie beheren` door in-app technische analyse/diagnostics toe te voegen, maar status blijft `Partial` zolang volledige Pi-systeemstatus/configuratiebeheer en langdurige observatie open zijn.
 - Raakt `US8.11 Logboek van systeemacties bekijken`, maar vinkt deze niet af omdat systeemacties, warnings en errors nog niet persistent als logboek beschikbaar zijn.
+
+---
+
+### SYS-ANALYSIS-2: Datum/tijd invoer op analysepagina betrouwbaar maken
+
+**Status:** Vastgelegd als bugfix-kandidaat op 2026-05-29.
+
+**User Story:** Als beheerder wil ik op de analysepagina de begin- en einddatum/tijd betrouwbaar kunnen wijzigen via toetsenbord en picker, zodat ik zelf een exact analysevenster kan kiezen zonder dat de velden terugvallen naar oude waarden.
+
+**Aanleiding:**
+
+Tijdens gebruik van de analysepagina op 2026-05-29 bleek dat beide datum/tijd-velden niet goed werken:
+
+- handmatig typen in de velden doet niets of wordt niet zichtbaar verwerkt;
+- wijzigen via de browser/picker lijkt mogelijk, maar na verlaten van het veld komt de oude waarde terug;
+- Enter bevestigt de wijziging niet;
+- Tab bevestigt de wijziging niet;
+- het probleem treedt op bij beide velden.
+
+**Scope:**
+
+- Onderzoeken hoe de Blazor binding/formatting/validatie van de analysepagina-datumvelden nu werkt.
+- Begin- en einddatum/tijd invoer betrouwbaar maken voor toetsenbordgebruik.
+- Begin- en einddatum/tijd invoer betrouwbaar maken voor browser/pickergebruik.
+- Zorgen dat verlaten van het veld, Enter of Tab geen geldige invoer stilzwijgend terugzet naar de oude waarde.
+- Foutieve of incomplete datum/tijd-invoer moet duidelijk zichtbaar worden afgewezen, zonder oude waarden ongemerkt terug te plaatsen alsof er niets gebeurd is.
+
+**Buiten scope:**
+
+- Geen nieuwe analysefunctionaliteit.
+- Geen wijziging aan de analysequery's, export JSON/CSV of database-aantallen.
+- Geen algemene UI-frameworkmigratie.
+- Geen persistent warning/error-logboek.
+
+**Acceptatiecriteria:**
+
+- Beheerder kan startdatum en starttijd handmatig typen en de waarde blijft staan na blur, Enter en Tab.
+- Beheerder kan einddatum en eindtijd handmatig typen en de waarde blijft staan na blur, Enter en Tab.
+- Wijzigen via de browser/picker werkt voor beide velden en wordt correct gebruikt bij analyse ophalen.
+- Ongeldige of incomplete invoer geeft duidelijke validatiefeedback.
+- Analyse ophalen gebruikt het gekozen tijdsvenster en valt niet terug naar het oude venster zonder melding.
+- Regressiecheck: JSON/CSV export blijft werken voor het gekozen tijdsvenster.
+
+**Legacy coverage impact:**
+
+- Verbetert de bruikbaarheid van `SYS-ANALYSIS-1` en daarmee de `Partial` dekking van `US8.6 Raspberry Pi-configuratie beheren`.
+- Geen statuswijziging voor `US8.11 Systeemactie-logboek`; persistent events/logboek blijven open.
+
+**Handmatige testnotities:**
+
+- Test lokaal in de browser met toetsenbord: type begin/einddatum en tijd, gebruik Tab en Enter, en controleer dat de waarden blijven staan.
+- Test lokaal met de browser/picker voor beide velden.
+- Klik daarna analyse ophalen en controleer dat het gekozen venster zichtbaar in de resultaten/export terugkomt.
+- Herhaal bij voorkeur op de Pi of tegen de Pi-webinterface na merge.
 
 ---
 

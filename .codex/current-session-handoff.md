@@ -99,6 +99,7 @@ Next near-term story decision:
   - Count queries use `IRepository.CountAsync(...)` instead of loading lists only to count them.
   - Test export evidence is stored at `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json`.
   - Pi export evidence is stored at `veldtests/analysis-20260528-1635-20260529-1635.json` and `veldtests/analysis-20260528-1635-20260529-1635.csv`; both show `431021` raw `NetworkMessages` for the selected 24-hour window.
+  - New observation 2026-05-29: both analysis page date/time fields have a UX/binding bug. Typing values does not work reliably, picker changes revert to old values on blur, and Enter/Tab do not commit the new value. Captured as `SYS-ANALYSIS-2` in `.docs/epics/system-operations.md`.
   - Persistent warning/error storage is still open; the page reports this limitation.
 - `SYS-CTRL-1: Ingest verwerken aan/uit via dashboard/logboek` was merged via PR #71 and manually validated on the Raspberry Pi on 2026-05-29.
   - Dashboard shows ingest status/toggle and no longer exposes broad operational settings.
@@ -122,6 +123,7 @@ Next near-term story decision:
   - system action log.
 - For Raspberry Pi/system operations, the next explicit choice is no longer whether the Pi receives real boat data, whether local technical analysis is feasible, whether ingest can be toggled, or whether reload/capture logging resilience works on the Pi; those are now confirmed. The next system-operations follow-up should be one of:
   - Pi diagnostics without manual `sqlite3`;
+  - `SYS-ANALYSIS-2` date/time input fix for the analysis page;
   - logging profile cleanup for Pi/field-test use;
   - GPS fix diagnostics around `GGA`/`RMC`;
   - UI validation of live stored measurements;
