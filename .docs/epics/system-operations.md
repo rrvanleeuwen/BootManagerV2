@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29; vervolgwerk voor diagnostics, loggingprofiel en langdurige observatie is vastgelegd.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is lokaal geïmplementeerd en gevalideerd op 2026-05-29; Pi-validatie na merge en vervolgwerk voor ingest-toggle, diagnostics, loggingprofiel en langdurige observatie blijven open.
 
 ## Aanleiding
 
@@ -437,7 +437,7 @@ Waargenomen aandachtspunten:
 
 ### SYS-ANALYSIS-1: Technische analysepagina in de webinterface
 
-**Status:** Geïmplementeerd op feature branch `feature/technical-analysis-page` en lokaal handmatig gevalideerd op 2026-05-29. PR/merge naar `master` nog af te ronden.
+**Status:** ✅ Geïmplementeerd op feature branch `feature/technical-analysis-page` en lokaal handmatig gevalideerd op 2026-05-29. PR/merge naar `master` en Pi-validatie na merge nog af te ronden.
 
 **User Story:** Als beheerder wil ik in de webinterface kunnen zien wat er in een gekozen tijdsbestek is binnengekomen, wat is verwerkt, wat in de database staat en welke warnings/errors optraden, zodat ik Pi-tests zonder SSH of losse shellcommando's kan analyseren.
 
