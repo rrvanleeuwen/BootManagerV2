@@ -49,10 +49,10 @@
     - `SYS-CAPTURE-1` capture logs valideren voor rotatie en replay
     - `SYS-FIELD-2` veldtestprocedure voor vergelijking met boordinstrumenten
   - **Status 2026-05-29:** `SYS-CTRL-1` is gemerged en handmatig op de Raspberry Pi gevalideerd: dashboard-toggle, live Ingest reload, logboekwaarschuwing, nieuwe-reis-popup en goedkope disabled-mode zijn bevestigd. Op de Pi is tevens bevestigd dat `IngestProcessingEnabled=False` binnenkomende UDP-regels overslaat zonder API-posts.
-  - **Status 2026-05-29:** `SYS-CTRL-2` is lokaal geïmplementeerd en handmatig goedgekeurd op branch `feature/ingest-reload-config-resilience`: reload gebruikt de vaste configured/bootstrap `ApiBaseUrl` als herstelroute en capture logging respecteert de runtime/database setting.
-  - **Afgevinkt:** `SYS-CTRL-1` ingest verwerken aan/uit via dashboard/logboek is afgerond inclusief Pi-validatie. `SYS-CTRL-2` is afgerond voor lokale validatie; PR/merge en Pi-validatie na merge volgen nog.
+  - **Status 2026-05-29:** `SYS-CTRL-2` is gemerged en handmatig op de Raspberry Pi gevalideerd: reload gebruikt de vaste configured/bootstrap `ApiBaseUrl` als herstelroute en capture logging respecteert de runtime/database setting.
+  - **Afgevinkt:** `SYS-CTRL-1` ingest verwerken aan/uit via dashboard/logboek is afgerond inclusief Pi-validatie. `SYS-CTRL-2` ingest reload/capture logging robuustheid is afgerond inclusief Pi-validatie.
   - **Terminologie:** documentatie expliciet gelijk houden: fysieke bron `NMEA2000/SeaTalkNG`, ontvangen payloads `NMEA 0183 UDP` via gateway.
-  - **Aanbevolen volgorde:** na merge van `SYS-CTRL-2` eerst korte Pi-validatie van reload/capture logging, daarna live dashboard of verdere diagnostics.
+  - **Aanbevolen volgorde:** na `SYS-CTRL-2` zijn live dashboard of Pi diagnostics zonder SSH/sqlite de logische vervolgstappen.
 
 - [ ] **Operationele instellingen via UI/database** *(fundament voor ingest/sampling)*
   - **Status 2026-05-23:** basis geïmplementeerd: `/settings` bevat operationele instellingen voor luisteradres, poorten, API basis-URL, raw opslagmodus, standaard sample-interval en capture logging.

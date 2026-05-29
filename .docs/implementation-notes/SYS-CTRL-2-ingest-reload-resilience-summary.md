@@ -1,6 +1,6 @@
 # SYS-CTRL-2: Ingest Reload Resilience Implementation Summary
 
-Status: complete on branch `feature/ingest-reload-config-resilience`.
+Status: complete, merged via PR #72, and validated on Raspberry Pi.
 Date: 2026-05-29.
 
 ## Problem
@@ -34,11 +34,10 @@ Verified:
 
 The user manually tested the change locally and approved the result on 2026-05-29.
 
-After merge to `master`, the Pi should run a short validation:
+After merge to `master`, Raspberry Pi validation confirmed:
 
-- update from `master`;
-- rebuild/restart containers;
-- confirm `GET /api/operationalsettings/ingest` returns `apiBaseUrl=http://bootmanager-web:5000`;
-- confirm ingest reload/startup uses `http://bootmanager-web:5000`;
-- confirm capture logging stays disabled when database `CaptureLoggingEnabled=false`;
-- confirm ingest-processing disabled still skips incoming lines without `POST /api/networkmessages`.
+- containers were rebuilt/restarted and healthy;
+- `GET /api/operationalsettings/ingest` returned `apiBaseUrl=http://bootmanager-web:5000`;
+- ingest startup fetched settings via `http://bootmanager-web:5000`;
+- effective capture logging stayed disabled when database/runtime `CaptureLoggingEnabled=false`;
+- ingest-processing disabled skipped incoming lines without `POST /api/networkmessages`.

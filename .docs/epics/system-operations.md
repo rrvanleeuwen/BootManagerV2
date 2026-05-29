@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-CTRL-2 is geïmplementeerd en lokaal handmatig goedgekeurd op 2026-05-29; PR/merge en Pi-validatie na merge volgen nog.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-CTRL-2 is gemerged en op de Pi gevalideerd op 2026-05-29.
 
 ## Aanleiding
 
@@ -570,7 +570,7 @@ Waargenomen aandachtspunten:
 
 ### SYS-CTRL-2: Ingest reload robuust maken tegen foutieve ApiBaseUrl
 
-**Status:** ✅ Geïmplementeerd op branch `feature/ingest-reload-config-resilience` en lokaal handmatig goedgekeurd op 2026-05-29. PR/merge en Pi-validatie na merge volgen nog.
+**Status:** ✅ Geïmplementeerd, gemerged naar `master` via PR #72 en handmatig gevalideerd op Raspberry Pi op 2026-05-29.
 
 **User Story:** Als beheerder wil ik dat Ingest operationele instellingen betrouwbaar kan herladen, ook als de opgeslagen `ApiBaseUrl` fout staat, zodat de Pi niet vastloopt in een situatie waarin de UI wel instellingen opslaat maar de draaiende Ingest-runtime ze niet meer kan ophalen.
 
@@ -633,6 +633,12 @@ Er bleef één extra observatie over: ondanks `CaptureLoggingEnabled=False` werd
 - Architectuurcontrole: `BootManager.Tools.Ingest` heeft geen Infrastructure/database-reference en gebruikt voor instellingen alleen Web API/control-flow.
 - Verificatie: `dotnet build BootManager.sln` geslaagd met `0` warnings/errors; gerichte tests `IngestTools|OperationalSettings` geslaagd met `35/35`.
 - Handmatige lokale test door gebruiker is akkoord bevonden.
+- Pi-validatie na merge bevestigde:
+  - containers draaiden gezond na `git pull`, build en restart;
+  - `GET /api/operationalsettings/ingest` gaf `apiBaseUrl=http://bootmanager-web:5000`, `CaptureLoggingEnabled=False` en `IngestProcessingEnabled=False`;
+  - Ingest startup haalde settings op via `http://bootmanager-web:5000`;
+  - effectieve capture logging stond uit ondanks appsettings/compose `true`, omdat database/runtime `false` was;
+  - bij uitgeschakelde verwerking werden ontvangen UDP-regels alleen als skipped geteld en verschenen geen nieuwe `POST /api/networkmessages` regels.
 
 ---
 
