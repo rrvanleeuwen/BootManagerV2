@@ -40,7 +40,7 @@
   - **Status 2026-05-29:** `SYS-ANALYSIS-1` is geïmplementeerd, via PR #70 gemerged naar `master` en handmatig op de Raspberry Pi gevalideerd. De webinterface toont analyse-aantallen per tijdsvenster en kan JSON/CSV exporteren; test-exporten staan in `.docs/extraInfo/analysis-20260528-1546-20260529-1546.json` en `veldtests/analysis-20260528-1635-20260529-1635.*`.
   - **Afgevinkt:** `SYS-ANALYSIS-1` technische analysepagina in de webinterface is afgerond voor lokale dev-validatie én Pi-validatie.
   - **Open observaties:** `sqlite3` ontbreekt op Pi/container; veel `GGA` warnings bij fixkwaliteit `0`; warnings/errors worden nog niet persistent als analyseerbare events opgeslagen; langdurige WAL/retentie/capture-logvalidatie staat nog open.
-  - **Status 2026-05-29:** `SYS-ANALYSIS-2` is lokaal opgelost met twee tekstvelden voor `Van` en `Tot` (`dd-MM-jjjj uu:mm`) omdat native datum/tijd-controls onbetrouwbaar bleven bij deelbewerking. De oplossing is handmatig geaccepteerd als pragmatische bugfix; PR/merge en Pi-validatie volgen nog.
+  - **Status 2026-05-29:** `SYS-ANALYSIS-2` is gemerged via PR #73 met twee tekstvelden voor `Van` en `Tot` (`dd-MM-jjjj uu:mm`) omdat native datum/tijd-controls onbetrouwbaar bleven bij deelbewerking. De oplossing is handmatig geaccepteerd als pragmatische bugfix; Pi-validatie volgt optioneel bij de eerstvolgende Pi-update.
   - **Vervolgkeuzes in `.docs/epics/system-operations.md`:**
     - `SYS-DIAG-1` Pi diagnostics zonder handmatige sqlite3-inspectie
     - `SYS-LOG-1` loggingprofiel voor Pi-veldtest/productie

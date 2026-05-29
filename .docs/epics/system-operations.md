@@ -500,7 +500,7 @@ Waargenomen aandachtspunten:
 
 ### SYS-ANALYSIS-2: Datum/tijd invoer op analysepagina betrouwbaar maken
 
-**Status:** Geïmplementeerd op branch `feature/analysis-date-input-fix` en handmatig geaccepteerd als pragmatische bugfix op 2026-05-29. PR/merge en Pi-validatie volgen nog.
+**Status:** ✅ Geïmplementeerd, gemerged naar `master` via PR #73 en handmatig geaccepteerd als pragmatische bugfix op 2026-05-29. Pi-validatie volgt optioneel bij de eerstvolgende Pi-update.
 
 **User Story:** Als beheerder wil ik op de analysepagina de begin- en einddatum/tijd betrouwbaar kunnen wijzigen via toetsenbord en picker, zodat ik zelf een exact analysevenster kan kiezen zonder dat de velden terugvallen naar oude waarden.
 
@@ -560,6 +560,7 @@ Tijdens gebruik van de analysepagina op 2026-05-29 bleek dat beide datum/tijd-ve
 - Dit is een pragmatische oplossing om de analysepagina bruikbaar te maken; een gebruiksvriendelijkere datum/tijd-picker kan later onderdeel zijn van een bredere UI-framework/componentkeuze.
 - Verificatie: `dotnet build BootManager.sln` geslaagd met `0` warnings/errors.
 - Handmatige test door gebruiker is akkoord bevonden, met de kanttekening dat de tekstveld-UX niet ideaal is maar acceptabel voor deze bugfix.
+- PR #73 is gemerged naar `master` op 2026-05-29.
 
 ---
 
