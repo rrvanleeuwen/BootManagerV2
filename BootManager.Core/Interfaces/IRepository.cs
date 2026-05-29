@@ -41,6 +41,14 @@ public interface IRepository<T> where T : class
     Task<bool> AnyAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default);
 
     /// <summary>
+    /// Telt hoeveel objecten aan het predicaat voldoen.
+    /// </summary>
+    /// <param name="predicate">Filterconditie; null telt alle records.</param>
+    /// <param name="ct">Annuleringstoken.</param>
+    /// <returns>Aantal records dat aan de filterconditie voldoet.</returns>
+    Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default);
+
+    /// <summary>
     /// Voegt een nieuwe entiteit toe aan de repository.
     /// </summary>
     /// <param name="entity">De toe te voegen entiteit.</param>

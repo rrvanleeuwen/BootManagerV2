@@ -55,6 +55,10 @@ prompts, review en documentatie.
 - Pas nadat de goedgekeurde user story in het epic-bestand staat, maakt Codex de Copilot-prompt.
 - Als de gebruiker later de scope wijzigt, herformuleert Codex eerst de user story voordat een nieuwe of aangepaste Copilot-prompt wordt gemaakt.
 - Bij latere implementatie, review en afronding werkt Codex hetzelfde epic-bestand bij met status, implementatiedetails en verificatie, zodat user stories niet alleen in chat of prompts bestaan.
+- Als de user story al expliciet door de gebruiker is goedgekeurd en al in het relevante epic-bestand staat, moet Codex dit in de Copilot-prompt expliciet vermelden.
+- In dat geval moet de Copilot-prompt expliciet zeggen dat Copilot de user story niet opnieuw hoeft te tonen of opnieuw om goedkeuring hoeft te vragen.
+- De standaardverwachting voor zo'n prompt is dan: eerst kort plan, daarna direct implementeren, daarna build/test/checks en oplevernotities.
+- Codex moet dit ook in latere sessies blijven doen, zodat Copilot niet onnodig terugvalt naar een extra story-goedkeuringsstap die al is afgerond.
 
 ## Testadvies voor commit/PR
 

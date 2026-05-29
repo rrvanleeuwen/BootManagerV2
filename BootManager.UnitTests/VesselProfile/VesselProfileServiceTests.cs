@@ -281,6 +281,14 @@ public class VesselProfileServiceTests
             return Task.FromResult(exists);
         }
 
+        public Task<int> CountAsync(Expression<Func<Core.Entities.VesselProfile, bool>>? predicate = null, CancellationToken ct = default)
+        {
+            var count = predicate == null
+                ? _profiles.Count
+                : _profiles.AsQueryable().Count(predicate);
+            return Task.FromResult(count);
+        }
+
         public Task AddAsync(Core.Entities.VesselProfile entity, CancellationToken ct = default)
         {
             _profiles.Add(entity);

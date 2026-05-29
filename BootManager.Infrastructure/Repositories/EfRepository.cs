@@ -39,6 +39,12 @@ public class EfRepository<T> : IRepository<T> where T : class
         return await _set.AnyAsync(predicate, ct);
     }
 
+    public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default)
+    {
+        if (predicate == null) return await _set.CountAsync(ct);
+        return await _set.CountAsync(predicate, ct);
+    }
+
     public async Task AddAsync(T entity, CancellationToken ct = default)
     {
         await _set.AddAsync(entity, ct);

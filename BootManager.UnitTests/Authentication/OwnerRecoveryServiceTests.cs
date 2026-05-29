@@ -97,6 +97,13 @@ public class OwnerRecoveryServiceTests
             var compiled = predicate.Compile();
             return Task.FromResult(compiled(_owner));
         }
+        public Task<int> CountAsync(System.Linq.Expressions.Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        {
+            if (_owner is null) return Task.FromResult(0);
+            if (predicate is null) return Task.FromResult(1);
+            var compiled = predicate.Compile();
+            return Task.FromResult(compiled(_owner) ? 1 : 0);
+        }
         public Task AddAsync(OwnerProfile entity, CancellationToken ct = default) { _owner = entity; return Task.CompletedTask; }
         public Task UpdateAsync(OwnerProfile entity, CancellationToken ct = default) { _owner = entity; return Task.CompletedTask; }
         public Task DeleteAsync(OwnerProfile entity, CancellationToken ct = default) { if (_owner == entity) _owner = null; return Task.CompletedTask; }
