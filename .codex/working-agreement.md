@@ -21,6 +21,9 @@ prompts, review en documentatie.
 
 ## Scopebewaking
 
+- Codex gebruikt taakgestuurd context laden zoals beschreven in `.codex/task-context-map.md`.
+  Niet ieder gesprek hoeft alle roadmap-, epic- en legacy-documenten volledig te lezen.
+  Laad eerst de kleine startcontext en daarna alleen de documenten die nodig zijn voor de actuele taak.
 - Bij elk nieuw idee van de gebruiker, elk verzoek om een vervolgstory en elke situatie waarin Codex zelf een volgende stap voorstelt, controleert Codex actief de legacy-scope analyse zonder dat de gebruiker daar expliciet om hoeft te vragen.
 - De vaste scopebronnen zijn:
   - `.docs/legacy-analysis/scope-inventory.md` voor de volledige legacy functionele scope;

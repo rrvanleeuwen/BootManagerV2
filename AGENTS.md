@@ -3,9 +3,24 @@
 This repository uses Copilot for most implementation work and Codex for project
 context, planning, prompt creation, review, documentation, and git-flow support.
 
-Before doing work in this repository, read these files:
+Use a task-driven context-loading approach to keep Codex sessions efficient.
+Do not preload the full documentation set by default.
+
+At the start of a normal session, read only:
 
 - `.codex/working-agreement.md`
+- `.codex/current-session-handoff.md`
+- `.codex/task-context-map.md`
+
+Then load additional documents only when the task actually needs them. The
+context map defines which docs are relevant for common task types. Prefer
+targeted `Select-String`, `rg`, or small file sections over reading large files
+in full.
+
+Only read the old full documentation set when the task explicitly requires a
+broad roadmap/scope audit, legacy mapping, or project-wide planning decision.
+The old full set is:
+
 - `docs/bootmanager_codex_handoff.md`
 - `.docs/TODO.md`
 - `.docs/epics/first-run-onboarding.md`
@@ -16,7 +31,6 @@ Before doing work in this repository, read these files:
 - `.docs/legacy-analysis/legacy-coverage-register.md`
 - `.docs/legacy-analysis/proposed-backlog.md`
 - `.docs/legacy-analysis/implemented-or-obsolete.md`
-- `.codex/current-session-handoff.md`
 
 The `.codex/working-agreement.md` file is authoritative for the Codex/Copilot
 workflow. In particular:
