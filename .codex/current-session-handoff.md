@@ -4,7 +4,30 @@ Updated: 2026-05-31.
 
 ## Current Task
 
-`SYS-SHUTDOWN-1: BootManager Pi Afsluiten Vanuit Beheerderpagina` is complete.
+`NMEA Story 7: Pi database analyseren voor logboekvelden en bronduplicatie` is uitgevoerd op branch `codex/pi-database-analysis`.
+
+Analyse-uitkomst:
+
+- Lokale Pi database-export `bootmanager-db-20260531.tar.gz` is uitgepakt naar `.analysis/pi-db-20260531/bootmanager.db` en read-only geanalyseerd.
+- De export en `.analysis/` zijn lokale onderzoeksdata en worden niet gecommit.
+- Analyse is vastgelegd in `.docs/analysis/pi-database-2026-05-31.md`.
+- De database bevat 444.454 ruwe `NetworkMessages` over `2026-05-29 12:18:21 UTC` t/m `2026-05-31 10:05:48 UTC`.
+- Bestaande interpreters vullen positie, motion, heading, wind, snelheid door water en watertemperatuur.
+- `DepthMeasurements` en `BatteryMeasurements` zijn leeg in deze export.
+- Tankniveau is zichtbaar als sterke kandidaat via `PCDIN`/`MXPGN` met PGN `01F211`, waarschijnlijk NMEA 2000 PGN `127505` Fluid Level.
+- Er lijken minimaal drie fluid-kanalen zichtbaar: brandstof instance 0, water instance 0 en water instance 1.
+- `YDVLW` is een sterke kandidaat voor logstand/afstand door water.
+- Motoruren zijn niet duidelijk zichtbaar in deze export.
+- De huidige `Source`-waarde lijkt Docker/UDP-endpointmetadata en is niet stabiel genoeg als fysieke apparaatidentiteit.
+- Aanbevolen vervolg: Story 8 bronidentiteit/bronvoorkeuren ontwerpen, daarna Story 9 starten met PGN 127505 Fluid Level, daarna `YDVLW`.
+
+Administratieve status:
+
+- `.docs/epics/nmea0183-support.md` markeert Story 7 als geanalyseerd en linkt naar het analysedocument.
+- `.docs/TODO.md` vinkt Story 7 af.
+- `.docs/legacy-analysis/legacy-coverage-register.md` is bijgewerkt voor `US5.3`, `US5.11`, `US8.5` en `US9.5`; alle relevante legacy-items blijven `Partial`, omdat dit analyse/documentatie is en nog geen nieuwe interpreter of UI oplevert.
+
+Vorige afgeronde taak: `SYS-SHUTDOWN-1: BootManager Pi Afsluiten Vanuit Beheerderpagina` is complete.
 
 Final status:
 

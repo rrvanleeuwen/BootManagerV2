@@ -415,7 +415,7 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 
 ### Story 7 - Pi database analyseren voor logboekvelden en bronduplicatie
 
-**Status:** Voorgesteld op 2026-05-31.
+**Status:** Analyse uitgevoerd op 2026-05-31; zie `.docs/analysis/pi-database-2026-05-31.md`.
 
 **Als** ontwikkelaar/operator
 **wil ik** de vandaag op de Raspberry Pi verzamelde BootManager-database analyseren op ruwe berichten, afgeleide measurements en broninformatie
@@ -461,6 +461,17 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 - De Pi blijft alleen `master` volgen; analyse gebeurt op een database/export die van de Pi is opgehaald.
 - Noteer bij de export: datum/tijd, branch/commit van de Pi, ingest settings, NMEA aan/uit-status en globale duur van de test.
 - Analyseer eerst read-only; wijzig de Pi-database niet.
+
+**Resultaat 2026-05-31**
+- De Pi-database bevat 444.454 ruwe `NetworkMessages` over de periode `2026-05-29 12:18:21 UTC` tot `2026-05-31 10:05:48 UTC`.
+- Bestaande interpreters vullen positie, motion, heading, wind, snelheid door water en watertemperatuur.
+- `DepthMeasurements` en `BatteryMeasurements` zijn leeg in deze export.
+- Tankniveau is zichtbaar als sterke kandidaat via `PCDIN`/`MXPGN` met PGN `01F211`, waarschijnlijk NMEA 2000 PGN `127505` Fluid Level.
+- Er lijken minimaal drie fluid-kanalen zichtbaar: brandstof instance 0, water instance 0 en water instance 1.
+- `YDVLW` is een sterke kandidaat voor logstand/afstand door water.
+- Motoruren zijn niet duidelijk zichtbaar in deze export.
+- De huidige `Source`-waarde lijkt Docker/UDP-endpointmetadata en is niet stabiel genoeg als fysieke apparaatidentiteit.
+- Aanbevolen volgorde: eerst Story 8 bronidentiteit/bronvoorkeuren ontwerpen, daarna Story 9 starten met PGN 127505 Fluid Level, daarna `YDVLW`.
 
 ---
 
