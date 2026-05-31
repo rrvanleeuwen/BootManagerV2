@@ -364,6 +364,55 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 
 ---
 
+### Story 6 - Volledige boordnetwerk-capture analyseren voor dashboarddekking
+
+**Status:** Voorgesteld op 2026-05-30.
+
+**Als** ontwikkelaar/operator
+**wil ik** een volledige capture van de boordnetwerkberichten analyseren, inclusief berichten die BootManager nu nog niet interpreteert
+**zodat** duidelijk wordt welke sensordata beschikbaar is, welke berichten ontbreken in de huidige verwerking en welke dashboardwaarden betrouwbaar gebouwd kunnen worden.
+
+**Aanleiding**
+- De eerste Raspberry Pi-veldtest bevestigde ingest, raw opslag en meerdere measurement-tabellen.
+- Er is nog onzekerheid of BootManager alle relevante berichten ontvangt en interpreteert die het boordnetwerk verstuurt.
+- De gebruiker wil bij een volgende test extra logging/capture aanzetten om ook overige berichten vast te leggen.
+- De analyse-uitkomst heeft directe invloed op `DSH-LIVE-1` en latere dashboard-slices.
+
+**Scope**
+- Capture logging op de Pi bewust aanzetten tijdens een representatieve test met zoveel mogelijk boordnetwerkberichten.
+- Vastleggen welke ruwe NMEA 0183 sentence-types, talker-prefixen en message IDs binnenkomen.
+- Bepalen welke berichten al leiden tot bestaande measurements.
+- Bepalen welke berichten raw worden opgeslagen maar nog geen interpreter of measurement hebben.
+- Per relevant berichttype aangeven of het dashboard er direct iets mee kan, later een interpreter nodig heeft, of buiten scope blijft.
+- Resultaat documenteren als input voor `DSH-LIVE-1` en latere dashboard-slices.
+
+**Buiten scope**
+- Geen nieuwe dashboardwidgets bouwen in deze story.
+- Geen nieuwe NMEA-interpreters implementeren, tenzij later apart besloten.
+- Geen AIS-semantiek of kaartweergave bouwen.
+- Geen definitieve retentie- of cleanup-policy voor raw data.
+- Geen Raspberry Pi feature-branch test; de Pi blijft alleen `master` gebruiken.
+
+**Acceptatiecriteria**
+- Er is een capturebestand of analyse-export van een representatieve test met extra logging.
+- De analyse bevat een lijst van gevonden sentence-types/message IDs met aantallen.
+- Per type is duidelijk: `ondersteund`, `raw-only`, `onbekend`, `ongeldig`, of `kandidaat voor dashboard`.
+- Er is expliciet benoemd welke dashboardwaarden nu betrouwbaar beschikbaar zijn en welke nog niet.
+- Eventuele vervolgstories voor extra interpreters of diagnostics zijn concreet benoemd.
+
+**Legacy coverage impact**
+- Raakt `US9.5 Sensorintegratie via Bluetooth of Wi-Fi`; status blijft `Partial`, maar de YDEN/UDP sensordekking wordt beter onderbouwd.
+- Raakt `US7.13 Automatische update van gegevens`; status blijft `Open` tot dashboard livewaarden echt gebouwd zijn.
+- Ondersteunt later `US7.1`, `US7.2` en `US7.3` via betere dashboarddekking.
+- Raakt mogelijk `US9.2 AIS integratie` als `!AIVDM`/`!AIVDO` relevant blijken, maar AIS-semantiek blijft buiten deze story.
+
+**Handmatige testnotities**
+- Op de Pi alleen uitvoeren nadat de benodigde capture/logging-instelling op `master` beschikbaar is.
+- Tijdens test noteren: starttijd, eindtijd, boot-/instrumentconfiguratie, ingest settings, capture logging status en eventuele bijzonderheden.
+- Na afloop niet alleen kijken of er data is, maar vooral welke berichttypen wel binnenkomen en nog niet worden geinterpreteerd.
+
+---
+
 ### Future Story – Configureerbare sampling en raw-dataretentie
 
 **Als** eindgebruiker/operator  
