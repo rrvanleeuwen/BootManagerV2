@@ -4,8 +4,9 @@
 @using BootManager.Application.Analysis.Services
 @inject IAnalysisService AnalysisService
 @inject IJSRuntime JS
+@inject HttpClient Http
 
-<h2 class="mb-3">Technische Analyse</h2>
+<h2 class="mb-3">Beheerder</h2>
 
 <div class="card mb-4">
     <div class="card-header">
@@ -135,6 +136,57 @@
     </div>
 }
 
+<div class="card mt-4">
+    <div class="card-header">
+        <span>Beheerdersacties</span>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">Systeembeheerfuncties voor BootManager Pi:</p>
+        <button class="btn btn-danger" @onclick="OpenShutdownConfirmation" disabled="@_shuttingDown">
+            @if (_shuttingDown)
+            {
+                <span>Afsluitproces bezig...</span>
+            }
+            else
+            {
+                <span>BootManager Pi afsluiten</span>
+            }
+        </button>
+
+        @if (!string.IsNullOrEmpty(_shutdownError))
+        {
+            <div class="alert alert-danger mt-3">@_shutdownError</div>
+        }
+
+        @if (!string.IsNullOrEmpty(_shutdownMessage))
+        {
+            <div class="alert alert-warning mt-3">@_shutdownMessage</div>
+        }
+    </div>
+</div>
+
+@if (_showShutdownConfirmation)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0, 0, 0, 0.5);" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Shutdown bevestigen</h5>
+                    <button type="button" class="btn-close" @onclick="CloseShutdownConfirmation"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Weet u zeker dat u de BootManager Pi wilt afsluiten?</strong></p>
+                    <p>Na bevestiging wordt de Pi afgesloten. U moet 20 seconden wachten voordat u de Pi uitzet.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseShutdownConfirmation">Annuleren</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmShutdown">Bevestigen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     // String-backed text fields (dd-MM-yyyy HH:mm format)
     private string _startDateTimeText = "";
@@ -150,6 +202,12 @@
     private string _validationError = "";
     private bool _loading = false;
     private bool _exporting = false;
+
+    // Shutdown state
+    private bool _showShutdownConfirmation = false;
+    private bool _shuttingDown = false;
+    private string _shutdownError = "";
+    private string _shutdownMessage = "";
 
     protected override void OnInitialized()
     {
@@ -279,6 +337,50 @@
         finally
         {
             _exporting = false;
+        }
+    }
+
+    // Shutdown methods
+    private void OpenShutdownConfirmation()
+    {
+        _showShutdownConfirmation = true;
+        _shutdownError = "";
+        _shutdownMessage = "";
+    }
+
+    private void CloseShutdownConfirmation()
+    {
+        _showShutdownConfirmation = false;
+    }
+
+    private async Task ConfirmShutdown()
+    {
+        _showShutdownConfirmation = false;
+        _shuttingDown = true;
+        _shutdownError = "";
+        _shutdownMessage = "";
+
+        try
+        {
+            var response = await Http.PostAsync("/api/system/shutdown", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _shutdownMessage = "De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.";
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _shutdownError = $"Shutdown mislukt (Status {response.StatusCode}): {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _shutdownError = $"Fout bij shutdown-aanvraag: {ex.Message}";
+        }
+        finally
+        {
+            _shuttingDown = false;
         }
     }
 }

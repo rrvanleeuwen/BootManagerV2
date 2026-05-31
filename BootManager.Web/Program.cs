@@ -6,6 +6,7 @@ using BootManager.Infrastructure;
 using BootManager.Infrastructure.Persistence;
 using BootManager.Web.Components;
 using BootManager.Web.Services;
+using BootManager.Web.Options;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -130,6 +131,16 @@ builder.Services.AddSingleton<IIngestControlClient>(sp =>
 
 // Register OperationalSettingsWithReloadService (voor UI en controller)
 builder.Services.AddScoped<IOperationalSettingsWithReloadService, OperationalSettingsWithReloadService>();
+
+// Configure shutdown options from appsettings
+builder.Services.Configure<ShutdownOptions>(
+    builder.Configuration.GetSection(ShutdownOptions.SectionName));
+
+// Register ShutdownHelperExecutor for safe, bounded helper script execution
+builder.Services.AddScoped<IShutdownHelperExecutor, ShutdownHelperExecutor>();
+
+// Register ShutdownService (voor veilige Pi-shutdown)
+builder.Services.AddScoped<BootManager.Application.Administration.Services.IShutdownService, BootManager.Web.Services.ShutdownService>();
 
 var app = builder.Build();
 

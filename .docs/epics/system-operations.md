@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-CTRL-2 is gemerged en op de Pi gevalideerd op 2026-05-29.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-CTRL-2 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-SHUTDOWN-1 is lokaal geïmplementeerd en UI-getest op 2026-05-31; Pi-validatie volgt na merge naar `master`.
 
 ## Aanleiding
 
@@ -707,6 +707,78 @@ Er bleef één extra observatie over: ondanks `CaptureLoggingEnabled=False` werd
   - Ingest startup haalde settings op via `http://bootmanager-web:5000`;
   - effectieve capture logging stond uit ondanks appsettings/compose `true`, omdat database/runtime `false` was;
   - bij uitgeschakelde verwerking werden ontvangen UDP-regels alleen als skipped geteld en verschenen geen nieuwe `POST /api/networkmessages` regels.
+
+---
+
+### SYS-SHUTDOWN-1: BootManager Pi Afsluiten Vanuit Beheerderpagina
+
+**Status:** Geïmplementeerd op branch `feature/pi-safe-shutdown`; lokale build, gerichte tests en UI-test geslaagd op 2026-05-31. Pi-validatie volgt na merge naar `master`.
+
+**User Story:** Als eigenaar/beheerder wil ik vanuit de beheeromgeving de **BootManager Pi afsluiten**, zodat ik de Raspberry Pi veilig kan uitzetten zonder via SSH handmatig een shutdown-commando te hoeven uitvoeren.
+
+**Scope:**
+
+- Gebruik de bestaande pagina waar nu **Technische Analyse** staat.
+- Wijzig de paginakop van `Technische Analyse` naar `Beheerder`.
+- Laat de bestaande analysefunctionaliteit op die pagina staan.
+- Voeg op dezelfde pagina een beheeractie toe met knoptekst: `BootManager Pi afsluiten`.
+- Toon altijd eerst een bevestigingsmelding voordat de shutdown-opdracht wordt uitgevoerd.
+- Na bevestiging start BootManager een veilige shutdown van de Raspberry Pi.
+- Na het starten van de shutdown toont de UI: `De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.`
+- Alleen ingelogde Owner/geautoriseerde gebruiker mag deze actie uitvoeren.
+- Geen vrije shell vanuit de Web-app; alleen een begrensde shutdown-helper/service.
+
+**Buiten scope:**
+
+- Geen aparte Settings/Systeembeheer-pagina.
+- Geen reboot-knop.
+- Geen algemene terminal/shell.
+- Geen volledige Pi-statuspagina, backup/restore of diagnostics-uitbreiding.
+- Geen wijziging aan de analysefunctionaliteit behalve de bredere paginakop.
+
+**Acceptatiecriteria:**
+
+- De pagina toont als kop `Beheerder`.
+- De bestaande technische analyse blijft werken.
+- De knop heet exact `BootManager Pi afsluiten`.
+- Annuleren voert geen shutdown uit.
+- Bevestigen start de veilige shutdown-flow.
+- De waarschuwing met `Wacht 20 seconden` wordt getoond.
+- Alleen Owner/geautoriseerde gebruikers kunnen de actie uitvoeren.
+- Build/test slaagt.
+- Na merge wordt dit op de Pi vanaf `master` getest.
+
+**Legacy coverage impact:**
+
+- Raakt `US8.6 Raspberry Pi-configuratie beheren`.
+- Status blijft waarschijnlijk `Partial`, maar veilige Pi-shutdown wordt toegevoegd aan de dekking.
+
+**Handmatige testnotities:**
+
+- Lokaal controleren dat knop, bevestiging en autorisatie logisch werken zonder echte host-shutdown waar mogelijk.
+- Op de Pi na merge naar `master` testen:
+  1. App openen.
+  2. Naar de beheerderpagina gaan.
+  3. `BootManager Pi afsluiten` klikken.
+  4. Annuleren testen: Pi blijft draaien.
+  5. Nogmaals klikken en bevestigen.
+  6. Controleren dat de melding verschijnt: wacht 20 seconden.
+  7. Na ongeveer 20 seconden pas de voeding/stroom onderbreken.
+
+**Implementation Status (2026-05-31):**
+
+- De bestaande `/analysis` pagina is hernoemd naar `Beheerder`; het navigatiemenu toont ook `Beheerder`.
+- De technische analysefunctionaliteit blijft op dezelfde pagina beschikbaar.
+- De beheerderpagina bevat een knop `BootManager Pi afsluiten` met bevestigingsmodal.
+- Annuleren sluit de modal zonder API-call.
+- Bevestigen roept `POST /api/system/shutdown` aan en toont de waarschuwing: `De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.`
+- Het endpoint is server-side afgeschermd met `Authorize(Roles = "Owner")`.
+- Development mode logt alleen en voert geen echte shutdown uit.
+- Production mode gebruikt een begrensde Unix-domain-socket executor naar `/run/bootmanager/shutdown.sock`; er wordt alleen het literal command `SHUTDOWN` verzonden.
+- Docker Compose mount de host-side shutdown socket read-only in de Web-container en zet `Shutdown__HelperSocketPath=/run/bootmanager/shutdown.sock`.
+- Host-side systemd socket-activation bestanden en setupdocumentatie staan in `.docs/deployment/`.
+- Verificatie: `dotnet build BootManager.sln` geslaagd met `0` warnings/errors; `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter SystemShutdown --no-build` geslaagd met `13/13`.
+- Handmatige lokale UI-test door gebruiker akkoord bevonden. Docker Compose config en echte Pi-shutdown blijven open tot validatie op de Raspberry Pi na merge.
 
 ---
 

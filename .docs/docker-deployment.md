@@ -404,19 +404,11 @@ docker compose logs -f bootmanager-ingest
 
 ## Shutdown-knop
 
-Er is geen shutdown-knop in deze skeleton. Redenen:
+`SYS-SHUTDOWN-1` voegt een beheeractie toe om de BootManager Pi vanuit de webinterface af te sluiten.
 
-1. Voorkeur gegeven aan expliciete commando's (`docker compose stop/down`)
-2. Accidenteel afsluiten voorkomen
-3. Geen ongedocumenteerde state changes
+De Web-container voert geen vrije shell-commando's uit. De production-flow gebruikt een Unix-domain-socket (`/run/bootmanager/shutdown.sock`) naar een host-side systemd helper die alleen het literal command `SHUTDOWN` accepteert en daarna de Raspberry Pi afsluit.
 
-Als later een shutdown-knop gewenst is, moet dit als aparte beheer-slice worden ontworpen:
-- Owner/admin-only autorisatie;
-- extra bevestiging;
-- duidelijke logging van wie shutdown vraagt;
-- host-side mechanisme voor Raspberry Pi shutdown, omdat een container de host normaal niet zomaar mag afsluiten.
-
-Vooralsnog: `docker compose stop` is de standaard.
+Zie `.docs/deployment/pi-shutdown-setup.md` voor de host-side socket/service setup en de Pi-validatiestappen. Zonder die host-side setup geeft de API bewust `503 Service Unavailable`.
 
 ## Troubleshooting
 

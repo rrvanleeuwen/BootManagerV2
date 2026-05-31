@@ -17,10 +17,15 @@ services:
       - Ingest__ControlApi__BaseUrl=http://bootmanager-ingest:5010
       - Logging__LogLevel__Default=Information
       - Logging__LogLevel__Microsoft.AspNetCore=Warning
+      - Shutdown__HelperSocketPath=/run/bootmanager/shutdown.sock
     volumes:
       - bootmanager-db:/var/lib/bootmanager
       - bootmanager-logs:/var/log/bootmanager
       - bootmanager-attachments:/app/data/logbook-attachments
+      # Mount shutdown-helper socket from host (read-only)
+      # The host-side systemd service (bootmanager-shutdown.service) creates this socket
+      # It allows safe, bounded shutdown without shell access or arbitrary command execution
+      - /run/bootmanager/shutdown.sock:/run/bootmanager/shutdown.sock:ro
     networks:
       - bootmanager-network
     restart: unless-stopped
