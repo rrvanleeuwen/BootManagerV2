@@ -125,7 +125,7 @@ Bij afronding van een story of PR:
 |---|---|---|
 | US5.1 Handmatig logboek invoeren met weerinformatie | Partial | Handmatige logregels bestaan; weer/barometer/temperatuur volledig nalopen. |
 | US5.2 Automatisch loggen en intervalinstelling | Partial | Missing moments + Draft-regels bestaan; echte automatische logging op NMEA interval is beperkt. `SYS-CTRL-1` voegt bewuste ingest-verwerking aan/uit toe met logboekwaarschuwing en nieuwe-reis-popup wanneer automatische meetdata uit staat. |
-| US5.3 Motoruren en brandstof in header | Partial | Reisheader/samenvatting aanwezig; motoruren/brandstof afronding open. |
+| US5.3 Motoruren en brandstof in header | Partial | Reisheader/samenvatting aanwezig; motoruren/brandstof afronding open. Pi-databaseanalyse op 2026-05-31 bevestigt tankniveau/brandstof als kandidaat via `PCDIN`/`MXPGN` PGN `127505`; motoruren zijn nog niet duidelijk zichtbaar. |
 | US5.4 Notities en gebeurtenissen toevoegen | Done | Opmerkingen/zeilvoering per logregel aanwezig. |
 | US5.5 Logboek koppelen aan passage | Open | Passageplanning ontbreekt. |
 | US5.6 Logboekheader invullen | Partial | Trip header bestaat; vertrek- en aankomstmoment ondersteunen nu datum+tijd in logboek en printweergave. Volledige legacy-header nog nalopen. |
@@ -133,7 +133,7 @@ Bij afronding van een story of PR:
 | US5.8 Bijlagen toevoegen aan logregel | Done | Logbook attachments aanwezig. |
 | US5.9 Klassiek format en routekaart | Partial | Tabel/printweergave aanwezig; routekaart ontbreekt. |
 | US5.10 Exporteren van logboek | Partial | Browser print aanwezig; PDF/CSV open. |
-| US5.11 Statistieken en samenvatting | Partial | Samenvattingsvelden deels aanwezig; uitgebreide statistieken open. |
+| US5.11 Statistieken en samenvatting | Partial | Samenvattingsvelden deels aanwezig; uitgebreide statistieken open. Pi-databaseanalyse op 2026-05-31 bevestigt `YDVLW` als kandidaat voor logstand/afstand en PGN `127505` als kandidaat voor tankniveau. |
 | US5.12 Offline werking | Done | Lokale SQLite-first werking. |
 | US5.13 Cloud-synchronisatie | Parked | Cloud-sync geparkeerd. |
 | US5.14 Logboek afronden bij aankomst | Done | Lopende reizen kunnen nu expliciet administratief worden afgerond met verplicht aankomstmoment; afgesloten reizen krijgen status `Completed` en worden niet meer als open reis behandeld in logboekflow. |
@@ -186,7 +186,7 @@ Bij afronding van een story of PR:
 | US8.2 Eenheden configureren | Open | Niet aanwezig. |
 | US8.3 Taal en regio instellen | Open | Niet aanwezig. |
 | US8.4 Gebruikersrollen beheren | Parked | Multi-user/rollen geparkeerd. |
-| US8.5 Sensorintegratie configureren | Partial | Operationele ingest settings aanwezig; `SYS-CTRL-1` voegt een centrale `IngestProcessingEnabled` instelling toe waarmee verwerking bewust aan/uit kan. `SYS-CTRL-2` maakt reload van ingest-instellingen robuuster tegen foutieve runtime `ApiBaseUrl` en laat capture logging de runtime/database setting respecteren. Bredere sensorconfig blijft open. |
+| US8.5 Sensorintegratie configureren | Partial | Operationele ingest settings aanwezig; `SYS-CTRL-1` voegt een centrale `IngestProcessingEnabled` instelling toe waarmee verwerking bewust aan/uit kan. `SYS-CTRL-2` maakt reload van ingest-instellingen robuuster tegen foutieve runtime `ApiBaseUrl` en laat capture logging de runtime/database setting respecteren. Pi-databaseanalyse op 2026-05-31 laat zien dat de huidige `Source`-waarde Docker/UDP-endpointmetadata is en niet stabiel genoeg is voor fysieke bronvoorkeuren. Bredere sensorconfig blijft open. |
 | US8.6 Raspberry Pi-configuratie beheren | Partial | Pi deployment runbook en resourcechecks gedocumenteerd; eerste metingen voor opslag/RAM/load vastgelegd. Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde health, ingest, API, parsing en measurement-opslag op `master @ 1db5534`. `SYS-ANALYSIS-1` voegt een technische analysepagina toe; `SYS-CTRL-1` voegt dashboardbediening voor ingest-verwerking en goedkope disabled-mode toe; `SYS-CTRL-2` voorkomt dat een foutieve `ApiBaseUrl` de ingest reload-flow blijvend blokkeert. `SYS-SHUTDOWN-1` voegt een veilige in-app BootManager Pi shutdown-flow toe via een begrensde Unix-domain-socket naar een host-side systemd helper; deze is op 2026-05-31 gevalideerd op de Pi vanaf `master @ b7818f8`. Volledige in-app Pi systeemstatus/configuratiebeheer, persistent warning/error-overzicht en langdurige observatie blijven open. |
 | US8.7 Gebruikersbeheer | Parked | Multi-user geparkeerd. |
 | US8.8 Back-up maken en herstellen | Open | Procedureel beschreven; UI/helper open. |
@@ -205,7 +205,7 @@ Bij afronding van een story of PR:
 | US9.2 AIS integratie | Partial | Raw/parser-herkenning voor `!AIVDM`/`!AIVDO`; AIS-semantiek ontbreekt. |
 | US9.3 Navionics/GPX import | Open | Niet aanwezig; GPX is logische lokale eerste slice. |
 | US9.4 Haveninformatie koppelen | Open | Niet aanwezig. |
-| US9.5 Sensorintegratie via Bluetooth of Wi-Fi | Partial | UDP/YDEN ingest bestaat; Bluetooth/Wi-Fi sensor onboarding ontbreekt. |
+| US9.5 Sensorintegratie via Bluetooth of Wi-Fi | Partial | UDP/YDEN ingest bestaat; Bluetooth/Wi-Fi sensor onboarding ontbreekt. Pi-databaseanalyse op 2026-05-31 onderbouwt dat bronidentiteit later op protocol/talker/message-id/PGN en gebruikerslabels moet leunen, niet alleen op remote endpoint. |
 | US9.6 Externe API-verbinding beheren | Open | Niet aanwezig. |
 | US9.7 Synchronisatie met andere apparaten | Parked | Device/cloud sync geparkeerd. |
 
