@@ -338,6 +338,9 @@
   - [x] Story 3: NMEA0183 krijgt stabiele niet-lege `MessageId` op basis van sentence-id, zodat derived measurements opgeslagen worden
   - [x] Story 4: Simulator krijgt een YDEN03-achtig profiel met `YD` talker-prefixen, AIS `!AIVDM`/`!AIVDO` en raw-only YDEN-sentences
   - [ ] Story 5: Replay-validatie voor echte NDJSON capture naar API/SQLite
+  - [ ] Story 7: Pi-databaseanalyse voor logboekvelden, raw-only kandidaatberichten en dubbele meetbronnen
+  - [ ] Story 8: Bronidentiteit en bronvoorkeuren ontwerpen voor meetsoorten met meerdere mogelijke apparaten
+  - [ ] Story 9: Eerste nieuwe interpreter kiezen en bouwen op basis van de Pi-analyse
   - [ ] Future story: Ingest haalt operationele instellingen op uit BootManager.Web en gebruikt die voor configureerbare ingest/sampling-retentie; ruwe niet-geparseerde data kan na succesvolle periodieke parsing optioneel worden opgeschoond
   - Bestaande NMEA2000 slices blijven intact
   - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
@@ -492,6 +495,7 @@ Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 - Server-side PDF-generatie.
 - Bijlagen uploaden.
 - Query API enhancements voor meetdata over tijdvakken.
+- Motoruren, brandstof/tankniveau en logstand in reisheader afronden op basis van handmatige invoer en, waar de Pi-analyse dit ondersteunt, automatische voorstellen.
 
 ## Deployment Checklist
 
