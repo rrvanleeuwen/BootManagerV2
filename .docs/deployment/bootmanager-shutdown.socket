@@ -1,0 +1,15 @@
+[Unit]
+Description=BootManager Shutdown Helper Socket
+Documentation=file:///opt/bootmanager/docs/pi-shutdown-setup.md
+
+[Socket]
+# Unix domain socket for BootManager shutdown control
+ListenStream=/run/bootmanager/shutdown.sock
+SocketMode=0666
+RemoveOnStop=yes
+
+# Accept connections and pass to the service
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

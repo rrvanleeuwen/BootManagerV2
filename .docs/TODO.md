@@ -315,8 +315,8 @@
     - Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde ingest, API, parsing en measurement-opslag op `master @ 1db5534`; UI-validatie, diagnostics en langdurige opslagobservatie blijven open.
     - Ingest/Web moeten netjes reageren op container shutdown (`SIGTERM`) en open writes afsluiten.
     - Control API blijft intern/lokaal bereikbaar, niet publiek. **Status:** hostbinding `127.0.0.1:5010:5010` is gevalideerd.
-  - **Latere UI-story:** owner/admin knop "Systeem afsluiten" met bevestiging. Web mag niet rechtstreeks vrije shell-commando's uitvoeren; gebruik een beperkte lokale helper/service die Docker/OS veilig afsluit.
-  - **Gebruikersmelding:** "Wacht tot de Raspberry Pi volledig uit is voordat je de stroom loshaalt."
+  - **Status 2026-05-31:** `SYS-SHUTDOWN-1` is geïmplementeerd op branch `feature/pi-safe-shutdown` en lokaal UI-getest. De beheerderpagina bevat `BootManager Pi afsluiten` met bevestiging en 20-seconden waarschuwing. Production gebruikt een begrensde Unix-domain-socket naar een host-side systemd shutdown-helper; geen vrije shell vanuit de Web-app. Pi-validatie volgt na merge naar `master`.
+  - **Gebruikersmelding:** `De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.`
   - **Nieuwe latere system-operations story:** `SYS-DEPLOY-LEAN-1` moet opnieuw expliciet opgepakt worden zodra BootManager richting een eerste deployment voor een andere bootbezitter en dus een andere Pi gaat.
 
 - [ ] **Extended Heading Fields**

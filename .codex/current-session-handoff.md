@@ -4,25 +4,28 @@ Updated: 2026-05-31.
 
 ## Current Task
 
-Legacy BootManager Word exports from `.docs/legacy-input/` have all been processed into the current BootManagerV2 documentation.
-
-Current branch `feature/live-dashboard-measurements` contains the completed `DSH-LIVE-1: Live dashboard met actuele meetwaarden` implementation and final dashboard refinements.
+Branch `feature/pi-safe-shutdown` contains `SYS-SHUTDOWN-1: BootManager Pi Afsluiten Vanuit Beheerderpagina`.
 
 Current status before PR:
 
-- User manually tested the dashboard locally and reported it is satisfactory.
-- Dashboard now shows current/latest-known measurements using SVG gauges and value fields.
-- Heading, wind angle and COG use heading-up compass displays with a fixed boat silhouette.
-- Dashboard polling follows `OperationalSettingsDto.DefaultSampleIntervalSeconds` with safe min/max bounds.
-- Dashboard user-facing terminology uses `NMEA aan` / `NMEA uit`; internal `Ingest` code names remain unchanged.
-- Top timestamp now shows `Laatste meting` based on the newest database `RecordedAtUtc`, not the UI refresh time.
-- Manual refresh button, broad ingest card, settings card and yellow ingest-disabled banner were removed.
-- Future low-priority `DSH-LIVE-4` SignalR push story is documented but intentionally not next.
+- User approved the story and it is stored in `.docs/epics/system-operations.md`.
+- `/analysis` is now headed and menu-labeled as `Beheerder`.
+- Existing technical analysis functionality remains on the same page.
+- The page has `BootManager Pi afsluiten` with confirmation modal.
+- Cancel closes the modal without API call; confirm calls `POST /api/system/shutdown`.
+- UI shows: `De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.`
+- Development mode logs only and does not shut down the laptop.
+- Production mode uses a bounded Unix-domain-socket executor to `/run/bootmanager/shutdown.sock`, mounted read-only from the host by Docker Compose.
+- Host-side systemd socket/template-service docs and helper script are in `.docs/deployment/`.
+- User manually tested the local UI flow and reported it is OK.
+- Validation: `dotnet build BootManager.sln` passed with `0` warnings/errors; `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter SystemShutdown --no-build` passed `13/13`.
+- Docker Compose config could not be run locally because Docker is not available in this environment; Pi validation is required after merge.
 
 Next action:
 
-- Commit, push and open a PR for `feature/live-dashboard-measurements`.
+- Commit, push and open a ready PR for `feature/pi-safe-shutdown`.
 - After PR merge, update the Raspberry Pi only from `master`; do not test this feature branch on the Pi.
+- On the Pi, first install/enable the host-side shutdown socket service from `.docs/deployment/pi-shutdown-setup.md`, then rebuild/restart Docker Compose and validate the UI shutdown flow.
 
 The first Raspberry Pi 4 Docker Compose deployment-smoke-test has succeeded:
 

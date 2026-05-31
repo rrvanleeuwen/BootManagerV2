@@ -1,0 +1,26 @@
+[Unit]
+Description=BootManager Shutdown Helper Service
+Documentation=file:///opt/bootmanager/docs/pi-shutdown-setup.md
+After=network.target
+Requires=bootmanager-shutdown.socket
+
+[Service]
+Type=accept
+ExecStart=/opt/bootmanager/shutdown-helper.sh
+StandardInput=socket
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/run/bootmanager /var/log/bootmanager
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
