@@ -1,8 +1,13 @@
 @page "/dashboard"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@implements IAsyncDisposable
+@using System.Globalization
+@using BootManager.Application.Dashboard.DTOs
+@using BootManager.Application.Dashboard.Services
 @using BootManager.Application.OperationalSettings.DTOs
 @using BootManager.Application.OperationalSettings.Services
 @using BootManager.Web.Services
+@inject IDashboardMeasurementService DashboardMeasurementService
 @inject IOperationalSettingsWithReloadService OperationalSettingsWithReloadService
 @inject ILogger<Dashboard> Logger
 @inject NavigationManager NavigationManager
@@ -10,7 +15,31 @@
 <div class="container-fluid mt-4">
     <div class="row mb-4">
         <div class="col-md-12">
-            <h2>BootManager Dashboard</h2>
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">BootManager Dashboard</h2>
+                <!-- Ingest Toggle in Header (rechts uitgelijd) -->
+                <div class="d-flex align-items-center gap-2">
+                    @if (!isLoading && settings != null)
+                    {
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="ingestToggleHeader"
+                                checked="@ingestProcessingEnabled"
+                                @onchange="OnIngestProcessingToggled"
+                                disabled="@isSubmitting" />
+                            <label class="form-check-label" for="ingestToggleHeader">
+                                @if (ingestProcessingEnabled)
+                                {
+                                    <span class="badge bg-success">NMEA aan</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">NMEA uit</span>
+                                }
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 
@@ -38,22 +67,22 @@
         </div>
     }
 
-    @if (ingestProcessingEnabled == false)
-    {
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <strong>⚠️ Ingest-verwerking uitgeschakeld</strong>
-            <p class="mb-0">Automatische gegevensverzameling is momenteel uitgeschakeld. Geen nieuwe meetgegevens worden opgeslagen in het logboek. Zet ingest-verwerking aan om normale werking te hervatten.</p>
-        </div>
-    }
-
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
+    <!-- Huidige Meetwaarden Sectie -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Ingest-Verwerking</h5>
+                    <h5 class="card-title mb-0">Actuele Meetwaarden</h5>
                 </div>
                 <div class="card-body">
-                    @if (isLoading)
+                    @if (measurementsError != null)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @measurementsError
+                        </div>
+                    }
+
+                    @if (currentMeasurements == null)
                     {
                         <div class="text-center">
                             <div class="spinner-border" role="status">
@@ -61,83 +90,357 @@
                             </div>
                         </div>
                     }
-                    else if (settings != null)
+                    else if (!currentMeasurements.HasAnyData)
                     {
-                        <div class="row mb-3">
+                        <div class="alert alert-info">
+                            <p class="mb-0">Geen meetgegevens beschikbaar. Zorg ervoor dat NMEA-verwerking actief is en boordgegevens binnenkomen.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row mb-2">
                             <div class="col-md-12">
-                                <label class="form-label"><strong>Status</strong></label>
-                                <div>
-                                    @if (ingestProcessingEnabled)
+                                @{
+                                    var latestMeasurementTime = GetLatestMeasurementTime();
+                                    if (latestMeasurementTime.HasValue)
                                     {
-                                        <span class="badge bg-success p-2">🟢 Actief</span>
+                                        <small class="text-muted">Laatste meting: @FormatTimestamp(latestMeasurementTime) · <span class="text-secondary" style="font-size: 0.85em;">scherm ververst elke @autoRefreshIntervalSeconds s</span></small>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-danger p-2">🔴 Inactief</span>
+                                        <small class="text-muted">Laatste meting: geen data · <span class="text-secondary" style="font-size: 0.85em;">scherm ververst elke @autoRefreshIntervalSeconds s</span></small>
+                                    }
+                                }
+                            </div>
+                        </div>
+                        <div class="row">
+                            <!-- Wind Angle - Compass Gauge (Heading-up) -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Windhoek</h6>
+                                    @if (currentMeasurements.Wind.HasData && currentMeasurements.Wind.AngleDegrees.HasValue &&
+                                         currentMeasurements.Heading.HasData && currentMeasurements.Heading.HeadingDegrees.HasValue)
+                                    {
+                                        <svg class="compass-gauge" viewBox="0 0 100 100">
+                                            <!-- Compass ring -->
+                                            <circle cx="50" cy="50" r="48" fill="none" stroke="#ddd" stroke-width="1"/>
+                                            <!-- Cardinal directions (rotated with heading-up perspective) -->
+                                            <g transform="rotate(@FormatForSvg(GetCompassRoseRotation(currentMeasurements.Heading.HeadingDegrees.Value)) 50 50)">
+                                                <text x="50" y="8" text-anchor="middle" class="compass-label">N</text>
+                                                <text x="92" y="53" text-anchor="start" class="compass-label">E</text>
+                                                <text x="50" y="95" text-anchor="middle" class="compass-label">S</text>
+                                                <text x="8" y="53" text-anchor="end" class="compass-label">W</text>
+                                            </g>
+                                            <!-- Forward indicator (Vooruit) - fixed at top -->
+                                            <text x="50" y="12" text-anchor="middle" class="compass-label" style="font-size: 0.6em; fill: #666;">↑</text>
+                                            <!-- Boat silhouette - fixed, does not rotate -->
+                                            @GetBoatSilhouette()
+                                            <!-- Needle showing wind angle relative to heading -->
+                                            <g transform="@GetCompassNeedleRotation(GetRelativeAngle(currentMeasurements.Wind.AngleDegrees.Value, currentMeasurements.Heading.HeadingDegrees.Value))">
+                                                <line x1="50" y1="15" x2="50" y2="42" stroke="#d00" stroke-width="1.5"/>
+                                                <circle cx="50" cy="50" r="3" fill="#d00"/>
+                                            </g>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Wind.AngleDegrees.Value.ToString("F0", CultureInfo.CurrentCulture)°</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Wind.RecordedAtUtc)</small>
+                                    }
+                                    else if (currentMeasurements.Wind.HasData && currentMeasurements.Wind.AngleDegrees.HasValue)
+                                    {
+                                        <!-- Fallback: north-up when heading unavailable -->
+                                        <svg class="compass-gauge" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="48" fill="none" stroke="#ddd" stroke-width="1"/>
+                                            <text x="50" y="8" text-anchor="middle" class="compass-label">N</text>
+                                            <text x="92" y="53" text-anchor="start" class="compass-label">E</text>
+                                            <text x="50" y="95" text-anchor="middle" class="compass-label">S</text>
+                                            <text x="8" y="53" text-anchor="end" class="compass-label">W</text>
+                                            <!-- Boat silhouette - fixed at top -->
+                                            @GetBoatSilhouette()
+                                            <g transform="@GetCompassNeedleRotation(currentMeasurements.Wind.AngleDegrees.Value)">
+                                                <line x1="50" y1="15" x2="50" y2="42" stroke="#d00" stroke-width="1.5"/>
+                                                <circle cx="50" cy="50" r="3" fill="#d00"/>
+                                            </g>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Wind.AngleDegrees.Value.ToString("F0", CultureInfo.CurrentCulture)°</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Wind.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Wind Speed - Linear Gauge -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Windsnelheid</h6>
+                                    @if (currentMeasurements.Wind.HasData && currentMeasurements.Wind.SpeedMetersPerSecond.HasValue)
+                                    {
+                                        <svg class="linear-gauge" viewBox="0 0 100 20">
+                                            <rect x="5" y="7" width="90" height="6" fill="#f0f0f0" stroke="#ccc" stroke-width="0.5"/>
+                                            @{
+                                                decimal speedVal = currentMeasurements.Wind.SpeedMetersPerSecond.Value;
+                                                decimal maxSpeed = 20m; // m/s
+                                                decimal fillPercent = Math.Min((speedVal / maxSpeed) * 90, 90);
+                                            }
+                                            <rect x="5" y="7" width="@FormatForSvg(fillPercent)" height="6" fill="#ff6b35" stroke="none"/>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Wind.SpeedMetersPerSecond.Value.ToString("F1", CultureInfo.CurrentCulture) m/s</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Wind.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Heading - Compass Gauge (Heading-up) -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Koers (Heading)</h6>
+                                    @if (currentMeasurements.Heading.HasData && currentMeasurements.Heading.HeadingDegrees.HasValue)
+                                    {
+                                        <svg class="compass-gauge" viewBox="0 0 100 100">
+                                            <!-- Compass ring -->
+                                            <circle cx="50" cy="50" r="48" fill="none" stroke="#ddd" stroke-width="1"/>
+                                            <!-- Cardinal directions (rotated with heading-up perspective) -->
+                                            <g transform="rotate(@FormatForSvg(GetCompassRoseRotation(currentMeasurements.Heading.HeadingDegrees.Value)) 50 50)">
+                                                <text x="50" y="8" text-anchor="middle" class="compass-label">N</text>
+                                                <text x="92" y="53" text-anchor="start" class="compass-label">E</text>
+                                                <text x="50" y="95" text-anchor="middle" class="compass-label">S</text>
+                                                <text x="8" y="53" text-anchor="end" class="compass-label">W</text>
+                                            </g>
+                                            <!-- Forward indicator (Vooruit) - fixed at top -->
+                                            <text x="50" y="12" text-anchor="middle" class="compass-label" style="font-size: 0.6em; fill: #666;">↑</text>
+                                            <!-- Boat silhouette - fixed, does not rotate -->
+                                            @GetBoatSilhouette()
+                                            <!-- Fixed forward marker (heading always points up) -->
+                                            <circle cx="50" cy="16" r="2" fill="none" stroke="#0066cc" stroke-width="1"/>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Heading.HeadingDegrees.Value.ToString("F1", CultureInfo.CurrentCulture)°</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Heading.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Position - Text Fields -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Positie</h6>
+                                    @if (currentMeasurements.Position.HasData && currentMeasurements.Position.Latitude.HasValue && currentMeasurements.Position.Longitude.HasValue)
+                                    {
+                                        <p class="gauge-value position-text">@currentMeasurements.Position.Latitude.Value.ToString("F4", CultureInfo.CurrentCulture)°</p>
+                                        <p class="gauge-value position-text">@currentMeasurements.Position.Longitude.Value.ToString("F4", CultureInfo.CurrentCulture)°</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Position.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Speed Through Water - Linear Gauge -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Snelheid (door water)</h6>
+                                    @if (currentMeasurements.SpeedThroughWater.HasData && currentMeasurements.SpeedThroughWater.SpeedKnots.HasValue)
+                                    {
+                                        <svg class="linear-gauge" viewBox="0 0 100 20">
+                                            <rect x="5" y="7" width="90" height="6" fill="#f0f0f0" stroke="#ccc" stroke-width="0.5"/>
+                                            @{
+                                                decimal stwVal = currentMeasurements.SpeedThroughWater.SpeedKnots.Value;
+                                                decimal maxSTW = 20m; // knots
+                                                decimal fillSTW = Math.Min((stwVal / maxSTW) * 90, 90);
+                                            }
+                                            <rect x="5" y="7" width="@FormatForSvg(fillSTW)" height="6" fill="#4CAF50" stroke="none"/>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.SpeedThroughWater.SpeedKnots.Value.ToString("F1", CultureInfo.CurrentCulture) kn</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.SpeedThroughWater.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- COG - Compass Gauge (Heading-up) -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Koers over Grond (COG)</h6>
+                                    @if (currentMeasurements.Motion.HasData && currentMeasurements.Motion.CourseOverGroundDegrees.HasValue &&
+                                         currentMeasurements.Heading.HasData && currentMeasurements.Heading.HeadingDegrees.HasValue)
+                                    {
+                                        <svg class="compass-gauge" viewBox="0 0 100 100">
+                                            <!-- Compass ring -->
+                                            <circle cx="50" cy="50" r="48" fill="none" stroke="#ddd" stroke-width="1"/>
+                                            <!-- Cardinal directions (rotated with heading-up perspective) -->
+                                            <g transform="rotate(@FormatForSvg(GetCompassRoseRotation(currentMeasurements.Heading.HeadingDegrees.Value)) 50 50)">
+                                                <text x="50" y="8" text-anchor="middle" class="compass-label">N</text>
+                                                <text x="92" y="53" text-anchor="start" class="compass-label">E</text>
+                                                <text x="50" y="95" text-anchor="middle" class="compass-label">S</text>
+                                                <text x="8" y="53" text-anchor="end" class="compass-label">W</text>
+                                            </g>
+                                            <!-- Forward indicator (Vooruit) - fixed at top -->
+                                            <text x="50" y="12" text-anchor="middle" class="compass-label" style="font-size: 0.6em; fill: #666;">↑</text>
+                                            <!-- Boat silhouette - fixed, does not rotate -->
+                                            @GetBoatSilhouette()
+                                            <!-- Needle showing COG relative to heading -->
+                                            <g transform="@GetCompassNeedleRotation(GetRelativeAngle(currentMeasurements.Motion.CourseOverGroundDegrees.Value, currentMeasurements.Heading.HeadingDegrees.Value))">
+                                                <line x1="50" y1="15" x2="50" y2="42" stroke="#FF9800" stroke-width="1.5"/>
+                                                <circle cx="50" cy="50" r="3" fill="#FF9800"/>
+                                            </g>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Motion.CourseOverGroundDegrees.Value.ToString("F1", CultureInfo.CurrentCulture)°</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Motion.RecordedAtUtc)</small>
+                                    }
+                                    else if (currentMeasurements.Motion.HasData && currentMeasurements.Motion.CourseOverGroundDegrees.HasValue)
+                                    {
+                                        <!-- Fallback: north-up when heading unavailable -->
+                                        <svg class="compass-gauge" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="48" fill="none" stroke="#ddd" stroke-width="1"/>
+                                            <text x="50" y="8" text-anchor="middle" class="compass-label">N</text>
+                                            <text x="92" y="53" text-anchor="start" class="compass-label">E</text>
+                                            <text x="50" y="95" text-anchor="middle" class="compass-label">S</text>
+                                            <text x="8" y="53" text-anchor="end" class="compass-label">W</text>
+                                            <!-- Boat silhouette - fixed at top -->
+                                            @GetBoatSilhouette()
+                                            <g transform="@GetCompassNeedleRotation(currentMeasurements.Motion.CourseOverGroundDegrees.Value)">
+                                                <line x1="50" y1="15" x2="50" y2="42" stroke="#FF9800" stroke-width="1.5"/>
+                                                <circle cx="50" cy="50" r="3" fill="#FF9800"/>
+                                            </g>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Motion.CourseOverGroundDegrees.Value.ToString("F1", CultureInfo.CurrentCulture)°</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Motion.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- SOG - Linear Gauge -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Snelheid over Grond (SOG)</h6>
+                                    @if (currentMeasurements.Motion.HasData && currentMeasurements.Motion.SpeedOverGroundKnots.HasValue)
+                                    {
+                                        <svg class="linear-gauge" viewBox="0 0 100 20">
+                                            <rect x="5" y="7" width="90" height="6" fill="#f0f0f0" stroke="#ccc" stroke-width="0.5"/>
+                                            @{
+                                                decimal sogVal = currentMeasurements.Motion.SpeedOverGroundKnots.Value;
+                                                decimal maxSOG = 20m; // knots
+                                                decimal fillSOG = Math.Min((sogVal / maxSOG) * 90, 90);
+                                            }
+                                            <rect x="5" y="7" width="@FormatForSvg(fillSOG)" height="6" fill="#2196F3" stroke="none"/>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Motion.SpeedOverGroundKnots.Value.ToString("F1", CultureInfo.CurrentCulture) kn</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Motion.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Depth - Linear Gauge -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Diepte</h6>
+                                    @if (currentMeasurements.Depth.HasData && currentMeasurements.Depth.DepthMeters.HasValue)
+                                    {
+                                        <svg class="linear-gauge" viewBox="0 0 100 20">
+                                            <rect x="5" y="7" width="90" height="6" fill="#f0f0f0" stroke="#ccc" stroke-width="0.5"/>
+                                            @{
+                                                decimal depthVal = currentMeasurements.Depth.DepthMeters.Value;
+                                                decimal maxDepth = 30m; // meters
+                                                decimal fillDepth = Math.Min((depthVal / maxDepth) * 90, 90);
+                                            }
+                                            <rect x="5" y="7" width="@FormatForSvg(fillDepth)" height="6" fill="#9C27B0" stroke="none"/>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Depth.DepthMeters.Value.ToString("F1", CultureInfo.CurrentCulture) m</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Depth.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Water Temperature - Linear Gauge -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Watertemperatuur</h6>
+                                    @if (currentMeasurements.WaterTemperature.HasData && currentMeasurements.WaterTemperature.TemperatureCelsius.HasValue)
+                                    {
+                                        <svg class="linear-gauge" viewBox="0 0 100 20">
+                                            <rect x="5" y="7" width="90" height="6" fill="#f0f0f0" stroke="#ccc" stroke-width="0.5"/>
+                                            @{
+                                                decimal tempVal = currentMeasurements.WaterTemperature.TemperatureCelsius.Value;
+                                                decimal minTemp = 0m;
+                                                decimal maxTemp = 30m;
+                                                decimal fillTemp = Math.Min(((tempVal - minTemp) / (maxTemp - minTemp)) * 90, 90);
+                                            }
+                                            <rect x="5" y="7" width="@FormatForSvg(fillTemp)" height="6" fill="#E91E63" stroke="none"/>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.WaterTemperature.TemperatureCelsius.Value.ToString("F1", CultureInfo.CurrentCulture)°C</p>
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.WaterTemperature.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Battery Voltage - Linear Gauge -->
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="gauge-container">
+                                    <h6 class="gauge-label">Spanning</h6>
+                                    @if (currentMeasurements.Battery.HasData && currentMeasurements.Battery.Voltage.HasValue)
+                                    {
+                                        <svg class="linear-gauge" viewBox="0 0 100 20">
+                                            <rect x="5" y="7" width="90" height="6" fill="#f0f0f0" stroke="#ccc" stroke-width="0.5"/>
+                                            @{
+                                                decimal voltVal = currentMeasurements.Battery.Voltage.Value;
+                                                decimal minVolt = 10m; // nominal 12V system, but warning at 10V
+                                                decimal maxVolt = 15m;
+                                                decimal fillVolt = Math.Min(((voltVal - minVolt) / (maxVolt - minVolt)) * 90, 90);
+                                                string voltColor = voltVal < 11m ? "#FF0000" : voltVal < 12m ? "#FFA500" : "#4CAF50";
+                                            }
+                                            <rect x="5" y="7" width="@FormatForSvg(fillVolt)" height="6" fill="@voltColor" stroke="none"/>
+                                        </svg>
+                                        <p class="gauge-value">@currentMeasurements.Battery.Voltage.Value.ToString("F2", CultureInfo.CurrentCulture) V</p>
+                                        @if (currentMeasurements.Battery.StateOfCharge.HasValue)
+                                        {
+                                            <p class="gauge-subvalue">@currentMeasurements.Battery.StateOfCharge% lading</p>
+                                        }
+                                        <small class="gauge-timestamp">@FormatTimestamp(currentMeasurements.Battery.RecordedAtUtc)</small>
+                                    }
+                                    else
+                                    {
+                                        <div class="gauge-empty">Geen data</div>
                                     }
                                 </div>
                             </div>
                         </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-12">
-                                <label class="form-label"><strong>Schakelaar</strong></label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="ingestToggle"
-                                        checked="@ingestProcessingEnabled"
-                                        @onchange="OnIngestProcessingToggled"
-                                        disabled="@isSubmitting" />
-                                    <label class="form-check-label" for="ingestToggle">
-                                        @if (ingestProcessingEnabled)
-                                        {
-                                            <span class="badge bg-success">Aan</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">Uit</span>
-                                        }
-                                    </label>
+                    }
                                 </div>
-                                <small class="form-text text-muted d-block mt-2">
-                                    Schakel automatische gegevensverzameling in of uit. Wanneer inactief, worden binnenkomende meetgegevens niet opgeslagen.
-                                </small>
                             </div>
                         </div>
-
-                        @if (reloadWarning)
-                        {
-                            <div class="alert alert-info alert-sm mb-0">
-                                <small>
-                                    <strong>ℹ️ Opmerking:</strong> Instellingen zijn opgeslagen, maar de Ingest-tool kon niet automatisch herladen worden.
-                                    De wijziging wordt pas actief nadat u Ingest handmatig herstart.
-                                </small>
-                            </div>
-                        }
-
-                        <p class="small text-muted mb-0 mt-3">
-                            Wijzigingen worden direct doorgegeven aan Ingest (indien bereikbaar).
-                        </p>
-                    }
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Meer Instellingen</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted mb-3">Voor geavanceerde configuratie (API URL, luisterpoort, sample interval, opslagmodus, etc.), ga naar:</p>
-                    <a href="/settings" class="btn btn-outline-primary btn-sm">→ Instellingen</a>
-                    <p class="small text-muted mt-3 mb-0">Daar kunt u alle operationele parameters aanpassen.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@code {
+                @code {
     private OperationalSettingsDto? settings;
     private bool ingestProcessingEnabled;
     private bool isLoading = true;
@@ -145,12 +448,19 @@
     private string? errorMessage;
     private string? successMessage;
     private string? warningMessage;
-    private bool reloadWarning = false;
+
+    private CurrentMeasurementsDto? currentMeasurements;
+    private string? measurementsError;
+
+    private Timer? pollingTimer;
+    private CancellationTokenSource? cancellationTokenSource;
+    private int autoRefreshIntervalSeconds = 10; // Default fallback
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            // Load operational settings
             settings = await OperationalSettingsWithReloadService.GetOperationalSettingsAsync();
             ingestProcessingEnabled = settings?.IngestProcessingEnabled ?? true;
             isLoading = false;
@@ -161,6 +471,173 @@
             errorMessage = "Kon operationele instellingen niet laden.";
             isLoading = false;
         }
+
+        // Load current measurements
+        await LoadMeasurements();
+
+        // Start polling timer (every 5 seconds)
+        StartAutoRefresh();
+    }
+
+    /// <summary>
+    /// Starts the auto-refresh timer for polling measurements using the sample interval from settings.
+    /// Uses min/max bounds (5-60 seconds) and falls back to 10 seconds if invalid.
+    /// </summary>
+    private void StartAutoRefresh()
+    {
+        // Determine polling interval from settings
+        // Min: 5 seconds, Max: 60 seconds, Fallback: 10 seconds
+        int interval = 10;
+        if (settings?.DefaultSampleIntervalSeconds > 0)
+        {
+            interval = Math.Min(Math.Max(settings.DefaultSampleIntervalSeconds, 5), 60);
+        }
+        autoRefreshIntervalSeconds = interval;
+
+        cancellationTokenSource = new CancellationTokenSource();
+        pollingTimer = new Timer(async _ =>
+        {
+            if (!cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                await LoadMeasurements();
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, TimeSpan.FromSeconds(interval), TimeSpan.FromSeconds(interval));
+    }
+
+    /// <summary>
+    /// Laadt de huidige/recentste meetwaarden van de service.
+    /// </summary>
+    private async Task LoadMeasurements()
+    {
+        try
+        {
+            measurementsError = null;
+            currentMeasurements = await DashboardMeasurementService.GetCurrentMeasurementsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij laden meetwaarden");
+            measurementsError = "Kon meetwaarden niet laden.";
+        }
+    }
+
+    /// <summary>
+    /// Formatteert een UTC-timestamp in user-friendly formaat.
+    /// </summary>
+    private string FormatTimestamp(DateTime? utcTime)
+    {
+        if (!utcTime.HasValue)
+            return "Geen tijd";
+
+        // Convert UTC to local time for display
+        var localTime = utcTime.Value.ToLocalTime();
+        return localTime.ToString("dd-MM-yyyy HH:mm:ss");
+    }
+
+    /// <summary>
+    /// Bepaalt de meest recente RecordedAtUtc timestamp uit alle beschikbare meetwaarden.
+    /// Retourneert de nieuwste timestamp of null als geen meetdata beschikbaar is.
+    /// </summary>
+    private DateTime? GetLatestMeasurementTime()
+    {
+        if (currentMeasurements == null || !currentMeasurements.HasAnyData)
+            return null;
+
+        var timestamps = new List<DateTime?>();
+
+        if (currentMeasurements.Wind.HasData && currentMeasurements.Wind.RecordedAtUtc.HasValue)
+            timestamps.Add(currentMeasurements.Wind.RecordedAtUtc);
+
+        if (currentMeasurements.Heading.HasData && currentMeasurements.Heading.RecordedAtUtc.HasValue)
+            timestamps.Add(currentMeasurements.Heading.RecordedAtUtc);
+
+        if (currentMeasurements.Position.HasData && currentMeasurements.Position.RecordedAtUtc.HasValue)
+            timestamps.Add(currentMeasurements.Position.RecordedAtUtc);
+
+        if (currentMeasurements.SpeedThroughWater.HasData && currentMeasurements.SpeedThroughWater.RecordedAtUtc.HasValue)
+            timestamps.Add(currentMeasurements.SpeedThroughWater.RecordedAtUtc);
+
+        if (currentMeasurements.Motion.HasData && currentMeasurements.Motion.RecordedAtUtc.HasValue)
+            timestamps.Add(currentMeasurements.Motion.RecordedAtUtc);
+
+        if (currentMeasurements.Depth.HasData && currentMeasurements.Depth.RecordedAtUtc.HasValue)
+            timestamps.Add(currentMeasurements.Depth.RecordedAtUtc);
+
+        if (currentMeasurements.WaterTemperature.HasData && currentMeasurements.WaterTemperature.RecordedAtUtc.HasValue)
+            timestamps.Add(currentMeasurements.WaterTemperature.RecordedAtUtc);
+
+        if (currentMeasurements.Battery.HasData && currentMeasurements.Battery.RecordedAtUtc.HasValue)
+            timestamps.Add(currentMeasurements.Battery.RecordedAtUtc);
+
+        // Return the latest (maximum) timestamp, or null if no timestamps available
+        return timestamps.Count > 0 ? timestamps.Max() : null;
+    }
+
+    /// Uses InvariantCulture to ensure SVG-compatible numeric formatting (no locale-specific decimals).
+    /// Normalizes degrees to 0-360 range.
+    /// </summary>
+    private string GetCompassNeedleRotation(decimal degrees)
+    {
+        // Normalize to 0-360 range
+        double deg = (double)degrees % 360;
+        if (deg < 0) deg += 360;
+
+        // Format with InvariantCulture to ensure SVG accepts the transform
+        return $"rotate({deg.ToString("F1", CultureInfo.InvariantCulture)} 50 50)";
+    }
+
+    /// <summary>
+    /// Formats a decimal value for SVG attributes using InvariantCulture.
+    /// Ensures compatibility with SVG numeric parsing regardless of system locale.
+    /// </summary>
+    private string FormatForSvg(decimal value, string format = "F1")
+    {
+        return value.ToString(format, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Normalizes degrees to 0-360 range.
+    /// </summary>
+    private decimal NormalizeDegrees(decimal degrees)
+    {
+        decimal normalized = degrees % 360;
+        if (normalized < 0) normalized += 360;
+        return normalized;
+    }
+
+    /// <summary>
+    /// Calculates relative angle: how many degrees from ship heading.
+    /// Used for heading-up display perspective.
+    /// E.g., if heading=90° and absoluteAngle=180°, relative is 90° (port beam).
+    /// </summary>
+    private decimal GetRelativeAngle(decimal absoluteAngle, decimal heading)
+    {
+        return NormalizeDegrees(absoluteAngle - heading);
+    }
+
+    /// <summary>
+    /// Calculates compass rose rotation for heading-up display.
+    /// Returns negative rotation so compass labels rotate opposite to ship heading.
+    /// E.g., heading 90° means compass rotates -90° (N moves left, E moves up).
+    /// </summary>
+    private decimal GetCompassRoseRotation(decimal heading)
+    {
+        return -NormalizeDegrees(heading);
+    }
+
+    /// <summary>
+    /// Renders a fixed boat silhouette SVG element for compass gauges.
+    /// The boat points upward (toward the bow) in a heading-up perspective.
+    /// Does not rotate; remains fixed even when compass rose rotates.
+    /// Simple polygonal top-down view: pointed bow at top, flat stern at bottom.
+    /// </summary>
+    private MarkupString GetBoatSilhouette()
+    {
+        // Simple boat shape: polygon pointing up (bow at top, stern at bottom)
+        // Center at (50, 50) with subtle styling
+        var svg = @"<polygon points=""50,30 60,55 50,65 40,55"" fill=""none"" stroke=""#555"" stroke-width=""0.8"" opacity=""0.6""/>";
+        return new MarkupString(svg);
     }
 
     /// <summary>
@@ -177,7 +654,6 @@
             errorMessage = null;
             successMessage = null;
             warningMessage = null;
-            reloadWarning = false;
 
             settings.IngestProcessingEnabled = (bool)e.Value!;
 
@@ -188,13 +664,12 @@
             {
                 ingestProcessingEnabled = settings.IngestProcessingEnabled;
                 var action = settings.IngestProcessingEnabled ? "ingeschakeld" : "uitgeschakeld";
-                successMessage = $"Ingest-verwerking is {action}.";
+                successMessage = $"NMEA-verwerking is {action}.";
 
                 // Controleer reload status
                 if (response.IngestReloadStatus == "unreachable" || response.IngestReloadStatus == "failed")
                 {
-                    reloadWarning = true;
-                    warningMessage = response.IngestReloadMessage ?? "Ingest kon niet automatisch herladen worden.";
+                    warningMessage = response.IngestReloadMessage ?? "NMEA-verwerking kon niet automatisch worden bijgewerkt.";
                 }
 
                 Logger.LogInformation(
@@ -204,19 +679,32 @@
             }
             else
             {
-                errorMessage = "Kon ingest-verwerking niet wijzigen.";
+                errorMessage = "Kon NMEA-verwerking niet wijzigen.";
                 ingestProcessingEnabled = !ingestProcessingEnabled; // Revert UI
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Fout bij wijzigen ingest-verwerking");
-            errorMessage = "Kon ingest-verwerking niet wijzigen.";
+            Logger.LogError(ex, "Fout bij wijzigen NMEA-verwerking");
+            errorMessage = "Kon NMEA-verwerking niet wijzigen.";
             ingestProcessingEnabled = !ingestProcessingEnabled; // Revert UI
         }
         finally
         {
             isSubmitting = false;
         }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        // Stop polling timer
+        if (pollingTimer != null)
+        {
+            await pollingTimer.DisposeAsync();
+        }
+
+        // Cancel any pending operations
+        cancellationTokenSource?.Cancel();
+        cancellationTokenSource?.Dispose();
     }
 }

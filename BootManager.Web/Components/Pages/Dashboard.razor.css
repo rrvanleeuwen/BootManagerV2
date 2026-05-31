@@ -1,0 +1,134 @@
+.measurement-tile {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.measurement-tile:hover {
+    background-color: #f0f1f3;
+}
+
+.measurement-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.measurement-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #212529;
+    margin: 0.5rem 0;
+}
+
+.measurement-subvalue {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.measurement-timestamp {
+    display: block;
+    font-size: 0.75rem;
+    color: #adb5bd;
+    margin-top: 0.5rem;
+}
+
+/* Gauge container styles */
+.gauge-container {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.gauge-container:hover {
+    background-color: #f0f1f3;
+}
+
+.gauge-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    width: 100%;
+}
+
+.gauge-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #212529;
+    margin: 0.5rem 0;
+}
+
+.gauge-subvalue {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.gauge-timestamp {
+    display: block;
+    font-size: 0.75rem;
+    color: #adb5bd;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.gauge-empty {
+    color: #adb5bd;
+    font-size: 0.95rem;
+    padding: 2rem 0;
+}
+
+/* SVG Compass gauge styles */
+.compass-gauge {
+    width: 100%;
+    height: 120px;
+    max-width: 120px;
+    margin: 0 auto;
+}
+
+.compass-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+}
+
+.degree-markers line {
+    stroke: #999;
+}
+
+/* SVG Linear gauge styles */
+.linear-gauge {
+    width: 100%;
+    height: 20px;
+    max-width: 100px;
+    margin: 0.5rem auto;
+}
+
+/* Position text specific */
+.position-text {
+    font-size: 0.95rem;
+    margin: 0.25rem 0;
+    word-break: break-word;
+}
+
+

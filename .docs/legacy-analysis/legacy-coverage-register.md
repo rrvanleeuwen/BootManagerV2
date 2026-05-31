@@ -161,20 +161,22 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US7.1 Dashboardweergave openen | Partial | Basisdashboard/home bestaat; uitgebreide widgets ontbreken. |
-| US7.2 Actieve bootinformatie | Partial | `VesselProfile` bestaat; dashboardweergave/bootfoto/multi-boot open. |
-| US7.3 Waarschuwingen en meldingen | Partial | Logboek missing-moments signaal bestaat; `SYS-CTRL-1` voegt dashboard- en logboekwaarschuwingen toe wanneer ingest-verwerking uit staat. Generiek meldingenpaneel ontbreekt nog. |
+| US7.1 Dashboardweergave openen | Partial | Dashboard-pagina en live meetwaarden-sectie (DSH-LIVE-1) zijn geïmplementeerd met SVG-gauges en auto-polling gekoppeld aan het ingest-sample-interval. Uitgebreide widgets, personalisatie en multi-boot dashboard ontbreken. |
+| US7.2 Actieve bootinformatie | Partial | `VesselProfile` bestaat; live meetwaarden (wind, heading, position, speed, COG/SOG, diepte, watertemperatuur, spanning) tonen op dashboard (DSH-LIVE-1). Bootfoto, multi-boot selector en extra boot-metafoto ontbreken. |
+| US7.3 Waarschuwingen en meldingen | Partial | Logboek missing-moments signaal bestaat; `SYS-CTRL-1` voegt dashboard- en logboekwaarschuwingen toe wanneer NMEA-/ingest-verwerking uit staat. Generiek meldingenpaneel ontbreekt nog. Dashboard toont "Geen data" voor ontbrekende meettypen. |
 | US7.4 Weerinformatie en getijden | Open | Niet aanwezig. |
 | US7.5 Widget voor voorraadstatus | Open | Afhankelijk van inventory. |
 | US7.6 Widget voor onderhoudsstatus | Open | Afhankelijk van onderhoud. |
 | US7.7 Widget voor documentstatus | Open | Afhankelijk van documentbeheer. |
 | US7.8 Widget voor passageplanning | Open | Afhankelijk van passageplanning. |
-| US7.9 Widget voor logboekactiviteit | Open | Niet als dashboardwidget aanwezig. |
+| US7.9 Widget voor logboekactiviteit | Open | Niet als dashboardwidget aanwezig; logboek-recordbrowser bestaat. |
 | US7.10 Personaliseren van widgets | Parked | Later; niet nodig voor eerste dashboard. |
-| US7.11 Interactieve navigatie | Partial | Gewone navigatie bestaat; widget-clickthrough ontbreekt. |
-| US7.12 Offline weergave | Partial | Lokale app werkt offline; dashboard-last-known model ontbreekt. |
-| US7.13 Automatische update van gegevens | Open | Geen live widgetmodel. |
+| US7.11 Interactieve navigatie | Partial | Gewone navigatie bestaat; widget-clickthrough ontbreekt; live meetwaarden via SVG gauges en timestamps. |
+| US7.12 Offline weergave | Partial | Lokale app werkt offline; dashboard-last-known model voorkomt crashes bij ontbrekende data. Auto-refresh toont "Geen data" voor niet-beschikbare waarden. |
+| US7.13 Automatische update van gegevens | Partial | DSH-LIVE-1 voegt auto-polling toe via `System.Threading.Timer`, gekoppeld aan `DefaultSampleIntervalSeconds` met veilige grenzen. Geen SignalR/live push; polling is acceptabel voor MVP. |
 | US7.14 Cloud-synchronisatie | Parked | Cloud-sync geparkeerd. |
+
+---
 
 ## Epic 8: Systeembeheer & Configuratie
 

@@ -1,10 +1,28 @@
 # Current Codex Handoff
 
-Updated: 2026-05-29.
+Updated: 2026-05-31.
 
 ## Current Task
 
 Legacy BootManager Word exports from `.docs/legacy-input/` have all been processed into the current BootManagerV2 documentation.
+
+Current branch `feature/live-dashboard-measurements` contains the completed `DSH-LIVE-1: Live dashboard met actuele meetwaarden` implementation and final dashboard refinements.
+
+Current status before PR:
+
+- User manually tested the dashboard locally and reported it is satisfactory.
+- Dashboard now shows current/latest-known measurements using SVG gauges and value fields.
+- Heading, wind angle and COG use heading-up compass displays with a fixed boat silhouette.
+- Dashboard polling follows `OperationalSettingsDto.DefaultSampleIntervalSeconds` with safe min/max bounds.
+- Dashboard user-facing terminology uses `NMEA aan` / `NMEA uit`; internal `Ingest` code names remain unchanged.
+- Top timestamp now shows `Laatste meting` based on the newest database `RecordedAtUtc`, not the UI refresh time.
+- Manual refresh button, broad ingest card, settings card and yellow ingest-disabled banner were removed.
+- Future low-priority `DSH-LIVE-4` SignalR push story is documented but intentionally not next.
+
+Next action:
+
+- Commit, push and open a PR for `feature/live-dashboard-measurements`.
+- After PR merge, update the Raspberry Pi only from `master`; do not test this feature branch on the Pi.
 
 The first Raspberry Pi 4 Docker Compose deployment-smoke-test has succeeded:
 
