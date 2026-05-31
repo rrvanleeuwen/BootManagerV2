@@ -477,33 +477,39 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 
 ### Story 8 - Bronidentiteit en bronvoorkeuren ontwerpen
 
-**Status:** Voorgesteld op 2026-05-31; oppakken na Story 7.
+**Status:** Goedgekeurd en ontwerp uitgewerkt op 2026-05-31; zie `.docs/features/source-identity-preferences-design.md`.
 
 **Als** eigenaar/beheerder
-**wil ik** per meetsoort kunnen kiezen welke databron BootManager primair gebruikt
-**zodat** mijn logboek en dashboard de waarden tonen van het apparaat dat ik op mijn boot vertrouw.
+**wil ik** dat BootManager databronnen herkent op basis van de inhoud van NMEA-berichten
+**zodat** ik later per meetsoort een betrouwbare voorkeursbron kan kiezen, onafhankelijk van het UDP/YDEN transport.
 
 **Aanleiding**
 - Op een boot kunnen meerdere apparaten dezelfde soort data publiceren.
 - Voorbeelden: GPS/positie via plotter, AIS of marifoon; heading via kompas of plotter; wind via masttopinstrument of gateway; diepte via verschillende transducers.
 - BootManager moet niet blind de laatste meting nemen als meerdere bronnen verschillende kwaliteit of betekenis hebben.
 - Huidige measurements bewaren niet overal expliciet genoeg welke bron de meting heeft geleverd; broninformatie zit vooral in of rond `NetworkMessage`.
+- De Pi-analyse van 2026-05-31 laat zien dat de huidige `Source`-waarde vooral Docker/UDP endpointmetadata bevat; dat is transportdiagnostiek en geen gebruikersbron.
 
 **Scope**
-- Ontwerpen hoe BootManager bronnen stabiel identificeert en benoemt voor gebruikers.
-- Bepalen welke bronmetadata minimaal bij of naast measurements beschikbaar moet zijn: protocol, message id/sentence type, talker-prefix, source/remote endpoint, en eventueel later gebruikerslabel.
-- Per meetsoort een bronvoorkeurmodel ontwerpen, bijvoorbeeld voor positie, COG/SOG, heading, wind, diepte, temperatuur, tankniveau en motoruren.
-- Bepalen wat fallbackgedrag is als de voorkeursbron tijdelijk geen recente data levert.
-- Bepalen hoe de UI in Settings later bronnen toont zonder technisch overweldigend te worden.
+- Ontwerpen hoe BootManager bronidentiteit afleidt uit het echte NMEA-bericht.
+- Voor NMEA 0183: bronkenmerken zoals talker-id, sentence type en waar beschikbaar inhoudelijke identifiers.
+- Voor NMEA 2000 via `PCDIN`/`MXPGN`: bronkenmerken zoals PGN, source address, instance, device-/tankinstance en payloadmetadata.
+- Vastleggen dat UDP remote endpoint/YDEN alleen transportdiagnostiek is, geen gebruikersbron.
+- Ontwerpen hoe technische bronnen later vertaald worden naar herkenbare gebruikerslabels.
+- Per meetsoort bronvoorkeuren beschrijven: positie, COG/SOG, heading, wind, temperatuur, tankniveau, logstand.
 
 **Buiten scope**
 - Geen volledige implementatie van settings-UI in deze ontwerpstory.
+- Geen database-migratie.
+- Geen nieuwe interpreter.
 - Geen automatische device discovery met vendornaam of productnaam, tenzij die al betrouwbaar in data zit.
 - Geen multi-boot of multi-user configuratie.
 - Geen historische herberekening van bestaande logboekregels.
 
 **Acceptatiecriteria**
 - Er is een concreet ontwerp voor bronidentiteit en bronvoorkeuren per meetsoort.
+- Het ontwerp maakt expliciet onderscheid tussen transportbron en databron.
+- Het ontwerp beschrijft NMEA 0183 en NMEA 2000/gateway-berichten apart.
 - Het ontwerp beschrijft waar bronmetadata opgeslagen of herleid wordt.
 - Het ontwerp beschrijft fallbackgedrag bij ontbrekende voorkeursbron.
 - Het ontwerp beschrijft hoe bestaande dashboards/logboek-suggesties bronvoorkeuren later moeten toepassen.
@@ -513,6 +519,10 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 - Raakt `US8.5 Sensorintegratie configureren`; status blijft `Partial` tot de gebruiker voorkeuren echt kan beheren.
 - Raakt `US9.5 Sensorintegratie via Bluetooth of Wi-Fi`; BootManagerV2 blijft voorlopig UDP/YDEN-first, maar bronkeuze bereidt bredere sensorintegratie voor.
 - Ondersteunt `US7.2 Actieve bootinformatie`, `US7.13 Automatische update van gegevens` en meerdere `US5.*` logboekvelden door betrouwbaardere bronselectie.
+
+**Handmatige testnotities**
+- Docs/design-only: geen runtime-test nodig.
+- Controleer dat het ontwerp de harde randvoorwaarde behoudt: UDP/YDEN endpoint is transport, bronidentiteit komt uit NMEA-inhoud.
 
 ---
 

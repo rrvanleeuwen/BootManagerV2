@@ -4,7 +4,23 @@ Updated: 2026-05-31.
 
 ## Current Task
 
-`NMEA Story 7: Pi database analyseren voor logboekvelden en bronduplicatie` is uitgevoerd op branch `codex/pi-database-analysis`.
+`NMEA Story 8: Bronidentiteit en bronvoorkeuren ontwerpen` is uitgewerkt op branch `codex/source-identity-design`.
+
+Story 8 ontwerpstatus:
+
+- User story is goedgekeurd door de gebruiker op 2026-05-31.
+- Ontwerp is vastgelegd in `.docs/features/source-identity-preferences-design.md`.
+- `.docs/epics/nmea0183-support.md` markeert Story 8 als goedgekeurd en uitgewerkt.
+- `.docs/TODO.md` vinkt Story 8 af.
+- `.docs/legacy-analysis/legacy-coverage-register.md` is bijgewerkt voor `US8.5` en `US9.5`.
+- Kernbesluit: bronidentiteit moet uit NMEA-inhoud komen, niet uit UDP/YDEN transport.
+- UDP/YDEN endpoint blijft alleen transportdiagnostiek.
+- NMEA 0183 bronbasis: protocol + talker-id + sentence type, aangevuld met kwaliteits-/statusvelden waar nuttig.
+- NMEA 2000 via `PCDIN`/`MXPGN`: bronbasis is PGN + source address waar beschikbaar + instance/subtype/payloadmetadata.
+- Aanbevolen vervolgstories: SourceIdentity value object/parsercontract, source registry/last-seen, source preferences service, Settings UI, daarna Fluid Level interpreter met dit bronmodel.
+- Docs/design-only; geen runtime-test nodig.
+
+Vorige afgeronde taak: `NMEA Story 7: Pi database analyseren voor logboekvelden en bronduplicatie` is uitgevoerd op branch `codex/pi-database-analysis`.
 
 Analyse-uitkomst:
 
