@@ -81,7 +81,7 @@ LOG="/var/log/bootmanager/shutdown-helper.log"
 COMMAND=""
 
 # Read the command from stdin (socket connection)
-read -r COMMAND < /dev/stdin
+read -r COMMAND
 
 # Sanitize: only accept "SHUTDOWN" (case-insensitive)
 COMMAND=$(echo "$COMMAND" | tr -d '\r\n' | tr '[:lower:]' '[:upper:]')
@@ -136,7 +136,6 @@ Documentation=file:///opt/bootmanager/docs/pi-shutdown-setup.md
 After=bootmanager-shutdown.socket
 
 [Service]
-Type=accept
 ExecStart=/opt/bootmanager/shutdown-helper.sh
 StandardInput=socket
 StandardOutput=journal
@@ -148,10 +147,6 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/run/bootmanager /var/log/bootmanager
-
-# Restart policy
-Restart=always
-RestartSec=5
 ```
 
 ### Step 4: Enable and Start systemd
@@ -159,6 +154,9 @@ RestartSec=5
 ```bash
 # Reload systemd configuration to load new units
 sudo systemctl daemon-reload
+
+# Ensure the helper log directory exists on the host
+sudo mkdir -p /var/log/bootmanager
 
 # Enable socket (ensures it starts on boot)
 sudo systemctl enable bootmanager-shutdown.socket
@@ -176,6 +174,9 @@ ls -la /run/bootmanager/shutdown.sock
 
 **Note**: You do NOT need to manually enable or start the template service (`bootmanager-shutdown@.service`).
 The systemd socket activation mechanism automatically starts a new instance for each incoming connection.
+
+**Important**: Do not add `Type=accept`, `Restart=always`, or `RestartSec=...` to the template service.
+`Accept=yes` belongs only in the `.socket` unit. Restarting failed socket-activated service instances can keep test connections open and make `nc -U` appear to hang.
 
 ### Step 5: Docker Compose Configuration
 

@@ -20,6 +20,26 @@ Current status before PR:
 - User manually tested the local UI flow and reported it is OK.
 - Validation: `dotnet build BootManager.sln` passed with `0` warnings/errors; `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter SystemShutdown --no-build` passed `13/13`.
 - Docker Compose config could not be run locally because Docker is not available in this environment; Pi validation is required after merge.
+- PR #76 was merged into `master` with merge commit `ad07958`.
+- Local `master` was fast-forwarded to `ad07958` and the Raspberry Pi was updated to `ad07958`.
+- Pi setup performed: copied shutdown helper and systemd socket/template service, enabled and started `bootmanager-shutdown.socket`, rebuilt/restarted Docker Compose, and confirmed `/health` returned 200.
+- Pi issue found: clicking shutdown in the UI did not shut down the Pi; SSH and web remained reachable.
+- Diagnosis:
+  - Web endpoint exists and unauthenticated direct `curl -X POST /api/system/shutdown` redirects to login as expected.
+  - Host socket exists and is visible in the Web container.
+  - The helper initially failed because `/var/log/bootmanager` did not exist under `ProtectSystem=strict`.
+  - The helper then failed because `read -r COMMAND < /dev/stdin` does not work in this socket-activated service; it must be `read -r COMMAND`.
+  - `Type=accept` in `bootmanager-shutdown@.service` is invalid; `Accept=yes` belongs only in the `.socket`.
+  - `Restart=always` caused failed instances to restart repeatedly, making `nc -U` hang after invalid commands.
+- Manual Pi fixes applied:
+  - `sudo mkdir -p /var/log/bootmanager`
+  - removed `Type=accept`, `Restart=always`, and `RestartSec=5` from `/etc/systemd/system/bootmanager-shutdown@.service`
+  - changed `/opt/bootmanager/shutdown-helper.sh` from `read -r COMMAND < /dev/stdin` to `read -r COMMAND`
+  - ran `sudo systemctl daemon-reload`, restarted `bootmanager-shutdown.socket`, and stopped stale `bootmanager-shutdown@*` instances.
+- After manual fixes, `printf 'PING\n' | nc -U /run/bootmanager/shutdown.sock` returned without hanging, logged `ERROR: Invalid command`, and did not shut down the Pi.
+- Follow-up UI test after those manual fixes still did not shut down the Pi. More than 20 seconds after clicking `BootManager Pi afsluiten` and confirming in the UI, SSH still worked and the website was still reachable.
+- Next diagnostic should start by checking whether the authenticated UI action reaches `POST /api/system/shutdown` in `bootmanager-web` logs, whether the Web container logs socket connect/send success or failure, and whether `journalctl -u 'bootmanager-shutdown@*'` records a service instance for the real `SHUTDOWN` command.
+- These Pi findings have been folded back into local docs/deployment files but are not yet committed/pushed in a follow-up PR.
 
 Next action:
 

@@ -59,7 +59,9 @@
 - [x] `.docs/deployment/bootmanager-shutdown.socket` aangemaakt (socket unit)
 - [x] `.docs/deployment/bootmanager-shutdown@.service` aangemaakt (template service)
 - [x] Socket bevat `[Socket]` unit met `ListenStream`, `SocketMode=0666`, `Accept=yes`
-- [x] Service bevat `[Service]` unit met `Type=accept`, `ExecStart=/opt/bootmanager/shutdown-helper.sh`
+- [x] Service bevat `[Service]` unit met `ExecStart=/opt/bootmanager/shutdown-helper.sh`
+- [x] Service bevat geen `Type=accept`; `Accept=yes` staat alleen in de socket unit
+- [x] Service bevat geen `Restart=always` of `RestartSec`, zodat foutieve commando's geen restart-loop veroorzaken
 - [x] Bestanden gescheiden: socket unit apart van service unit
 - [x] Geen gemengde `[Socket]` + `[Service]` in één bestand
 - [x] Documentatie uitlegt socket activation (per connection, template service instance)
@@ -143,6 +145,7 @@ Development mode is **volledig veilig**—geen echte shutdown.
 
 ### Host Setup (moet eenmalig gebeuren)
 - [ ] `/opt/bootmanager/shutdown-helper.sh` aangemaakt en executable
+- [ ] `/var/log/bootmanager` aangemaakt voor helper logging
 - [ ] `/etc/systemd/system/bootmanager-shutdown.socket` aangemaakt
 - [ ] `/etc/systemd/system/bootmanager-shutdown@.service` aangemaakt
 - [ ] `sudo systemctl daemon-reload` uitgevoerd
