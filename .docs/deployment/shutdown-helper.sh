@@ -18,7 +18,7 @@ COMMAND=""
 
 # Read the command from the socket (stdin)
 # systemd accepts the connection and passes it as stdin to this script
-read -r COMMAND < /dev/stdin
+read -r COMMAND
 
 # Sanitize: only accept "SHUTDOWN" command (case-insensitive)
 COMMAND=$(echo "$COMMAND" | tr -d '\r\n' | tr '[:lower:]' '[:upper:]')

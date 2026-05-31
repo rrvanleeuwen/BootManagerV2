@@ -780,6 +780,18 @@ Er bleef één extra observatie over: ondanks `CaptureLoggingEnabled=False` werd
 - Verificatie: `dotnet build BootManager.sln` geslaagd met `0` warnings/errors; `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter SystemShutdown --no-build` geslaagd met `13/13`.
 - Handmatige lokale UI-test door gebruiker akkoord bevonden. Docker Compose config en echte Pi-shutdown blijven open tot validatie op de Raspberry Pi na merge.
 
+**Pi-validatie bevindingen (2026-05-31):**
+
+- De eerste Pi-test na merge bevestigde dat Web en Docker Compose gezond startten en dat de Web-container `/run/bootmanager/shutdown.sock` kon zien.
+- De shutdownknop sloot de Pi eerst niet af doordat de host-side systemd helper faalde.
+- Oorzaak 1: `/var/log/bootmanager` bestond niet op de host, terwijl `ProtectSystem=strict` en `ReadWritePaths=/var/log/bootmanager` de map vereisen.
+- Oorzaak 2: `shutdown-helper.sh` gebruikte `read -r COMMAND < /dev/stdin`; bij deze socket-activated systemd service gaf dat `/dev/stdin: No such device or address`.
+- Oorzaak 3: `Type=accept` stond foutief in de template service; `Accept=yes` hoort alleen in de `.socket`.
+- Oorzaak 4: `Restart=always` veroorzaakte een restart-loop bij een ongeldig commando zoals `PING`, waardoor `nc -U` bleef hangen.
+- Handmatige Pi-correcties: `/var/log/bootmanager` aangemaakt, helper aangepast naar `read -r COMMAND`, `Type=accept`, `Restart=always` en `RestartSec=5` verwijderd uit `/etc/systemd/system/bootmanager-shutdown@.service`, daarna `daemon-reload`, socket restart en test met `PING`.
+- Na correctie werd `PING` netjes afgewezen zonder hang en zonder shutdown. De echte UI-shutdown is nog niet opnieuw bevestigd.
+- Aanvullende test: opnieuw klikken op `BootManager Pi afsluiten` in de UI gaf nog steeds geen host-shutdown. Na meer dan 20 seconden bleven SSH en de webapp bereikbaar. De resterende fout zit dus waarschijnlijk tussen de geauthenticeerde Web API-call, de container-to-socket communicatie of de socket-helper verwerking van het echte `SHUTDOWN` commando.
+
 ---
 
 ### SYS-DEPLOY-LEAN-1: Pi Deployment Zonder Ontwikkel- En Documentatiebestanden

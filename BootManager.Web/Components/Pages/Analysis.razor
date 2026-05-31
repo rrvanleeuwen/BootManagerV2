@@ -2,9 +2,10 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
 @using BootManager.Application.Analysis.DTOs
 @using BootManager.Application.Analysis.Services
+@using BootManager.Application.Administration.Services
 @inject IAnalysisService AnalysisService
 @inject IJSRuntime JS
-@inject HttpClient Http
+@inject IShutdownService ShutdownService
 
 <h2 class="mb-3">Beheerder</h2>
 
@@ -362,21 +363,16 @@
 
         try
         {
-            var response = await Http.PostAsync("/api/system/shutdown", null);
-
-            if (response.IsSuccessStatusCode)
-            {
-                _shutdownMessage = "De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.";
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _shutdownError = $"Shutdown mislukt (Status {response.StatusCode}): {errorContent}";
-            }
+            await ShutdownService.InitiateShutdownAsync();
+            _shutdownMessage = "De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.";
         }
-        catch (Exception ex)
+        catch (InvalidOperationException)
         {
-            _shutdownError = $"Fout bij shutdown-aanvraag: {ex.Message}";
+            _shutdownError = "Shutdown-helper niet beschikbaar. Controleer Pi-configuratie.";
+        }
+        catch (Exception)
+        {
+            _shutdownError = "Fout bij shutdown-aanvraag. Controleer de systeemlogboeken.";
         }
         finally
         {
