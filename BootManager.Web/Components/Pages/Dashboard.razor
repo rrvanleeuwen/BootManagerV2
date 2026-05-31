@@ -11,6 +11,7 @@
 @inject IOperationalSettingsWithReloadService OperationalSettingsWithReloadService
 @inject ILogger<Dashboard> Logger
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 <div class="container-fluid mt-4">
     <div class="row mb-4">
@@ -454,6 +455,8 @@
 
     private Timer? pollingTimer;
     private CancellationTokenSource? cancellationTokenSource;
+    private IJSObjectReference? browserTimeModule;
+    private int? browserTimezoneOffsetMinutes;
     private int autoRefreshIntervalSeconds = 10; // Default fallback
 
     protected override async Task OnInitializedAsync()
@@ -477,6 +480,25 @@
 
         // Start polling timer (every 5 seconds)
         StartAutoRefresh();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            browserTimeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/browserTime.js");
+            browserTimezoneOffsetMinutes = await browserTimeModule.InvokeAsync<int>("getTimezoneOffsetMinutes");
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Kon browser-tijdzone niet bepalen; dashboard toont UTC-tijden.");
+        }
     }
 
     /// <summary>
@@ -523,16 +545,21 @@
     }
 
     /// <summary>
-    /// Formatteert een UTC-timestamp in user-friendly formaat.
+    /// Formatteert een UTC-timestamp in de lokale tijdzone van de browser.
     /// </summary>
     private string FormatTimestamp(DateTime? utcTime)
     {
         if (!utcTime.HasValue)
             return "Geen tijd";
 
-        // Convert UTC to local time for display
-        var localTime = utcTime.Value.ToLocalTime();
-        return localTime.ToString("dd-MM-yyyy HH:mm:ss");
+        var utcValue = DateTime.SpecifyKind(utcTime.Value, DateTimeKind.Utc);
+        if (!browserTimezoneOffsetMinutes.HasValue)
+        {
+            return utcValue.ToString("dd-MM-yyyy HH:mm:ss", CultureInfo.CurrentCulture) + " UTC";
+        }
+
+        var browserLocalTime = utcValue.AddMinutes(-browserTimezoneOffsetMinutes.Value);
+        return browserLocalTime.ToString("dd-MM-yyyy HH:mm:ss", CultureInfo.CurrentCulture);
     }
 
     /// <summary>
@@ -706,5 +733,10 @@
         // Cancel any pending operations
         cancellationTokenSource?.Cancel();
         cancellationTokenSource?.Dispose();
+
+        if (browserTimeModule != null)
+        {
+            await browserTimeModule.DisposeAsync();
+        }
     }
 }
