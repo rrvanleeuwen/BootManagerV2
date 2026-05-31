@@ -4,48 +4,41 @@ Updated: 2026-05-31.
 
 ## Current Task
 
-Branch `feature/pi-safe-shutdown` contains `SYS-SHUTDOWN-1: BootManager Pi Afsluiten Vanuit Beheerderpagina`.
+`SYS-SHUTDOWN-1: BootManager Pi Afsluiten Vanuit Beheerderpagina` is complete.
 
-Current status before PR:
+Final status:
 
-- User approved the story and it is stored in `.docs/epics/system-operations.md`.
-- `/analysis` is now headed and menu-labeled as `Beheerder`.
-- Existing technical analysis functionality remains on the same page.
-- The page has `BootManager Pi afsluiten` with confirmation modal.
-- Cancel closes the modal without API call; confirm calls `POST /api/system/shutdown`.
-- UI shows: `De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.`
-- Development mode logs only and does not shut down the laptop.
-- Production mode uses a bounded Unix-domain-socket executor to `/run/bootmanager/shutdown.sock`, mounted read-only from the host by Docker Compose.
-- Host-side systemd socket/template-service docs and helper script are in `.docs/deployment/`.
-- User manually tested the local UI flow and reported it is OK.
-- Validation: `dotnet build BootManager.sln` passed with `0` warnings/errors; `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter SystemShutdown --no-build` passed `13/13`.
-- Docker Compose config could not be run locally because Docker is not available in this environment; Pi validation is required after merge.
-- PR #76 was merged into `master` with merge commit `ad07958`.
-- Local `master` was fast-forwarded to `ad07958` and the Raspberry Pi was updated to `ad07958`.
-- Pi setup performed: copied shutdown helper and systemd socket/template service, enabled and started `bootmanager-shutdown.socket`, rebuilt/restarted Docker Compose, and confirmed `/health` returned 200.
-- Pi issue found: clicking shutdown in the UI did not shut down the Pi; SSH and web remained reachable.
-- Diagnosis:
-  - Web endpoint exists and unauthenticated direct `curl -X POST /api/system/shutdown` redirects to login as expected.
-  - Host socket exists and is visible in the Web container.
-  - The helper initially failed because `/var/log/bootmanager` did not exist under `ProtectSystem=strict`.
-  - The helper then failed because `read -r COMMAND < /dev/stdin` does not work in this socket-activated service; it must be `read -r COMMAND`.
-  - `Type=accept` in `bootmanager-shutdown@.service` is invalid; `Accept=yes` belongs only in the `.socket`.
-  - `Restart=always` caused failed instances to restart repeatedly, making `nc -U` hang after invalid commands.
-- Manual Pi fixes applied:
-  - `sudo mkdir -p /var/log/bootmanager`
-  - removed `Type=accept`, `Restart=always`, and `RestartSec=5` from `/etc/systemd/system/bootmanager-shutdown@.service`
-  - changed `/opt/bootmanager/shutdown-helper.sh` from `read -r COMMAND < /dev/stdin` to `read -r COMMAND`
-  - ran `sudo systemctl daemon-reload`, restarted `bootmanager-shutdown.socket`, and stopped stale `bootmanager-shutdown@*` instances.
-- After manual fixes, `printf 'PING\n' | nc -U /run/bootmanager/shutdown.sock` returned without hanging, logged `ERROR: Invalid command`, and did not shut down the Pi.
-- Follow-up UI test after those manual fixes still did not shut down the Pi. More than 20 seconds after clicking `BootManager Pi afsluiten` and confirming in the UI, SSH still worked and the website was still reachable.
-- Next diagnostic should start by checking whether the authenticated UI action reaches `POST /api/system/shutdown` in `bootmanager-web` logs, whether the Web container logs socket connect/send success or failure, and whether `journalctl -u 'bootmanager-shutdown@*'` records a service instance for the real `SHUTDOWN` command.
-- These Pi findings have been folded back into local docs/deployment files but are not yet committed/pushed in a follow-up PR.
+- PR #76 delivered the first shutdown UI/API/systemd-helper implementation and was merged into `master` with merge commit `ad07958`.
+- The first Pi validation found two separate problem areas:
+  - host-side systemd/helper setup issues;
+  - the Blazor Server UI used a server-side `HttpClient` self-call to the authenticated `/api/system/shutdown` endpoint, so the browser auth cookie was not carried and the shutdown action did not reach the controller.
+- Host-side Pi fixes were folded back into `.docs/deployment/`:
+  - `/var/log/bootmanager` must exist because `ProtectSystem=strict` and `ReadWritePaths=/var/log/bootmanager` require the directory;
+  - `shutdown-helper.sh` uses `read -r COMMAND`;
+  - `bootmanager-shutdown@.service` does not contain `Type=accept`, `Restart=always`, or `RestartSec=5`;
+  - `Accept=yes` remains only in `bootmanager-shutdown.socket`.
+- PR #77 fixed the UI path by replacing the Blazor Server `HttpClient` self-call with a direct server-side call to `IShutdownService.InitiateShutdownAsync()`.
+- PR #77 was merged into `master` with merge commit `b7818f8`.
+- Local `master` was fast-forwarded to `b7818f8`.
+- The Raspberry Pi was updated from `master` to `b7818f8`, containers were rebuilt/restarted, and `bootmanager-web` started cleanly.
+- User validated the real shutdown flow on the Pi:
+  - clicking `BootManager Pi afsluiten` caused the browser connection/page to stop immediately;
+  - SSH became unavailable;
+  - the Pi shutdown therefore succeeded end-to-end.
+- Validation before PR #77:
+  - `dotnet build BootManager.sln` passed with `0` warnings/errors;
+  - `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter SystemShutdown --no-build` passed `13/13`.
+
+Administrative status:
+
+- `.docs/epics/system-operations.md` marks `SYS-SHUTDOWN-1` complete and Pi-validated.
+- `.docs/TODO.md` marks the safe shutdown deployment checklist item complete.
+- `.docs/legacy-analysis/legacy-coverage-register.md` keeps `US8.6 Raspberry Pi-configuratie beheren` as `Partial`, now explicitly including Pi-validated in-app shutdown. It remains partial because full in-app Pi system status/configuration management, persistent warning/error overview, and long-duration observations remain open.
 
 Next action:
 
-- Commit, push and open a ready PR for `feature/pi-safe-shutdown`.
-- After PR merge, update the Raspberry Pi only from `master`; do not test this feature branch on the Pi.
-- On the Pi, first install/enable the host-side shutdown socket service from `.docs/deployment/pi-shutdown-setup.md`, then rebuild/restart Docker Compose and validate the UI shutdown flow.
+- No further shutdown action is required.
+- The next story should be chosen from the open roadmap, with legacy-scope check first as usual.
 
 The first Raspberry Pi 4 Docker Compose deployment-smoke-test has succeeded:
 

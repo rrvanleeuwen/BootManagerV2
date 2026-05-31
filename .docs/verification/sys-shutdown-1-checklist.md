@@ -18,7 +18,7 @@
 - [x] Modal dialoog verschijnt bij knop klik
 - [x] Modal vraagt bevestiging
 - [x] "Annuleren" knop is aanwezig en sluit modal zonder actie
-- [x] "Bevestigen" knop is aanwezig en stuurt API call
+- [x] "Bevestigen" knop is aanwezig en roept server-side `IShutdownService.InitiateShutdownAsync()` aan
 - [x] Sluiten via X button werkt en voert geen shutdown uit
 
 ### API & Autorisatie
@@ -199,7 +199,7 @@ Development mode is **volledig veilig**—geen echte shutdown.
 | Knop heet "BootManager Pi afsluiten" | ✅ | Exact tekst gebruikt |
 | Bevestigingsflow werkt | ✅ | Modal met Annuleren en Bevestigen |
 | Annuleren voert niets uit | ✅ | CloseShutdownConfirmation methode |
-| Bevestigen roept shutdown aan | ✅ | HTTP POST naar /api/system/shutdown |
+| Bevestigen roept shutdown aan | ✅ | Blazor Server UI roept direct `IShutdownService.InitiateShutdownAsync()` aan; geen server-side HTTP self-call |
 | UI toont 20-seconden waarschuwing | ✅ | Juiste bericht retourneert van API |
 | Alleen Owner kan shutdown doen | ✅ | [Authorize(Roles = "Owner")] |
 | Dev mode: geen echte shutdown | ✅ | Logs alleen, machine blijft aan |

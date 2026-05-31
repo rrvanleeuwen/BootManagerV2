@@ -1,6 +1,6 @@
 # Epic: System Operations & Recovery
 
-Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-CTRL-2 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-SHUTDOWN-1 is lokaal geïmplementeerd en UI-getest op 2026-05-31; Pi-validatie volgt na merge naar `master`.
+Status: SYS-RESET-1 geïmplementeerd, gemerged naar `master` en handmatig gevalideerd op Raspberry Pi op 2026-05-27. Eerste echte Raspberry Pi-veldtest met bootdata gevalideerd op 2026-05-29. SYS-ANALYSIS-1 is gemerged en op de Pi gevalideerd. SYS-CTRL-1 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-CTRL-2 is gemerged en op de Pi gevalideerd op 2026-05-29. SYS-SHUTDOWN-1 is gemerged en handmatig op de Pi gevalideerd op 2026-05-31.
 
 ## Aanleiding
 
@@ -712,7 +712,7 @@ Er bleef één extra observatie over: ondanks `CaptureLoggingEnabled=False` werd
 
 ### SYS-SHUTDOWN-1: BootManager Pi Afsluiten Vanuit Beheerderpagina
 
-**Status:** Geïmplementeerd op branch `feature/pi-safe-shutdown`; lokale build, gerichte tests en UI-test geslaagd op 2026-05-31. Pi-validatie volgt na merge naar `master`.
+**Status:** ✅ Geïmplementeerd, gemerged naar `master` via PR #77 en handmatig gevalideerd op de Raspberry Pi op 2026-05-31.
 
 **User Story:** Als eigenaar/beheerder wil ik vanuit de beheeromgeving de **BootManager Pi afsluiten**, zodat ik de Raspberry Pi veilig kan uitzetten zonder via SSH handmatig een shutdown-commando te hoeven uitvoeren.
 
@@ -746,7 +746,7 @@ Er bleef één extra observatie over: ondanks `CaptureLoggingEnabled=False` werd
 - De waarschuwing met `Wacht 20 seconden` wordt getoond.
 - Alleen Owner/geautoriseerde gebruikers kunnen de actie uitvoeren.
 - Build/test slaagt.
-- Na merge wordt dit op de Pi vanaf `master` getest.
+- Op de Pi vanaf `master` is bevestigd dat de UI-shutdown de Raspberry Pi daadwerkelijk afsluit.
 
 **Legacy coverage impact:**
 
@@ -771,14 +771,14 @@ Er bleef één extra observatie over: ondanks `CaptureLoggingEnabled=False` werd
 - De technische analysefunctionaliteit blijft op dezelfde pagina beschikbaar.
 - De beheerderpagina bevat een knop `BootManager Pi afsluiten` met bevestigingsmodal.
 - Annuleren sluit de modal zonder API-call.
-- Bevestigen roept `POST /api/system/shutdown` aan en toont de waarschuwing: `De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.`
-- Het endpoint is server-side afgeschermd met `Authorize(Roles = "Owner")`.
+- Bevestigen roept in de Blazor Server UI direct `IShutdownService.InitiateShutdownAsync()` aan en toont de waarschuwing: `De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.`
+- Het API-endpoint `POST /api/system/shutdown` blijft server-side afgeschermd met `Authorize(Roles = "Owner")`, maar de UI gebruikt geen server-side `HttpClient` self-call meer.
 - Development mode logt alleen en voert geen echte shutdown uit.
 - Production mode gebruikt een begrensde Unix-domain-socket executor naar `/run/bootmanager/shutdown.sock`; er wordt alleen het literal command `SHUTDOWN` verzonden.
 - Docker Compose mount de host-side shutdown socket read-only in de Web-container en zet `Shutdown__HelperSocketPath=/run/bootmanager/shutdown.sock`.
 - Host-side systemd socket-activation bestanden en setupdocumentatie staan in `.docs/deployment/`.
 - Verificatie: `dotnet build BootManager.sln` geslaagd met `0` warnings/errors; `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter SystemShutdown --no-build` geslaagd met `13/13`.
-- Handmatige lokale UI-test door gebruiker akkoord bevonden. Docker Compose config en echte Pi-shutdown blijven open tot validatie op de Raspberry Pi na merge.
+- Handmatige lokale UI-test door gebruiker akkoord bevonden. Pi-validatie is na merge op `master` uitgevoerd en geslaagd.
 
 **Pi-validatie bevindingen (2026-05-31):**
 
@@ -789,8 +789,10 @@ Er bleef één extra observatie over: ondanks `CaptureLoggingEnabled=False` werd
 - Oorzaak 3: `Type=accept` stond foutief in de template service; `Accept=yes` hoort alleen in de `.socket`.
 - Oorzaak 4: `Restart=always` veroorzaakte een restart-loop bij een ongeldig commando zoals `PING`, waardoor `nc -U` bleef hangen.
 - Handmatige Pi-correcties: `/var/log/bootmanager` aangemaakt, helper aangepast naar `read -r COMMAND`, `Type=accept`, `Restart=always` en `RestartSec=5` verwijderd uit `/etc/systemd/system/bootmanager-shutdown@.service`, daarna `daemon-reload`, socket restart en test met `PING`.
-- Na correctie werd `PING` netjes afgewezen zonder hang en zonder shutdown. De echte UI-shutdown is nog niet opnieuw bevestigd.
-- Aanvullende test: opnieuw klikken op `BootManager Pi afsluiten` in de UI gaf nog steeds geen host-shutdown. Na meer dan 20 seconden bleven SSH en de webapp bereikbaar. De resterende fout zit dus waarschijnlijk tussen de geauthenticeerde Web API-call, de container-to-socket communicatie of de socket-helper verwerking van het echte `SHUTDOWN` commando.
+- Na correctie werd `PING` netjes afgewezen zonder hang en zonder shutdown.
+- Aanvullende diagnose bevestigde dat een directe host-side `SHUTDOWN` naar de socket de Pi wel afsloot, maar dat de UI-click de API-controller niet bereikte. Root cause: de Blazor Server UI deed een server-side `HttpClient` self-call naar het eigen authenticated endpoint, waardoor de browserauthenticatie niet werd meegenomen en de shutdownactie niet werd uitgevoerd.
+- PR #77 verving de UI-self-call door een directe server-side aanroep van `IShutdownService.InitiateShutdownAsync()`.
+- Pi-validatie op `master` commit `b7818f8` bevestigde: na klikken op `BootManager Pi afsluiten` stopte de browserverbinding direct, ging de pagina in wachtstand en SSH werd onbereikbaar. De veilige shutdown-flow is daarmee end-to-end bevestigd.
 
 ---
 

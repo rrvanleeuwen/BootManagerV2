@@ -315,7 +315,8 @@
     - Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde ingest, API, parsing en measurement-opslag op `master @ 1db5534`; UI-validatie, diagnostics en langdurige opslagobservatie blijven open.
     - Ingest/Web moeten netjes reageren op container shutdown (`SIGTERM`) en open writes afsluiten.
     - Control API blijft intern/lokaal bereikbaar, niet publiek. **Status:** hostbinding `127.0.0.1:5010:5010` is gevalideerd.
-  - **Status 2026-05-31:** `SYS-SHUTDOWN-1` is geïmplementeerd op branch `feature/pi-safe-shutdown` en lokaal UI-getest. De beheerderpagina bevat `BootManager Pi afsluiten` met bevestiging en 20-seconden waarschuwing. Production gebruikt een begrensde Unix-domain-socket naar een host-side systemd shutdown-helper; geen vrije shell vanuit de Web-app. Pi-validatie volgt na merge naar `master`.
+  - **Status 2026-05-31:** `SYS-SHUTDOWN-1` is via PR #77 gemerged naar `master` en handmatig op de Raspberry Pi gevalideerd. De beheerderpagina bevat `BootManager Pi afsluiten` met bevestiging en 20-seconden waarschuwing. Production gebruikt een begrensde Unix-domain-socket naar een host-side systemd shutdown-helper; geen vrije shell vanuit de Web-app. Root cause van de eerste mislukte UI-test was een Blazor Server `HttpClient` self-call zonder browserauthenticatie; de UI roept nu direct server-side `IShutdownService.InitiateShutdownAsync()` aan.
+  - **Afgevinkt:** veilige shutdown-flow vanuit UI/helper-service is afgerond inclusief Pi-validatie op `master @ b7818f8`.
   - **Gebruikersmelding:** `De BootManager Pi wordt afgesloten. Wacht 20 seconden voordat je de BootManager Pi uitzet.`
   - **Nieuwe latere system-operations story:** `SYS-DEPLOY-LEAN-1` moet opnieuw expliciet opgepakt worden zodra BootManager richting een eerste deployment voor een andere bootbezitter en dus een andere Pi gaat.
 
@@ -498,7 +499,7 @@ Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 - [x] Raspberry Pi Docker deployment ontwerp en eerste Pi 4 smoke test
 - [x] Persistent volumes voor database en logs ingericht in Docker Compose
 - [x] UDP ingest netwerkkeuze: port mapping gevalideerd op `10110/udp`
-- [ ] Veilige shutdown-flow voor Raspberry Pi vanuit UI/helper-service
+- [x] Veilige shutdown-flow voor Raspberry Pi vanuit UI/helper-service
 - [ ] Authentication implementation
 - [ ] Rate limiting & API security
 - [ ] Monitoring & alerting
