@@ -413,6 +413,140 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 
 ---
 
+### Story 7 - Pi database analyseren voor logboekvelden en bronduplicatie
+
+**Status:** Voorgesteld op 2026-05-31.
+
+**Als** ontwikkelaar/operator
+**wil ik** de vandaag op de Raspberry Pi verzamelde BootManager-database analyseren op ruwe berichten, afgeleide measurements en broninformatie
+**zodat** we objectief kunnen bepalen welke logboekvelden nog automatisch gevuld kunnen worden en waar meerdere apparaten dezelfde soort meetwaarde leveren.
+
+**Aanleiding**
+- De Pi heeft op 2026-05-31 opnieuw echte boordnetwerkdata verzameld.
+- Voor het logboek missen nog onder meer motoruren, brandstof/tankniveau, logstand en rijkere reisstatistiek.
+- De gebruiker verwacht dat het NMEA-systeem mogelijk tankniveau of andere nog niet geimplementeerde berichten uitzendt.
+- Eenzelfde meetsoort kan op een boot via meerdere apparaten binnenkomen, bijvoorbeeld GPS/positie via plotter, AIS of marifoon.
+- Voordat we bronvoorkeuren of nieuwe interpreters bouwen, moet duidelijk zijn welke broninformatie stabiel uit de huidige data afleidbaar is.
+
+**Scope**
+- Een kopie/export van de Pi-database of relevante JSON/CSV analyse-uitvoer verzamelen.
+- Per `NetworkMessage` groeperen op protocol, message id/sentence type, talker-prefix, source/remote endpoint en aantallen.
+- Vaststellen welke ruwe berichten al tot bestaande measurement-tabellen leiden.
+- Vaststellen welke ruwe berichten raw-only blijven maar kandidaat zijn voor logboekvelden zoals tankniveau, brandstof, motoruren, logstand of afstand.
+- Vaststellen waar dezelfde meetsoort via meerdere bronnen voorkomt, in het bijzonder positie/GPS, COG/SOG, heading, wind, diepte en eventueel tank/motor.
+- Documenteren welke bronkenmerken bruikbaar lijken voor latere voorkeuren: protocol, message id, talker-prefix, remote endpoint, of een combinatie daarvan.
+
+**Buiten scope**
+- Geen nieuwe interpreter implementeren.
+- Geen database-schema wijzigen.
+- Geen bronvoorkeuren-UI bouwen.
+- Geen automatische correctie of deduplicatie van bestaande measurements.
+- Geen definitieve keuze maken voor alle boten; dit is een analyse van de huidige installatie als input voor generieke keuzes.
+
+**Acceptatiecriteria**
+- Er is een analyseoverzicht met aantallen per protocol/message id/sentence type/talker/source.
+- Er is een lijst van gevonden raw-only kandidaatberichten met reden waarom ze interessant zijn.
+- Er is expliciet vastgelegd of tankniveau, motoruren, brandstof, logstand of vergelijkbare logboekvelden in de verzamelde data zichtbaar lijken.
+- Er is expliciet vastgelegd of meerdere bronnen dezelfde meetsoort leveren.
+- Er is een voorstel voor de eerstvolgende interpreter of datamodelwijziging, gebaseerd op de analyse.
+- Er is een voorstel voor hoe BootManager bronnen later stabiel kan identificeren voor gebruikersvoorkeuren.
+
+**Legacy coverage impact**
+- Raakt `US5.3 Motoruren en brandstof in header`; status blijft `Partial` tot velden/interpreters echt geimplementeerd zijn.
+- Raakt `US5.6 Logboekheader invullen` en `US5.11 Statistieken en samenvatting`; status blijft `Partial`.
+- Raakt `US8.5 Sensorintegratie configureren` en `US9.5 Sensorintegratie via Bluetooth of Wi-Fi`; bron- en sensordekking wordt beter onderbouwd.
+- Raakt mogelijk `US9.2 AIS integratie` als AIS als alternatieve positie- of bewegingsbron zichtbaar wordt, maar AIS-semantiek blijft buiten scope.
+
+**Handmatige testnotities**
+- De Pi blijft alleen `master` volgen; analyse gebeurt op een database/export die van de Pi is opgehaald.
+- Noteer bij de export: datum/tijd, branch/commit van de Pi, ingest settings, NMEA aan/uit-status en globale duur van de test.
+- Analyseer eerst read-only; wijzig de Pi-database niet.
+
+---
+
+### Story 8 - Bronidentiteit en bronvoorkeuren ontwerpen
+
+**Status:** Voorgesteld op 2026-05-31; oppakken na Story 7.
+
+**Als** eigenaar/beheerder
+**wil ik** per meetsoort kunnen kiezen welke databron BootManager primair gebruikt
+**zodat** mijn logboek en dashboard de waarden tonen van het apparaat dat ik op mijn boot vertrouw.
+
+**Aanleiding**
+- Op een boot kunnen meerdere apparaten dezelfde soort data publiceren.
+- Voorbeelden: GPS/positie via plotter, AIS of marifoon; heading via kompas of plotter; wind via masttopinstrument of gateway; diepte via verschillende transducers.
+- BootManager moet niet blind de laatste meting nemen als meerdere bronnen verschillende kwaliteit of betekenis hebben.
+- Huidige measurements bewaren niet overal expliciet genoeg welke bron de meting heeft geleverd; broninformatie zit vooral in of rond `NetworkMessage`.
+
+**Scope**
+- Ontwerpen hoe BootManager bronnen stabiel identificeert en benoemt voor gebruikers.
+- Bepalen welke bronmetadata minimaal bij of naast measurements beschikbaar moet zijn: protocol, message id/sentence type, talker-prefix, source/remote endpoint, en eventueel later gebruikerslabel.
+- Per meetsoort een bronvoorkeurmodel ontwerpen, bijvoorbeeld voor positie, COG/SOG, heading, wind, diepte, temperatuur, tankniveau en motoruren.
+- Bepalen wat fallbackgedrag is als de voorkeursbron tijdelijk geen recente data levert.
+- Bepalen hoe de UI in Settings later bronnen toont zonder technisch overweldigend te worden.
+
+**Buiten scope**
+- Geen volledige implementatie van settings-UI in deze ontwerpstory.
+- Geen automatische device discovery met vendornaam of productnaam, tenzij die al betrouwbaar in data zit.
+- Geen multi-boot of multi-user configuratie.
+- Geen historische herberekening van bestaande logboekregels.
+
+**Acceptatiecriteria**
+- Er is een concreet ontwerp voor bronidentiteit en bronvoorkeuren per meetsoort.
+- Het ontwerp beschrijft waar bronmetadata opgeslagen of herleid wordt.
+- Het ontwerp beschrijft fallbackgedrag bij ontbrekende voorkeursbron.
+- Het ontwerp beschrijft hoe bestaande dashboards/logboek-suggesties bronvoorkeuren later moeten toepassen.
+- Er zijn vervolgstories gesneden voor datamodel, servicebeleid en Settings-UI.
+
+**Legacy coverage impact**
+- Raakt `US8.5 Sensorintegratie configureren`; status blijft `Partial` tot de gebruiker voorkeuren echt kan beheren.
+- Raakt `US9.5 Sensorintegratie via Bluetooth of Wi-Fi`; BootManagerV2 blijft voorlopig UDP/YDEN-first, maar bronkeuze bereidt bredere sensorintegratie voor.
+- Ondersteunt `US7.2 Actieve bootinformatie`, `US7.13 Automatische update van gegevens` en meerdere `US5.*` logboekvelden door betrouwbaardere bronselectie.
+
+---
+
+### Story 9 - Eerste nieuwe interpreter op basis van Pi-analyse
+
+**Status:** Voorgesteld op 2026-05-31; kandidaat pas kiezen na Story 7.
+
+**Als** eigenaar
+**wil ik** dat BootManager een nieuw in mijn boordnetwerk aanwezig berichttype interpreteert
+**zodat** logboek, dashboard of reisstatistiek extra beschikbare bootdata kan gebruiken.
+
+**Kandidaatvelden**
+- Tankniveau of brandstofvoorraad.
+- Motoruren.
+- Logstand of afstand door water.
+- Andere tijdens Story 7 gevonden raw-only berichten met duidelijke waarde.
+
+**Scope**
+- Een eerste kandidaatbericht kiezen op basis van de Pi-databaseanalyse.
+- Parser/interpreter toevoegen voor dat ene berichttype.
+- Measurement- of domeinopslag toevoegen als het bestaande model het veld nog niet kan dragen.
+- Unit tests toevoegen met realistische voorbeeldsentences/velden uit de analyse.
+- Documenteren hoe het nieuwe bericht logboek/dashboard later kan voeden.
+
+**Buiten scope**
+- Geen meerdere nieuwe interpreters tegelijk.
+- Geen bronvoorkeuren-UI, tenzij strikt nodig voor deze ene meting.
+- Geen dashboard- of logboek-UI-polish behalve minimale zichtbaarheid of testbaarheid als acceptatie dat vereist.
+- Geen AI- of vendor-specifieke decodeerlogica zonder duidelijke brondata.
+
+**Acceptatiecriteria**
+- Het gekozen berichttype wordt uit ruwe netwerkberichten herkend en gevalideerd.
+- Geldige berichten leveren een opgeslagen measurement of domeinrecord op.
+- Ongeldige berichten blijven raw opgeslagen maar veroorzaken geen crash.
+- Unit tests dekken geldige, ongeldige en ontbrekende velden.
+- De analyse- en architectuurdocumentatie is bijgewerkt met de gemaakte keuze.
+
+**Legacy coverage impact**
+- Hangt af van gekozen kandidaat:
+  - tank/brandstof/motoruren raakt `US5.3`, `US5.11` en `US10.1`;
+  - logstand/afstand raakt `US5.6`, `US5.11` en logboekstatistiek;
+  - sensorbron-diagnostiek raakt `US8.5` en `US9.5`.
+
+---
+
 ### Future Story – Configureerbare sampling en raw-dataretentie
 
 **Als** eindgebruiker/operator  

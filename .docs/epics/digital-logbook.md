@@ -1405,6 +1405,66 @@ Gebruikers kunnen een Draft-logboekregel direct accorderen vanuit de detailpagin
 
 ---
 
+## Slicevoorstel: motoruren, brandstof en logstand in reisheader afronden
+
+**Datum:** 2026-05-31
+**Status:** Voorgesteld; afhankelijk van Pi-databaseanalyse voor eventuele automatische vulling.
+
+**User story:** Als eigenaar wil ik motoruren, brandstof/tankniveau en logstand duidelijk in de logboekreis kunnen vastleggen en waar mogelijk uit boordnetwerkdata laten voorstellen, zodat de reisheader en samenvatting bruikbaar zijn voor verbruik, afstand en later onderhoud/rapportage.
+
+**Aanleiding:**
+
+- De basislogboekflow is aanwezig: reis aanmaken, logregels, meetdatasuggesties, accordering, bijlagen, print en reis afronden.
+- Legacy-logboek verwacht in de reisheader/samenvatting onder meer logstand, gelogde mijlen, motoruren start/eind, brandstof en totaal vaaruren.
+- De gebruiker heeft op 2026-05-31 opnieuw Pi-data verzameld en vermoedt dat het NMEA-systeem mogelijk tankniveau of andere nog niet geimplementeerde data levert.
+- Het is nog niet zeker welke van deze waarden automatisch uit het boordnetwerk beschikbaar zijn; daarom moet automatische vulling op analyse gebaseerd zijn.
+
+**Scope:**
+
+- Vastleggen welke reisheadervelden functioneel nodig zijn voor deze slice:
+  - motoruren start;
+  - motoruren eind;
+  - brandstof/tankniveau start;
+  - brandstof/tankniveau eind;
+  - logstand start/eind of gelogde mijlen, afhankelijk van beschikbare data;
+  - totaal vaaruren als afgeleide waarde uit vertrek/aankomst wanneer mogelijk.
+- Bepalen welke velden handmatig blijven en welke automatisch voorgesteld kunnen worden.
+- Aansluiten op de uitkomst van NMEA Story 7/9 voor beschikbare berichten en interpreters.
+- De logboek-UI en printweergave consistent houden met de gekozen velden.
+- Handmatige invoer leidend houden wanneer automatische suggesties ontbreken of worden overschreven.
+
+**Buiten scope:**
+
+- Geen passageplanningkoppeling.
+- Geen onderhoudsmodule of automatische onderhoudsintervallen op motoruren.
+- Geen uitgebreide brandstofanalyse of kostenrapportage.
+- Geen bronvoorkeuren-UI; bronselectie volgt in een aparte sensor/source story.
+- Geen meerdere tanktypes of complexe tankkalibratie voordat duidelijk is welke data beschikbaar is.
+
+**Acceptatiecriteria:**
+
+- De gekozen motoruren/brandstof/logstandvelden zijn zichtbaar en wijzigbaar in de reisheader of afrondingsflow.
+- Velden worden opgeslagen en opnieuw geladen.
+- Printweergave toont de gekozen velden consistent.
+- Als automatische suggesties beschikbaar zijn, zijn ze herkenbaar als voorstel en overschrijven ze handmatige invoer niet stilzwijgend.
+- Als automatische data ontbreekt, blijft handmatige invoer bruikbaar zonder foutmelding.
+- De story is getest met minimaal een handmatige reisflow en, waar beschikbaar, met echte Pi-data.
+
+**Legacy coverage impact:**
+
+- `US5.3 Motoruren en brandstof in header`: kan van `Partial` naar grotendeels of volledig afgedekt zodra handmatige vastlegging en eventuele automatische suggesties aanwezig zijn.
+- `US5.6 Logboekheader invullen`: krijgt extra dekking door completere reisheader/samenvatting.
+- `US5.11 Statistieken en samenvatting`: blijft waarschijnlijk `Partial`, maar krijgt betere basis voor duur, afstand en verbruik.
+- `US10.1 Brandstofanalyse`: blijft `Open` tot echte analyse/rapportage aanwezig is.
+
+**Handmatige testnotities:**
+
+- Maak een reis met handmatige startwaarden voor motoruren, brandstof/tank en logstand.
+- Rond de reis af met eindwaarden en controleer opslag, herladen en printweergave.
+- Als de Pi-analyse een bruikbare bron oplevert, test dan dat een voorstel zichtbaar wordt zonder handmatige waarden te overschrijven.
+
+---
+
 ## Technische Schuld & Toekomstige Slices
 
 ### Voor Verdere Optimalisatie
