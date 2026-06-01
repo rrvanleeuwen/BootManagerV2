@@ -1,0 +1,40 @@
+/* Hidden Measurements List specific styling */
+.hidden-list-container {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.hidden-list-title {
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.hidden-list-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.hidden-list-btn {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.hidden-list-btn:hover {
+    background-color: #e7f3ff;
+    border-color: #0066cc;
+    color: #0066cc;
+}

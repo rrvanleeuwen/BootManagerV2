@@ -1,0 +1,156 @@
+@using System.Globalization
+
+<DashboardTile Title="@Title" OnHideCallback="OnHideCallback">
+    <svg class="compass-gauge" viewBox="0 0 100 100">
+        <!-- Compass ring -->
+        <circle cx="50" cy="50" r="48" fill="none" stroke="#ddd" stroke-width="1"/>
+        <!-- Cardinal directions - positions rotated, but text stays upright -->
+        <!-- North (top) -->
+        <g transform="rotate(@GetCompassRoseRotation() 50 50)">
+            <text x="50" y="8" text-anchor="middle" class="compass-label" transform="rotate(@GetInverseCompassRoseRotation() 50 8)">N</text>
+        </g>
+        <!-- East (right) -->
+        <g transform="rotate(@GetCompassRoseRotation() 50 50)">
+            <text x="92" y="53" text-anchor="start" class="compass-label" transform="rotate(@GetInverseCompassRoseRotation() 92 53)">E</text>
+        </g>
+        <!-- South (bottom) -->
+        <g transform="rotate(@GetCompassRoseRotation() 50 50)">
+            <text x="50" y="95" text-anchor="middle" class="compass-label" transform="rotate(@GetInverseCompassRoseRotation() 50 95)">S</text>
+        </g>
+        <!-- West (left) -->
+        <g transform="rotate(@GetCompassRoseRotation() 50 50)">
+            <text x="8" y="53" text-anchor="end" class="compass-label" transform="rotate(@GetInverseCompassRoseRotation() 8 53)">W</text>
+        </g>
+        <!-- Forward indicator (Vooruit) - fixed at top -->
+        <text x="50" y="12" text-anchor="middle" class="compass-label" style="font-size: 0.6em; fill: #666;">↑</text>
+        <!-- Boat silhouette - fixed, does not rotate -->
+        @GetBoatSilhouette()
+        <!-- Needle -->
+        <g transform="@GetNeedleRotation()">
+            <line x1="50" y1="15" x2="50" y2="42" stroke="@NeedleColor" stroke-width="1.5"/>
+            <circle cx="50" cy="50" r="3" fill="@NeedleColor"/>
+        </g>
+        <!-- Optional: fixed forward marker for heading tile -->
+        @if (ShowForwardMarker)
+        {
+            <circle cx="50" cy="16" r="2" fill="none" stroke="#0066cc" stroke-width="1"/>
+        }
+    </svg>
+    <p class="gauge-value">@Value</p>
+    <small class="gauge-timestamp">@Timestamp</small>
+</DashboardTile>
+
+@code {
+    /// <summary>
+    /// Tegel titel.
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    /// <summary>
+    /// Hoek in graden (absoluut).
+    /// </summary>
+    [Parameter]
+    public decimal AbsoluteAngle { get; set; }
+
+    /// <summary>
+    /// Huiskoers (voor heading-up perspective). Null = north-up.
+    /// </summary>
+    [Parameter]
+    public decimal? ShipHeading { get; set; }
+
+    /// <summary>
+    /// Weergegeven waarde (formatted).
+    /// </summary>
+    [Parameter]
+    public string Value { get; set; } = "";
+
+    /// <summary>
+    /// Timestamp (formatted).
+    /// </summary>
+    [Parameter]
+    public string Timestamp { get; set; } = "";
+
+    /// <summary>
+    /// Naaldkleur.
+    /// </summary>
+    [Parameter]
+    public string NeedleColor { get; set; } = "#d00";
+
+    /// <summary>
+    /// Of forward-marker moet tonen (alleen voor heading tile).
+    /// </summary>
+    [Parameter]
+    public bool ShowForwardMarker { get; set; } = false;
+
+    /// <summary>
+    /// Callback voor hide-knop.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnHideCallback { get; set; }
+
+    /// <summary>
+    /// Normalizes degrees to 0-360 range.
+    /// </summary>
+    private decimal NormalizeDegrees(decimal degrees)
+    {
+        decimal normalized = degrees % 360;
+        if (normalized < 0) normalized += 360;
+        return normalized;
+    }
+
+    /// <summary>
+    /// Calculates relative angle for heading-up perspective.
+    /// </summary>
+    private decimal GetRelativeAngle()
+    {
+        if (!ShipHeading.HasValue)
+            return AbsoluteAngle;
+
+        return NormalizeDegrees(AbsoluteAngle - ShipHeading.Value);
+    }
+
+    /// <summary>
+    /// Gets compass rose rotation (negative of heading for heading-up).
+    /// </summary>
+    private string GetCompassRoseRotation()
+    {
+        if (!ShipHeading.HasValue)
+            return "0";
+
+        decimal rotation = -NormalizeDegrees(ShipHeading.Value);
+        return rotation.ToString("F1", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Gets inverse compass rose rotation for upright text.
+    /// </summary>
+    private string GetInverseCompassRoseRotation()
+    {
+        if (!ShipHeading.HasValue)
+            return "0";
+
+        decimal rotation = NormalizeDegrees(ShipHeading.Value);
+        return rotation.ToString("F1", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Gets needle rotation based on perspective.
+    /// </summary>
+    private string GetNeedleRotation()
+    {
+        decimal needleAngle = GetRelativeAngle();
+        double deg = (double)needleAngle % 360;
+        if (deg < 0) deg += 360;
+        return $"rotate({deg.ToString("F1", CultureInfo.InvariantCulture)} 50 50)";
+    }
+
+    /// <summary>
+    /// Renders boat silhouette SVG.
+    /// </summary>
+    private MarkupString GetBoatSilhouette()
+    {
+        var svg = @"<polygon points=""50,30 60,55 50,65 40,55"" fill=""none"" stroke=""#555"" stroke-width=""0.8"" opacity=""0.6""/>";
+        return new MarkupString(svg);
+    }
+}

@@ -1,0 +1,32 @@
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card" style="background-color: #f8f9fa; border-left: 3px solid #ccc;">
+            <div class="card-body p-3">
+                <small class="text-muted" style="font-weight: 600;">Beschikbare maar verborgen meetwaarden:</small>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5em; margin-top: 0.75em;">
+                    @foreach (var (key, label) in HiddenMeasurements)
+                    {
+                        var keyLocal = key;
+                        <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.85em;" @onclick="@(async e => await OnShowMeasurement.Invoke(keyLocal))">
+                            + @label
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Lijst van (key, label) tuples voor verborgen meetwaarden.
+    /// </summary>
+    [Parameter]
+    public List<(string key, string label)> HiddenMeasurements { get; set; } = new();
+
+    /// <summary>
+    /// Callback als een verborgen item wordt teruggezet.
+    /// </summary>
+    [Parameter]
+    public Func<string, Task> OnShowMeasurement { get; set; } = async (key) => { };
+}

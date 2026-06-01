@@ -1,0 +1,62 @@
+@using System.Globalization
+
+<DashboardTile Title="@Title" OnHideCallback="OnHideCallback">
+    <svg class="linear-gauge" viewBox="0 0 100 20">
+        <rect x="5" y="7" width="90" height="6" fill="#f0f0f0" stroke="#ccc" stroke-width="0.5"/>
+        <rect x="5" y="7" width="@FormatForSvg(FillWidth)" height="6" fill="@GaugeColor" stroke="none"/>
+    </svg>
+    <p class="gauge-value">@Value @Unit</p>
+    <small class="gauge-timestamp">@Timestamp</small>
+</DashboardTile>
+
+@code {
+    /// <summary>
+    /// Tegel titel.
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    /// <summary>
+    /// Weergegeven waarde (formatted).
+    /// </summary>
+    [Parameter]
+    public string Value { get; set; } = "";
+
+    /// <summary>
+    /// Eenheid (m/s, kn, m, °C, V, etc.).
+    /// </summary>
+    [Parameter]
+    public string Unit { get; set; } = "";
+
+    /// <summary>
+    /// Breedte van de filled rect (0-90).
+    /// </summary>
+    [Parameter]
+    public decimal FillWidth { get; set; }
+
+    /// <summary>
+    /// SVG fill-kleur.
+    /// </summary>
+    [Parameter]
+    public string GaugeColor { get; set; } = "#4CAF50";
+
+    /// <summary>
+    /// Timestamp (formatted).
+    /// </summary>
+    [Parameter]
+    public string Timestamp { get; set; } = "";
+
+    /// <summary>
+    /// Callback voor hide-knop.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnHideCallback { get; set; }
+
+    /// <summary>
+    /// Formats a decimal value for SVG using InvariantCulture.
+    /// </summary>
+    private string FormatForSvg(decimal value, string format = "F1")
+    {
+        return value.ToString(format, CultureInfo.InvariantCulture);
+    }
+}

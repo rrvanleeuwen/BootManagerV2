@@ -1,0 +1,21 @@
+/* Position Tile specific styling */
+.position-text {
+    font-size: 0.95rem;
+    margin: 0.25rem 0;
+    word-break: break-word;
+}
+
+.gauge-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #212529;
+    margin: 0.25rem 0;
+}
+
+.gauge-timestamp {
+    display: block;
+    font-size: 0.7rem;
+    color: #adb5bd;
+    margin-top: 0.5rem;
+    width: 100%;
+}

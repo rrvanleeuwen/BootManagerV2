@@ -18,6 +18,7 @@ public class DashboardMeasurementService : IDashboardMeasurementService
     private readonly IRepository<DepthMeasurement> _depthRepository;
     private readonly IRepository<WaterTemperatureMeasurement> _waterTemperatureRepository;
     private readonly IRepository<BatteryMeasurement> _batteryRepository;
+    private readonly IRepository<FluidLevelMeasurement> _fluidLevelRepository;
 
     public DashboardMeasurementService(
         IRepository<WindMeasurement> windRepository,
@@ -27,7 +28,8 @@ public class DashboardMeasurementService : IDashboardMeasurementService
         IRepository<MotionMeasurement> motionRepository,
         IRepository<DepthMeasurement> depthRepository,
         IRepository<WaterTemperatureMeasurement> waterTemperatureRepository,
-        IRepository<BatteryMeasurement> batteryRepository)
+        IRepository<BatteryMeasurement> batteryRepository,
+        IRepository<FluidLevelMeasurement> fluidLevelRepository)
     {
         _windRepository = windRepository;
         _headingRepository = headingRepository;
@@ -37,6 +39,7 @@ public class DashboardMeasurementService : IDashboardMeasurementService
         _depthRepository = depthRepository;
         _waterTemperatureRepository = waterTemperatureRepository;
         _batteryRepository = batteryRepository;
+        _fluidLevelRepository = fluidLevelRepository;
     }
 
     public async Task<CurrentMeasurementsDto> GetCurrentMeasurementsAsync(CancellationToken cancellationToken = default)
@@ -50,6 +53,9 @@ public class DashboardMeasurementService : IDashboardMeasurementService
         var latestDepth = await GetLatestAsync(_depthRepository, cancellationToken);
         var latestWaterTemperature = await GetLatestAsync(_waterTemperatureRepository, cancellationToken);
         var latestBattery = await GetLatestAsync(_batteryRepository, cancellationToken);
+
+        // Get fluid levels: all records, grouped by (FluidType, FluidInstance), take latest from each group
+        var fluidLevelDtos = await GetLatestFluidLevelsAsync(cancellationToken);
 
         // Build the DTO using object initializer
         return new CurrentMeasurementsDto
@@ -104,7 +110,9 @@ public class DashboardMeasurementService : IDashboardMeasurementService
                 Voltage = latestBattery.Voltage,
                 StateOfCharge = latestBattery.StateOfCharge,
                 RecordedAtUtc = latestBattery.RecordedAtUtc
-            } : new()
+            } : new(),
+
+            FluidLevels = fluidLevelDtos
         };
     }
 
@@ -119,6 +127,35 @@ public class DashboardMeasurementService : IDashboardMeasurementService
             var prop = typeof(T).GetProperty("RecordedAtUtc");
             return (DateTime)(prop?.GetValue(r) ?? DateTime.MinValue);
         }).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Haalt de meest recente fluid level voor elke (FluidType, FluidInstance) combinatie op.
+    /// Retourneert een list van FluidLevelMeasurementDto's, gesorteerd op RecordedAtUtc (aflopend).
+    /// </summary>
+    private async Task<List<FluidLevelMeasurementDto>> GetLatestFluidLevelsAsync(CancellationToken ct)
+    {
+        var allFluidLevels = await _fluidLevelRepository.ListAsync(null, ct);
+
+        // Group by (FluidType, FluidInstance) and take the latest from each group
+        var latestPerTank = allFluidLevels
+            .GroupBy(f => (f.FluidType, f.FluidInstance))
+            .Select(g => g.OrderByDescending(f => f.RecordedAtUtc).First())
+            .OrderByDescending(f => f.RecordedAtUtc)
+            .ToList();
+
+        // Convert to DTO list
+        var dtos = latestPerTank.Select(f => new FluidLevelMeasurementDto
+        {
+            FluidType = f.FluidType,
+            FluidInstance = f.FluidInstance,
+            LevelPercent = f.LevelPercent,
+            CapacityLiters = f.CapacityLiters,
+            RecordedAtUtc = f.RecordedAtUtc,
+            IsLevelInvalid = f.IsLevelInvalid
+        }).ToList();
+
+        return dtos;
     }
 
     /// <summary>

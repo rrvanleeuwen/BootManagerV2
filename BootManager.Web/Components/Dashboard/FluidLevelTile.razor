@@ -1,0 +1,73 @@
+@using System.Globalization
+
+<DashboardTile Title="@Title" OnHideCallback="OnHideCallback">
+    @if (IsLevelInvalid || string.IsNullOrEmpty(LevelPercent))
+    {
+        <div class="gauge-empty" style="color: #999; font-size: 0.9em;">Geen niveau bekend</div>
+    }
+    else
+    {
+        <svg class="linear-gauge" viewBox="0 0 100 20">
+            <rect x="5" y="7" width="90" height="6" fill="#f0f0f0" stroke="#ccc" stroke-width="0.5"/>
+            <rect x="5" y="7" width="@FormatForSvg(LevelPercentValue * 0.9m)" height="6" fill="#00796B" stroke="none"/>
+        </svg>
+        <p class="gauge-value">@LevelPercent%</p>
+    }
+    @if (!string.IsNullOrEmpty(CapacityLiters))
+    {
+        <small class="text-muted">@CapacityLiters L</small>
+    }
+    <small class="gauge-timestamp">@Timestamp</small>
+</DashboardTile>
+
+@code {
+    /// <summary>
+    /// Tegel titel (tank naam).
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    /// <summary>
+    /// Niveau percentage (formatted string).
+    /// </summary>
+    [Parameter]
+    public string? LevelPercent { get; set; }
+
+    /// <summary>
+    /// Niveau percentage als decimal (voor SVG berekening).
+    /// </summary>
+    [Parameter]
+    public decimal LevelPercentValue { get; set; }
+
+    /// <summary>
+    /// Of het niveau invalid is.
+    /// </summary>
+    [Parameter]
+    public bool IsLevelInvalid { get; set; }
+
+    /// <summary>
+    /// Capaciteit in liters (formatted string).
+    /// </summary>
+    [Parameter]
+    public string? CapacityLiters { get; set; }
+
+    /// <summary>
+    /// Timestamp (formatted).
+    /// </summary>
+    [Parameter]
+    public string Timestamp { get; set; } = "";
+
+    /// <summary>
+    /// Callback voor hide-knop.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnHideCallback { get; set; }
+
+    /// <summary>
+    /// Formats a decimal value for SVG using InvariantCulture.
+    /// </summary>
+    private string FormatForSvg(decimal value, string format = "F1")
+    {
+        return value.ToString(format, CultureInfo.InvariantCulture);
+    }
+}

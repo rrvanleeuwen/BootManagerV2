@@ -4,9 +4,45 @@ Updated: 2026-06-01.
 
 ## Current Task
 
-`NMEA Story 9: Fluid Level interpreter voor meerdere tanktypes` is afgerond op branch `codex/fluid-level-interpreter`.
+`DSH-LIVE-5: Alleen Beschikbare Meetwaarden En Verberg-/Herstelbare Tegels` is afgerond op branch `codex/dashboard-fluid-levels`.
 
 Status 2026-06-01:
+
+- Dashboard toont alleen meetwaardetegels waarvoor daadwerkelijk data beschikbaar is.
+- Dashboard toont tankniveaus uit `FluidLevelMeasurements`, alleen voor tanks waarvoor records bestaan.
+- Invalid/unknown tankniveau blijft zichtbaar als bestaande tank met `Geen niveau bekend`.
+- Tegels kunnen met `X` worden verborgen en via een herstel-lijst met `+` worden teruggezet.
+- Verborgen tegels worden bewaard in browser `localStorage` en blijven na refresh/herstart verborgen.
+- Dashboard is opgesplitst in herbruikbare Blazor-componenten onder `BootManager.Web/Components/Dashboard/`.
+- CSS/component-regressies zijn gecorrigeerd:
+  - dashboardtegels zijn weer compact;
+  - kompasletters blijven rechtop leesbaar terwijl heading-up posities blijven kloppen.
+
+Verificatie:
+
+- `dotnet build BootManager.sln` geslaagd met 0 warnings/errors.
+- `git diff --check` schoon.
+- `dotnet test src\BootManager.Tools.Simulator.Tests\BootManager.Tools.Simulator.Tests.csproj --no-build` geslaagd: 5 tests.
+- Volledige unit test run had één bestaande, ongerelateerde failure: `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect`.
+- User heeft lokaal gevalideerd:
+  - tegels zijn zichtbaar;
+  - meerdere tegels aan/uit gezet;
+  - verborgen tegels blijven ook na herstart verborgen;
+  - UI is akkoord.
+
+Administratieve status:
+
+- `.docs/epics/dashboard-overview.md` markeert `DSH-LIVE-5` als geïmplementeerd en lokaal gevalideerd.
+- `.docs/TODO.md` bevat `DSH-LIVE-5` onder Dashboard & Live Overzicht.
+- `.docs/legacy-analysis/legacy-coverage-register.md` is bijgewerkt voor `US5.3`, `US7.1`, `US7.2`, `US7.11`, `US7.12`, `US7.13` en `US10.1`.
+
+Volgende actie:
+
+- Branch committen, pushen en ready PR maken.
+
+Vorige afgeronde taak: `NMEA Story 9: Fluid Level interpreter voor meerdere tanktypes` is afgerond op branch `codex/fluid-level-interpreter`.
+
+Status Story 9:
 
 - Nieuwe `FluidLevelMeasurement` slice toegevoegd voor NMEA 2000 PGN `127505` Fluid Level.
 - Gatewayregels `$PCDIN` en `$MXPGN` met PGN `01F211` worden via de NMEA0183 raw-route herkend en opgeslagen.

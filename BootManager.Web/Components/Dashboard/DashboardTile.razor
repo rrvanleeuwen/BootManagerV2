@@ -1,0 +1,34 @@
+<div class="col-md-6 col-lg-3 mb-3">
+    <div class="gauge-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75em;">
+            <h6 class="gauge-label" style="margin: 0;">@Title</h6>
+            <button class="btn btn-sm btn-link text-danger p-0" style="font-size: 0.9em; text-decoration: none;" @onclick="OnHideClicked">✕</button>
+        </div>
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Tegel titel.
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    /// <summary>
+    /// Callback voor Hide-knop.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnHideCallback { get; set; }
+
+    /// <summary>
+    /// Tegel inhoud (child content).
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private async Task OnHideClicked()
+    {
+        await OnHideCallback.InvokeAsync();
+    }
+}

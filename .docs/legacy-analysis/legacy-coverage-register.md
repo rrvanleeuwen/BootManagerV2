@@ -125,7 +125,7 @@ Bij afronding van een story of PR:
 |---|---|---|
 | US5.1 Handmatig logboek invoeren met weerinformatie | Partial | Handmatige logregels bestaan; weer/barometer/temperatuur volledig nalopen. |
 | US5.2 Automatisch loggen en intervalinstelling | Partial | Missing moments + Draft-regels bestaan; echte automatische logging op NMEA interval is beperkt. `SYS-CTRL-1` voegt bewuste ingest-verwerking aan/uit toe met logboekwaarschuwing en nieuwe-reis-popup wanneer automatische meetdata uit staat. |
-| US5.3 Motoruren en brandstof in header | Partial | Reisheader/samenvatting aanwezig; motoruren/brandstof afronding open. Pi-databaseanalyse op 2026-05-31 bevestigt tankniveau/brandstof als kandidaat via `PCDIN`/`MXPGN` PGN `127505`; Story 9 voegt technische opslag voor Fluid Level/tankniveau toe. Motoruren zijn nog niet duidelijk zichtbaar en brandstof is nog niet geïntegreerd in logboekheader/dashboard. |
+| US5.3 Motoruren en brandstof in header | Partial | Reisheader/samenvatting aanwezig; motoruren/brandstof afronding open. Pi-databaseanalyse op 2026-05-31 bevestigt tankniveau/brandstof als kandidaat via `PCDIN`/`MXPGN` PGN `127505`; Story 9 voegt technische opslag voor Fluid Level/tankniveau toe. `DSH-LIVE-5` maakt tankniveau zichtbaar op het dashboard. Motoruren zijn nog niet duidelijk zichtbaar en brandstof/tankniveau is nog niet geïntegreerd in de logboekheader. |
 | US5.4 Notities en gebeurtenissen toevoegen | Done | Opmerkingen/zeilvoering per logregel aanwezig. |
 | US5.5 Logboek koppelen aan passage | Open | Passageplanning ontbreekt. |
 | US5.6 Logboekheader invullen | Partial | Trip header bestaat; vertrek- en aankomstmoment ondersteunen nu datum+tijd in logboek en printweergave. Volledige legacy-header nog nalopen. |
@@ -161,8 +161,8 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US7.1 Dashboardweergave openen | Partial | Dashboard-pagina en live meetwaarden-sectie (DSH-LIVE-1) zijn geïmplementeerd met SVG-gauges en auto-polling gekoppeld aan het ingest-sample-interval. Uitgebreide widgets, personalisatie en multi-boot dashboard ontbreken. |
-| US7.2 Actieve bootinformatie | Partial | `VesselProfile` bestaat; live meetwaarden (wind, heading, position, speed, COG/SOG, diepte, watertemperatuur, spanning) tonen op dashboard (DSH-LIVE-1). Bootfoto, multi-boot selector en extra boot-metafoto ontbreken. |
+| US7.1 Dashboardweergave openen | Partial | Dashboard-pagina en live meetwaarden-sectie (DSH-LIVE-1) zijn geïmplementeerd met SVG-gauges en auto-polling gekoppeld aan het ingest-sample-interval. `DSH-LIVE-5` toont alleen beschikbare meetwaarden en laat tegels verbergen/herstellen. Uitgebreide widgets, personalisatie en multi-boot dashboard ontbreken. |
+| US7.2 Actieve bootinformatie | Partial | `VesselProfile` bestaat; live meetwaarden (wind, heading, position, speed, COG/SOG, diepte, watertemperatuur, spanning) tonen op dashboard (DSH-LIVE-1). `DSH-LIVE-5` voegt tankniveaus toe voor aanwezige `FluidLevelMeasurements`. Bootfoto, multi-boot selector en extra boot-metafoto ontbreken. |
 | US7.3 Waarschuwingen en meldingen | Partial | Logboek missing-moments signaal bestaat; `SYS-CTRL-1` voegt dashboard- en logboekwaarschuwingen toe wanneer NMEA-/ingest-verwerking uit staat. Generiek meldingenpaneel ontbreekt nog. Dashboard toont "Geen data" voor ontbrekende meettypen. |
 | US7.4 Weerinformatie en getijden | Open | Niet aanwezig. |
 | US7.5 Widget voor voorraadstatus | Open | Afhankelijk van inventory. |
@@ -171,9 +171,9 @@ Bij afronding van een story of PR:
 | US7.8 Widget voor passageplanning | Open | Afhankelijk van passageplanning. |
 | US7.9 Widget voor logboekactiviteit | Open | Niet als dashboardwidget aanwezig; logboek-recordbrowser bestaat. |
 | US7.10 Personaliseren van widgets | Parked | Later; niet nodig voor eerste dashboard. |
-| US7.11 Interactieve navigatie | Partial | Gewone navigatie bestaat; widget-clickthrough ontbreekt; live meetwaarden via SVG gauges en timestamps. |
-| US7.12 Offline weergave | Partial | Lokale app werkt offline; dashboard-last-known model voorkomt crashes bij ontbrekende data. Auto-refresh toont "Geen data" voor niet-beschikbare waarden. |
-| US7.13 Automatische update van gegevens | Partial | DSH-LIVE-1 voegt auto-polling toe via `System.Threading.Timer`, gekoppeld aan `DefaultSampleIntervalSeconds` met veilige grenzen. Geen SignalR/live push; polling is acceptabel voor MVP. |
+| US7.11 Interactieve navigatie | Partial | Gewone navigatie bestaat; dashboardtegels kunnen met `DSH-LIVE-5` interactief verborgen en teruggezet worden. Widget-clickthrough naar detailpagina's ontbreekt. |
+| US7.12 Offline weergave | Partial | Lokale app werkt offline; dashboard-last-known model voorkomt crashes bij ontbrekende data. `DSH-LIVE-5` toont geen lege tegels voor niet-beschikbare waarden en bewaart verborgen tegelkeuzes lokaal in de browser. |
+| US7.13 Automatische update van gegevens | Partial | DSH-LIVE-1 voegt auto-polling toe via `System.Threading.Timer`, gekoppeld aan `DefaultSampleIntervalSeconds` met veilige grenzen. `DSH-LIVE-5` behoudt deze refresh-flow voor zichtbare en verborgen beschikbare meetwaarden. Geen SignalR/live push; polling is acceptabel voor MVP. |
 | US7.14 Cloud-synchronisatie | Parked | Cloud-sync geparkeerd. |
 
 ---
@@ -213,7 +213,7 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US10.1 Brandstofanalyse | Partial | Story 9 legt de eerste technische basis voor brandstof-/tankniveau-opslag via PGN `127505` Fluid Level. Analyse, trends, dashboard/logboekgebruik en motoruren blijven open. |
+| US10.1 Brandstofanalyse | Partial | Story 9 legt de eerste technische basis voor brandstof-/tankniveau-opslag via PGN `127505` Fluid Level. `DSH-LIVE-5` toont tankniveaus op het dashboard. Analyse, trends, logboekgebruik en motoruren blijven open. |
 | US10.2 Voorraadanalyse | Open | Afhankelijk van inventorymutaties. |
 | US10.3 Onderhoudsrapportage | Open | Afhankelijk van onderhoudsmodule. |
 | US10.4 Kostenanalyse per tocht | Open | Afhankelijk van passage/logboek kostenregistratie. |
