@@ -932,6 +932,7 @@ Na alle eerdere verbeteringen is een semantische correctie doorgevoerd voor het 
 3. `DSH-LIVE-1` live dashboard met actuele meetwaarden
 4. `DSH-LIVE-2` actualiteit/status van waarden
 5. `DSH-LIVE-3` logboekactiviteit op dashboard
+6. `DSH-LIVE-5` dashboard toont alleen beschikbare meetwaarden en laat tegels verbergen/herstellen
 
 `DSH-LIVE-4` staat bewust later op de backlog. Polling op basis van de ingest-sample-interval is voorlopig voldoende; SignalR wordt pas opgepakt als live push belangrijker wordt dan eenvoud en robuustheid.
 
@@ -940,3 +941,110 @@ Na alle eerdere verbeteringen is een semantische correctie doorgevoerd voor het 
 - Eerst technische analyse, omdat dat direct helpt bij testen, support en validatie.
 - Daarna ingest-bediening, omdat de gebruiker nu al een concreet operationeel probleem heeft met onnodig loggen in de haven.
 - Pas daarna het live dashboard, zodat we presentatie bouwen bovenop een beter beheersbaar en beter diagnosticeerbaar systeem.
+
+---
+
+## DSH-LIVE-5: Alleen Beschikbare Meetwaarden En Verberg-/Herstelbare Tegels
+
+**Status:** Geïmplementeerd en lokaal gevalideerd op 2026-06-01.
+
+**User story:** Als eigenaar wil ik dat het dashboard alleen meetwaarden toont waarvoor daadwerkelijk data beschikbaar is, en dat ik tegels kan verbergen of terugzetten, zodat het dashboard rustig blijft en alleen relevante informatie voor mijn boot toont.
+
+**Aanleiding**
+
+- Na Story 9 worden tankniveaus technisch opgeslagen als `FluidLevelMeasurements`.
+- Op Linde worden naar verwachting alleen tanks getoond waarvoor echte data binnenkomt, bijvoorbeeld watertank SB, watertank BB en dieseltank.
+- Dit principe geldt breder: het dashboard moet geen lege of hypothetische meters tonen voor meettypes die niet beschikbaar zijn.
+- De gebruiker wil zelf zichtbare dashboardtegels kunnen opruimen zonder dat de onderliggende data of automatische refresh verdwijnt.
+
+**Scope**
+
+- Dashboard toont alleen meetsoorten waarvoor actuele of laatst bekende data bestaat.
+- Dit geldt voor alle dashboardmeters, niet alleen voor tankniveaus.
+- Nieuwe tankniveaus worden toegevoegd aan het dashboard, maar alleen tanks waarvoor `FluidLevelMeasurements` bestaan.
+- Meerdere tanks blijven apart zichtbaar.
+- Tanknamen worden in deze slice automatisch en neutraal bepaald, bijvoorbeeld `Brandstof 1`, `Drinkwater 1`, `Drinkwater 2`, `Grijswater 1`, `Olie 1` of `Onbekende tank 1`.
+- Er worden geen lege "mogelijke" tanks of meetvelden getoond.
+- Elke zichtbare dashboardtegel krijgt een `X` om de tegel te verbergen.
+- Verborgen tegels verdwijnen uit het dashboard.
+- Onderaan komt een compacte lijst met beschikbare maar verborgen meetwaarden.
+- Een verborgen tegel kan via een `+` weer worden toegevoegd.
+- De verborgen/zichtbare keuze blijft behouden na browser-refresh, bij voorkeur via browser-localStorage of een al bestaand lokaal dashboard-state patroon.
+- Auto-refresh blijft werken voor zichtbare items en beschikbare verborgen items blijven onderaan terugzetbaar.
+- Als een nieuwe meetwaarde later beschikbaar komt, verschijnt die standaard zichtbaar tenzij de gebruiker exact die tegel eerder verborgen heeft.
+
+**Buiten scope**
+
+- Geen bronvoorkeuren-UI.
+- Geen handmatig configureren of benoemen van tanks in Settings.
+- Geen AIS, `YDVLW`, roerstand of andere nieuwe interpreters.
+- Geen logboekintegratie.
+- Geen grafieken/trends.
+- Geen server-side gebruikersprofiel voor dashboardindeling, tenzij er al een passend patroon bestaat.
+
+**Acceptatiecriteria**
+
+- Dashboard toont geen tegels meer voor meetwaarden zonder data.
+- Tankniveaus verschijnen alleen voor tanks waarvoor `FluidLevelMeasurements` bestaan.
+- Meerdere tanks van hetzelfde type blijven apart zichtbaar.
+- Een tegel kan met `X` verborgen worden.
+- Verborgen beschikbare tegels verschijnen onderaan in een lijst.
+- Een verborgen tegel kan met `+` teruggezet worden.
+- Keuze blijft behouden na refresh van de pagina.
+- Nieuwe/bestaande dashboardmetingen blijven correct auto-refreshen.
+- Geen foutmelding of lege tegel wanneer een meettype geen data heeft.
+- Build slaagt en relevante tests worden uitgevoerd.
+- Handmatige UI-test: dashboard openen met bestaande database/simulator, tegel verbergen, pagina refreshen, tegel terugzetten.
+
+**Legacy impact**
+
+- `US7.1 Dashboardweergave openen`: blijft `Partial`, dashboard wordt relevanter en rustiger.
+- `US7.2 Actieve bootinformatie`: blijft `Partial`, tankstatus wordt toegevoegd aan actuele bootinformatie.
+- `US7.3 Waarschuwingen en meldingen`: blijft `Partial`, invalid/geen data wordt netjes getoond.
+- `US7.11 Interactieve navigatie`: blijft `Partial`, tegels krijgen eenvoudige interactie voor verbergen/herstellen.
+- `US7.12 Offline weergave`: blijft `Partial`, dashboard blijft bruikbaar met laatst bekende data.
+- `US7.13 Automatische update van gegevens`: blijft `Partial`, bestaande polling blijft leidend.
+- `US5.3` en `US10.1`: blijven `Partial`, omdat tankniveaus zichtbaar worden maar nog niet in logboek/analyse zitten.
+- `US8.5`: blijft `Partial`, want dit is nog geen echte bron- of sensorconfiguratie.
+
+**Handmatige testnotities**
+
+- Start Web met een database waarin minimaal één bestaande live meting en meerdere `FluidLevelMeasurements` aanwezig zijn, of gebruik de simulator nadat Story 9 op `master` staat.
+- Controleer dat alleen beschikbare meetwaarden zichtbaar zijn.
+- Verberg een bestaande tegel met `X`.
+- Refresh de browser en controleer dat de tegel verborgen blijft.
+- Zet de tegel terug via `+` in de lijst onderaan.
+- Controleer dat auto-refresh en "Laatste meting" semantiek blijven werken.
+
+**Implementatienotities 2026-06-01**
+
+- Dashboard haalt nu ook de recentste `FluidLevelMeasurements` per `FluidType`/`FluidInstance` op.
+- Dashboardtegels worden alleen gerenderd wanneer de specifieke meetwaarde beschikbaar is; lege tegels voor ontbrekende meettypes verdwijnen.
+- Tanktegels worden alleen getoond voor bestaande tankmetingen en gebruiken automatische labels zoals `Brandstof 1`, `Drinkwater 1`, `Grijs water 1` en `Olie 1`.
+- Invalid/unknown tankniveau blijft zichtbaar als bestaande tank met `Geen niveau bekend`.
+- Zichtbare tegels kunnen met `X` worden verborgen.
+- Beschikbare maar verborgen tegels verschijnen in een herstel-lijst met `+`.
+- Verborgen tegels worden bewaard in browser `localStorage` onder `dashboard-hidden-keys` en blijven na refresh/herstart verborgen.
+- Het dashboard is opgesplitst in herbruikbare Blazor-componenten onder `BootManager.Web/Components/Dashboard/`:
+  - `DashboardTile`;
+  - `CompassGaugeTile`;
+  - `LinearGaugeTile`;
+  - `PositionTile`;
+  - `FluidLevelTile`;
+  - `HiddenMeasurementsList`.
+- Gedeelde dashboardcomponenten zijn beschikbaar gemaakt via `_Imports.razor`.
+- Kompasletters blijven rechtop leesbaar terwijl de kompasposities/roos de heading-up presentatie blijven volgen.
+
+**Verificatie 2026-06-01**
+
+- `dotnet build BootManager.sln` geslaagd met 0 warnings/errors.
+- `git diff --check` schoon.
+- `dotnet test src\BootManager.Tools.Simulator.Tests\BootManager.Tools.Simulator.Tests.csproj --no-build` geslaagd: 5 tests.
+- Volledige unit test run is niet als blokker gebruikt omdat een bestaande, ongerelateerde auth-test faalt: `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect`.
+- Handmatig lokaal gevalideerd:
+  - dashboard toont weer tegels met bestaande database-data;
+  - tanktegels verschijnen alleen voor aanwezige tankmetingen;
+  - tegels kunnen met `X` verborgen worden;
+  - verborgen tegels kunnen met `+` teruggezet worden;
+  - verborgen status blijft behouden na herstart/refresh;
+  - UI-maatvoering en kompaslabels zijn akkoord bevonden.

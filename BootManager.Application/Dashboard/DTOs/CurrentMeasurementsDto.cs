@@ -1,5 +1,7 @@
 namespace BootManager.Application.Dashboard.DTOs;
 
+using BootManager.Core.Entities;
+
 /// <summary>
 /// DTO voor een individuele windmeting op het dashboard.
 /// </summary>
@@ -189,6 +191,48 @@ public class BatteryMeasurementDto
 }
 
 /// <summary>
+/// DTO voor een individuele tankniveaumeting op het dashboard.
+/// </summary>
+public class FluidLevelMeasurementDto
+{
+    /// <summary>
+    /// Tanktype (Fuel, FreshWater, GrayWater, etc.).
+    /// </summary>
+    public FluidType FluidType { get; init; }
+
+    /// <summary>
+    /// Fluid instance (0-15) om meerdere tanks van hetzelfde type te onderscheiden.
+    /// </summary>
+    public byte FluidInstance { get; init; }
+
+    /// <summary>
+    /// Tankniveau als percentage (0-100).
+    /// </summary>
+    public decimal? LevelPercent { get; init; }
+
+    /// <summary>
+    /// Tankcapaciteit in liters (indien aanwezig).
+    /// </summary>
+    public decimal? CapacityLiters { get; init; }
+
+    /// <summary>
+    /// Moment waarop de meting is geregistreerd (UTC).
+    /// </summary>
+    public DateTime? RecordedAtUtc { get; init; }
+
+    /// <summary>
+    /// Geeft aan of het niveau ongeldig/onbekend is.
+    /// </summary>
+    public bool IsLevelInvalid { get; init; }
+
+    /// <summary>
+    /// Geeft aan of tank data beschikbaar is (minstens één veld ingevuld).
+    /// IsLevelInvalid kan true zijn maar we tonen de tank nog steeds rustig.
+    /// </summary>
+    public bool HasData => RecordedAtUtc.HasValue || LevelPercent.HasValue || CapacityLiters.HasValue;
+}
+
+/// <summary>
 /// DTO voor alle huidige/recentste meetwaarden op het dashboard.
 /// </summary>
 public class CurrentMeasurementsDto
@@ -234,10 +278,16 @@ public class CurrentMeasurementsDto
     public BatteryMeasurementDto Battery { get; init; } = new();
 
     /// <summary>
+    /// Recentste tankniveaometingen per tank.
+    /// </summary>
+    public List<FluidLevelMeasurementDto> FluidLevels { get; init; } = new();
+
+    /// <summary>
     /// Geeft aan of er überhaupt meetgegevens beschikbaar zijn.
     /// </summary>
     public bool HasAnyData =>
         Wind.HasData || Heading.HasData || Position.HasData ||
         SpeedThroughWater.HasData || Motion.HasData || Depth.HasData ||
-        WaterTemperature.HasData || Battery.HasData;
+        WaterTemperature.HasData || Battery.HasData ||
+        FluidLevels.Any(f => f.HasData);
 }

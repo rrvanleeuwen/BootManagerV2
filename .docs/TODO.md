@@ -274,6 +274,7 @@
     - `DSH-LIVE-1` live dashboard met actuele meetwaarden in meters of duidelijke tekstvelden
     - `DSH-LIVE-2` actualiteit en datastatus zichtbaar maken
     - `DSH-LIVE-3` logboekactiviteit en snelle doorsteek vanaf dashboard
+    - `DSH-LIVE-5` alleen beschikbare meetwaarden tonen, tankniveaus toevoegen en tegels verbergen/herstellen
   - **Legacy-impact:** sluit direct aan op `US7.1`, `US7.2`, `US7.3`, `US7.9` en deels `US7.13`
   - **Opmerking:** dit spoor volgt idealiter ná de technische analysepagina en ingest-toggle.
 
