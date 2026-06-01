@@ -4,6 +4,40 @@ Updated: 2026-06-01.
 
 ## Current Task
 
+`README Projectstatusoverzicht` is direct op `master` gezet en afgerond.
+
+Status 2026-06-01:
+
+- Root `README.md` bestaat nu en wordt door GitHub als startpagina getoond.
+- README bevat een gegenereerd projectstatusoverzicht met:
+  - totale voortgang voor BootManagerV2 huidige epics;
+  - totale voortgang voor legacy scope;
+  - statusbalk per BootManagerV2-epic;
+  - statusbalk per legacy epic.
+- Generator toegevoegd: `scripts/update-readme-status.ps1`.
+- Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy-coverage-register.md`.
+- BootManagerV2-epicpercentages worden expliciet onderhouden in het generator-script zolang de epicdocumenten nog niet uniform genoeg zijn voor betrouwbare automatische parsing.
+- Rekenregel:
+  - `Done` en `Replaced` tellen als 100%;
+  - `Partial` telt als 50%;
+  - `Open` telt als 0%;
+  - `Parked` en `Obsolete` tellen niet mee in actieve scope.
+- Commit `1d04ea0 Add README project status overview` is gepusht naar `origin/master`.
+- Lokale checkout staat op `master`, gelijk met `origin/master`, met schone worktree.
+
+Vaste documentatieregel vanaf nu:
+
+- Bij iedere documentatie-update die projectstatus, stories, epics, TODO of legacy coverage raakt, moet ook `./scripts/update-readme-status.ps1` worden gedraaid.
+- Controleer daarna de README-diff en commit de README-statusupdate mee.
+- Alleen puur technische docs zonder statusimpact, zoals een typo of klein runbookcommando, hoeven de README-statussectie niet per se te wijzigen.
+
+Volgende logische actie:
+
+- Als de gebruiker de laatste dashboardwijzigingen op de Raspberry Pi wil controleren: Pi op `master` bijwerken en containers rebuilden/starten.
+- Daarna een nieuwe story kiezen. Waarschijnlijke kandidaten blijven: bronvoorkeuren/source registry, verdere logboekintegratie van tank-/tripdata, of dashboardverfijning.
+
+Vorige afgeronde taak:
+
 `DSH-LIVE-5: Alleen Beschikbare Meetwaarden En Verberg-/Herstelbare Tegels` is afgerond en gemerged naar `master`.
 
 Status 2026-06-01:
