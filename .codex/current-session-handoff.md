@@ -4,7 +4,7 @@ Updated: 2026-06-01.
 
 ## Current Task
 
-`DSH-LIVE-5: Alleen Beschikbare Meetwaarden En Verberg-/Herstelbare Tegels` is afgerond op branch `codex/dashboard-fluid-levels`.
+`DSH-LIVE-5: Alleen Beschikbare Meetwaarden En Verberg-/Herstelbare Tegels` is afgerond en gemerged naar `master`.
 
 Status 2026-06-01:
 
@@ -35,10 +35,13 @@ Administratieve status:
 - `.docs/epics/dashboard-overview.md` markeert `DSH-LIVE-5` als geïmplementeerd en lokaal gevalideerd.
 - `.docs/TODO.md` bevat `DSH-LIVE-5` onder Dashboard & Live Overzicht.
 - `.docs/legacy-analysis/legacy-coverage-register.md` is bijgewerkt voor `US5.3`, `US7.1`, `US7.2`, `US7.11`, `US7.12`, `US7.13` en `US10.1`.
+- PR #82 (`codex/dashboard-fluid-levels`) is gemerged op 2026-06-01 met merge commit `06241a1`.
+- Lokale checkout staat weer op `master`, is fast-forward bijgewerkt naar `origin/master` en de worktree was schoon na de merge-afhandeling.
 
 Volgende actie:
 
-- Branch committen, pushen en ready PR maken.
+- Als de gebruiker dit op de Raspberry Pi wil controleren: Pi op `master` bijwerken, containers rebuilden/starten en dashboard controleren op tanktegels, alleen beschikbare meetwaarden en persistent verborgen tegels.
+- Daarna kan de volgende story gekozen worden. Waarschijnlijke kandidaten: bronvoorkeuren per meetwaarde/source registry, verdere logboekintegratie van tank-/tripdata, of dashboardverfijning.
 
 Vorige afgeronde taak: `NMEA Story 9: Fluid Level interpreter voor meerdere tanktypes` is afgerond op branch `codex/fluid-level-interpreter`.
 
@@ -315,18 +318,22 @@ Coverage rule:
 ## Current Branch And PR Context
 
 - Current branch is `master`.
+- PR #82 (`codex/dashboard-fluid-levels`) was merged on 2026-06-01 with merge commit `06241a1`.
+- Local `master` has been fast-forwarded from `origin/master` after PR #82 and the worktree is clean.
 - PR #64 (`feature/register-owner-cleanup`) was merged on 2026-05-26 with merge commit `a441ca8`.
 - PR #65 (`feature/pi-database-reset`) was merged on 2026-05-27 with merge commit `c0b7590`.
 - PR #66 (`feature/logbook-trip-header-datetimes`) was merged on 2026-05-27 with merge commit `0a8c067`.
 - PR #67 (`feature/pi-minimal-deployment-checkout-story`) was merged on 2026-05-27 with merge commit `367ef17`.
 - PR #68 (`feature/logbook-arrival-closeout`) was merged on 2026-05-27 with merge commit `0a5ac57`.
-- Local `master` has been fast-forwarded from `origin/master` after PR #68 and the worktree is clean.
+- Local `master` had previously been fast-forwarded from `origin/master` after PR #68 and the worktree was clean.
 - Follow-up master commit `1db5534 Document sudo requirement for Pi reset script` was pushed to `origin/master` after the Raspberry Pi test.
 - The real-data Pi field test on 2026-05-29 was performed while the Pi was still on `master @ 1db5534`; later logbook stories merged after that commit were intentionally not relevant to the field test.
 - The user tested the reset flow on the Raspberry Pi after PR #65 and confirmed it worked.
 - The Raspberry Pi still only pulls `master`; never use it for feature-branch validation.
 - The Raspberry Pi must remain on/pull only `master`; update it only when the user is explicitly told the exact commands.
 - Recent relevant commits on `master`:
+  - `06241a1 Merge pull request #82 from rrvanleeuwen/codex/dashboard-fluid-levels`
+  - `146c063 Add configurable dashboard measurement tiles`
   - `0a5ac57 Merge pull request #68 from rrvanleeuwen/feature/logbook-arrival-closeout`
   - `5299b73 Add logbook trip closeout flow`
   - `367ef17 Merge pull request #67 from rrvanleeuwen/feature/pi-minimal-deployment-checkout-story`
