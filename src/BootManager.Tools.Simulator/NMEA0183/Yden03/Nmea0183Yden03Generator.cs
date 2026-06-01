@@ -33,6 +33,21 @@ public static class Nmea0183Yden03Generator
         list.Add(BuildMda(s));
         list.Add(BuildVtg(s));
 
+        // FluidLevel (PGN 127505) via gateway sentences PCDIN en MXPGN
+        // Representatieve tankmetingen: fuel (2 instances), water (2 instances), gray water, invalid level
+        list.Add(BuildFluidLevelPcdinFuel(s));
+        list.Add(BuildFluidLevelMxpgnFuel(s));
+        list.Add(BuildFluidLevelPcdinFuelInstance1(s));
+        list.Add(BuildFluidLevelMxpgnFuelInstance1(s));
+        list.Add(BuildFluidLevelPcdinWaterInstance0(s));
+        list.Add(BuildFluidLevelMxpgnWaterInstance0(s));
+        list.Add(BuildFluidLevelPcdinWaterInstance1(s));
+        list.Add(BuildFluidLevelMxpgnWaterInstance1(s));
+        list.Add(BuildFluidLevelPcdinGrayWater(s));
+        list.Add(BuildFluidLevelMxpgnGrayWater(s));
+        list.Add(BuildFluidLevelPcdinInvalidLevel(s));
+        list.Add(BuildFluidLevelMxpgnInvalidLevel(s));
+
         // AIS raw-like messages
         list.Add(BuildAivdmSample());
         list.Add(BuildAivdoSample());
@@ -111,6 +126,122 @@ public static class Nmea0183Yden03Generator
         var body = string.Format(System.Globalization.CultureInfo.InvariantCulture,
             "YDVTG,{0:F1},T,{0:F1},M,{1:F1},N,{2:F1},K",
             s.CogDegrees, s.SogKnots, s.SogKnots * 1.852);
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    // FluidLevel (PGN 127505) via gateway sentences PCDIN en MXPGN
+    // Format: $PCDIN,PGN_HEX,timestamps,payload_hex*CS
+    //         $MXPGN,PGN_HEX,pgn_decimal,payload_hex*CS
+    // Payload: byte 0 = instance+type, bytes 1-2 = level (0.004% increments), bytes 3-6 = capacity (0.1L increments), byte 7 = reserved
+
+    private static string BuildFluidLevelPcdinFuel(BoatState s)
+    {
+        // Fuel tank instance 0, type 0, 100% full, 150L capacity
+        // Payload: 00 (inst0, type0) + A861 (0x61A8 = 25000 = 100%) + DC050000 (0x000005DC = 1500 = 150L) + FF
+        const string payload = "00A861DC050000FF";
+        var body = "PCDIN,01F211,000024F3,43," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelMxpgnFuel(BoatState s)
+    {
+        // Same as PCDIN but MXPGN format with decimal PGN
+        const string payload = "00A861DC050000FF";
+        var body = "MXPGN,01F211,6843," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelPcdinFuelInstance1(BoatState s)
+    {
+        // Fuel tank instance 1, type 0, 75% full, 150L capacity
+        // Payload: 01 (inst1, type0) + 4A61 (0x614A = 18762 = 75.048%) + DC050000 (0x000005DC = 1500 = 150L) + FF
+        const string payload = "014A61DC050000FF";
+        var body = "PCDIN,01F211,000024F3,43," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelMxpgnFuelInstance1(BoatState s)
+    {
+        // Same as PCDIN but MXPGN format
+        const string payload = "014A61DC050000FF";
+        var body = "MXPGN,01F211,6843," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelPcdinWaterInstance0(BoatState s)
+    {
+        // Water instance 0, type 1 (fresh water), ~17.704% level, 200L capacity
+        // Payload: 10 (inst0, type1) + 4A11 (0x114A = 4426 = 17.704%) + D0070000 (0x000007D0 = 2000 = 200L) + FF
+        const string payload = "104A11D0070000FF";
+        var body = "PCDIN,01F211,000024F3,43," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelMxpgnWaterInstance0(BoatState s)
+    {
+        const string payload = "104A11D0070000FF";
+        var body = "MXPGN,01F211,6843," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelPcdinWaterInstance1(BoatState s)
+    {
+        // Water instance 1, type 1 (fresh water), ~17.704% level, 200L capacity
+        // Payload: 11 (inst1, type1) + 4A11 (0x114A = 4426 = 17.704%) + D0070000 (0x000007D0 = 2000 = 200L) + FF
+        const string payload = "114A11D0070000FF";
+        var body = "PCDIN,01F211,000024F3,43," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelMxpgnWaterInstance1(BoatState s)
+    {
+        const string payload = "114A11D0070000FF";
+        var body = "MXPGN,01F211,6843," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelPcdinGrayWater(BoatState s)
+    {
+        // Gray water instance 0, type 2 (gray water), 50% level, 100L capacity
+        // Payload: 20 (inst0, type2) + D430 (0x30D4 = 12500 = 50%) + E8030000 (0x000003E8 = 1000 = 100L) + FF
+        const string payload = "20D430E8030000FF";
+        var body = "PCDIN,01F211,000024F3,43," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelMxpgnGrayWater(BoatState s)
+    {
+        const string payload = "20D430E8030000FF";
+        var body = "MXPGN,01F211,6843," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelPcdinInvalidLevel(BoatState s)
+    {
+        // Oil tank instance 0, type 5 (oil), INVALID level (0x7FFF), 100L capacity
+        // Payload: 50 (inst0, type5) + FF7F (0x7FFF = invalid) + E8030000 (0x000003E8 = 1000 = 100L) + FF
+        const string payload = "50FF7FE8030000FF";
+        var body = "PCDIN,01F211,000024F3,43," + payload;
+        var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
+        return "$" + body + "*" + cs;
+    }
+
+    private static string BuildFluidLevelMxpgnInvalidLevel(BoatState s)
+    {
+        // Same as PCDIN but MXPGN format
+        const string payload = "50FF7FE8030000FF";
+        var body = "MXPGN,01F211,6843," + payload;
         var cs = Nmea0183SentenceBuilder.CalculateChecksum(body);
         return "$" + body + "*" + cs;
     }

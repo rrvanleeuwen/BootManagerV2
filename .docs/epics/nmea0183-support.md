@@ -526,45 +526,103 @@ Status 2026-05-23: Story 1 t/m 4 zijn geïmplementeerd en gevalideerd. Ingest he
 
 ---
 
-### Story 9 - Eerste nieuwe interpreter op basis van Pi-analyse
+### Story 9 - Fluid Level interpreter voor meerdere tanktypes
 
-**Status:** Voorgesteld op 2026-05-31; kandidaat pas kiezen na Story 7.
+**Status:** Geïmplementeerd en lokaal gevalideerd op 2026-06-01.
 
 **Als** eigenaar
-**wil ik** dat BootManager een nieuw in mijn boordnetwerk aanwezig berichttype interpreteert
-**zodat** logboek, dashboard of reisstatistiek extra beschikbare bootdata kan gebruiken.
+**wil ik** dat BootManager tankniveau-berichten uit mijn boordnetwerk herkent en opslaat
+**zodat** brandstof-, water- en andere tankwaarden later gebruikt kunnen worden in dashboard, logboek en reisstatistiek.
 
-**Kandidaatvelden**
-- Tankniveau of brandstofvoorraad.
-- Motoruren.
-- Logstand of afstand door water.
-- Andere tijdens Story 7 gevonden raw-only berichten met duidelijke waarde.
+**Kandidaatbericht**
+- NMEA 2000 PGN `127505` Fluid Level via gateway-sentences `PCDIN` en `MXPGN`.
+- Analysebron: `.docs/analysis/pi-database-2026-05-31.md`.
+- Bronmodel: `.docs/features/source-identity-preferences-design.md`.
 
 **Scope**
-- Een eerste kandidaatbericht kiezen op basis van de Pi-databaseanalyse.
-- Parser/interpreter toevoegen voor dat ene berichttype.
-- Measurement- of domeinopslag toevoegen als het bestaande model het veld nog niet kan dragen.
+- Parser/interpreter toevoegen voor gatewayregels met PGN `01F211` / decimal `127505`.
+- Payload decoderen naar minimaal:
+  - fluid/tank instance;
+  - fluid type als generieke waarde, zoals fuel, water/fresh water, gray water, black water/vuilwater, live well, oil, unknown/other;
+  - level percentage;
+  - capacity liters indien aanwezig;
+  - bronmetadata uit NMEA-inhoud, niet uit UDP endpoint.
+- Meerdere tanks per fluid type ondersteunen via minimaal `fluid type + instance`.
+- Verschillende fluid types naast elkaar ondersteunen; onbekende/toekomstige fluid types mogen niet crashen.
+- `0x7FFF`/invalid levelwaarden niet als percentage boven 100% opslaan, maar als onbekend/ongeldig behandelen.
+- Duplicate handling ontwerpen/toepassen voor parallelle `PCDIN` en `MXPGN` data, zodat dezelfde onderliggende tankmeting niet dubbel als actuele waarde gaat tellen.
+- Measurement- of domeinopslag toevoegen voor fluid levels, als bestaand model dit nog niet ondersteunt.
+- Simulator uitbreiden met representatieve PGN `127505` Fluid Level gatewayregels:
+  - meerdere brandstoftanks;
+  - meerdere watertanks;
+  - minimaal één ander tanktype, bijvoorbeeld gray/black/unknown;
+  - minimaal één invalid/unknown level voorbeeld.
 - Unit tests toevoegen met realistische voorbeeldsentences/velden uit de analyse.
-- Documenteren hoe het nieuwe bericht logboek/dashboard later kan voeden.
+- Documenteren hoe Fluid Level later logboek/dashboard kan voeden.
 
 **Buiten scope**
-- Geen meerdere nieuwe interpreters tegelijk.
-- Geen bronvoorkeuren-UI, tenzij strikt nodig voor deze ene meting.
+- Geen `YDVLW` logstand-interpreter.
+- Geen volledige bronvoorkeuren-UI.
 - Geen dashboard- of logboek-UI-polish behalve minimale zichtbaarheid of testbaarheid als acceptatie dat vereist.
-- Geen AI- of vendor-specifieke decodeerlogica zonder duidelijke brondata.
+- Geen motoruren.
+- Geen historische herberekening van bestaande raw messages.
+- Geen generieke NMEA 2000 decoder voor alle PGN's.
 
 **Acceptatiecriteria**
-- Het gekozen berichttype wordt uit ruwe netwerkberichten herkend en gevalideerd.
-- Geldige berichten leveren een opgeslagen measurement of domeinrecord op.
+- Geldige `PCDIN` en `MXPGN` regels met PGN `01F211` worden herkend.
+- Geldige payloads leveren opgeslagen fluid-level records op.
+- Fuel instance 0, water instance 0 en water instance 1 uit de Pi-voorbeelden worden correct gedecodeerd.
+- Twee of meer tanks met hetzelfde fluid type blijven apart via instance.
+- Verschillende fluid types blijven apart.
+- Onbekende of toekomstige fluid types veroorzaken geen crash en worden als unknown/other met raw numeric type opgeslagen.
+- Invalid/unknown levelwaarde `0x7FFF` wordt niet als percentage boven 100% opgeslagen.
 - Ongeldige berichten blijven raw opgeslagen maar veroorzaken geen crash.
-- Unit tests dekken geldige, ongeldige en ontbrekende velden.
-- De analyse- en architectuurdocumentatie is bijgewerkt met de gemaakte keuze.
+- Unit tests dekken geldige `PCDIN`, geldige `MXPGN`, invalid level, onbekend fluid type, meerdere tanks met hetzelfde type en malformed payload.
+- Simulator kan Fluid Level berichten produceren via dezelfde ingest-route als echte netwerkdata.
+- Documentatie vermeldt dat UDP/YDEN transport niet als bronidentiteit wordt gebruikt.
 
 **Legacy coverage impact**
-- Hangt af van gekozen kandidaat:
-  - tank/brandstof/motoruren raakt `US5.3`, `US5.11` en `US10.1`;
-  - logstand/afstand raakt `US5.6`, `US5.11` en logboekstatistiek;
-  - sensorbron-diagnostiek raakt `US8.5` en `US9.5`.
+- Raakt `US5.3 Motoruren en brandstof in header`; status blijft `Partial`, maar brandstof/tankniveau krijgt technische basis.
+- Raakt `US5.11 Statistieken en samenvatting`; status blijft `Partial`, maar tankniveau kan later in samenvatting/reisstatistiek worden gebruikt.
+- Raakt `US10.1 Brandstofanalyse`; status wordt `Partial`, omdat tankdata nu technisch opgeslagen wordt maar analyse/dashboard/logboekgebruik nog open is.
+- Raakt `US8.5 Sensorintegratie configureren`; status blijft `Partial`, bronmetadata wordt inhoudelijk verbeterd.
+
+**Handmatige testnotities**
+- Eerst lokaal build en unit tests uitvoeren.
+- Geen Pi-deploy voor feature branch; de Pi volgt alleen `master`.
+- Na merge naar `master` is Pi-validatie alleen nodig als we echte actuele tankmetingen willen valideren; anders volstaat lokale test met payloadvoorbeelden en simulatoroutput.
+
+**Implementatienotities 2026-06-01**
+- Nieuwe `FluidLevelMeasurement` slice toegevoegd voor PGN `127505` Fluid Level.
+- Gatewayregels `$PCDIN` en `$MXPGN` met PGN `01F211` worden via de NMEA0183 raw-route herkend en naar fluid-level records opgeslagen.
+- Decode gebruikt de Pi-analyse:
+  - raw fluid type `0` => fuel;
+  - raw fluid type `1` => fresh water;
+  - raw fluid type `2` => gray water;
+  - raw fluid type `5` => oil;
+  - level scale `0.004%`;
+  - `0x7FFF` => invalid/unknown level.
+- Meerdere tanks per fluid type worden gescheiden via `RawFluidType`/`FluidType` + `FluidInstance`.
+- Simulator YDEN03-profiel zendt nu naast bestaande navigatie-, wind-, diepte-, temperatuur- en AIS-regels ook Fluid Level gatewayregels uit voor:
+  - twee fuel instances;
+  - twee fresh-water instances;
+  - gray water;
+  - invalid/unknown level.
+- Duplicate handling is pragmatisch: `MXPGN` wordt overgeslagen wanneer er al een `PCDIN`-meting in dezelfde minuut voor dezelfde tank bestaat. De latere bronvoorkeuren/source-registry stories moeten dit robuuster normaliseren.
+
+**Verificatie 2026-06-01**
+- `dotnet build BootManager.sln` geslaagd met 0 errors.
+- `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter FluidLevel` geslaagd: 19 tests.
+- `dotnet test src\BootManager.Tools.Simulator.Tests\BootManager.Tools.Simulator.Tests.csproj` geslaagd: 5 tests.
+- Handmatige lokale validatie met `BootManager.Web`, `BootManager.Tools.Ingest` en YDEN03 simulator geslaagd.
+- Databasecontrole bevestigde recente `PCDIN`/`MXPGN` raw opslag en gevulde `FluidLevelMeasurements`.
+- Gevalideerde groepen:
+  - fuel instance 0: 100%, 150L;
+  - fuel instance 1: 99.62%, 150L;
+  - fresh water instance 0: 17.7%, 200L;
+  - fresh water instance 1: 17.7%, 200L;
+  - gray water instance 0: 50%, 100L;
+  - oil/invalid example: level null, capacity 100L, `IsLevelInvalid = true`.
 
 ---
 

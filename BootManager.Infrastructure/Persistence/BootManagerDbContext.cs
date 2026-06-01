@@ -60,6 +60,11 @@ public class BootManagerDbContext : DbContext
     public DbSet<WaterTemperatureMeasurement> WaterTemperatureMeasurements => Set<WaterTemperatureMeasurement>();
 
     /// <summary>
+    /// DbSet voor opgeslagen geïnterpreteerde tankniveau-metingen.
+    /// </summary>
+    public DbSet<FluidLevelMeasurement> FluidLevelMeasurements => Set<FluidLevelMeasurement>();
+
+    /// <summary>
     /// DbSet voor logboek-reizen.
     /// </summary>
     public DbSet<LogbookTrip> LogbookTrips => Set<LogbookTrip>();
@@ -92,6 +97,7 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.HeadingMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SpeedThroughWaterMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.WaterTemperatureMeasurementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.FluidLevelMeasurementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogbookTripConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogbookEntryConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogbookAttachmentConfiguration());

@@ -18,6 +18,7 @@ using BootManager.Application.WindMeasurements.Services;
 using BootManager.Application.HeadingMeasurements.Services;
 using BootManager.Application.SpeedThroughWaterMeasurements.Services;
 using BootManager.Application.WaterTemperatureMeasurements.Services;
+using BootManager.Application.FluidLevelMeasurements.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BootManager.Application;
@@ -66,6 +67,7 @@ public static class DependencyInjection
         services.AddTransient<INetworkMessageInterpreter<HeadingMessageInterpretationDto>, HeadingMessageInterpreterService>();
         services.AddTransient<INetworkMessageInterpreter<SpeedThroughWaterMessageInterpretationDto>, SpeedThroughWaterMessageInterpreterService>();
         services.AddTransient<INetworkMessageInterpreter<WaterTemperatureMessageInterpretationDto>, WaterTemperatureMessageInterpreterService>();
+        services.AddTransient<INetworkMessageInterpreter<FluidLevelMessageInterpretationDto>, FluidLevelMessageInterpreterService>();
 
         // Registratie van NMEA 0183 Fase 3a interpreters
         services.AddTransient<INmea0183MessageInterpreter<SpeedThroughWaterMessageInterpretationDto>, Nmea0183VhwInterpreterService>();
@@ -103,6 +105,9 @@ public static class DependencyInjection
 
         // Registratie van WaterTemperatureMeasurement application-service (gebruik generieke repository)
         services.AddScoped<IWaterTemperatureMeasurementService, WaterTemperatureMeasurementService>();
+
+        // Registratie van FluidLevelMeasurement application-service (gebruik generieke repository)
+        services.AddScoped<IFluidLevelMeasurementService, FluidLevelMeasurementService>();
 
         // Registratie van Logboek application-service
         services.AddScoped<ILogbookService, LogbookService>();
