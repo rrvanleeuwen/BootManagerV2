@@ -19,6 +19,8 @@ using BootManager.Application.SpeedThroughWaterMeasurements.DTOs;
 using BootManager.Application.SpeedThroughWaterMeasurements.Services;
 using BootManager.Application.WaterTemperatureMeasurements.DTOs;
 using BootManager.Application.WaterTemperatureMeasurements.Services;
+using BootManager.Application.FluidLevelMeasurements.DTOs;
+using BootManager.Application.FluidLevelMeasurements.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -56,6 +58,8 @@ public class NetworkMessageService : INetworkMessageService
     private readonly ISpeedThroughWaterMeasurementService _speedThroughWaterMeasurementService;
     private readonly INetworkMessageInterpreter<WaterTemperatureMessageInterpretationDto> _waterTemperatureInterpreter;
     private readonly IWaterTemperatureMeasurementService _waterTemperatureMeasurementService;
+    private readonly INetworkMessageInterpreter<FluidLevelMessageInterpretationDto> _fluidLevelInterpreter;
+    private readonly IFluidLevelMeasurementService _fluidLevelMeasurementService;
     // NMEA 0183 Fase 3a interpreters
     private readonly INmea0183MessageInterpreter<SpeedThroughWaterMessageInterpretationDto> _nmea0183VhwInterpreter;
     private readonly INmea0183MessageInterpreter<WaterTemperatureMessageInterpretationDto> _nmea0183MtwInterpreter;
@@ -91,6 +95,8 @@ public class NetworkMessageService : INetworkMessageService
         ISpeedThroughWaterMeasurementService speedThroughWaterMeasurementService,
         INetworkMessageInterpreter<WaterTemperatureMessageInterpretationDto> waterTemperatureInterpreter,
         IWaterTemperatureMeasurementService waterTemperatureMeasurementService,
+        INetworkMessageInterpreter<FluidLevelMessageInterpretationDto> fluidLevelInterpreter,
+        IFluidLevelMeasurementService fluidLevelMeasurementService,
         INmea0183MessageInterpreter<SpeedThroughWaterMessageInterpretationDto> nmea0183VhwInterpreter,
         INmea0183MessageInterpreter<WaterTemperatureMessageInterpretationDto> nmea0183MtwInterpreter,
         INmea0183MessageInterpreter<DepthMessageInterpretationDto> nmea0183DbtDptInterpreter,
@@ -119,6 +125,8 @@ public class NetworkMessageService : INetworkMessageService
         _speedThroughWaterMeasurementService = speedThroughWaterMeasurementService;
         _waterTemperatureInterpreter = waterTemperatureInterpreter;
         _waterTemperatureMeasurementService = waterTemperatureMeasurementService;
+        _fluidLevelInterpreter = fluidLevelInterpreter;
+        _fluidLevelMeasurementService = fluidLevelMeasurementService;
         _nmea0183VhwInterpreter = nmea0183VhwInterpreter;
         _nmea0183MtwInterpreter = nmea0183MtwInterpreter;
         _nmea0183DbtDptInterpreter = nmea0183DbtDptInterpreter;
@@ -175,6 +183,7 @@ public class NetworkMessageService : INetworkMessageService
                     await TryInterpretAndSaveHeadingMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveSpeedThroughWaterMessageAsync(parseResult, request, ct);
                     await TryInterpretAndSaveWaterTemperatureMessageAsync(parseResult, request, ct);
+                    await TryInterpretAndSaveFluidLevelMessageAsync(parseResult, request, ct);
                 }
                 else
                 {
@@ -221,6 +230,9 @@ public class NetworkMessageService : INetworkMessageService
                     // Fase 3c: RMC en GGA
                     await TryInterpretAndSaveNmea0183RmcAsync(nmea0183Result, request, ct);
                     await TryInterpretAndSaveNmea0183GgaAsync(nmea0183Result, request, ct);
+
+                    // NMEA 2000 gateway sentences: PCDIN en MXPGN met PGN 01F211 (Fluid Level)
+                    await TryInterpretAndSaveGatewaySentenceFluidLevelAsync(nmea0183Result, request, ct);
                 }
                 else
                 {
@@ -796,6 +808,99 @@ public class NetworkMessageService : INetworkMessageService
     }
 
     /// <summary>
+    /// Probeert semantische FluidLevel-interpretatie uit te voeren op een technisch parse-resultaat
+    /// en persisteert het resultaat als een FluidLevelMeasurement.
+    /// Fouten blokkeren niet de bestaande raw opslag.
+    /// </summary>
+    /// <param name="parseResult">Het technische parse-resultaat.</param>
+    /// <param name="request">De originele netwerkbericht-request voor metadata.</param>
+    /// <param name="ct">Cancellation token.</param>
+    private async Task TryInterpretAndSaveFluidLevelMessageAsync(
+        NetworkMessageParseResultDto parseResult,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (!_fluidLevelInterpreter.CanInterpret(parseResult))
+            {
+                return;
+            }
+
+            var interpretation = _fluidLevelInterpreter.Interpret(parseResult);
+
+            if (interpretation.IsSuccess)
+            {
+                _logger.LogInformation(
+                    "FluidLevel-interpretatie geslaagd: FluidType={FluidType}, Instance={Instance}, Level={Level}%",
+                    interpretation.FluidType,
+                    interpretation.FluidInstance,
+                    interpretation.LevelPercent ?? -1);
+
+                // Persisteer afgeleide tankniveau-meting
+                try
+                {
+                    var fluidDto = new CreateFluidLevelMeasurementRequestDto
+                    {
+                        RecordedAtUtc = request.ReceivedAtUtc,
+                        Source = request.Source,
+                        MessageId = request.MessageId ?? string.Empty,
+                        Pgn = 127505,
+                        GatewaySentence = DeriveGatewaySentenceFromMessageId(request.MessageId),
+                        SourceAddress = null, // TODO: extract from payload if available
+                        FluidInstance = interpretation.FluidInstance,
+                        FluidType = interpretation.FluidType,
+                        RawFluidType = interpretation.RawFluidType,
+                        LevelPercent = interpretation.LevelPercent,
+                        CapacityLiters = interpretation.CapacityLiters,
+                        IsLevelInvalid = interpretation.IsLevelInvalid
+                    };
+
+                    await _fluidLevelMeasurementService.SaveAsync(fluidDto, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Opslag-fouten blokkeren geen raw opslag. Log compact.
+                    _logger.LogWarning(
+                        ex,
+                        "Tankniveau-meting-opslag mislukt voor MessageId={MessageId}",
+                        request.MessageId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "FluidLevel-interpretatie mislukt: {Error}",
+                    interpretation.ErrorMessage ?? "Onbekende fout");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Interpretatie-fouten blokkeren geen raw opslag.
+            _logger.LogWarning(
+                ex,
+                "Onverwachte fout bij FluidLevel-interpretatie");
+        }
+    }
+
+    /// <summary>
+    /// Leidt het gateway-sentence type af uit de MessageId.
+    /// </summary>
+    private static string? DeriveGatewaySentenceFromMessageId(string? messageId)
+    {
+        if (string.IsNullOrWhiteSpace(messageId))
+            return null;
+
+        if (messageId.StartsWith("PCDIN", StringComparison.OrdinalIgnoreCase))
+            return "PCDIN";
+
+        if (messageId.StartsWith("MXPGN", StringComparison.OrdinalIgnoreCase))
+            return "MXPGN";
+
+        return null;
+    }
+
+    /// <summary>
     /// Probeert NMEA 0183 VHW-sentence te interpreteren en op te slaan als SpeedThroughWaterMeasurement.
     /// Fouten blokkeren niet de raw opslag.
     /// </summary>
@@ -1198,5 +1303,168 @@ public class NetworkMessageService : INetworkMessageService
             })
             .ToList()
             .AsReadOnly();
+    }
+
+    /// <summary>
+    /// Probeert PCDIN/MXPGN gateway-sentences met PGN 01F211 te detecteren en als Fluid Level te interpreteren.
+    /// Gateway-sentences hebben het patroon: $PCDIN,PGN,fields...,PAYLOAD*CS of $MXPGN,PGN,fields...,PAYLOAD*CS
+    /// Fouten blokkeren niet de bestaande raw opslag.
+    /// </summary>
+    private async Task TryInterpretAndSaveGatewaySentenceFluidLevelAsync(
+        Nmea0183ParseResultDto nmea0183Result,
+        CreateNetworkMessageRequestDto request,
+        CancellationToken ct)
+    {
+        try
+        {
+            // Gateway sentences: request.MessageId is the full sentence ID (e.g., "PCDIN" or "MXPGN")
+            // as extracted by IngestService.ExtractNmea0183SentenceId()
+            string gatewaySentenceId = request.MessageId?.ToUpperInvariant() ?? "";
+            bool isPcdin = gatewaySentenceId.Equals("PCDIN", StringComparison.Ordinal);
+            bool IsMxpgn = gatewaySentenceId.Equals("MXPGN", StringComparison.Ordinal);
+
+            if (!isPcdin && !IsMxpgn)
+            {
+                return; // Not a gateway sentence, skip
+            }
+
+            // PCDIN and MXPGN format:
+            // Field 0: PGN (hex string, e.g. "01F211")
+            // Field 1-2: Device/address fields (ignored for now)
+            // Last field: 8-byte payload (16 hex chars) or payload may be in different position
+            // For PCDIN: $PCDIN,01F211,000024F3,43,PAYLOAD*CS
+            // For MXPGN: $MXPGN,01F211,6843,PAYLOAD*CS
+
+            if (nmea0183Result.Fields.Count < 2)
+                return; // Not enough fields
+
+            // Extract PGN from field 0
+            string pgnHex = nmea0183Result.Fields[0];
+            if (!pgnHex.Equals("01F211", StringComparison.OrdinalIgnoreCase))
+                return; // Not Fluid Level PGN
+
+            // Find the payload field (usually the last field before checksum, 16 hex chars)
+            string? payloadHex = null;
+            foreach (var field in nmea0183Result.Fields)
+            {
+                if (field.Length == 16 && IsValidHexString(field))
+                {
+                    payloadHex = field;
+                    break; // Take first valid 16-char hex field
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(payloadHex))
+            {
+                _logger.LogWarning(
+                    "Gateway-sentence {SentenceId}: PGN 01F211 gevonden maar geen 16-byte payload in fields",
+                    gatewaySentenceId);
+                return;
+            }
+
+            // Parse the payload using the standard parser
+            try
+            {
+                var parseRequest = new NetworkMessageParseRequestDto
+                {
+                    Source = request.Source,
+                    ReceivedAtUtc = request.ReceivedAtUtc,
+                    RawLine = request.RawLine,
+                    MessageIdHex = "01F211",
+                    PayloadHex = payloadHex
+                };
+
+                var parseResult = _parserService.Parse(parseRequest);
+
+                if (parseResult.IsSuccess)
+                {
+                    _logger.LogInformation(
+                        "Gateway-sentence {SentenceId} Fluid Level geparset: Payload={Payload}",
+                        gatewaySentenceId,
+                        payloadHex);
+
+                    // Use the standard Fluid Level interpretation
+                    if (!_fluidLevelInterpreter.CanInterpret(parseResult))
+                    {
+                        return;
+                    }
+
+                    var interpretation = _fluidLevelInterpreter.Interpret(parseResult);
+
+                    if (interpretation.IsSuccess)
+                    {
+                        _logger.LogInformation(
+                            "Gateway Fluid Level-interpretatie geslaagd: Type={Type}, Instance={Instance}, Level={Level}%",
+                            interpretation.FluidType,
+                            interpretation.FluidInstance,
+                            interpretation.LevelPercent ?? -1);
+
+                        // Persisteer afgeleide tankniveau-meting
+                        try
+                        {
+                            var fluidDto = new CreateFluidLevelMeasurementRequestDto
+                            {
+                                RecordedAtUtc = request.ReceivedAtUtc,
+                                Source = request.Source,
+                                MessageId = gatewaySentenceId,
+                                Pgn = 127505,
+                                GatewaySentence = gatewaySentenceId,
+                                SourceAddress = null,
+                                FluidInstance = interpretation.FluidInstance,
+                                FluidType = interpretation.FluidType,
+                                RawFluidType = interpretation.RawFluidType,
+                                LevelPercent = interpretation.LevelPercent,
+                                CapacityLiters = interpretation.CapacityLiters,
+                                IsLevelInvalid = interpretation.IsLevelInvalid
+                            };
+
+                            await _fluidLevelMeasurementService.SaveAsync(fluidDto, ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(
+                                ex,
+                                "Gateway Tankniveau-meting-opslag mislukt voor {SentenceType}",
+                                nmea0183Result.SentenceType);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "Gateway Fluid Level-interpretatie mislukt: {Error}",
+                            interpretation.ErrorMessage ?? "Onbekende fout");
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Gateway-sentence {SentenceType}: Parse-fout voor payload {Payload}: {Error}",
+                        nmea0183Result.SentenceType,
+                        payloadHex,
+                        parseResult.ErrorMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Onverwachte fout bij gateway sentence Fluid Level interpretatie");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Onverwachte fout bij gateway sentence verwerking");
+        }
+    }
+
+    /// <summary>
+    /// Bepaalt of een string een geldige hexadecimale waarde is.
+    /// </summary>
+    private static bool IsValidHexString(string value)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+               value.All(c => "0123456789ABCDEFabcdef".Contains(c));
     }
 }

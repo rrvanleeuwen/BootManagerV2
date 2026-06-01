@@ -34,7 +34,8 @@ internal class NetworkMessageParserService : INetworkMessageParserService
         { 128267, NetworkMessageType.Depth },
         { 127508, NetworkMessageType.Battery },
         { 128259, NetworkMessageType.SpeedThroughWater },
-        { 130312, NetworkMessageType.WaterTemperature }
+        { 130312, NetworkMessageType.WaterTemperature },
+        { 127505, NetworkMessageType.FluidLevel }
     };
 
     /// <summary>

@@ -1,10 +1,55 @@
 # Current Codex Handoff
 
-Updated: 2026-05-31.
+Updated: 2026-06-01.
 
 ## Current Task
 
-`NMEA Story 8: Bronidentiteit en bronvoorkeuren ontwerpen` is uitgewerkt op branch `codex/source-identity-design`.
+`NMEA Story 9: Fluid Level interpreter voor meerdere tanktypes` is afgerond op branch `codex/fluid-level-interpreter`.
+
+Status 2026-06-01:
+
+- Nieuwe `FluidLevelMeasurement` slice toegevoegd voor NMEA 2000 PGN `127505` Fluid Level.
+- Gatewayregels `$PCDIN` en `$MXPGN` met PGN `01F211` worden via de NMEA0183 raw-route herkend en opgeslagen.
+- Ondersteunt meerdere tanktypes en meerdere tanks per type via `RawFluidType`/`FluidType` + `FluidInstance`.
+- Decode volgt de Pi-analyse:
+  - raw fluid type `0` => fuel;
+  - raw fluid type `1` => fresh water;
+  - raw fluid type `2` => gray water;
+  - raw fluid type `5` => oil;
+  - level scale `0.004%`;
+  - `0x7FFF` => invalid/unknown level.
+- Bronidentiteit komt uit NMEA-inhoud en niet uit UDP/YDEN endpoint.
+- Simulatorprofiel `YDEN03` zendt naast bestaande navigatie-, wind-, diepte-, temperatuur- en AIS-regels ook Fluid Level `PCDIN`/`MXPGN` gatewayregels uit.
+- Duplicate handling is pragmatisch: `MXPGN` wordt overgeslagen wanneer er al een `PCDIN`-meting in dezelfde minuut voor dezelfde tank bestaat. De latere source-registry/source-preference stories moeten dit robuuster normaliseren.
+
+Verificatie:
+
+- `dotnet build BootManager.sln` geslaagd met 0 warnings/errors.
+- `dotnet test BootManager.UnitTests\BootManager.UnitTests.csproj --filter FluidLevel` geslaagd: 19 tests.
+- `dotnet test src\BootManager.Tools.Simulator.Tests\BootManager.Tools.Simulator.Tests.csproj` geslaagd: 5 tests.
+- Handmatige lokale validatie met `BootManager.Web`, `BootManager.Tools.Ingest` en YDEN03 simulator geslaagd.
+- Databasecontrole bevestigde recente `PCDIN`/`MXPGN` raw opslag en gevulde `FluidLevelMeasurements` voor:
+  - fuel instance 0: 100%, 150L;
+  - fuel instance 1: 99.62%, 150L;
+  - fresh water instance 0: 17.7%, 200L;
+  - fresh water instance 1: 17.7%, 200L;
+  - gray water instance 0: 50%, 100L;
+  - oil/invalid example: level null, capacity 100L, `IsLevelInvalid = true`.
+
+Administratieve status:
+
+- `.docs/epics/nmea0183-support.md` markeert Story 9 als geïmplementeerd en lokaal gevalideerd.
+- `.docs/TODO.md` vinkt Story 9 af.
+- `.docs/features/fluid-level-slice-spec.md` documenteert de nieuwe slice.
+- `.docs/features/README.md` indexeert de Fluid Level slice.
+- `.docs/legacy-analysis/legacy-coverage-register.md` is bijgewerkt voor `US5.3`, `US5.11`, `US8.5` en `US10.1`.
+
+Volgende actie:
+
+- Branch committen, pushen en een ready PR maken.
+- Na merge naar `master` kan de Raspberry Pi worden bijgewerkt als de gebruiker echte actuele tankmetingen of simulatorgedrag op de Pi wil valideren.
+
+Vorige afgeronde taak: `NMEA Story 8: Bronidentiteit en bronvoorkeuren ontwerpen` is uitgewerkt op branch `codex/source-identity-design`.
 
 Story 8 ontwerpstatus:
 

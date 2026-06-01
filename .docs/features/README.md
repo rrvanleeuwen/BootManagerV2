@@ -19,6 +19,7 @@ For planned feature epics, see:
 | **Heading** | 127250 | `HeadingMeasurement` | ✅ Complete | [heading-slice-spec.md](heading-slice-spec.md) |
 | **Speed Through Water** | 128259 | `SpeedThroughWaterMeasurement` | ✅ Complete | [speed-through-water-slice-spec.md](speed-through-water-slice-spec.md) |
 | **Water Temperature** | 130312 | `WaterTemperatureMeasurement` | ✅ Complete | [water-temperature-slice-spec.md](water-temperature-slice-spec.md) |
+| **Fluid Level** | 127505 | `FluidLevelMeasurement` | ✅ Complete | [fluid-level-slice-spec.md](fluid-level-slice-spec.md) |
 
 ## Quick Reference: Payload Formats
 
@@ -77,6 +78,14 @@ Bytes 1-2: Speed (0.01 m/s, uint16 little-endian)
 Byte 3:   Speed Water Reference Type (0=Paddle wheel, 1=Pitot, 2=Doppler)
 ```
 **Key Fields:** SpeedMetersPerSecond, SpeedKnots, SpeedWaterReferenceType
+
+### Fluid Level (PGN 127505 via PCDIN/MXPGN)
+```
+Byte 0:    Raw fluid type and fluid instance
+Bytes 1-2: Level (0.004% units, uint16 little-endian; 0x7FFF = invalid)
+Bytes 3-6: Capacity (0.1 liter units, uint32 little-endian)
+```
+**Key Fields:** FluidType, RawFluidType, FluidInstance, LevelPercent, CapacityLiters, IsLevelInvalid
 
 ### Water Temperature (PGN 130312)
 ```
@@ -243,7 +252,7 @@ All slices follow non-fatal error handling:
 
 - [ ] **AIS Data** - Vessel identification & tracking
 - [ ] **Weather Data** - Sea state, visibility
-- [ ] **Fuel/Water** - Tank level monitoring
+- [x] **Fuel/Water** - Tank level monitoring basis via PGN 127505 Fluid Level
 
 ## References
 
@@ -256,5 +265,5 @@ All slices follow non-fatal error handling:
 
 ---
 
-**Last Updated:** 2026-05-23  
+**Last Updated:** 2026-06-01
 **Maintenance:** Keep in sync with codebase as new slices are added

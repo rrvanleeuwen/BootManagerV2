@@ -49,5 +49,10 @@ public enum NetworkMessageType
     /// <summary>
     /// Watertemperatuur (PGN 130312 - Temperature, Water).
     /// </summary>
-    WaterTemperature = 8
+    WaterTemperature = 8,
+
+    /// <summary>
+    /// Tankniveau (PGN 127505 - Fluid Level).
+    /// </summary>
+    FluidLevel = 9
 }

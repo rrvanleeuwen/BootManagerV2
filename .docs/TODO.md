@@ -340,7 +340,7 @@
   - [ ] Story 5: Replay-validatie voor echte NDJSON capture naar API/SQLite
   - [x] Story 7: Pi-databaseanalyse voor logboekvelden, raw-only kandidaatberichten en dubbele meetbronnen
   - [x] Story 8: Bronidentiteit en bronvoorkeuren ontwerpen voor meetsoorten met meerdere mogelijke apparaten
-  - [ ] Story 9: Eerste nieuwe interpreter kiezen en bouwen op basis van de Pi-analyse
+  - [x] Story 9: Fluid Level interpreter voor meerdere tanktypes op basis van PGN `127505` via `PCDIN`/`MXPGN`
   - [ ] Future story: Ingest haalt operationele instellingen op uit BootManager.Web en gebruikt die voor configureerbare ingest/sampling-retentie; ruwe niet-geparseerde data kan na succesvolle periodieke parsing optioneel worden opgeschoond
   - Bestaande NMEA2000 slices blijven intact
   - Raw opslag altijd leidend; onbekende sentences worden opgeslagen maar niet verwerkt
