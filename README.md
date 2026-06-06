@@ -5,7 +5,7 @@ BootManagerV2 is een lokale, Raspberry Pi-vriendelijke bootmanagementapplicatie 
 <!-- PROJECT-STATUS:START -->
 ## Projectstatus
 
-_Laatst bijgewerkt: 2026-06-01. Gegenereerd met `scripts/update-readme-status.ps1`._
+_Laatst bijgewerkt: 2026-06-06. Gegenereerd met `scripts/update-readme-status.ps1`._
 
 De percentages zijn voortgangsindicatoren, geen harde planning. Berekening: `Done` en `Replaced` tellen als 100%, `Partial` telt als 50%, `Open` telt als 0%. `Parked` en `Obsolete` tellen niet mee in de actieve scope.
 
@@ -15,7 +15,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| BootManagerV2 huidige epics | `[###############-----]` 73.4% | 62 |
+| BootManagerV2 huidige epics | `[##############------]` 70% | 65 |
 | Legacy scope | `[####----------------]` 17.9% | 126 |
 
 ### BootManagerV2 Epics
@@ -25,8 +25,9 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 | First-run onboarding & authenticatie | `[####################]` 100% | 7 | 0 | 0 | 0 | [.docs/epics/first-run-onboarding.md](.docs/epics/first-run-onboarding.md) | Kernflow afgerond |
 | Owner profile & vessel settings | `[####################]` 100% | 4 | 0 | 0 | 0 | [.docs/epics/owner-profile-settings.md](.docs/epics/owner-profile-settings.md) | Settings-basis afgerond |
 | NMEA ingest & sensordata | `[################----]` 78.9% | 14 | 2 | 3 | 1 | [.docs/epics/nmea0183-support.md](.docs/epics/nmea0183-support.md) | Basis, simulator, Pi-analyse en tankniveau; bronvoorkeuren open |
-| Digitaal logboek | `[###############-----]` 75% | 8 | 5 | 1 | 0 | [.docs/epics/digital-logbook.md](.docs/epics/digital-logbook.md) | Basis sterk; routekaart, export en headerverrijking open |
+| Digitaal logboek | `[##############------]` 70% | 8 | 5 | 2 | 0 | [.docs/epics/digital-logbook.md](.docs/epics/digital-logbook.md) | Basis sterk; routekaart, export en automatisch voorinvullen open |
 | Dashboard & live overzicht | `[##########----------]` 50% | 2 | 0 | 2 | 1 | [.docs/epics/dashboard-overview.md](.docs/epics/dashboard-overview.md) | Live meters en configureerbare tegels klaar; widgets/push open |
+| Meetweergave & eenheidsvoorkeuren | `[--------------------]` 0% | 0 | 0 | 2 | 0 | [.docs/epics/measurement-unit-preferences.md](.docs/epics/measurement-unit-preferences.md) | Gebruikerskeuze voor nautische eenheden en consistente weergave open |
 | System operations & recovery | `[##########----------]` 50% | 7 | 0 | 7 | 1 | [.docs/epics/system-operations.md](.docs/epics/system-operations.md) | Reset, Pi analyse/control/shutdown klaar; backup/diagnostics open |
 
 ### Legacy Epics
@@ -48,7 +49,4 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 | Epic 12: Slimme Herkenning & AI-Ondersteuning | `[--------------------]` 0% | 0 | 0 | 0 | 1 | 5 |
 
 <!-- PROJECT-STATUS:END -->
-
-
-
 
