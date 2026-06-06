@@ -135,9 +135,9 @@ function Get-CurrentEpicStatus {
             Done = 8
             Replaced = 0
             Partial = 5
-            Open = 1
+            Open = 2
             Parked = 0
-            Notes = "Basis sterk; routekaart, export en headerverrijking open"
+            Notes = "Basis sterk; routekaart, export en automatisch voorinvullen open"
         },
         [pscustomobject]@{
             Epic = "Dashboard & live overzicht"
@@ -148,6 +148,16 @@ function Get-CurrentEpicStatus {
             Open = 2
             Parked = 1
             Notes = "Live meters en configureerbare tegels klaar; widgets/push open"
+        },
+        [pscustomobject]@{
+            Epic = "Meetweergave & eenheidsvoorkeuren"
+            Document = ".docs/epics/measurement-unit-preferences.md"
+            Done = 0
+            Replaced = 0
+            Partial = 0
+            Open = 2
+            Parked = 0
+            Notes = "Gebruikerskeuze voor nautische eenheden en consistente weergave open"
         },
         [pscustomobject]@{
             Epic = "System operations & recovery"
