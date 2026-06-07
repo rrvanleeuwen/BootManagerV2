@@ -275,6 +275,11 @@
     - `DSH-LIVE-2` actualiteit en datastatus zichtbaar maken
     - `DSH-LIVE-3` logboekactiviteit en snelle doorsteek vanaf dashboard
     - `DSH-LIVE-5` alleen beschikbare meetwaarden tonen, tankniveaus toevoegen en tegels verbergen/herstellen
+  - [x] **DSH-BUG-DBCTX-1 (2026-06-07):** dashboardmetingen gebruiken een
+    kortlevende context per laadoperatie, polling is sequentieel en
+    annuleerbaar, en de onboardingcontrole bij navigatie gebruikt een eigen
+    DI-scope. De incidentele EF Core-concurrencyfout bij NMEA schakelen en
+    navigeren naar het logboek is lokaal handmatig getest en geaccepteerd.
   - **Legacy-impact:** sluit direct aan op `US7.1`, `US7.2`, `US7.3`, `US7.9` en deels `US7.13`
   - **Opmerking:** dit spoor volgt idealiter ná de technische analysepagina en ingest-toggle.
 

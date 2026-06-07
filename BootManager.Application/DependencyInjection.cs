@@ -44,9 +44,6 @@ public static class DependencyInjection
         // Registratie van Analysis application-service
         services.AddScoped<IAnalysisService, AnalysisService>();
 
-        // Registratie van Dashboard measurement application-service
-        services.AddScoped<IDashboardMeasurementService, DashboardMeasurementService>();
-
         // Registratie van NetworkMessage application-service (gebruik generieke repository)
         services.AddScoped<INetworkMessageService, NetworkMessageService>();
 

@@ -161,7 +161,7 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US7.1 Dashboardweergave openen | Partial | Dashboard-pagina en live meetwaarden-sectie (DSH-LIVE-1) zijn geïmplementeerd met SVG-gauges en auto-polling gekoppeld aan het ingest-sample-interval. `DSH-LIVE-5` toont alleen beschikbare meetwaarden en laat tegels verbergen/herstellen. Uitgebreide widgets, personalisatie en multi-boot dashboard ontbreken. |
+| US7.1 Dashboardweergave openen | Partial | Dashboard-pagina en live meetwaarden-sectie (DSH-LIVE-1) zijn geïmplementeerd met SVG-gauges en auto-polling gekoppeld aan het ingest-sample-interval. `DSH-LIVE-5` toont alleen beschikbare meetwaarden en laat tegels verbergen/herstellen. `DSH-BUG-DBCTX-1` isoleert dashboardqueries per operatie en voorkomt concurrencyfouten bij polling en navigatie. Uitgebreide widgets, personalisatie en multi-boot dashboard ontbreken. |
 | US7.2 Actieve bootinformatie | Partial | `VesselProfile` bestaat; live meetwaarden (wind, heading, position, speed, COG/SOG, diepte, watertemperatuur, spanning) tonen op dashboard (DSH-LIVE-1). `DSH-LIVE-5` voegt tankniveaus toe voor aanwezige `FluidLevelMeasurements`. Bootfoto, multi-boot selector en extra boot-metafoto ontbreken. |
 | US7.3 Waarschuwingen en meldingen | Partial | Logboek missing-moments signaal bestaat; `SYS-CTRL-1` voegt dashboard- en logboekwaarschuwingen toe wanneer NMEA-/ingest-verwerking uit staat. Generiek meldingenpaneel ontbreekt nog. Dashboard toont "Geen data" voor ontbrekende meettypen. |
 | US7.4 Weerinformatie en getijden | Open | Niet aanwezig. |
@@ -173,7 +173,7 @@ Bij afronding van een story of PR:
 | US7.10 Personaliseren van widgets | Parked | Later; niet nodig voor eerste dashboard. |
 | US7.11 Interactieve navigatie | Partial | Gewone navigatie bestaat; dashboardtegels kunnen met `DSH-LIVE-5` interactief verborgen en teruggezet worden. Widget-clickthrough naar detailpagina's ontbreekt. |
 | US7.12 Offline weergave | Partial | Lokale app werkt offline; dashboard-last-known model voorkomt crashes bij ontbrekende data. `DSH-LIVE-5` toont geen lege tegels voor niet-beschikbare waarden en bewaart verborgen tegelkeuzes lokaal in de browser. |
-| US7.13 Automatische update van gegevens | Partial | DSH-LIVE-1 voegt auto-polling toe via `System.Threading.Timer`, gekoppeld aan `DefaultSampleIntervalSeconds` met veilige grenzen. `DSH-LIVE-5` behoudt deze refresh-flow voor zichtbare en verborgen beschikbare meetwaarden. Geen SignalR/live push; polling is acceptabel voor MVP. |
+| US7.13 Automatische update van gegevens | Partial | DSH-LIVE-1 voegt auto-polling toe, gekoppeld aan `DefaultSampleIntervalSeconds` met veilige grenzen. `DSH-BUG-DBCTX-1` vervangt de overlappende async `System.Threading.Timer`-callback door een sequentiële, annuleerbare `PeriodicTimer`-loop en gebruikt een eigen context per dashboardload. `DSH-LIVE-5` behoudt deze refresh-flow voor zichtbare en verborgen beschikbare meetwaarden. Geen SignalR/live push; polling is acceptabel voor MVP. |
 | US7.14 Cloud-synchronisatie | Parked | Cloud-sync geparkeerd. |
 
 ---

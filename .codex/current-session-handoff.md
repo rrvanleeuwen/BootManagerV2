@@ -4,6 +4,59 @@ Updated: 2026-06-07.
 
 ## Current Task
 
+`DSH-BUG-DBCTX-1: Gelijktijdige dashboard- en logboekqueries isoleren` is de
+huidige afgeronde bugfix op branch
+`codex/dashboard-dbcontext-concurrency`.
+
+Status 2026-06-07:
+
+- PR #85 is gemerged met mergecommit `1d0366d`.
+- Lokale `master` is gelijk aan `origin/master` en de werkmap was schoon.
+- De Raspberry Pi is bijgewerkt van `b7818f8` naar `1d0366d`.
+- Op de Pi trad incidenteel EF Core-fout `A second operation was started on
+  this context instance before a previous operation completed` op.
+- Waargenomen rond de eerste NMEA-toggle op het dashboard en aansluitend laden
+  van het logboek; refresh of een tweede poging werkte meestal.
+- Codeanalyse:
+  - Blazor-circuitservices delen een scoped `BootManagerDbContext`;
+  - dashboardpolling gebruikt `System.Threading.Timer` met async callback;
+  - polling kan overlappen met een vorige poll, NMEA-toggle of pagina-load.
+- De story staat in `.docs/epics/dashboard-overview.md` en is op 2026-06-07
+  door de gebruiker goedgekeurd.
+- De gebruiker heeft Codex expliciet toestemming gegeven de applicatiecode voor
+  deze bugfix zelf te wijzigen.
+- Implementatie is lokaal gereed:
+  - dashboardmetingen gebruiken via `IDbContextFactory` een context per
+    laadoperatie;
+  - dashboardpolling gebruikt een sequentiële, annuleerbare `PeriodicTimer`;
+  - dispose annuleert en wacht de pollingloop af;
+  - `OnboardingGate` gebruikt per navigatie een eigen async DI-scope en
+    annuleert verouderde evaluaties.
+- Gerichte tests slagen: dashboardcontext 1/1; dashboard/setup-state 6/6.
+- Volledige unit-testsuite blijft 147/148 door de bestaande ongerelateerde
+  recovery-test.
+- Build slaagt met 0 errors en 11 bestaande nullable warnings.
+- Geen migratie.
+- De gebruiker heeft de lokale handmatige acceptatietest op 2026-06-07
+  uitgevoerd en goedgekeurd:
+  - meerdere automatische pollintervallen afgewacht;
+  - NMEA herhaald aan/uit geschakeld;
+  - direct tussen dashboard en logboek genavigeerd;
+  - concurrencyfout trad niet opnieuw op.
+- `.docs/TODO.md`, het dashboard-epic en legacy coverage voor `US7.1` en
+  `US7.13` zijn administratief bijgewerkt.
+- Status: klaar voor commit, push en PR.
+
+Uitgesteld vervolg:
+
+- `DSH-LIVE-3: Logboekactiviteit en snelle doorsteek vanaf dashboard` is door
+  de gebruiker inhoudelijk akkoord bevonden, maar wordt nu bewust niet
+  opgepakt.
+- Na afronding van `DSH-BUG-DBCTX-1` blijft `DSH-LIVE-3` de eerstvolgende
+  functionele dashboardstory, tenzij de gebruiker een andere prioriteit kiest.
+
+Vorige taak:
+
 `DEV-AGENT-1: Resourcezuinige Claude Code-workflow` is op branch
 `codex/claude-code-workflow` geïmplementeerd als documentatiewijziging.
 

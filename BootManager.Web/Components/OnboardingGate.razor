@@ -28,11 +28,12 @@ Dependencies:
 *@
 @using Microsoft.AspNetCore.Components.Authorization
 @implements IAsyncDisposable
-@inject BootManager.Application.OwnerRegistration.Services.IOwnerSetupStateService SetupStateService
+@inject IServiceScopeFactory ScopeFactory
 @inject NavigationManager Nav
 
 @code {
     [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+    private CancellationTokenSource? _evaluationCancellationTokenSource;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -42,16 +43,44 @@ Dependencies:
         Nav.LocationChanged += OnLocationChanged;
 
         // Evaluate gate on initial render
-        await EvaluateGateAsync();
+        await EvaluateLatestGateAsync();
     }
 
-    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        // Re-evaluate gate on every location change (client-side navigation)
-        await EvaluateGateAsync();
+        _ = InvokeAsync(EvaluateLatestGateAsync);
     }
 
-    private async Task EvaluateGateAsync()
+    private async Task EvaluateLatestGateAsync()
+    {
+        var currentCancellationTokenSource = new CancellationTokenSource();
+        var previousCancellationTokenSource = Interlocked.Exchange(
+            ref _evaluationCancellationTokenSource,
+            currentCancellationTokenSource);
+
+        if (previousCancellationTokenSource != null)
+            await previousCancellationTokenSource.CancelAsync();
+
+        try
+        {
+            await EvaluateGateAsync(currentCancellationTokenSource.Token);
+        }
+        catch (OperationCanceledException)
+            when (currentCancellationTokenSource.IsCancellationRequested)
+        {
+            // Expected when a newer navigation replaces this evaluation.
+        }
+        finally
+        {
+            Interlocked.CompareExchange(
+                ref _evaluationCancellationTokenSource,
+                null,
+                currentCancellationTokenSource);
+            currentCancellationTokenSource.Dispose();
+        }
+    }
+
+    private async Task EvaluateGateAsync(CancellationToken cancellationToken)
     {
         // Only apply onboarding gate to authenticated users
         var auth = AuthenticationStateTask is null ? null : await AuthenticationStateTask;
@@ -63,7 +92,10 @@ Dependencies:
             return;
         }
 
-        var setupState = await SetupStateService.GetSetupStateAsync();
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var setupStateService = scope.ServiceProvider.GetRequiredService<
+            BootManager.Application.OwnerRegistration.Services.IOwnerSetupStateService>();
+        var setupState = await setupStateService.GetSetupStateAsync(cancellationToken);
         var relative = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
 
         // Whitelist of routes that are allowed before setup is complete
@@ -93,6 +125,10 @@ Dependencies:
     {
         // Unsubscribe from LocationChanged to prevent memory leaks
         Nav.LocationChanged -= OnLocationChanged;
-        await ValueTask.CompletedTask;
+
+        if (_evaluationCancellationTokenSource != null)
+        {
+            await _evaluationCancellationTokenSource.CancelAsync();
+        }
     }
 }
