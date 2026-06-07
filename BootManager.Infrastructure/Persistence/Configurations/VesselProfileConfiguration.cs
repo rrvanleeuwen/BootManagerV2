@@ -26,6 +26,15 @@ public class VesselProfileConfiguration : IEntityTypeConfiguration<VesselProfile
         b.Property(x => x.CallSign).HasMaxLength(64);
         b.Property(x => x.Mmsi).HasMaxLength(32);
 
+        // Actuele tellerstandwaarden (optioneel, niet-negatief)
+        b.Property(x => x.CurrentEngineHours)
+            .HasPrecision(10, 2)
+            .IsRequired(false);
+
+        b.Property(x => x.CurrentLogstand)
+            .HasPrecision(10, 2)
+            .IsRequired(false);
+
         // UpdatedUtc is optioneel (nullable)
         b.Property(x => x.UpdatedUtc);
 

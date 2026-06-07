@@ -39,7 +39,7 @@ Bij afronding van een story of PR:
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
 | US1.1 Eerste opstart en bootaanmaak | Done | Afgedekt door onboarding + `VesselProfile`. |
-| US1.2 Bootinformatie bewerken | Partial | Bootgegevens wijzigen in Settings geïmplementeerd op 2026-05-25 via `IVesselProfileService`; velden (VesselName, HomePort, CallSign, MMSI) kunnen nu post-onboarding worden aangepast. Launchpad-gerelateerde bootbeheer (gebieden, opslaglocaties) is open. |
+| US1.2 Bootinformatie bewerken | Partial | Bootgegevens wijzigen in Settings geïmplementeerd via `IVesselProfileService`; naast VesselName, HomePort, CallSign en MMSI beheert `LOG-TRIP-AUTO-1A` nu ook actuele motoruren- en logstandwaarden met expliciete reset/leegmaakflow. Launchpad-gerelateerd bootbeheer (gebieden, opslaglocaties) blijft open. |
 | US1.3 Gebruikers aanmaken en rollen toewijzen | Parked | Multi-user buiten huidige single-owner scope. |
 | US1.4 Inloggen als bestaande gebruiker | Parked | Multi-user buiten huidige single-owner scope. |
 | US1.5 Meerdere boten beheren | Parked | BootManagerV2 gebruikt voorlopig single-vessel installatie. |
@@ -125,15 +125,15 @@ Bij afronding van een story of PR:
 |---|---|---|
 | US5.1 Handmatig logboek invoeren met weerinformatie | Partial | Handmatige logregels bestaan; weer/barometer/temperatuur volledig nalopen. |
 | US5.2 Automatisch loggen en intervalinstelling | Partial | Missing moments + Draft-regels bestaan; echte automatische logging op NMEA interval is beperkt. `SYS-CTRL-1` voegt bewuste ingest-verwerking aan/uit toe met logboekwaarschuwing en nieuwe-reis-popup wanneer automatische meetdata uit staat. |
-| US5.3 Motoruren en brandstof in header | Partial | Reisheader/samenvatting aanwezig; motoruren/brandstof afronding open. Pi-databaseanalyse op 2026-05-31 bevestigt tankniveau/brandstof als kandidaat via `PCDIN`/`MXPGN` PGN `127505`; Story 9 voegt technische opslag voor Fluid Level/tankniveau toe. `DSH-LIVE-5` maakt tankniveau zichtbaar op het dashboard. Motoruren zijn nog niet duidelijk zichtbaar en brandstof/tankniveau is nog niet geïntegreerd in de logboekheader. |
+| US5.3 Motoruren en brandstof in header | Partial | `LOG-TRIP-AUTO-1A` dekt motoruren start/eind, actuele motorurenstand in bootinstellingen, expliciete overname en voortschrijving van hogere waarden af. Brandstof/tankniveau is technisch beschikbaar via Fluid Level en dashboard, maar nog niet geïntegreerd in de logboekheader. |
 | US5.4 Notities en gebeurtenissen toevoegen | Done | Opmerkingen/zeilvoering per logregel aanwezig. |
 | US5.5 Logboek koppelen aan passage | Open | Passageplanning ontbreekt. |
-| US5.6 Logboekheader invullen | Partial | Trip header bestaat; vertrek- en aankomstmoment ondersteunen nu datum+tijd in logboek en printweergave. Volledige legacy-header nog nalopen. |
+| US5.6 Logboekheader invullen | Partial | Trip header ondersteunt vertrek/aankomst met datum+tijd. `LOG-TRIP-AUTO-1A` voegt bootnaam- en boordtijddefaults, expliciete tellerstandovername, logstand eind, berekende gelogde mijlen en consistente printweergave toe. Volledige legacy-header blijft nog open. |
 | US5.7 Logregels met nautische velden | Partial | Veel velden en measurement suggestions aanwezig; barometer/temperatuur/legacy-volledigheid open. |
 | US5.8 Bijlagen toevoegen aan logregel | Done | Logbook attachments aanwezig. |
 | US5.9 Klassiek format en routekaart | Partial | Tabel/printweergave aanwezig; routekaart ontbreekt. |
 | US5.10 Exporteren van logboek | Partial | Browser print aanwezig; PDF/CSV open. |
-| US5.11 Statistieken en samenvatting | Partial | Samenvattingsvelden deels aanwezig; uitgebreide statistieken open. Pi-databaseanalyse op 2026-05-31 bevestigt `YDVLW` als kandidaat voor logstand/afstand en PGN `127505` als kandidaat voor tankniveau. Story 9 slaat Fluid Level metingen op voor latere samenvatting/statistiek; `YDVLW`, dashboardweergave en logboekintegratie blijven open. |
+| US5.11 Statistieken en samenvatting | Partial | `LOG-TRIP-AUTO-1A` berekent reisduur en gelogde mijlen uit logstand begin/eind en toont deze in logboek en print. Uitgebreide statistieken, `YDVLW`-automatisering, tank/verbruik en bredere rapportage blijven open. |
 | US5.12 Offline werking | Done | Lokale SQLite-first werking. |
 | US5.13 Cloud-synchronisatie | Parked | Cloud-sync geparkeerd. |
 | US5.14 Logboek afronden bij aankomst | Done | Lopende reizen kunnen nu expliciet administratief worden afgerond met verplicht aankomstmoment; afgesloten reizen krijgen status `Completed` en worden niet meer als open reis behandeld in logboekflow. |

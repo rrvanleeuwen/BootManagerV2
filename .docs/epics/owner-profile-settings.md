@@ -1,6 +1,6 @@
 # Epic: Owner Profile & Vessel Settings
 
-Status: US1 (Eigenaargegevens wijzigen), US2 (Bootgegevens wijzigen), US3 (Wachtwoord wijzigen verifiëren) en US4 (Settings pagina ordenen met accordion) afgerond op 2026-05-25.
+Status: US1 (Eigenaargegevens wijzigen), US2 (Bootgegevens wijzigen), US3 (Wachtwoord wijzigen verifiëren) en US4 (Settings pagina ordenen met accordion) afgerond op 2026-05-25. US5 (actuele tellerstanden beheren) geïmplementeerd en handmatig geaccepteerd op 2026-06-07 als onderdeel van `LOG-TRIP-AUTO-1A`.
 
 ## Aanleiding
 
@@ -282,6 +282,47 @@ Legacy coverage:
 - Geen nieuwe legacy-functionaliteit; dit is UX/structuur op bestaande dekking.
 - Raakt indirect `US0.4`, `US0.6`, `US1.2` en `US8.x`.
 - Verwachte coverage-status verandert niet door deze story.
+
+### US5: Actuele Motoruren- En Logstand Beheren
+
+**Status:** Geïmplementeerd en handmatig geaccepteerd op 2026-06-07;
+onderdeel van `LOG-TRIP-AUTO-1A`.
+
+**User story:** Als eigenaar wil ik bij de bootinstellingen de actuele
+motorurenstand en logstand beheren, zodat nieuwe reizen deze waarden bewust
+kunnen overnemen en ik na vervanging van apparatuur een nieuwe lagere
+beginstand kan instellen.
+
+Scope:
+
+- Voeg optionele actuele motorurenstand en actuele logstand toe aan
+  `VesselProfile`.
+- Toon en wijzig deze waarden in de bestaande Settings-accordiongroep `Boot`.
+- Sta niet-negatieve decimalen en lege waarden toe.
+- Een expliciete Settings-update mag een lagere waarde opslaan als reset.
+- Reisopslag mag deze waarden alleen automatisch verhogen met geldige hogere
+  tellerstanden; lagere, lege, negatieve of `0`-reiswaarden verlagen een
+  bestaande positieve stand niet.
+- Historische reizen worden niet opnieuw gescand, zodat een reset behouden
+  blijft.
+
+Buiten scope:
+
+- Tellerhistorie/auditlog.
+- Sensorselectie of bronvoorkeuren.
+- Multi-vessel ondersteuning.
+
+Acceptatiecriteria:
+
+- Waarden blijven na refresh behouden.
+- Een bewuste lagere reset kan worden opgeslagen.
+- De logboekflow kan de actuele waarden lezen voor expliciete overname.
+- De logboekflow kan na reisopslag alleen hogere geldige waarden
+  voortschrijven.
+- EF Core-migratie, build en relevante tests slagen.
+
+Zie voor de volledige end-to-endregels:
+[`logbook-trip-autofill.md`](logbook-trip-autofill.md).
 
 ## Aanbevolen Volgorde
 

@@ -114,8 +114,8 @@
     - **Gedrag:** afgesloten reizen tonen geen `+ Nieuwe regel` meer en krijgen geen missing-moments/draftgedrag meer.
     - **Validatie:** handmatig getest voor reis zonder aankomstmoment, reis met bestaand aankomstmoment, afgesloten status en printweergave.
   - **Huidige missing-moments-feature (2026-05-24):** banner boven logboektabel toont totaalaantal gemiste logmomenten en compacte lijst (max 5 zichtbaar + "+ meer"); knop "Conceptregels aanmaken" maakt tot 24 Draft-regels in één beurt aan met automatische meetdatasuggesties (alleen periode-data); herberekening van banner na batch. Delete-knop (🗑) per regel met bevestigingsdialoog; na verwijdering herbereken banner.
-  - **Volgende slice:** routekaart of echte PDF/CSV-export zijn nu logische vervolgstappen binnen het digitale logboek.
-  - Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
+  - [x] **LOG-TRIP-AUTO-1A (2026-06-07):** actuele motoruren- en logstandwaarden worden beheerd in `Instellingen > Boot`; een nieuwe reis neemt deze alleen na een expliciete knop-/icoonactie over. Reisopslag schrijft alleen geldige hogere standen voort; een lagere reset kan uitsluitend bewust in Settings en wordt niet door historische reizen teruggedraaid. `Logstand eind` is invoer, gelogde mijlen worden berekend, en aankomsttijd/reisduur worden getoond. Build, gerichte tests en handmatige acceptatietest geslaagd.
+  - Zie: [.docs/epics/logbook-trip-autofill.md](epics/logbook-trip-autofill.md) en [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 
 - [ ] **First-Run Onboarding & Auth Simplification** *(epic – gefaseerd)*
   - **Doel:** Single-owner eerste-start flow met bootstrap wachtwoord, verplichte onboarding, en vereenvoudigde wachtwoord-only auth.
@@ -496,7 +496,8 @@ Zie: [.docs/epics/digital-logbook.md](epics/digital-logbook.md)
 - Server-side PDF-generatie.
 - Bijlagen uploaden.
 - Query API enhancements voor meetdata over tijdvakken.
-- Motoruren, brandstof/tankniveau en logstand in reisheader afronden op basis van handmatige invoer en, waar de Pi-analyse dit ondersteunt, automatische voorstellen.
+- [x] `LOG-TRIP-AUTO-1A`: bootinstellingen bewaren actuele motoruren- en logstandwaarden; expliciete overname, maximumregel, Settings-reset, logstand eind, berekende gelogde mijlen en reisduur zijn geïmplementeerd en handmatig geaccepteerd.
+- Daarna: routekaart, server-side PDF-generatie en CSV-export.
 
 ## Deployment Checklist
 

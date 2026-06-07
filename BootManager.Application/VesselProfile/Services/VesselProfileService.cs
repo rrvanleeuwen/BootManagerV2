@@ -90,6 +90,8 @@ public class VesselProfileService : IVesselProfileService
             homePort: request.HomePort,
             callSign: request.CallSign,
             mmsi: request.Mmsi,
+            currentEngineHours: request.CurrentEngineHours,
+            currentLogstand: request.CurrentLogstand,
             updatedUtc: _clock.UtcNow
         );
 
@@ -136,6 +138,21 @@ public class VesselProfileService : IVesselProfileService
                 $"MMSI mag niet langer zijn dan {MaxMmsiLength} tekens.",
                 nameof(request.Mmsi));
         }
+
+        // Valideer actuele tellerstandwaarden (niet-negatief als aanwezig)
+        if (request.CurrentEngineHours.HasValue && request.CurrentEngineHours < 0)
+        {
+            throw new ArgumentException(
+                "Actuele motorurenstand mag niet negatief zijn.",
+                nameof(request.CurrentEngineHours));
+        }
+
+        if (request.CurrentLogstand.HasValue && request.CurrentLogstand < 0)
+        {
+            throw new ArgumentException(
+                "Actuele logstandwaarde mag niet negatief zijn.",
+                nameof(request.CurrentLogstand));
+        }
     }
 
     /// <summary>
@@ -150,8 +167,74 @@ public class VesselProfileService : IVesselProfileService
             HomePort = profile.HomePort,
             CallSign = profile.CallSign,
             Mmsi = profile.Mmsi,
+            CurrentEngineHours = profile.CurrentEngineHours,
+            CurrentLogstand = profile.CurrentLogstand,
             CreatedUtc = profile.CreatedUtc,
             UpdatedUtc = profile.UpdatedUtc
         };
+    }
+
+    /// <summary>
+    /// Voortschrijving van actuele motorurenstand en logstandwaarde op basis van reis-tellerwaarden.
+    /// Verhoogt alleen als de reis-kandidaat hoger is dan de huidige profiel-waarde.
+    /// </summary>
+    public async Task<VesselProfileDto> AdvanceCurrentMetersAsync(decimal?[] engineHoursCandidates, decimal?[] logstandCandidates, CancellationToken ct = default)
+    {
+        // Haal bestaand profiel op
+        var profiles = await _repo.ListAsync(ct: ct);
+        var profile = profiles.FirstOrDefault();
+
+        if (profile == null)
+        {
+            throw new InvalidOperationException("Bootprofiel niet gevonden. Zorg dat u eerst GetOrCreateVesselProfileAsync aanroept.");
+        }
+
+        // Bepaal hoogste geldige motorurenstand
+        var maxEngineHours = GetMaxValidValue(engineHoursCandidates);
+        if (maxEngineHours.HasValue && maxEngineHours.Value > (profile.CurrentEngineHours ?? 0))
+        {
+            profile.UpdateCurrentEngineHours(maxEngineHours, _clock.UtcNow);
+            _logger.LogInformation("Vessel profile: engine hours advanced to {EngineHours}", maxEngineHours);
+        }
+
+        // Bepaal hoogste geldige logstandwaarde
+        var maxLogstand = GetMaxValidValue(logstandCandidates);
+        if (maxLogstand.HasValue && maxLogstand.Value > (profile.CurrentLogstand ?? 0))
+        {
+            profile.UpdateCurrentLogstand(maxLogstand, _clock.UtcNow);
+            _logger.LogInformation("Vessel profile: logstand advanced to {Logstand}", maxLogstand);
+        }
+
+        await _repo.UpdateAsync(profile, ct);
+
+        return MapToDto(profile);
+    }
+
+    /// <summary>
+    /// Bepaalt de hoogste geldige waarde uit een array van kandidaatwaarden.
+    /// Geldige waarden zijn niet-null en niet-negatief.
+    /// Retourneert null als geen geldige waarden aanwezig zijn.
+    /// </summary>
+    private static decimal? GetMaxValidValue(decimal?[] candidates)
+    {
+        if (candidates == null || candidates.Length == 0)
+        {
+            return null;
+        }
+
+        decimal? maxValid = null;
+        foreach (var candidate in candidates)
+        {
+            // Alleen overwegen als niet null, niet negatief en positief
+            if (candidate.HasValue && candidate.Value > 0)
+            {
+                if (maxValid == null || candidate.Value > maxValid.Value)
+                {
+                    maxValid = candidate.Value;
+                }
+            }
+        }
+
+        return maxValid;
     }
 }

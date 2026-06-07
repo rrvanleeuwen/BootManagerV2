@@ -131,6 +131,19 @@
                             <InputText class="form-control" @bind-Value="_vesselEditModel.Mmsi" />
                         </div>
 
+                        <hr />
+                        <h6 class="mt-3">Actuele Tellerstand</h6>
+                        <div class="mb-2">
+                            <label>Motorurenstand <span class="text-muted">(optioneel)</span></label>
+                            <InputNumber class="form-control" @bind-Value="_vesselEditModel.CurrentEngineHours" />
+                            <small class="form-text text-muted">Actuele stand in motoruren. Kan null zijn of een lagere waarde voor reset.</small>
+                        </div>
+                        <div class="mb-2">
+                            <label>Logstand <span class="text-muted">(optioneel, nm)</span></label>
+                            <InputNumber class="form-control" @bind-Value="_vesselEditModel.CurrentLogstand" />
+                            <small class="form-text text-muted">Actuele stand in zeemijlen. Kan null zijn of een lagere waarde voor reset.</small>
+                        </div>
+
                         <button type="submit" class="btn btn-primary" disabled="@_vesselBusy">@(_vesselBusy ? "Bezig..." : "Opslaan")</button>
                     </EditForm>
                     @if (!string.IsNullOrEmpty(_vesselError))
@@ -339,6 +352,8 @@
         public string? HomePort { get; set; }
         public string? CallSign { get; set; }
         public string? Mmsi { get; set; }
+        public decimal? CurrentEngineHours { get; set; }
+        public decimal? CurrentLogstand { get; set; }
     }
 
     private VesselProfileDto? _vesselModel;
@@ -367,7 +382,9 @@
                     VesselName = _vesselModel.VesselName ?? string.Empty,
                     HomePort = _vesselModel.HomePort,
                     CallSign = _vesselModel.CallSign,
-                    Mmsi = _vesselModel.Mmsi
+                    Mmsi = _vesselModel.Mmsi,
+                    CurrentEngineHours = _vesselModel.CurrentEngineHours,
+                    CurrentLogstand = _vesselModel.CurrentLogstand
                 };
             }
         }
@@ -430,7 +447,9 @@
                 VesselName = _vesselEditModel.VesselName?.Trim() ?? string.Empty,
                 HomePort = string.IsNullOrWhiteSpace(_vesselEditModel.HomePort) ? null : _vesselEditModel.HomePort.Trim(),
                 CallSign = string.IsNullOrWhiteSpace(_vesselEditModel.CallSign) ? null : _vesselEditModel.CallSign.Trim(),
-                Mmsi = string.IsNullOrWhiteSpace(_vesselEditModel.Mmsi) ? null : _vesselEditModel.Mmsi.Trim()
+                Mmsi = string.IsNullOrWhiteSpace(_vesselEditModel.Mmsi) ? null : _vesselEditModel.Mmsi.Trim(),
+                CurrentEngineHours = _vesselEditModel.CurrentEngineHours,
+                CurrentLogstand = _vesselEditModel.CurrentLogstand
             };
 
             // Update via service
@@ -442,7 +461,9 @@
                 VesselName = _vesselModel.VesselName ?? string.Empty,
                 HomePort = _vesselModel.HomePort,
                 CallSign = _vesselModel.CallSign,
-                Mmsi = _vesselModel.Mmsi
+                Mmsi = _vesselModel.Mmsi,
+                CurrentEngineHours = _vesselModel.CurrentEngineHours,
+                CurrentLogstand = _vesselModel.CurrentLogstand
             };
 
             _vesselSuccess = true;

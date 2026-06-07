@@ -28,6 +28,7 @@ public class LogbookTripConfiguration : IEntityTypeConfiguration<LogbookTrip>
         b.Property(x => x.LogIntervalMinutes).IsRequired().HasDefaultValue(60);
         b.Property(x => x.Notes).HasMaxLength(2048);
         b.Property(x => x.LogstandStart).HasColumnType("TEXT");
+        b.Property(x => x.LogstandEnd).HasColumnType("TEXT");
         b.Property(x => x.LoggedMiles).HasColumnType("TEXT");
         b.Property(x => x.EngineHoursStart).HasColumnType("TEXT");
         b.Property(x => x.EngineHoursEnd).HasColumnType("TEXT");
