@@ -1,0 +1,1 @@
+Het bestand BootManager_LocationTags_Pilot.xlsx bevat tijdelijke QR-tagregistratie voor de vakantiepilot.
