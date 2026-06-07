@@ -1,5 +1,7 @@
 using BootManager.Core.Interfaces;
+using BootManager.Application.Dashboard.Services;
 using BootManager.Application.Logbook.Services;
+using BootManager.Infrastructure.Dashboard;
 using BootManager.Infrastructure.Logbook;
 using BootManager.Infrastructure.Persistence;
 using BootManager.Infrastructure.Repositories;
@@ -15,11 +17,12 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
         var conn = config.GetConnectionString("Default") ?? "Data Source=bootmanager.db";
-        services.AddDbContext<BootManagerDbContext>(o => o.UseSqlite(conn));
+        services.AddDbContextFactory<BootManagerDbContext>(o => o.UseSqlite(conn));
 
         // Generieke repository
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<ILogbookEntryDeletionService, LogbookEntryDeletionService>();
+        services.AddScoped<IDashboardMeasurementService, DashboardMeasurementService>();
 
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IEncryptionService>(_ =>

@@ -348,8 +348,8 @@
     private CurrentMeasurementsDto? currentMeasurements;
     private string? measurementsError;
 
-    private Timer? pollingTimer;
-    private CancellationTokenSource? cancellationTokenSource;
+    private CancellationTokenSource? pollingCancellationTokenSource;
+    private Task? pollingTask;
     private IJSObjectReference? browserTimeModule;
     private int? browserTimezoneOffsetMinutes;
     private int autoRefreshIntervalSeconds = 10;
@@ -416,15 +416,33 @@
             interval = Math.Min(Math.Max(settings.DefaultSampleIntervalSeconds, 5), 60);
 
         autoRefreshIntervalSeconds = interval;
-        cancellationTokenSource = new CancellationTokenSource();
-        pollingTimer = new Timer(async _ =>
+        pollingCancellationTokenSource = new CancellationTokenSource();
+        pollingTask = RunAutoRefreshAsync(
+            TimeSpan.FromSeconds(interval),
+            pollingCancellationTokenSource.Token);
+    }
+
+    private async Task RunAutoRefreshAsync(
+        TimeSpan interval,
+        CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(interval);
+
+        try
         {
-            if (!cancellationTokenSource.Token.IsCancellationRequested)
+            while (await timer.WaitForNextTickAsync(cancellationToken))
             {
-                await LoadMeasurements();
-                await InvokeAsync(StateHasChanged);
+                await InvokeAsync(async () =>
+                {
+                    await LoadMeasurements(cancellationToken);
+                    StateHasChanged();
+                });
             }
-        }, null, TimeSpan.FromSeconds(interval), TimeSpan.FromSeconds(interval));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Expected when navigating away from the dashboard.
+        }
     }
 
     private bool IsItemVisible(string key)
@@ -443,15 +461,20 @@
         }
     }
 
-    private async Task LoadMeasurements()
+    private async Task LoadMeasurements(CancellationToken cancellationToken = default)
     {
         try
         {
             measurementsError = null;
-            currentMeasurements = await DashboardMeasurementService.GetCurrentMeasurementsAsync();
+            currentMeasurements = await DashboardMeasurementService
+                .GetCurrentMeasurementsAsync(cancellationToken);
 
             // Valideer en zuiver verouderde hidden keys
             PurgeInvalidHiddenKeys();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Expected during component disposal.
         }
         catch (Exception ex)
         {
@@ -702,11 +725,15 @@
 
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
-        if (pollingTimer != null)
-            await pollingTimer.DisposeAsync();
+        if (pollingCancellationTokenSource != null)
+        {
+            await pollingCancellationTokenSource.CancelAsync();
 
-        cancellationTokenSource?.Cancel();
-        cancellationTokenSource?.Dispose();
+            if (pollingTask != null)
+                await pollingTask;
+
+            pollingCancellationTokenSource.Dispose();
+        }
 
         if (browserTimeModule != null)
             await browserTimeModule.DisposeAsync();

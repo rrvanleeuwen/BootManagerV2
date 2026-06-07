@@ -1048,3 +1048,129 @@ Na alle eerdere verbeteringen is een semantische correctie doorgevoerd voor het 
   - verborgen tegels kunnen met `+` teruggezet worden;
   - verborgen status blijft behouden na herstart/refresh;
   - UI-maatvoering en kompaslabels zijn akkoord bevonden.
+
+---
+
+## DSH-BUG-DBCTX-1: Gelijktijdige dashboard- en logboekqueries isoleren
+
+**Status:** Geïmplementeerd en handmatig geaccepteerd op 2026-06-07.
+
+**Aanleiding**
+
+Tijdens gebruik op de Raspberry Pi verscheen incidenteel:
+
+`A second operation was started on this context instance before a previous operation completed.`
+
+De fout trad onder meer op bij de eerste poging om NMEA-verwerking op het
+dashboard in te schakelen en bij aansluitend openen van het logboek. Een
+vervolgpoging of pagina-refresh werkte daarna meestal wel.
+
+De codeanalyse wijst op een concurrencyconflict:
+
+- Blazor Interactive Server-services en repositories delen binnen het circuit
+  een scoped `BootManagerDbContext`;
+- dashboardpolling gebruikt een `System.Threading.Timer` met een async callback;
+- een poll kan overlappen met een vorige poll, de NMEA-toggle of navigatie naar
+  een andere pagina die databasewerk start;
+- EF Core staat geen gelijktijdige operaties op dezelfde `DbContext` toe.
+
+**User story:** Als gebruiker wil ik dat dashboardverversing, NMEA-bediening en
+het openen van het logboek elkaar niet verstoren, zodat databasehandelingen
+betrouwbaar werken zonder incidentele `DbContext`-concurrencyfouten.
+
+### Scope
+
+- Geef dashboard-meetwaardequeries een eigen kortlevende `DbContext` per
+  laadoperatie, passend bij Blazor Interactive Server.
+- Vervang de huidige `System.Threading.Timer`-polling door een annuleerbare
+  async pollingloop, bij voorkeur met `PeriodicTimer`.
+- Voorkom dat twee dashboardpolls tegelijk worden uitgevoerd.
+- Annuleer en beëindig de pollingloop bij navigatie/dispose.
+- Zorg dat de NMEA-toggle niet tegelijk met een dashboardpoll dezelfde
+  `DbContext` gebruikt.
+- Voer de globale onboardingcontrole bij routenavigatie uit in een eigen
+  kortlevende DI-scope, zodat deze niet tegelijk met de nieuwe pagina dezelfde
+  circuit-scoped `DbContext` gebruikt.
+- Annuleer een verouderde onboardingcontrole wanneer een volgende navigatie
+  start.
+- Voeg gerichte regressietests toe voor de gekozen context-per-operatie- en
+  niet-overlappende pollingaanpak.
+- Behoud het bestaande dashboardinterval, de NMEA-toggleflow en de getoonde
+  meetwaarden.
+
+### Buiten scope
+
+- Geen implementatie van `DSH-LIVE-3` logboekactiviteit op het dashboard.
+- Geen SignalR/live-push (`DSH-LIVE-4`).
+- Geen functionele wijziging aan ingest, logboek of meetwaardeberekeningen.
+- Geen brede omzetting van alle repositories en services naar een nieuw
+  persistencepatroon als de bug gericht kan worden opgelost.
+- Geen database-migratie.
+
+### Acceptatiecriteria
+
+- Dashboardpolls kunnen niet overlappen.
+- Dashboardmeetwaarden worden geladen met een `DbContext` die niet circuit-breed
+  met de NMEA-toggle of logboekpagina wordt gedeeld.
+- NMEA-verwerking kan tijdens actieve dashboardpolling worden in- en
+  uitgeschakeld zonder `A second operation was started...`.
+- Direct na de NMEA-toggle kan naar het logboek worden genavigeerd zonder deze
+  fout.
+- De onboardingcontrole bij navigatie deelt geen `DbContext` met de pagina die
+  op dat moment initialiseert.
+- Navigeren weg van het dashboard laat geen actieve pollingoperatie achter.
+- Bestaande dashboardwaarden, tanktegels, verborgen tegels, pollinginterval en
+  NMEA-status blijven functioneel gelijk.
+- Gerichte tests en `dotnet build BootManager.sln` slagen.
+- `git diff --check` is schoon.
+
+### Legacy-impact
+
+- Geen legacy-story wordt volledig afgerond.
+- Verbetert de robuustheid van `US7.1 Dashboardweergave openen`,
+  `US7.13 Automatische update van gegevens` en `US8.5 Sensorintegratie
+  configureren`; hun status blijft `Partial`.
+
+### Handmatige acceptatietest
+
+1. Open het dashboard op de Pi en wacht totdat meerdere automatische polls zijn
+   uitgevoerd.
+2. Schakel NMEA-verwerking meerdere keren aan en uit, ook rond een zichtbaar
+   pollmoment.
+3. Navigeer direct na een toggle naar het logboek.
+4. Wissel meerdere keren snel maar normaal tussen dashboard en logboek.
+5. Controleer dat geen `DbContext`-concurrencyfout verschijnt en dat NMEA-status
+   en logboekdata correct laden.
+6. Controleer de Web-logs op nieuwe meldingen met `A second operation was
+   started`.
+
+### Implementatie
+
+- Infrastructure registreert `BootManagerDbContext` via
+  `AddDbContextFactory`.
+- Bestaande scoped services kunnen de context blijven injecteren; de
+  dashboardmeetwaardeservice gebruikt expliciet een nieuwe kortlevende context
+  per laadoperatie.
+- `DashboardMeasurementService` staat nu in Infrastructure, waar de EF
+  Core-queryimplementatie thuishoort.
+- De dashboardpoller gebruikt een sequentiële `PeriodicTimer`-loop in plaats
+  van een async callback op `System.Threading.Timer`.
+- Component-dispose annuleert en wacht de pollingloop af.
+- De globale `OnboardingGate` voert de databasecheck per navigatie uit in een
+  eigen async DI-scope en annuleert een verouderde route-evaluatie.
+- Geen database-migratie of functionele wijziging aan meetwaarden, logboek of
+  ingest toegevoegd.
+
+### Technische verificatie
+
+- Gerichte dashboardcontext-test geslaagd: 1/1; acht gelijktijdige servicecalls
+  gebruiken acht afzonderlijke contexts en leveren de recentste meting.
+- Gerichte dashboard- en setup-state-tests geslaagd: 6/6.
+- Volledige unit-testsuite: 147/148 geslaagd; alleen de bekende ongerelateerde
+  `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` faalt.
+- `dotnet build BootManager.sln --no-restore` geslaagd met 0 errors en 11
+  bestaande nullable warnings in `Dashboard.razor`.
+- `git diff --check` schoon.
+- De gebruiker heeft lokaal meerdere pollintervallen, herhaald NMEA schakelen
+  en navigatie tussen dashboard en logboek getest en geaccepteerd; de
+  concurrencyfout trad niet opnieuw op.
