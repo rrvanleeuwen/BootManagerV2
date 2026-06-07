@@ -23,7 +23,7 @@ Read:
 
 Use when the user asks where we stand, what changed last, or what to do next.
 
-### Copilot Prompt For An Existing Approved Story
+### Implementation Packet For An Existing Approved Story
 
 Read:
 
@@ -31,8 +31,23 @@ Read:
 - `.codex/current-session-handoff.md`
 - the specific `.docs/epics/*.md` section for that story
 - relevant source files only if needed to make the prompt precise
+- `.codex/implementation-packet-template.md`
 
 Do not reread all legacy analysis files unless the story scope is changing.
+
+### Claude Code Implementation
+
+Claude Code should read:
+
+- root `CLAUDE.md`;
+- the supplied implementation packet;
+- the exact approved story section named in the packet;
+- only the source files named in the packet.
+
+Claude Code should not read `.codex/current-session-handoff.md`, the full TODO,
+legacy analysis, unrelated epics, or broad source trees by default. Use targeted
+`rg` and small file sections only when a concrete implementation dependency is
+missing.
 
 ### New Feature Idea Or Next Story Choice
 
@@ -58,7 +73,7 @@ Read:
 Read legacy analysis only if the bug changes functional scope or acceptance
 criteria.
 
-### Review Copilot Output
+### Review Implementation-Agent Output
 
 Read:
 
@@ -110,4 +125,3 @@ Do not read these unless the task specifically needs them:
 - full `.docs/legacy-analysis/scope-inventory.md`
 - full `.docs/TODO.md`
 - full epic files unrelated to the current task
-

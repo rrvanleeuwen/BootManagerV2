@@ -1,7 +1,9 @@
 # Codex Working Agreement
 
-Deze repository gebruikt Copilot voor implementatie en Codex voor analyse, begeleiding,
-prompts, review en documentatie.
+Deze repository gebruikt een aparte implementatie-agent voor code-uitvoering
+en Codex voor analyse, architectuur, begeleiding, implementation packets,
+review, documentatie en git-flow. Claude Code is momenteel de primaire
+implementatie-agent.
 
 ## Afspraak
 
@@ -9,14 +11,17 @@ prompts, review en documentatie.
 - Codex mag wel:
   - repo-context analyseren;
   - user stories helpen afbakenen;
-  - complete Copilot-prompts maken;
-  - Copilot-output reviewen;
+  - compacte implementation packets maken;
+  - output van de implementatie-agent reviewen;
   - testscenario's formuleren;
   - documentatie bijwerken als de gebruiker daarom vraagt of als dat onderdeel is van de begeleidende workflow.
-- Als Codex tijdens review een bug vindt, formuleert Codex eerst een prompt of reviewadvies voor Copilot.
+- Als Codex tijdens review een bug vindt, formuleert Codex eerst reviewadvies
+  of gerichte instructies voor de implementatie-agent.
 - Alleen bij expliciete opdracht zoals "pas dit zelf aan", "implementeer dit" of "fix dit in de code" mag Codex code wijzigen.
 - Deze beperking geldt ook voor kleine reviewfixes, waarschuwingen, whitespace, buildfouten en "even snel" correcties in applicatiecode. Codex mag zulke applicatiecodewijzigingen niet zelf doorvoeren zonder expliciete opdracht.
-- Als na Copilot-output nog een codewijziging nodig is, geeft Codex een gerichte Copilot-prompt of vraagt expliciet of Codex de code zelf mag aanpassen.
+- Als na implementatie-agent-output nog een codewijziging nodig is, geeft Codex
+  gerichte herstel-instructies of vraagt expliciet of Codex de code zelf mag
+  aanpassen.
 - Documentatiebestanden in `.docs`, `.codex`, `AGENTS.md` en handoff-documenten mag Codex wel bijwerken als onderdeel van de afgesproken regie- en documentatieworkflow.
 
 ## Scopebewaking
@@ -37,11 +42,12 @@ prompts, review en documentatie.
   - bewust geparkeerd is;
   - afhankelijk is van andere modules;
   - of echt nieuwe scope is.
-- Daarna formuleert Codex pas een voorstel, Copilot-prompt of vervolgstap, passend bij de huidige BootManagerV2-architectuur en roadmap.
+- Daarna formuleert Codex pas een voorstel, implementation packet of
+  vervolgstap, passend bij de huidige BootManagerV2-architectuur en roadmap.
 - Bij afronding van functionaliteit werkt Codex `legacy-coverage-register.md` bij voor alle geraakte legacy US-nummers. Een story is pas administratief afgerond als de legacy-dekking is gecontroleerd en, waar nodig, afgevinkt of als `Partial` bijgewerkt.
 - Vóór commit/push/PR controleert Codex proactief welke story-, epic-, TODO-, handoff- en coverage-statussen door de afgeronde wijziging afvinkbaar of bijwerkbaar zijn, en werkt die zelf bij. De gebruiker hoeft Codex daar niet expliciet aan te herinneren.
 
-## User story vóór Copilot-prompt
+## User story vóór implementation packet
 
 - Na het maken of kiezen van een feature-branch formuleert Codex eerst samen met de gebruiker de user story.
 - Die user story bevat minimaal:
@@ -55,13 +61,26 @@ prompts, review en documentatie.
 - Na akkoord van de gebruiker bewaart Codex de goedgekeurde user story automatisch in het bijbehorende `.docs/epics/*.md` bestand, zonder dat de gebruiker daar expliciet om hoeft te vragen.
 - Als er nog geen passend epic-bestand bestaat, maakt Codex een klein, logisch epic-document aan of stelt eerst het juiste documentatiepad voor als de keuze projectinhoudelijk onzeker is.
 - De vastgelegde user story bevat dezelfde kern als de akkoordversie: storyzin, scope, buiten scope, acceptatiecriteria, legacy coverage-impact en noodzakelijke handmatige teststappen.
-- Pas nadat de goedgekeurde user story in het epic-bestand staat, maakt Codex de Copilot-prompt.
-- Als de gebruiker later de scope wijzigt, herformuleert Codex eerst de user story voordat een nieuwe of aangepaste Copilot-prompt wordt gemaakt.
+- Pas nadat de goedgekeurde user story in het epic-bestand staat, maakt Codex
+  het implementation packet.
+- Als de gebruiker later de scope wijzigt, herformuleert Codex eerst de user
+  story voordat een nieuw of aangepast implementation packet wordt gemaakt.
 - Bij latere implementatie, review en afronding werkt Codex hetzelfde epic-bestand bij met status, implementatiedetails en verificatie, zodat user stories niet alleen in chat of prompts bestaan.
-- Als de user story al expliciet door de gebruiker is goedgekeurd en al in het relevante epic-bestand staat, moet Codex dit in de Copilot-prompt expliciet vermelden.
-- In dat geval moet de Copilot-prompt expliciet zeggen dat Copilot de user story niet opnieuw hoeft te tonen of opnieuw om goedkeuring hoeft te vragen.
-- De standaardverwachting voor zo'n prompt is dan: eerst kort plan, daarna direct implementeren, daarna build/test/checks en oplevernotities.
-- Codex moet dit ook in latere sessies blijven doen, zodat Copilot niet onnodig terugvalt naar een extra story-goedkeuringsstap die al is afgerond.
+- Als de user story al expliciet is goedgekeurd en in het relevante epic-bestand
+  staat, vermeldt het packet dat de implementatie-agent de story niet opnieuw
+  hoeft te tonen of opnieuw om goedkeuring hoeft te vragen.
+- De standaardverwachting is: eerst een kort plan, daarna direct
+  implementeren, daarna gerichte tests, build/checks en korte oplevernotities.
+- Gebruik `.codex/implementation-packet-template.md` en noem minimaal:
+  - exacte storybron;
+  - scope en buiten scope;
+  - verwachte write-set;
+  - minimale noodzakelijke context;
+  - gerichte testcommando's;
+  - vast kort opleverformat.
+- De implementatie-agent laadt niet standaard de volledige roadmap,
+  legacy-analyse, handoff of repository. Extra context wordt alleen gericht
+  geladen wanneer de implementatie anders blokkeert.
 
 ## Testadvies voor commit/PR
 
@@ -84,9 +103,10 @@ prompts, review en documentatie.
   - maak altijd eerst een nieuwe feature-branch vanaf actuele `master`;
   - formuleer daarna de user story inclusief scope, buiten scope, acceptatiecriteria en legacy coverage;
   - vraag expliciet akkoord op de user story;
-  - geef pas daarna de Copilot-prompt als de gebruiker akkoord geeft.
+  - geef pas daarna het implementation packet als de gebruiker akkoord geeft.
 
 ## Reden
 
-De gewenste workflow is dat Copilot de code-implementatie doet en Codex de regie,
-controle en promptkwaliteit bewaakt.
+De gewenste workflow is dat de implementatie-agent de afgebakende
+code-uitvoering doet en Codex de regie, scope, reviewkwaliteit, documentatie en
+publicatieflow bewaakt.
