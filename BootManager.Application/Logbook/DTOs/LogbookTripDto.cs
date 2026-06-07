@@ -39,6 +39,9 @@ public class LogbookTripDto
     /// <summary>Logstand bij aanvang van de reis (nm).</summary>
     public decimal? LogstandStart { get; set; }
 
+    /// <summary>Logstand aan het einde van de reis (nm).</summary>
+    public decimal? LogstandEnd { get; set; }
+
     /// <summary>Gelogde mijlen tijdens de reis (nm).</summary>
     public decimal? LoggedMiles { get; set; }
 
@@ -59,6 +62,9 @@ public class LogbookTripDto
 
     /// <summary>Status van de reis (Open / Completed).</summary>
     public LogbookTripStatus Status { get; set; }
+
+    /// <summary>Totale reisduur (berekend uit DepartureUtc en ArrivalUtc, niet hetzelfde als TotalSailingHours).</summary>
+    public decimal? TotalTripDuration { get; set; }
 
     /// <summary>Tijdstempel (UTC) waarop de reis is aangemaakt.</summary>
     public DateTime CreatedAtUtc { get; set; }

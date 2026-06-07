@@ -1,6 +1,10 @@
 # Digitaal Logboek: Reisgegevens automatisch voorinvullen
 
-**Status:** Voorgesteld op 2026-06-06.
+**Status:** Functionele samenvatting van de overkoepelende backlogstory. Eerste slice `LOG-TRIP-AUTO-1A` geïmplementeerd en handmatig geaccepteerd op 2026-06-07.
+
+De volledige en canonieke scope staat in `logbook-trip-autofill.md`. Dit
+document is alleen de compacte functionele leesversie en geldt niet als een
+afzonderlijk goedgekeurde implementatieslice.
 
 ## User story
 
@@ -15,13 +19,14 @@ Als gebruiker wil ik dat BootManager bij het starten, bewerken en afronden van e
 
 ## Bij het starten van een reis
 
-BootManager vult waar mogelijk automatisch in:
+BootManager vult gewone contextdefaults in en biedt tellerstanden als bewuste
+overnameactie aan:
 
 - actieve boot en bootnaam;
 - datum en vertrektijd;
-- vertrekplaats vanuit de vorige afgeronde reis of een bruikbare actuele positie;
-- motoruren start vanuit motoruren eind van de vorige afgeronde reis van dezelfde boot;
-- logstand start vanuit de vorige eindstand of een betrouwbare actuele waarde;
+- vertrekplaats blijft in de eerste slice handmatig;
+- motoruren start via een knop of icoon vanuit de actuele bootinstelling;
+- logstand start via een knop of icoon vanuit de actuele bootinstelling;
 - eventueel de laatst gebruikte bemanning als voorstel;
 - een voorstel voor de reisnaam op basis van datum, vertrekplaats en bestemming wanneer die bekend zijn.
 
@@ -59,8 +64,8 @@ Deze waarden worden niet als synoniemen gebruikt. Als vaartijd of motorlooptijd 
 
 - Bij een nieuwe reis wordt de actieve boot automatisch geselecteerd.
 - Datum en vertrektijd worden voorgesteld op basis van het startmoment.
-- Motoruren start worden, indien beschikbaar, gevuld met motoruren eind van de vorige afgeronde reis van dezelfde boot.
-- Logstand start wordt, indien beschikbaar, gevuld vanuit de vorige eindstand of een betrouwbare actuele waarde.
+- Motoruren start en logstand start worden alleen na een expliciete
+  gebruikersactie gevuld vanuit de actuele bootinstellingen.
 - Bij stoppen wordt aankomsttijd automatisch voorgesteld.
 - Reisduur wordt correct berekend uit vertrek en aankomst.
 - Vaartijd wordt alleen ingevuld als deze betrouwbaar kan worden bepaald.
@@ -83,3 +88,22 @@ Deze waarden worden niet als synoniemen gebruikt. Als vaartijd of motorlooptijd 
 ## Relatie met bestaande epic
 
 Deze story verfijnt `Story 1 - Reis aanmaken en beheren` uit `.docs/epics/digital-logbook.md`.
+
+## Goedgekeurde eerste slice
+
+`LOG-TRIP-AUTO-1A` gebruikt de bootinstellingen als actuele bron voor motoruren
+en logstand:
+
+- de gebruiker stelt initiële standen of een bewuste reset in bij
+  `Instellingen > Boot`;
+- een nieuwe reis neemt een stand alleen over na een klik op het bijbehorende
+  knopje of icoon;
+- opgeslagen reizen verhogen de actuele bootstand alleen met geldige hogere
+  waarden;
+- lege, `0`, negatieve of lagere reiswaarden verlagen de bootstand niet;
+- historische reizen worden na een reset niet opnieuw gescand;
+- de gebruiker voert `Logstand eind` in;
+- `Gelogde mijlen` is alleen-lezen en wordt berekend als
+  `LogstandEnd - LogstandStart`;
+- aankomsttijd en reisduur worden voorgesteld/berekend, zonder reisduur als
+  vaartijd of motorlooptijd te presenteren.

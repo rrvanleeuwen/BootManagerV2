@@ -1,7 +1,7 @@
 # Epic: Digitaal Logboek
 
-**Datum:** 2026-05-24 (latest update: 2026-05-27)
-**Status:** Actief epic. Basislogboek en meerdere vervolgslices zijn geïmplementeerd; vervolgwerk richt zich nu op header/completion-polish, routekaart, passagekoppeling en export/statistieken.
+**Datum:** 2026-05-24 (latest update: 2026-06-07)
+**Status:** Actief epic. Basislogboek en meerdere vervolgslices zijn geïmplementeerd; vervolgwerk richt zich nu op automatisch voorinvullen, routekaart, passagekoppeling en export/statistieken.
 
 ---
 
@@ -1405,63 +1405,70 @@ Gebruikers kunnen een Draft-logboekregel direct accorderen vanuit de detailpagin
 
 ---
 
-## Slicevoorstel: motoruren, brandstof en logstand in reisheader afronden
+## LOG-TRIP-AUTO-1: Reisgegevens automatisch voorinvullen
 
-**Datum:** 2026-05-31
-**Status:** Voorgesteld; afhankelijk van Pi-databaseanalyse voor eventuele automatische vulling.
+**Datum:** 2026-06-06 (afstemming bijgewerkt op 2026-06-07)
+**Status:** Overkoepelende backlogstory vastgelegd; eerste implementatieslice `LOG-TRIP-AUTO-1A` geïmplementeerd en handmatig geaccepteerd op 2026-06-07.
 
-**User story:** Als eigenaar wil ik motoruren, brandstof/tankniveau en logstand duidelijk in de logboekreis kunnen vastleggen en waar mogelijk uit boordnetwerkdata laten voorstellen, zodat de reisheader en samenvatting bruikbaar zijn voor verbruik, afstand en later onderhoud/rapportage.
+De volledige, canonieke story staat in
+[`logbook-trip-autofill.md`](logbook-trip-autofill.md). Een korte functionele
+samenvatting staat in
+[`logbook-trip-autofill-functional.md`](logbook-trip-autofill-functional.md).
+Deze epic onderhoudt geen tweede afwijkende scopebeschrijving.
 
-**Aanleiding:**
+De eerder op 2026-06-01 goedgekeurde headerstory is inhoudelijk geraakt door de
+nieuwe masterdocumentatie. De herziene eerste slice is op 2026-06-07 opnieuw
+goedgekeurd en gebruikt het bootprofiel als persistente bron voor tellerstanden.
 
-- De basislogboekflow is aanwezig: reis aanmaken, logregels, meetdatasuggesties, accordering, bijlagen, print en reis afronden.
-- Legacy-logboek verwacht in de reisheader/samenvatting onder meer logstand, gelogde mijlen, motoruren start/eind, brandstof en totaal vaaruren.
-- De gebruiker heeft op 2026-05-31 opnieuw Pi-data verzameld en vermoedt dat het NMEA-systeem mogelijk tankniveau of andere nog niet geimplementeerde data levert.
-- Het is nog niet zeker welke van deze waarden automatisch uit het boordnetwerk beschikbaar zijn; daarom moet automatische vulling op analyse gebaseerd zijn.
+**Afgeronde eerste slice `LOG-TRIP-AUTO-1A`:**
 
-**Scope:**
+- actieve boot/bootnaam en vertrekdatum/-tijd voorstellen;
+- actuele motoruren- en logstandwaarden beheren in `Instellingen > Boot`;
+- motoruren start en logstand start alleen na een expliciete klik op een
+  overnameknop of icoon uit de bootinstellingen kopiëren;
+- bij reisopslag alleen geldige hogere tellerstanden terugschrijven naar het
+  bootprofiel; `0`, lege, negatieve en lagere waarden verlagen de actuele stand
+  niet;
+- een expliciete lagere Settings-waarde als reset toestaan, zonder oude reizen
+  opnieuw te scannen;
+- logstand eind als tellerstand invoeren en gelogde mijlen alleen-lezen
+  berekenen als `LogstandEnd - LogstandStart`;
+- aankomsttijd bij afronden voorstellen en reisduur berekenen;
+- bevestigde waarden opslaan, herladen en consistent tonen in reisheader,
+  afrondingsflow en printweergave.
 
-- Vastleggen welke reisheadervelden functioneel nodig zijn voor deze slice:
-  - motoruren start;
-  - motoruren eind;
-  - brandstof/tankniveau start;
-  - brandstof/tankniveau eind;
-  - logstand start/eind of gelogde mijlen, afhankelijk van beschikbare data;
-  - totaal vaaruren als afgeleide waarde uit vertrek/aankomst wanneer mogelijk.
-- Bepalen welke velden handmatig blijven en welke automatisch voorgesteld kunnen worden.
-- Aansluiten op de uitkomst van NMEA Story 7/9 voor beschikbare berichten en interpreters.
-- De logboek-UI en printweergave consistent houden met de gekozen velden.
-- Handmatige invoer leidend houden wanneer automatische suggesties ontbreken of worden overschreven.
+**Buiten deze eerste slice:**
 
-**Buiten scope:**
-
-- Geen passageplanningkoppeling.
-- Geen onderhoudsmodule of automatische onderhoudsintervallen op motoruren.
-- Geen uitgebreide brandstofanalyse of kostenrapportage.
-- Geen bronvoorkeuren-UI; bronselectie volgt in een aparte sensor/source story.
-- Geen meerdere tanktypes of complexe tankkalibratie voordat duidelijk is welke data beschikbaar is.
-
-**Acceptatiecriteria:**
-
-- De gekozen motoruren/brandstof/logstandvelden zijn zichtbaar en wijzigbaar in de reisheader of afrondingsflow.
-- Velden worden opgeslagen en opnieuw geladen.
-- Printweergave toont de gekozen velden consistent.
-- Als automatische suggesties beschikbaar zijn, zijn ze herkenbaar als voorstel en overschrijven ze handmatige invoer niet stilzwijgend.
-- Als automatische data ontbreekt, blijft handmatige invoer bruikbaar zonder foutmelding.
-- De story is getest met minimaal een handmatige reisflow en, waar beschikbaar, met echte Pi-data.
+- GPS-gebaseerde plaats- of havenherkenning en reverse geocoding;
+- automatische tankniveau-/brandstofvoorstellen uit `FluidLevelMeasurements`;
+- motorurensensoren, `YDVLW`-interpretatie en bronvoorkeuren;
+- betrouwbare vaartijd- of motorlooptijddetectie;
+- automatische reisnaam, bemanningsvoorstellen, passageplanning en
+  uitgebreide brandstofanalyse.
 
 **Legacy coverage impact:**
 
-- `US5.3 Motoruren en brandstof in header`: kan van `Partial` naar grotendeels of volledig afgedekt zodra handmatige vastlegging en eventuele automatische suggesties aanwezig zijn.
-- `US5.6 Logboekheader invullen`: krijgt extra dekking door completere reisheader/samenvatting.
-- `US5.11 Statistieken en samenvatting`: blijft waarschijnlijk `Partial`, maar krijgt betere basis voor duur, afstand en verbruik.
-- `US10.1 Brandstofanalyse`: blijft `Open` tot echte analyse/rapportage aanwezig is.
+- `US5.3 Motoruren en brandstof in header`: blijft `Partial`; motorurenvelden
+  krijgen meer dekking, automatische brandstofintegratie blijft open.
+- `US5.6 Logboekheader invullen`: krijgt extra dekking door defaults en
+  expliciete overname van actuele bootstanden.
+- `US5.11 Statistieken en samenvatting`: blijft `Partial`; reisduur en
+  standverschillen vormen alleen een basis.
+- `US1.2 Bootinformatie bewerken`: blijft `Partial`, maar actuele tellerstanden
+  worden onderdeel van het bootprofiel.
+- `US9.4` en `US9.6` worden in deze eerste slice niet geraakt, omdat
+  havenherkenning en externe reverse-geocoding buiten scope blijven.
 
-**Handmatige testnotities:**
+**Vereiste handmatige testnotities:**
 
-- Maak een reis met handmatige startwaarden voor motoruren, brandstof/tank en logstand.
-- Rond de reis af met eindwaarden en controleer opslag, herladen en printweergave.
-- Als de Pi-analyse een bruikbare bron oplevert, test dan dat een voorstel zichtbaar wordt zonder handmatige waarden te overschrijven.
+- stel initiële motoruren- en logstandwaarden in bij `Instellingen > Boot`;
+- maak een nieuwe reis en controleer dat de tellerstanden pas na een expliciete
+  klik worden overgenomen;
+- sla hogere, lagere, lege en `0`-waarden op en controleer de maximumregel;
+- voer een lagere reset uit in Settings en controleer dat oude reizen deze niet
+  terugdraaien;
+- rond de reis af en controleer aankomsttijd, reisduur, opslag, herladen en
+  printweergave.
 
 ---
 

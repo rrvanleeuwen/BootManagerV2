@@ -22,4 +22,16 @@ public interface IVesselProfileService
     /// <returns>DTO van het bijgewerkte bootprofiel.</returns>
     /// <exception cref="ArgumentException">Als VesselName leeg of null is, of als velden langer zijn dan toegestaan.</exception>
     Task<VesselProfileDto> UpdateVesselProfileAsync(UpdateVesselProfileRequestDto request, CancellationToken ct = default);
+
+    /// <summary>
+    /// Voortschrijving van actuele motorurenstand en logstandwaarde op basis van reis-tellerwaarden.
+    /// Verhoogt alleen als de reis-kandidaat hoger is dan de huidige profiel-waarde.
+    /// Null, negatief, 0 of lager verhoogt geen bestaande waarde.
+    /// Historische reizen worden niet opnieuw gescand.
+    /// </summary>
+    /// <param name="engineHoursCandidates">Array van kandidaatwaarden voor motoruren (EngineHoursStart, EngineHoursEnd).</param>
+    /// <param name="logstandCandidates">Array van kandidaatwaarden voor logstand (LogstandStart, LogstandEnd).</param>
+    /// <param name="ct">Annuleringstoken.</param>
+    /// <returns>Het bijgewerkte bootprofiel DTO.</returns>
+    Task<VesselProfileDto> AdvanceCurrentMetersAsync(decimal?[] engineHoursCandidates, decimal?[] logstandCandidates, CancellationToken ct = default);
 }

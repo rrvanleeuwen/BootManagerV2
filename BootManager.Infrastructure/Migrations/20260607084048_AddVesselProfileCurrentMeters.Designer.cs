@@ -3,6 +3,7 @@ using System;
 using BootManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BootManager.Infrastructure.Migrations
 {
     [DbContext(typeof(BootManagerDbContext))]
-    partial class BootManagerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260607084048_AddVesselProfileCurrentMeters")]
+    partial class AddVesselProfileCurrentMeters
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -314,9 +317,6 @@ namespace BootManager.Infrastructure.Migrations
                         .HasDefaultValue(60);
 
                     b.Property<decimal?>("LoggedMiles")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal?>("LogstandEnd")
                         .HasColumnType("TEXT");
 
                     b.Property<decimal?>("LogstandStart")

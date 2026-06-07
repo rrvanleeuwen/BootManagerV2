@@ -192,7 +192,14 @@ public class VesselProfileServiceTests
     [Fact]
     public async Task UpdateVesselProfileAsync_AllowsNullOptionalFields()
     {
-        var existingProfile = CreateVesselProfile("Old", "OldHarbor", "OLDCALL", "111111111");
+        var existingProfile = Core.Entities.VesselProfile.Create(
+            "Old",
+            "OldHarbor",
+            "OLDCALL",
+            "111111111",
+            DateTime.UtcNow,
+            100m,
+            500m);
         var repo = FakeVesselProfileRepository.WithProfile(existingProfile);
         var sut = new VesselProfileService(repo, _clock, _logger);
 
@@ -211,6 +218,33 @@ public class VesselProfileServiceTests
         Assert.Null(result.HomePort);
         Assert.Null(result.CallSign);
         Assert.Null(result.Mmsi);
+        Assert.Null(result.CurrentEngineHours);
+        Assert.Null(result.CurrentLogstand);
+    }
+
+    [Fact]
+    public async Task UpdateVesselProfileAsync_AllowsExplicitLowerMeterReset()
+    {
+        var existingProfile = Core.Entities.VesselProfile.Create(
+            "Test",
+            null,
+            null,
+            null,
+            DateTime.UtcNow,
+            100m,
+            500m);
+        var repo = FakeVesselProfileRepository.WithProfile(existingProfile);
+        var sut = new VesselProfileService(repo, _clock, _logger);
+
+        var result = await sut.UpdateVesselProfileAsync(new UpdateVesselProfileRequestDto
+        {
+            VesselName = "Test",
+            CurrentEngineHours = 2.5m,
+            CurrentLogstand = 10m
+        });
+
+        Assert.Equal(2.5m, result.CurrentEngineHours);
+        Assert.Equal(10m, result.CurrentLogstand);
     }
 
     [Fact]
@@ -234,6 +268,78 @@ public class VesselProfileServiceTests
     private static Core.Entities.VesselProfile CreateVesselProfile(string name, string? homePort, string? callSign, string? mmsi)
     {
         return Core.Entities.VesselProfile.Create(name, homePort, callSign, mmsi, DateTime.UtcNow);
+    }
+
+    [Fact]
+    public async Task AdvanceCurrentMetersAsync_AdvancesEngineHours_WhenCandidateHigher()
+    {
+        var existingProfile = Core.Entities.VesselProfile.Create(
+            "Test", null, null, null, DateTime.UtcNow, 100.0m, 500.0m);
+        var repo = FakeVesselProfileRepository.WithProfile(existingProfile);
+        var sut = new VesselProfileService(repo, _clock, _logger);
+
+        var engineCandidates = new decimal?[] { 105.0m, 103.0m };
+        var logCandidates = new decimal?[] { null, null };
+
+        var result = await sut.AdvanceCurrentMetersAsync(engineCandidates, logCandidates);
+
+        Assert.NotNull(result);
+        Assert.Equal(105.0m, result.CurrentEngineHours);
+        Assert.Equal(500.0m, result.CurrentLogstand);
+    }
+
+    [Fact]
+    public async Task AdvanceCurrentMetersAsync_DoesNotLower_WhenCandidateLower()
+    {
+        var existingProfile = Core.Entities.VesselProfile.Create(
+            "Test", null, null, null, DateTime.UtcNow, 100.0m, 500.0m);
+        var repo = FakeVesselProfileRepository.WithProfile(existingProfile);
+        var sut = new VesselProfileService(repo, _clock, _logger);
+
+        var engineCandidates = new decimal?[] { 95.0m, 90.0m };
+        var logCandidates = new decimal?[] { null, null };
+
+        var result = await sut.AdvanceCurrentMetersAsync(engineCandidates, logCandidates);
+
+        Assert.NotNull(result);
+        Assert.Equal(100.0m, result.CurrentEngineHours); // Niet verlaagd
+        Assert.Equal(500.0m, result.CurrentLogstand);
+    }
+
+    [Fact]
+    public async Task AdvanceCurrentMetersAsync_IgnoresNullAndNegativeValues()
+    {
+        var existingProfile = Core.Entities.VesselProfile.Create(
+            "Test", null, null, null, DateTime.UtcNow, 100.0m, 500.0m);
+        var repo = FakeVesselProfileRepository.WithProfile(existingProfile);
+        var sut = new VesselProfileService(repo, _clock, _logger);
+
+        var engineCandidates = new decimal?[] { null, -50.0m, 0m, 105.0m };
+        var logCandidates = new decimal?[] { null, -10.0m, 0m, 510.0m };
+
+        var result = await sut.AdvanceCurrentMetersAsync(engineCandidates, logCandidates);
+
+        Assert.NotNull(result);
+        Assert.Equal(105.0m, result.CurrentEngineHours);
+        Assert.Equal(510.0m, result.CurrentLogstand);
+    }
+
+    [Fact]
+    public async Task AdvanceCurrentMetersAsync_AdvancesFromNull()
+    {
+        var existingProfile = Core.Entities.VesselProfile.Create(
+            "Test", null, null, null, DateTime.UtcNow, null, null);
+        var repo = FakeVesselProfileRepository.WithProfile(existingProfile);
+        var sut = new VesselProfileService(repo, _clock, _logger);
+
+        var engineCandidates = new decimal?[] { 50.0m };
+        var logCandidates = new decimal?[] { 250.0m };
+
+        var result = await sut.AdvanceCurrentMetersAsync(engineCandidates, logCandidates);
+
+        Assert.NotNull(result);
+        Assert.Equal(50.0m, result.CurrentEngineHours);
+        Assert.Equal(250.0m, result.CurrentLogstand);
     }
 
     private class FakeVesselProfileRepository : IRepository<Core.Entities.VesselProfile>

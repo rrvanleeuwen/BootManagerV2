@@ -24,4 +24,14 @@ public sealed record UpdateVesselProfileRequestDto
     /// MMSI-nummer (optioneel).
     /// </summary>
     public string? Mmsi { get; init; }
+
+    /// <summary>
+    /// Actuele motorurenstand (optioneel, niet-negatief). Kan null/leeg zijn, of een lagere waarde voor reset.
+    /// </summary>
+    public decimal? CurrentEngineHours { get; init; }
+
+    /// <summary>
+    /// Actuele logstandwaarde in zeemijlen (optioneel, niet-negatief). Kan null/leeg zijn, of een lagere waarde voor reset.
+    /// </summary>
+    public decimal? CurrentLogstand { get; init; }
 }

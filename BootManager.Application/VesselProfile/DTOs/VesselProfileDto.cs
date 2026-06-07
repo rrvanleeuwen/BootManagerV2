@@ -31,6 +31,16 @@ public sealed record VesselProfileDto
     public string? Mmsi { get; init; }
 
     /// <summary>
+    /// Actuele motorurenstand (optioneel, niet-negatief).
+    /// </summary>
+    public decimal? CurrentEngineHours { get; init; }
+
+    /// <summary>
+    /// Actuele logstandwaarde in zeemijlen (optioneel, niet-negatief).
+    /// </summary>
+    public decimal? CurrentLogstand { get; init; }
+
+    /// <summary>
     /// Moment waarop het profiel is aangemaakt (UTC).
     /// </summary>
     public DateTime CreatedUtc { get; init; }

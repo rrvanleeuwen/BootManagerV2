@@ -34,8 +34,8 @@ public class CreateLogbookTripDto
     /// <summary>Logstand bij aanvang van de reis (nm).</summary>
     public decimal? LogstandStart { get; set; }
 
-    /// <summary>Gelogde mijlen tijdens de reis (nm).</summary>
-    public decimal? LoggedMiles { get; set; }
+    /// <summary>Logstand aan het einde van de reis (nm).</summary>
+    public decimal? LogstandEnd { get; set; }
 
     /// <summary>Motorurenstand bij aanvang van de reis.</summary>
     public decimal? EngineHoursStart { get; set; }
@@ -51,4 +51,19 @@ public class CreateLogbookTripDto
 
     /// <summary>Loginterval in minuten (standaard 60).</summary>
     public int LogIntervalMinutes { get; set; } = 60;
+
+    /// <summary>Totale reisduur (berekend uit DepartureUtc en ArrivalUtc, niet hetzelfde als TotalSailingHours).</summary>
+    public decimal? TotalTripDuration { get; set; }
+
+    /// <summary>
+    /// Interne vlag: EngineHoursStart is expliciet van bootprofiel overgenomen.
+    /// Voor UI-feedback: als deze vlag false is, was het geen expliciete actie.
+    /// </summary>
+    public bool EngineHoursCopiedFromProfile { get; set; }
+
+    /// <summary>
+    /// Interne vlag: LogstandStart is expliciet van bootprofiel overgenomen.
+    /// Voor UI-feedback: als deze vlag false is, was het geen expliciete actie.
+    /// </summary>
+    public bool LogstandCopiedFromProfile { get; set; }
 }

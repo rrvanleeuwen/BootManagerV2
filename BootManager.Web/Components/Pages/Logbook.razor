@@ -5,14 +5,17 @@
 @using BootManager.Application.Logbook.Services
 @using BootManager.Application.OperationalSettings.DTOs
 @using BootManager.Application.OperationalSettings.Services
+@using BootManager.Application.VesselProfile.DTOs
 @using BootManager.Core.Enums
 @using BootManager.Web.Helpers
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
+@using BootManager.Application.VesselProfile.Services
 @inject ILogbookService LogbookService
 @inject ILogbookMeasurementSuggestionService SuggestionService
 @inject ILogbookAttachmentService AttachmentService
 @inject IOperationalSettingsService OperationalSettingsService
+@inject IVesselProfileService VesselProfileService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -101,15 +104,39 @@ else
                     <div class="row g-2">
                         <div class="col-md-2">
                             <label class="form-label">Logstand start (nm)</label>
-                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.LogstandStart" />
+                            <div class="input-group input-group-sm">
+                                <InputNumber class="form-control" @bind-Value="_tripForm.LogstandStart" />
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        @onclick="CopyLogstandFromProfile"
+                                        disabled="@(!CanCopyLogstand)"
+                                        title="@LogstandCopyTitle">
+                                    📋
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label">Gelogde mijlen (nm)</label>
-                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.LoggedMiles" />
+                            <label class="form-label">Logstand eind (nm)</label>
+                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.LogstandEnd" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Gelogde mijlen</label>
+                            <input class="form-control form-control-sm"
+                                   value="@FormatNauticalMiles(_tripForm.CalculatedLoggedMiles)"
+                                   readonly />
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Motor uren start</label>
-                            <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.EngineHoursStart" />
+                            <div class="input-group input-group-sm">
+                                <InputNumber class="form-control" @bind-Value="_tripForm.EngineHoursStart" />
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        @onclick="CopyEngineHoursFromProfile"
+                                        disabled="@(!CanCopyEngineHours)"
+                                        title="@EngineHoursCopyTitle">
+                                    📋
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Motor uren eind</label>
@@ -122,6 +149,12 @@ else
                         <div class="col-md-2">
                             <label class="form-label">Totaal vaaruren</label>
                             <InputNumber class="form-control form-control-sm" @bind-Value="_tripForm.TotalSailingHours" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Reisduur</label>
+                            <input class="form-control form-control-sm"
+                                   value="@FormatTripDuration(_tripForm.TotalTripDuration)"
+                                   readonly />
                         </div>
                     </div>
                     <div class="mt-2">
@@ -843,6 +876,7 @@ else
     private string? _foutmelding;
     private bool _tripSaved;
     private OperationalSettingsDto? _operationalSettings;
+    private VesselProfileDto? _currentVesselProfile;
 
     private List<LogbookTripDto> _trips = new();
     private LogbookTripDto? _selectedTrip;
@@ -902,6 +936,7 @@ else
         {
             // Load operational settings to check if ingest processing is enabled
             _operationalSettings = await OperationalSettingsService.GetAsync();
+            _currentVesselProfile = await VesselProfileService.GetOrCreateVesselProfileAsync();
 
             _trips = (await LogbookService.GetAllTripsAsync()).ToList();
             if (_trips.Count > 0)
@@ -992,7 +1027,11 @@ else
     {
         _selectedTrip = null;
         _entries = new();
-        _tripForm = new TripFormModel();
+        _tripForm = new TripFormModel
+        {
+            VesselName = _currentVesselProfile?.VesselName,
+            DepartureDateTimeLocal = BoordtijdHelper.NaarLokaal(DateTime.UtcNow)
+        };
         _tripSaved = false;
         _showNewTripWarningModal = false;
     }
@@ -1022,6 +1061,7 @@ else
             if (_selectedTrip == null)
             {
                 var created = await LogbookService.CreateTripAsync(dto);
+                _currentVesselProfile = await VesselProfileService.GetOrCreateVesselProfileAsync();
                 _trips.Insert(0, created);
                 _selectedTrip = created;
                 _tripForm = new TripFormModel(created);
@@ -1029,12 +1069,14 @@ else
             else
             {
                 await LogbookService.UpdateTripAsync(_selectedTrip.Id, dto);
+                _currentVesselProfile = await VesselProfileService.GetOrCreateVesselProfileAsync();
                 var updated = await LogbookService.GetTripAsync(_selectedTrip.Id);
                 if (updated != null)
                 {
                     var idx = _trips.FindIndex(t => t.Id == updated.Id);
                     if (idx >= 0) _trips[idx] = updated;
                     _selectedTrip = updated;
+                    _tripForm = new TripFormModel(updated);
                 }
             }
             _tripSaved = true;
@@ -1512,9 +1554,11 @@ else
             if (updated != null)
             {
                 _selectedTrip = updated;
+                _tripForm = new TripFormModel(updated);
                 var idx = _trips.FindIndex(t => t.Id == updated.Id);
                 if (idx >= 0) _trips[idx] = updated;
             }
+            _currentVesselProfile = await VesselProfileService.GetOrCreateVesselProfileAsync();
 
             _foutmelding = null;
             CloseCompleteModal();
@@ -1618,6 +1662,54 @@ else
 
     // --- Formuliermodellen ---
 
+    /// <summary>
+    /// Kopieert actuele logstand van bootprofiel naar reisformulier.
+    /// </summary>
+    private async Task CopyLogstandFromProfile()
+    {
+        try
+        {
+            if (_tripForm == null)
+                return;
+
+            _currentVesselProfile ??= await VesselProfileService.GetOrCreateVesselProfileAsync();
+            if (_currentVesselProfile.CurrentLogstand.HasValue)
+            {
+                _tripForm.LogstandStart = _currentVesselProfile.CurrentLogstand;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fout bij kopieren logstand: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Kopieert actuele motorurenstand van bootprofiel naar reisformulier.
+    /// </summary>
+    private async Task CopyEngineHoursFromProfile()
+    {
+        try
+        {
+            if (_tripForm == null)
+                return;
+
+            _currentVesselProfile ??= await VesselProfileService.GetOrCreateVesselProfileAsync();
+            if (_currentVesselProfile.CurrentEngineHours.HasValue)
+            {
+                _tripForm.EngineHoursStart = _currentVesselProfile.CurrentEngineHours;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fout bij kopieren motoruren: {ex.Message}");
+        }
+    }
+
+    // --- Formuliermodellen ---
+
     private class TripFormModel
     {
         public string Name { get; set; } = string.Empty;
@@ -1642,11 +1734,16 @@ else
         public string? Crew { get; set; }
         public string? Notes { get; set; }
         public decimal? LogstandStart { get; set; }
-        public decimal? LoggedMiles { get; set; }
+        public decimal? LogstandEnd { get; set; }
+        public decimal? CalculatedLoggedMiles =>
+            LogstandStart.HasValue && LogstandEnd.HasValue && LogstandEnd.Value >= LogstandStart.Value
+                ? LogstandEnd.Value - LogstandStart.Value
+                : null;
         public decimal? EngineHoursStart { get; set; }
         public decimal? EngineHoursEnd { get; set; }
         public string? Fuel { get; set; }
         public decimal? TotalSailingHours { get; set; }
+        public decimal? TotalTripDuration { get; set; }
         public int LogIntervalMinutes { get; set; } = 60;
 
         public TripFormModel() 
@@ -1676,11 +1773,12 @@ else
             Crew = dto.Crew;
             Notes = dto.Notes;
             LogstandStart = dto.LogstandStart;
-            LoggedMiles = dto.LoggedMiles;
+            LogstandEnd = dto.LogstandEnd;
             EngineHoursStart = dto.EngineHoursStart;
             EngineHoursEnd = dto.EngineHoursEnd;
             Fuel = dto.Fuel;
             TotalSailingHours = dto.TotalSailingHours;
+            TotalTripDuration = dto.TotalTripDuration;
             LogIntervalMinutes = dto.LogIntervalMinutes;
         }
 
@@ -1697,7 +1795,7 @@ else
             Crew = Crew,
             Notes = Notes,
             LogstandStart = LogstandStart,
-            LoggedMiles = LoggedMiles,
+            LogstandEnd = LogstandEnd,
             EngineHoursStart = EngineHoursStart,
             EngineHoursEnd = EngineHoursEnd,
             Fuel = Fuel,
@@ -1705,6 +1803,31 @@ else
             LogIntervalMinutes = LogIntervalMinutes
         };
     }
+
+    private bool CanCopyEngineHours => _currentVesselProfile?.CurrentEngineHours.HasValue == true;
+    private bool CanCopyLogstand => _currentVesselProfile?.CurrentLogstand.HasValue == true;
+
+    private string EngineHoursCopyTitle => CanCopyEngineHours
+        ? $"Overnemen: {_currentVesselProfile!.CurrentEngineHours:0.##} uur"
+        : "Geen actuele motorurenstand ingesteld bij Instellingen > Boot";
+
+    private string LogstandCopyTitle => CanCopyLogstand
+        ? $"Overnemen: {_currentVesselProfile!.CurrentLogstand:0.##} nm"
+        : "Geen actuele logstand ingesteld bij Instellingen > Boot";
+
+    private static string FormatTripDuration(decimal? durationHours)
+    {
+        if (!durationHours.HasValue || durationHours.Value < 0)
+        {
+            return "—";
+        }
+
+        var duration = TimeSpan.FromHours((double)durationHours.Value);
+        return $"{(int)duration.TotalHours}:{duration.Minutes:00} uur";
+    }
+
+    private static string FormatNauticalMiles(decimal? nauticalMiles)
+        => nauticalMiles.HasValue ? $"{nauticalMiles.Value:0.0} nm" : "—";
 
     private class EntryFormModel
     {

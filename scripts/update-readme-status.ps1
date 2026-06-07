@@ -112,12 +112,12 @@ function Get-CurrentEpicStatus {
         [pscustomobject]@{
             Epic = "Owner profile & vessel settings"
             Document = ".docs/epics/owner-profile-settings.md"
-            Done = 4
+            Done = 5
             Replaced = 0
             Partial = 0
             Open = 0
             Parked = 0
-            Notes = "Settings-basis afgerond"
+            Notes = "Settings-basis en actuele tellerstanden afgerond"
         },
         [pscustomobject]@{
             Epic = "NMEA ingest & sensordata"
@@ -132,12 +132,12 @@ function Get-CurrentEpicStatus {
         [pscustomobject]@{
             Epic = "Digitaal logboek"
             Document = ".docs/epics/digital-logbook.md"
-            Done = 8
+            Done = 9
             Replaced = 0
             Partial = 5
-            Open = 2
+            Open = 1
             Parked = 0
-            Notes = "Basis sterk; routekaart, export en automatisch voorinvullen open"
+            Notes = "Basis en tellerstandvoorinvulling klaar; routekaart en export open"
         },
         [pscustomobject]@{
             Epic = "Dashboard & live overzicht"
@@ -283,4 +283,5 @@ else {
     ) -join [Environment]::NewLine
 }
 
+$updated = $updated.TrimEnd()
 Set-Content -Path $ReadmePath -Value $updated -Encoding utf8

@@ -63,11 +63,13 @@ else
                     <th>Vertrek</th>
                     <th>Aankomst</th>
                     <th>Logstand start</th>
+                    <th>Logstand eind</th>
                     <th>Gelogde mijlen</th>
                     <th>Motor uren start</th>
                     <th>Motor uren eind</th>
                     <th>Brandstof</th>
                     <th>Totaal vaaruren</th>
+                    <th>Reisduur</th>
                 </tr>
             </thead>
             <tbody>
@@ -75,11 +77,13 @@ else
                     <td>@BoordtijdHelper.NaarLokaal(_trip.DepartureUtc).ToString("dd-MM-yyyy HH:mm")</td>
                     <td>@(_trip.ArrivalUtc.HasValue ? BoordtijdHelper.NaarLokaal(_trip.ArrivalUtc.Value).ToString("dd-MM-yyyy HH:mm") : "—")</td>
                     <td>@(_trip.LogstandStart.HasValue ? _trip.LogstandStart.Value.ToString("F1") + " nm" : "—")</td>
+                    <td>@(_trip.LogstandEnd.HasValue ? _trip.LogstandEnd.Value.ToString("F1") + " nm" : "—")</td>
                     <td>@(_trip.LoggedMiles.HasValue ? _trip.LoggedMiles.Value.ToString("F1") + " nm" : "—")</td>
                     <td>@(_trip.EngineHoursStart.HasValue ? _trip.EngineHoursStart.Value.ToString("F1") : "—")</td>
                     <td>@(_trip.EngineHoursEnd.HasValue ? _trip.EngineHoursEnd.Value.ToString("F1") : "—")</td>
                     <td>@(_trip.Fuel ?? "—")</td>
                     <td>@(_trip.TotalSailingHours.HasValue ? _trip.TotalSailingHours.Value.ToString("F1") + " u" : "—")</td>
+                    <td>@FormatTripDuration(_trip.TotalTripDuration)</td>
                 </tr>
             </tbody>
         </table>
@@ -157,4 +161,15 @@ else
     /// <summary>Formatteert een decimale gradenwaarde compact naar 5 decimalen.</summary>
     private static string FormatCoord(double? value)
         => value.HasValue ? value.Value.ToString("F5") : "";
+
+    private static string FormatTripDuration(decimal? durationHours)
+    {
+        if (!durationHours.HasValue || durationHours.Value < 0)
+        {
+            return "—";
+        }
+
+        var duration = TimeSpan.FromHours((double)durationHours.Value);
+        return $"{(int)duration.TotalHours}:{duration.Minutes:00} uur";
+    }
 }

@@ -32,6 +32,16 @@ public class VesselProfile
     public string? Mmsi { get; private set; }
 
     /// <summary>
+    /// Actuele motorurenstand (optioneel, niet-negatief). Kan bewust worden gereset.
+    /// </summary>
+    public decimal? CurrentEngineHours { get; private set; }
+
+    /// <summary>
+    /// Actuele logstandwaarde in zeemijlen (optioneel, niet-negatief). Kan bewust worden gereset.
+    /// </summary>
+    public decimal? CurrentLogstand { get; private set; }
+
+    /// <summary>
     /// Moment waarop het profiel is aangemaakt (UTC).
     /// </summary>
     public DateTime CreatedUtc { get; private set; }
@@ -43,13 +53,15 @@ public class VesselProfile
 
     private VesselProfile() { } // Voor EF
 
-    private VesselProfile(string vesselName, string? homePort, string? callSign, string? mmsi, DateTime createdUtc)
+    private VesselProfile(string vesselName, string? homePort, string? callSign, string? mmsi, DateTime createdUtc, decimal? currentEngineHours = null, decimal? currentLogstand = null)
     {
         VesselName = vesselName;
         HomePort = homePort;
         CallSign = callSign;
         Mmsi = mmsi;
         CreatedUtc = createdUtc;
+        CurrentEngineHours = currentEngineHours;
+        CurrentLogstand = currentLogstand;
     }
 
     /// <summary>
@@ -60,11 +72,13 @@ public class VesselProfile
     /// <param name="callSign">Roepnaam (optioneel).</param>
     /// <param name="mmsi">MMSI-nummer (optioneel).</param>
     /// <param name="createdUtc">Aanmaaktijd (UTC).</param>
+    /// <param name="currentEngineHours">Actuele motorurenstand (optioneel).</param>
+    /// <param name="currentLogstand">Actuele logstandwaarde in zeemijlen (optioneel).</param>
     /// <returns>Nieuw VesselProfile.</returns>
-    public static VesselProfile Create(string vesselName, string? homePort = null, string? callSign = null, string? mmsi = null, DateTime? createdUtc = null)
+    public static VesselProfile Create(string vesselName, string? homePort = null, string? callSign = null, string? mmsi = null, DateTime? createdUtc = null, decimal? currentEngineHours = null, decimal? currentLogstand = null)
     {
         var now = createdUtc ?? DateTime.UtcNow;
-        return new VesselProfile(vesselName, homePort, callSign, mmsi, now);
+        return new VesselProfile(vesselName, homePort, callSign, mmsi, now, currentEngineHours, currentLogstand);
     }
 
     /// <summary>
@@ -74,13 +88,40 @@ public class VesselProfile
     /// <param name="homePort">Nieuwe thuishaven.</param>
     /// <param name="callSign">Nieuwe roepnaam.</param>
     /// <param name="mmsi">Nieuw MMSI-nummer.</param>
+    /// <param name="currentEngineHours">Actuele motorurenstand (optioneel).</param>
+    /// <param name="currentLogstand">Actuele logstandwaarde in zeemijlen (optioneel).</param>
     /// <param name="updatedUtc">Update-tijd (UTC).</param>
-    public void Update(string vesselName, string? homePort = null, string? callSign = null, string? mmsi = null, DateTime? updatedUtc = null)
+    public void Update(string vesselName, string? homePort = null, string? callSign = null, string? mmsi = null, decimal? currentEngineHours = null, decimal? currentLogstand = null, DateTime? updatedUtc = null)
     {
         VesselName = vesselName;
         HomePort = homePort;
         CallSign = callSign;
         Mmsi = mmsi;
+        // Dit is een volledige Settings-update: null wist de optionele tellerstand.
+        CurrentEngineHours = currentEngineHours;
+        CurrentLogstand = currentLogstand;
+        UpdatedUtc = updatedUtc ?? DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Werkt alleen actuele motorurenstand bij.
+    /// </summary>
+    /// <param name="currentEngineHours">Nieuwe actuele motorurenstand.</param>
+    /// <param name="updatedUtc">Update-tijd (UTC).</param>
+    public void UpdateCurrentEngineHours(decimal? currentEngineHours, DateTime? updatedUtc = null)
+    {
+        CurrentEngineHours = currentEngineHours;
+        UpdatedUtc = updatedUtc ?? DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Werkt alleen actuele logstandwaarde bij.
+    /// </summary>
+    /// <param name="currentLogstand">Nieuwe actuele logstandwaarde.</param>
+    /// <param name="updatedUtc">Update-tijd (UTC).</param>
+    public void UpdateCurrentLogstand(decimal? currentLogstand, DateTime? updatedUtc = null)
+    {
+        CurrentLogstand = currentLogstand;
         UpdatedUtc = updatedUtc ?? DateTime.UtcNow;
     }
 }

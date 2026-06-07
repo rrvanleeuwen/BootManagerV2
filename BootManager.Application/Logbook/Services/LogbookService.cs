@@ -1,4 +1,5 @@
 using BootManager.Application.Logbook.DTOs;
+using BootManager.Application.VesselProfile.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
@@ -22,6 +23,7 @@ public class LogbookService : ILogbookService
     private readonly ILogbookMeasurementSuggestionService _suggestionService;
     private readonly ILogbookAttachmentService _attachmentService;
     private readonly ILogbookEntryDeletionService _entryDeletionService;
+    private readonly IVesselProfileService _vesselProfileService;
     private readonly ILogger<LogbookService> _logger;
 
     /// <summary>
@@ -33,6 +35,7 @@ public class LogbookService : ILogbookService
         ILogbookMeasurementSuggestionService suggestionService,
         ILogbookAttachmentService attachmentService,
         ILogbookEntryDeletionService entryDeletionService,
+        IVesselProfileService vesselProfileService,
         ILogger<LogbookService> logger)
     {
         _tripRepo = tripRepo;
@@ -40,6 +43,7 @@ public class LogbookService : ILogbookService
         _suggestionService = suggestionService;
         _attachmentService = attachmentService;
         _entryDeletionService = entryDeletionService;
+        _vesselProfileService = vesselProfileService;
         _logger = logger;
     }
 
@@ -59,7 +63,7 @@ public class LogbookService : ILogbookService
             crew: dto.Crew,
             notes: dto.Notes,
             logstandStart: dto.LogstandStart,
-            loggedMiles: dto.LoggedMiles,
+            logstandEnd: dto.LogstandEnd,
             engineHoursStart: dto.EngineHoursStart,
             engineHoursEnd: dto.EngineHoursEnd,
             fuel: dto.Fuel,
@@ -67,6 +71,7 @@ public class LogbookService : ILogbookService
             logIntervalMinutes: dto.LogIntervalMinutes);
 
         await _tripRepo.AddAsync(entity, cancellationToken);
+        await AdvanceVesselMetersAsync(entity, cancellationToken);
         _logger.LogInformation("Logboek reis aangemaakt met id {TripId}.", entity.Id);
         return MapTrip(entity);
     }
@@ -104,7 +109,7 @@ public class LogbookService : ILogbookService
             crew: dto.Crew,
             notes: dto.Notes,
             logstandStart: dto.LogstandStart,
-            loggedMiles: dto.LoggedMiles,
+            logstandEnd: dto.LogstandEnd,
             engineHoursStart: dto.EngineHoursStart,
             engineHoursEnd: dto.EngineHoursEnd,
             fuel: dto.Fuel,
@@ -112,6 +117,7 @@ public class LogbookService : ILogbookService
             logIntervalMinutes: dto.LogIntervalMinutes);
 
         await _tripRepo.UpdateAsync(entity, cancellationToken);
+        await AdvanceVesselMetersAsync(entity, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -121,8 +127,16 @@ public class LogbookService : ILogbookService
             ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
 
         entity.CompleteTrip(arrivalTimeUtc);
+
+        // Bereken reisduur
+        var tripDuration = (arrivalTimeUtc - entity.DepartureUtc).TotalHours;
+
         await _tripRepo.UpdateAsync(entity, cancellationToken);
-        _logger.LogInformation("Logboek reis {TripId} afgerond op {ArrivalTime}.", tripId, arrivalTimeUtc.ToString("u"));
+
+        // Voortschrijving: motoruren en logstand
+        await AdvanceVesselMetersAsync(entity, cancellationToken);
+
+        _logger.LogInformation("Logboek reis {TripId} afgerond op {ArrivalTime}. Reisduur: {TripDuration} uren.", tripId, arrivalTimeUtc.ToString("u"), tripDuration);
     }
 
      /// <inheritdoc />
@@ -265,6 +279,7 @@ public class LogbookService : ILogbookService
         Crew = t.Crew,
         Notes = t.Notes,
         LogstandStart = t.LogstandStart,
+        LogstandEnd = t.LogstandEnd,
         LoggedMiles = t.LoggedMiles,
         EngineHoursStart = t.EngineHoursStart,
         EngineHoursEnd = t.EngineHoursEnd,
@@ -272,6 +287,7 @@ public class LogbookService : ILogbookService
         TotalSailingHours = t.TotalSailingHours,
         LogIntervalMinutes = t.LogIntervalMinutes,
         Status = t.Status,
+        TotalTripDuration = t.ArrivalUtc.HasValue ? (decimal)(t.ArrivalUtc.Value - t.DepartureUtc).TotalHours : null,
         CreatedAtUtc = t.CreatedAtUtc,
         UpdatedAtUtc = t.UpdatedAtUtc
     };
@@ -423,5 +439,33 @@ public class LogbookService : ILogbookService
             UpdatedAtUtc = e.UpdatedAtUtc,
             AttachmentCount = attachmentCount
         };
+    }
+
+    /// <summary>
+    /// Voortschrijving van boottellerstand naar VesselProfile op basis van reis-gegevens.
+    /// </summary>
+    private async Task AdvanceVesselMetersAsync(LogbookTrip trip, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Bepaal kandidaten voor motoruren: hoogste van EngineHoursStart en EngineHoursEnd
+            var engineHoursCandidates = new[] { trip.EngineHoursStart, trip.EngineHoursEnd };
+
+            // Bepaal kandidaten voor logstand: expliciete begin- en eindstand.
+            var logstandCandidates = new[] { trip.LogstandStart, trip.LogstandEnd };
+
+            // Voortschrijving afzonderlijk handelen via IVesselProfileService
+            await _vesselProfileService.AdvanceCurrentMetersAsync(
+                engineHoursCandidates,
+                logstandCandidates,
+                cancellationToken);
+
+            _logger.LogInformation("Boottellerstand voortgeschreven voor reis {TripId}.", trip.Id);
+        }
+        catch (Exception ex)
+        {
+            // Log fout maar continue; voortschrijving mag niet de reis-completion blokkeren
+            _logger.LogWarning(ex, "Voortschrijving boottellerstand voor reis {TripId} is mislukt.", trip.Id);
+        }
     }
 }

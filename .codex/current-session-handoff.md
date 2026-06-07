@@ -1,8 +1,101 @@
 # Current Codex Handoff
 
-Updated: 2026-06-01.
+Updated: 2026-06-07.
 
 ## Current Task
+
+Branch `codex/logbook-header-autofill` is gesynchroniseerd met
+`origin/master @ eba2f8a` nadat op 2026-06-06 nieuwe epic- en
+user-storydocumentatie op GitHub was toegevoegd.
+
+Actuele status:
+
+- `origin/master` voegde twee documenten toe voor automatisch voorinvullen van
+  logboekreisgegevens:
+  - `.docs/epics/logbook-trip-autofill.md` als uitgebreide story;
+  - `.docs/epics/logbook-trip-autofill-functional.md` als korte functionele
+    samenvatting.
+- Deze nieuwe story overlapte met de lokaal voorbereide en eerder goedgekeurde
+  story in `.docs/epics/digital-logbook.md`, maar week inhoudelijk af:
+  - de masterstory voegt vorige-reiswaarden, aankomsttijd en reisduur toe;
+  - GPS-/havenherkenning en reverse geocoding vallen buiten de eerste slice;
+  - tank-, motoruren- en logstandsensors zijn vervolgslices.
+- De documentatie is rechtgetrokken:
+  - `logbook-trip-autofill.md` is de canonieke overkoepelende story;
+  - `logbook-trip-autofill-functional.md` is alleen een samenvatting;
+  - `digital-logbook.md` verwijst naar de canonieke story en bevat geen
+    afwijkende tweede scope meer;
+  - `.docs/TODO.md` verwijst naar de eerste slice
+    `LOG-TRIP-AUTO-1A`.
+- `LOG-TRIP-AUTO-1A` is door de gebruiker goedgekeurd op 2026-06-07.
+- De goedgekeurde tellerstandregels zijn:
+  - `VesselProfile` bewaart actuele motoruren- en logstandwaarden;
+  - een nieuwe reis neemt deze per veld alleen over na een expliciete
+    knop-/icoonactie;
+  - reisopslag schrijft alleen geldige hogere standen voort;
+  - `0`, lege, negatieve of lagere reiswaarden verlagen een bestaande positieve
+    profielwaarde niet;
+  - een gebruiker mag in Settings bewust een lagere resetwaarde opslaan;
+  - historische reizen worden niet opnieuw gescand, zodat een reset niet wordt
+    teruggedraaid;
+  - de gebruiker voert `LogstandEnd` in;
+  - `LoggedMiles` wordt alleen-lezen berekend als
+    `LogstandEnd - LogstandStart`.
+- De slice omvat daarnaast bootnaam/boordtijd-defaults, aankomsttijd en
+  reisduur. GPS/havenherkenning, tankdata en sensorgebaseerde tellerstanden
+  blijven buiten scope.
+- De goedgekeurde story staat in
+  `.docs/epics/logbook-trip-autofill.md`.
+- Copilot heeft de eerste implementatie uitgevoerd. Codex heeft die op
+  2026-06-07 gereviewd en met expliciete toestemming van de gebruiker vier
+  correcties zelf doorgevoerd:
+  - tellerstanden worden bij aanmaken en normaal opslaan van een reis
+    voortgeschreven, niet alleen bij `Beëindig reis`;
+  - lege tellerstanden in Settings wissen de optionele profielwaarde;
+  - een nieuwe reis gebruikt bootnaam uit `VesselProfile` en de actuele lokale
+    boordtijd;
+  - reisduur is zichtbaar in logboek en print, en overnameknoppen zijn
+    uitgeschakeld met uitleg als geen profielwaarde beschikbaar is.
+- Technische verificatie na deze correcties:
+  - `dotnet build BootManager.sln` geslaagd met 0 errors; 11 bestaande nullable
+    warnings in `Dashboard.razor`;
+  - gerichte VesselProfile-tests geslaagd: 16/16;
+  - `git diff --check` schoon.
+- De gebruiker heeft de volledige runtimeflow op 2026-06-07 handmatig getest
+  en geaccepteerd.
+- Runtime-test op 2026-06-07 vond dat het oude invoerveld `Gelogde mijlen`
+  verwarrend als eindstand werd gebruikt. Dit is gecorrigeerd:
+  - `Logstand eind` is nu het invoerveld;
+  - `Gelogde mijlen` is alleen-lezen en wordt berekend;
+  - voortschrijving gebruikt begin- en eindstand rechtstreeks;
+  - eindstand lager dan beginstand wordt geweigerd;
+  - migratie `AddLogbookTripLogstandEnd` voegt het nieuwe veld toe en leidt
+    historische eindstanden waar mogelijk af uit de oude velden.
+- Administratieve afronding is uitgevoerd:
+  - `LOG-TRIP-AUTO-1A` staat als geïmplementeerd en geaccepteerd in de
+    logboekdocumenten;
+  - Owner Profile & Vessel Settings US5 staat als afgerond;
+  - `.docs/TODO.md` vinkt de slice af;
+  - legacy coverage voor `US1.2`, `US5.3`, `US5.6` en `US5.11` is bijgewerkt;
+  - README-projectstatus is opnieuw gegenereerd.
+- De branch is klaar voor commit, push en PR.
+
+ASAP volgende processtap na afronding van de huidige `LOG-TRIP-AUTO-1A`-flow:
+
+- Bereid de overstap van Copilot naar Claude Code als programmeeragent voor.
+- Codex blijft architect-, proces-, review- en testassistent.
+- Maak de workflow programmeeragent-neutraal in `AGENTS.md` en
+  `.codex/working-agreement.md`.
+- Voeg een compacte, resourcezuinige `CLAUDE.md` toe.
+- Werk `.codex/task-context-map.md` bij met een minimaal implementatiepakket.
+- Overweeg een herbruikbaar implementation-packet-template met exacte scope,
+  verwachte write-set, relevante bestanden, gerichte tests en een kort
+  opleverformat.
+- Historische Copilot-vermeldingen in afgeronde stories blijven ongewijzigd.
+- Voer deze procesdocumentatiewijziging bij voorkeur uit op een aparte branch,
+  zodat zij niet wordt vermengd met de huidige feature-implementatie.
+
+Vorige afgeronde taak:
 
 `README Projectstatusoverzicht` is direct op `master` gezet en afgerond.
 

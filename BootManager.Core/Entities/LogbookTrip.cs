@@ -66,7 +66,12 @@ public class LogbookTrip
     public decimal? LogstandStart { get; private set; }
 
     /// <summary>
-    /// Gelogde mijlen tijdens de reis (nm).
+    /// Logstand aan het einde van de reis (nm).
+    /// </summary>
+    public decimal? LogstandEnd { get; private set; }
+
+    /// <summary>
+    /// Gelogde mijlen tijdens de reis (nm), berekend uit begin- en eindstand.
     /// </summary>
     public decimal? LoggedMiles { get; private set; }
 
@@ -128,7 +133,7 @@ public class LogbookTrip
         string? crew = null,
         string? notes = null,
         decimal? logstandStart = null,
-        decimal? loggedMiles = null,
+        decimal? logstandEnd = null,
         decimal? engineHoursStart = null,
         decimal? engineHoursEnd = null,
         string? fuel = null,
@@ -137,6 +142,7 @@ public class LogbookTrip
     {
         if (logIntervalMinutes <= 0)
             throw new ArgumentException("Loginterval moet groter dan nul zijn.", nameof(logIntervalMinutes));
+        ValidateLogstand(logstandStart, logstandEnd);
 
         Name = name;
         DepartureUtc = departureUtc;
@@ -147,7 +153,8 @@ public class LogbookTrip
         Crew = crew;
         Notes = notes;
         LogstandStart = logstandStart;
-        LoggedMiles = loggedMiles;
+        LogstandEnd = logstandEnd;
+        LoggedMiles = CalculateLoggedMiles(logstandStart, logstandEnd);
         EngineHoursStart = engineHoursStart;
         EngineHoursEnd = engineHoursEnd;
         Fuel = fuel;
@@ -170,7 +177,7 @@ public class LogbookTrip
         string? crew,
         string? notes,
         decimal? logstandStart,
-        decimal? loggedMiles,
+        decimal? logstandEnd,
         decimal? engineHoursStart,
         decimal? engineHoursEnd,
         string? fuel,
@@ -179,6 +186,7 @@ public class LogbookTrip
     {
         if (logIntervalMinutes <= 0)
             throw new ArgumentException("Loginterval moet groter dan nul zijn.", nameof(logIntervalMinutes));
+        ValidateLogstand(logstandStart, logstandEnd);
 
         Name = name;
         DepartureUtc = departureUtc;
@@ -189,13 +197,32 @@ public class LogbookTrip
         Crew = crew;
         Notes = notes;
         LogstandStart = logstandStart;
-        LoggedMiles = loggedMiles;
+        LogstandEnd = logstandEnd;
+        LoggedMiles = CalculateLoggedMiles(logstandStart, logstandEnd);
         EngineHoursStart = engineHoursStart;
         EngineHoursEnd = engineHoursEnd;
         Fuel = fuel;
         TotalSailingHours = totalSailingHours;
         LogIntervalMinutes = logIntervalMinutes;
         UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    private static decimal? CalculateLoggedMiles(decimal? logstandStart, decimal? logstandEnd)
+    {
+        if (!logstandStart.HasValue || !logstandEnd.HasValue || logstandEnd.Value < logstandStart.Value)
+        {
+            return null;
+        }
+
+        return logstandEnd.Value - logstandStart.Value;
+    }
+
+    private static void ValidateLogstand(decimal? logstandStart, decimal? logstandEnd)
+    {
+        if (logstandStart.HasValue && logstandEnd.HasValue && logstandEnd.Value < logstandStart.Value)
+        {
+            throw new ArgumentException("Logstand eind mag niet lager zijn dan logstand start.", nameof(logstandEnd));
+        }
     }
 
     /// <summary>
