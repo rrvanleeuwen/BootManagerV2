@@ -9,6 +9,8 @@ Lees:
 - `.codex/current-session-handoff.md`;
 - dit bestand.
 
+Als de handoff naar een actieve release of pilot verwijst, lees dan ook dat ene release-document. Dat document bepaalt de functionele prioriteit.
+
 Lees `.codex/working-agreement.md` alleen als proces, storyflow, review, documentatie of git/PR aan de orde is.
 
 Gebruik `rg`, `Select-String`, gerichte diffs en kleine bestandssecties. Lees grote bestanden niet volledig tenzij dat aantoonbaar nodig is.
@@ -20,6 +22,7 @@ Gebruik `rg`, `Select-String`, gerichte diffs en kleine bestandssecties. Lees gr
 Lees:
 
 - actuele handoff;
+- actieve release of pilot uit de handoff;
 - `git status --short --branch`;
 - alleen de relevante TODO- of epicsectie.
 
@@ -27,17 +30,20 @@ Lees:
 
 Lees gericht:
 
+- actieve release of pilot;
 - relevante TODO-sectie;
 - relevante epicsectie;
 - `legacy-coverage-register.md` voor geraakte scope;
 - `mapped-epics.md` of `proposed-backlog.md` alleen bij onduidelijkheid;
 - `scope-inventory.md` alleen als de andere bronnen onvoldoende zijn.
 
+Kies geen story buiten de actieve release zonder blocker, ontbrekende afhankelijkheid of expliciete gebruikersbeslissing.
+
 ### Implementation packet voor goedgekeurde story
 
 Lees:
 
-- goedgekeurde storysectie;
+- goedgekeurde storysectie in release of epic;
 - relevante architectuur- of beslisnotitie indien nodig;
 - alleen source files die nodig zijn om het packet precies te maken;
 - `.codex/implementation-packet-template.md`.
@@ -61,7 +67,7 @@ Lees:
 - relevante story- of epicsectie;
 - betrokken source files;
 - relevante logs of foutmelding;
-- handoff alleen voor actuele branch- en teststatus.
+- handoff voor actuele release-, branch- en teststatus.
 
 Legacy-analyse is alleen nodig als de bug functionele scope verandert.
 
@@ -71,7 +77,9 @@ Controleer:
 
 - branch en worktree;
 - gewijzigde bestanden en tests;
-- direct geraakte epic/TODO/coverage/handoff;
+- actieve release-status;
+- direct geraakte epic/TODO/legacy-coverage/handoff;
+- bestaande actuele en legacy-userstories die dezelfde functionaliteit beschrijven;
 - README-status alleen bij gewijzigde story- of epiccijfers.
 
 ### Raspberry Pi, deployment of runtimeconfiguratie
@@ -79,6 +87,7 @@ Controleer:
 Lees:
 
 - actuele handoff;
+- actieve release indien relevant;
 - relevante sectie van `system-operations.md`;
 - `docker-compose.yml` en alleen relevante configuratiebestanden;
 - runbook alleen wanneer commando's nodig zijn.
