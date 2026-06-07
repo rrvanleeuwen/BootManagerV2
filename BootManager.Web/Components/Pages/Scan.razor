@@ -49,6 +49,62 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     }
 </div>
 
+@if (_cameras.Length > 1)
+{
+    <div class="scan-camera-select">
+        <label class="scan-camera-label">Camera</label>
+        <select class="form-select form-select-sm"
+                value="@(_selectedDeviceId ?? string.Empty)"
+                @onchange="OnCameraChange">
+            <option value="">Automatisch (achtercamera voorkeur)</option>
+            @for (int i = 0; i < _cameras.Length; i++)
+            {
+                var cam = _cameras[i];
+                var displayLabel = string.IsNullOrEmpty(cam.Label) ? $"Camera {i + 1}" : cam.Label;
+                <option value="@cam.DeviceId">@displayLabel</option>
+            }
+        </select>
+    </div>
+}
+
+@if (_diagnostics is not null)
+{
+    <div class="scan-diagnostics">
+        @if (!string.IsNullOrEmpty(_diagnostics.Label))
+        {
+            <span class="scan-diag-item">@_diagnostics.Label</span>
+        }
+        @if (_diagnostics.Width.HasValue && _diagnostics.Height.HasValue)
+        {
+            <span class="scan-diag-item">@_diagnostics.Width×@_diagnostics.Height</span>
+        }
+        @if (!string.IsNullOrEmpty(_diagnostics.FacingMode))
+        {
+            <span class="scan-diag-item">@_diagnostics.FacingMode</span>
+        }
+        @if (!string.IsNullOrEmpty(_diagnostics.ActiveFocusMode))
+        {
+            <span class="scan-diag-item">AF: @_diagnostics.ActiveFocusMode</span>
+        }
+        @if (_diagnostics.SupportedFocusModes?.Length > 0)
+        {
+            <span class="scan-diag-item">Modes: @string.Join(",", _diagnostics.SupportedFocusModes)</span>
+        }
+        @switch (_diagnostics.Autofocus)
+        {
+            case "applied":
+                <span class="scan-diag-item scan-diag-success">↻ continu</span>
+                break;
+            case "failed":
+                <span class="scan-diag-item scan-diag-warning">✗ mislukt</span>
+                break;
+            case "unsupported":
+                <span class="scan-diag-item scan-diag-neutral">— n.v.t.</span>
+                break;
+        }
+    </div>
+}
+
 @if (_status is ScanStatus.Result or ScanStatus.ManualEntry)
 {
     <div class="scan-result">
@@ -89,11 +145,49 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         InsecureContext
     }
 
+    /// <summary>Eenvoudige DTO voor een beschikbare video-input, gevuld via JS-interop.</summary>
+    public sealed class CameraInfo
+    {
+        public string DeviceId { get; set; } = string.Empty;
+        public string Label    { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Diagnostische gegevens van de actieve cameratrack, gevuld na toestemmingsverlening.
+    /// Nullable properties: niet alle browsers ondersteunen alle velden.
+    /// </summary>
+    public sealed class CameraDiagnostics
+    {
+        public string? DeviceId             { get; set; }
+        public string? Label                { get; set; }
+        public int?    Width                { get; set; }
+        public int?    Height               { get; set; }
+        public string? FacingMode           { get; set; }
+        public string[]? SupportedFocusModes { get; set; }
+        public string? ActiveFocusMode      { get; set; }
+
+        /// <summary>Autofocusresultaat: "applied", "failed", "unsupported".</summary>
+        public string? Autofocus            { get; set; }
+    }
+
     private ScanStatus _status = ScanStatus.NotStarted;
     private string? _resultValue;
     private string? _resultFormat;
     private string? _errorMessage;
     private string? _manualInput;
+
+    // Geselecteerde camera-ID; null = automatische achtercameravoorkeur via facingMode.
+    // Blijft behouden over scan-herstarts tijdens de levensduur van het component.
+    private string? _selectedDeviceId;
+
+    // Beschikbare cameras; gevuld na eerste toestemmingsverlening; leeg = selector verborgen.
+    private CameraInfo[] _cameras = Array.Empty<CameraInfo>();
+
+    // Diagnostics van de actieve track; null = diagnosticsblok verborgen.
+    private CameraDiagnostics? _diagnostics;
+
+    // Monotoon request-ID per scan-sessie voor race-safe callbacks.
+    private int _requestId = 0;
 
     private IJSObjectReference? _scanModule;
     private DotNetObjectReference<Scan>? _dotnetRef;
@@ -151,22 +245,22 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         }
     }
 
-    private async Task StartScan()
+    /// <summary>
+    /// Interne helper: start de scanner race-safe met lokale request-ID en deviceId.
+    /// Controlleert na iedere async-bewerking of deze request nog actueel is.
+    /// </summary>
+    private async Task _internalStartScan(int localRequestId, string? localSelectedDeviceId)
     {
         if (_scanModule is null || _dotnetRef is null)
-        {
             return;
-        }
-
-        _resultValue = null;
-        _resultFormat = null;
-        _errorMessage = null;
-        _status = ScanStatus.RequestingPermission;
-        StateHasChanged();
 
         try
         {
-            await _scanModule.InvokeVoidAsync("startScan", _dotnetRef, "scan-video");
+            await _scanModule.InvokeVoidAsync("startScan", _dotnetRef, "scan-video", localSelectedDeviceId, localRequestId);
+
+            // Check: is dit nog de huidige request?
+            if (localRequestId != _requestId)
+                return;
         }
         catch (JSDisconnectedException)
         {
@@ -174,11 +268,19 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         }
         catch (JSException ex)
         {
+            // Check: is dit nog de huidige request?
+            if (localRequestId != _requestId)
+                return;
+
             _status = ScanStatus.Error;
             _errorMessage = "Fout bij starten van de scanner: " + ex.Message;
             StateHasChanged();
             return;
         }
+
+        // Check opnieuw: is dit nog de huidige request?
+        if (localRequestId != _requestId)
+            return;
 
         // Als OnScanError de status al heeft gewijzigd, niet overschrijven.
         if (_status == ScanStatus.RequestingPermission)
@@ -188,8 +290,31 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         }
     }
 
+    private async Task StartScan()
+    {
+        if (_scanModule is null || _dotnetRef is null)
+            return;
+
+        _resultValue  = null;
+        _resultFormat = null;
+        _errorMessage = null;
+        _diagnostics  = null;
+        _requestId++;
+
+        // Leg lokaal vast vóór aanroep.
+        var localRequestId = _requestId;
+        var localSelectedDeviceId = _selectedDeviceId;
+
+        _status = ScanStatus.RequestingPermission;
+        StateHasChanged();
+
+        await _internalStartScan(localRequestId, localSelectedDeviceId);
+    }
+
     private async Task StopScan()
     {
+        _requestId++;
+
         if (_scanModule is not null)
         {
             try
@@ -205,19 +330,63 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     }
 
     /// <summary>
+    /// Verwerkt een camerawissel uit de selector. Race-safe: controlleert na stop en start
+    /// of de wissel nog actueel is (alleen de nieuwste wissel start een scanner).
+    /// </summary>
+    private async Task OnCameraChange(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString();
+        _selectedDeviceId = string.IsNullOrEmpty(raw) ? null : raw;
+
+        if (_status is ScanStatus.Active or ScanStatus.RequestingPermission)
+        {
+            // Lokale request-ID vóór stopScan.
+            _requestId++;
+            var localStopRequestId = _requestId;
+            var localSelectedDeviceId = _selectedDeviceId;
+
+            if (_scanModule is not null)
+            {
+                try
+                {
+                    await _scanModule.InvokeVoidAsync("stopScan");
+                }
+                catch (JSDisconnectedException) { }
+                catch (JSException) { }
+            }
+
+            // Check: is dit nog de huidige wissel?
+            if (localStopRequestId != _requestId)
+                return;
+
+            // Herstart direct met de nieuwe camera.
+            _resultValue  = null;
+            _resultFormat = null;
+            _errorMessage = null;
+            _diagnostics  = null;
+            _requestId++;
+            var localStartRequestId = _requestId;
+
+            _status = ScanStatus.RequestingPermission;
+            StateHasChanged();
+
+            await _internalStartScan(localStartRequestId, localSelectedDeviceId);
+        }
+    }
+
+    /// <summary>
     /// Past handmatige invoer toe. Stopt een actieve scanner en camerastream eerst.
     /// </summary>
     private async Task ApplyManualInput()
     {
         var value = _manualInput?.Trim();
         if (string.IsNullOrEmpty(value))
-        {
             return;
-        }
 
         if (_scanModule is not null &&
             _status is ScanStatus.Active or ScanStatus.RequestingPermission)
         {
+            _requestId++;
             try
             {
                 await _scanModule.InvokeVoidAsync("stopScan");
@@ -226,10 +395,10 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
             catch (JSException) { }
         }
 
-        _resultValue = value;
+        _resultValue  = value;
         _resultFormat = "Handmatig ingevoerd";
-        _status = ScanStatus.ManualEntry;
-        _manualInput = null;
+        _status       = ScanStatus.ManualEntry;
+        _manualInput  = null;
         StateHasChanged();
     }
 
@@ -241,24 +410,28 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         }
     }
 
-    /// <summary>
-    /// Ontvangt een succesvol scanresultaat vanuit JavaScript.
-    /// </summary>
+    /// <summary>Ontvangt een succesvol scanresultaat vanuit JavaScript.</summary>
     [JSInvokable]
-    public void OnScanResult(string value, string format)
+    public void OnScanResult(int requestId, string value, string format)
     {
-        _resultValue = value;
+        // Negeer resultaten van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _resultValue  = value;
         _resultFormat = format;
-        _status = ScanStatus.Result;
+        _status       = ScanStatus.Result;
         StateHasChanged();
     }
 
-    /// <summary>
-    /// Ontvangt een foutcode vanuit JavaScript en vertaalt die naar een Nederlandse melding.
-    /// </summary>
+    /// <summary>Ontvangt een foutcode vanuit JavaScript en vertaalt die naar een Nederlandse melding.</summary>
     [JSInvokable]
-    public void OnScanError(string errorCode)
+    public void OnScanError(int requestId, string errorCode)
     {
+        // Negeer fouten van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
         _status = errorCode == "INSECURE_CONTEXT" ? ScanStatus.InsecureContext : ScanStatus.Error;
         _errorMessage = errorCode switch
         {
@@ -275,11 +448,44 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     }
 
     /// <summary>
+    /// Ontvangt de lijst van beschikbare camera's na toestemmingsverlening.
+    /// Labels zijn pas beschikbaar nadat cameratoestemming is verleend.
+    /// Toont de camera-selector wanneer meer dan één video-input beschikbaar is.
+    /// </summary>
+    [JSInvokable]
+    public void OnCamerasAvailable(int requestId, CameraInfo[] cameras)
+    {
+        // Negeer camera's van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _cameras = cameras;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt diagnostische gegevens van de actieve cameratrack na toestemmingsverlening:
+    /// werkelijke resolutie, richting en autofocusresultaat (uit opnieuw gelezen settings).
+    /// </summary>
+    [JSInvokable]
+    public void OnDiagnostics(int requestId, CameraDiagnostics diagnostics)
+    {
+        // Negeer diagnostics van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _diagnostics = diagnostics;
+        StateHasChanged();
+    }
+
+    /// <summary>
     /// Stopt de camera en geeft JavaScript- en .NET-referenties vrij bij disposal van het component.
     /// JSDisconnectedException en JSException worden onderdrukt; de browser-verbinding kan al gesloten zijn.
     /// </summary>
     public async ValueTask DisposeAsync()
     {
+        _requestId++;
+
         if (_scanModule is not null)
         {
             try

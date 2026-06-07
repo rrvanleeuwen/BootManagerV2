@@ -73,17 +73,103 @@ function _stopVideoTracks() {
 }
 
 /**
+ * Inventariseert beschikbare video-inputs en leest diagnostische gegevens van de actieve
+ * cameratrack. Wordt aangeroepen nadat decodeFromConstraints is teruggekeerd (permission
+ * verleend, stream actief). Resultaten worden via callbacks doorgegeven aan Blazor.
+ * Alle async-stappen worden gecontroleerd op sessie-annulering en requestId-validiteit.
+ */
+async function _reportDiagnosticsAndCameras(mySession, myRequestId, videoEl) {
+    // Enumereer na toestemmingsverlening: labels zijn nu beschikbaar.
+    let cameras = [];
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        cameras = devices
+            .filter(d => d.kind === 'videoinput')
+            .map(d => ({ deviceId: d.deviceId, label: d.label || '' }));
+    } catch { }
+
+    if (_sessionId !== mySession) return;
+
+    // Lees diagnostics van de actieve videotrack via het video-element.
+    let diagnostics = null;
+    try {
+        const stream = videoEl.srcObject;
+        if (stream instanceof MediaStream) {
+            const tracks = stream.getVideoTracks();
+            if (tracks.length > 0) {
+                const track = tracks[0];
+                let settings = track.getSettings();
+                const activeCamera = cameras.find(c => c.deviceId === settings.deviceId);
+
+                // Ondersteunde focusmodi ophalen.
+                let supportedFocusModes = null;
+                let autofocus = 'unsupported';
+                try {
+                    const caps = typeof track.getCapabilities === 'function'
+                        ? track.getCapabilities()
+                        : null;
+                    if (Array.isArray(caps?.focusMode)) {
+                        supportedFocusModes = caps.focusMode;
+                        // Pas continuous autofocus toe als ondersteund: verplichte constraint.
+                        if (caps.focusMode.includes('continuous')) {
+                            try {
+                                await track.applyConstraints({ focusMode: { exact: 'continuous' } });
+                                // Herlezing NA applyConstraints: verificatie dat het is toegepast.
+                                settings = track.getSettings();
+                                autofocus = (settings.focusMode === 'continuous') ? 'applied' : 'failed';
+                            } catch {
+                                autofocus = 'failed';
+                            }
+                        }
+                    }
+                } catch { }
+
+                if (_sessionId !== mySession) return;
+
+                // Bouw diagnostics UIT de LAATST gelezen settings.
+                const activeCameraFinal = cameras.find(c => c.deviceId === settings.deviceId);
+                diagnostics = {
+                    deviceId:              settings.deviceId           ?? null,
+                    label:                 activeCameraFinal?.label     ?? null,
+                    width:                 settings.width               ?? null,
+                    height:                settings.height              ?? null,
+                    facingMode:            settings.facingMode          ?? null,
+                    supportedFocusModes:   supportedFocusModes,
+                    activeFocusMode:       settings.focusMode           ?? null,
+                    autofocus
+                };
+            }
+        }
+    } catch { }
+
+    if (_sessionId !== mySession) return;
+
+    if (_dotnetRef) {
+        if (cameras.length > 0) {
+            _dotnetRef.invokeMethodAsync('OnCamerasAvailable', myRequestId, cameras).catch(() => { });
+        }
+        if (diagnostics) {
+            _dotnetRef.invokeMethodAsync('OnDiagnostics', myRequestId, diagnostics).catch(() => { });
+        }
+    }
+}
+
+/**
  * Start de camerastream en barcode-/QR-decoder.
  *
- * Per aanroep wordt een nieuwe BrowserMultiFormatReader aangemaakt en bewaard als
- * de actieve reader (_reader). decodeFromConstraints retourneert Promise<void>;
- * er is geen controlobject. Stoppen gebeurt altijd met reader.reset().
+ * selectedDeviceId (optioneel):
+ *   - null/undefined → facingMode ideal environment + ideal 1920×1080
+ *   - string         → exact deviceId + ideal 1920×1080
  *
- * Elke aanroep reserveert een uniek sessienummer (mySession). Callbacks en
- * await-terugkeerwaarden van een geannuleerde sessie worden verworpen en de
- * bijbehorende reader en tracks worden direct gestopt.
+ * requestId: unieke request-ID uit Blazor; wordt doorgegeven in alle callbacks
+ * zodat Blazor oude callbacks kan verwerpen.
+ *
+ * Na toestemmingsverlening worden beschikbare camera's en actieve diagnostics
+ * gerapporteerd via OnCamerasAvailable en OnDiagnostics op dotnetRef.
+ *
+ * Sessie-ID beschermt tegen race-conditions bij snelle stop/herstart of camerawissel.
  */
-export async function startScan(dotnetRef, videoElementId) {
+export async function startScan(dotnetRef, videoElementId, selectedDeviceId, requestId) {
     _dotnetRef = dotnetRef;
     _videoElementId = videoElementId;
 
@@ -92,14 +178,14 @@ export async function startScan(dotnetRef, videoElementId) {
 
     if (!window.isSecureContext) {
         if (_sessionId === mySession) {
-            await _dotnetRef.invokeMethodAsync('OnScanError', 'INSECURE_CONTEXT');
+            await _dotnetRef.invokeMethodAsync('OnScanError', requestId, 'INSECURE_CONTEXT');
         }
         return;
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
         if (_sessionId === mySession) {
-            await _dotnetRef.invokeMethodAsync('OnScanError', 'NO_CAMERA_API');
+            await _dotnetRef.invokeMethodAsync('OnScanError', requestId, 'NO_CAMERA_API');
         }
         return;
     }
@@ -109,17 +195,16 @@ export async function startScan(dotnetRef, videoElementId) {
         ZXing = await _loadZxing();
     } catch {
         if (_sessionId === mySession) {
-            await _dotnetRef.invokeMethodAsync('OnScanError', 'DECODER_LOAD_FAILED');
+            await _dotnetRef.invokeMethodAsync('OnScanError', requestId, 'DECODER_LOAD_FAILED');
         }
         return;
     }
 
-    // Controleer sessie na elke async stap.
     if (_sessionId !== mySession) return;
 
     const videoEl = document.getElementById(videoElementId);
     if (!videoEl) {
-        await _dotnetRef.invokeMethodAsync('OnScanError', 'CAMERA_ERROR');
+        await _dotnetRef.invokeMethodAsync('OnScanError', requestId, 'CAMERA_ERROR');
         return;
     }
 
@@ -128,6 +213,11 @@ export async function startScan(dotnetRef, videoElementId) {
         try { _reader.reset(); } catch { }
         _reader = null;
     }
+
+    // Expliciete camerakeuze via deviceId of achtercameravoorkeur via facingMode.
+    const videoConstraints = selectedDeviceId
+        ? { deviceId: { exact: selectedDeviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+        : { facingMode: { ideal: 'environment' },  width: { ideal: 1920 }, height: { ideal: 1080 } };
 
     // Maak een nieuwe reader voor deze sessie en sla hem op zodat stopScan
     // hem via _reader.reset() kan bereiken, ook tijdens de getUserMedia-await.
@@ -138,13 +228,7 @@ export async function startScan(dotnetRef, videoElementId) {
         // decodeFromConstraints: awaits getUserMedia, start daarna de continue decode-loop
         // via setTimeout en retourneert Promise<void> zodra de loop actief is.
         await localReader.decodeFromConstraints(
-            {
-                video: {
-                    facingMode: { ideal: 'environment' },
-                    width:      { ideal: 1920 },
-                    height:     { ideal: 1080 }
-                }
-            },
+            { video: videoConstraints },
             videoEl,
             (result, _err) => {
                 // NotFoundException per frame zonder code is normaal; negeren.
@@ -161,7 +245,7 @@ export async function startScan(dotnetRef, videoElementId) {
                 if (_reader === localReader) _reader = null;
                 _stopVideoTracks();
 
-                _dotnetRef?.invokeMethodAsync('OnScanResult', value, format).catch(() => { });
+                _dotnetRef?.invokeMethodAsync('OnScanResult', requestId, value, format).catch(() => { });
             }
         );
 
@@ -171,7 +255,11 @@ export async function startScan(dotnetRef, videoElementId) {
         if (_sessionId !== mySession) {
             try { localReader.reset(); } catch { }
             _stopVideoTracks();
+            return;
         }
+
+        // Camera actief: inventariseer beschikbare camera's en lees diagnostics.
+        await _reportDiagnosticsAndCameras(mySession, requestId, videoEl);
 
     } catch (e) {
         // Zorg dat de reader niet blijft hangen ongeacht de oorzaak.
@@ -187,7 +275,7 @@ export async function startScan(dotnetRef, videoElementId) {
             e?.name === 'NotAllowedError' ? 'PERMISSION_DENIED' :
             e?.name === 'NotFoundError'   ? 'NO_CAMERA' :
                                             'CAMERA_ERROR';
-        try { await _dotnetRef?.invokeMethodAsync('OnScanError', code); } catch { }
+        try { await _dotnetRef?.invokeMethodAsync('OnScanError', requestId, code); } catch { }
     }
 }
 
