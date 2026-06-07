@@ -9,14 +9,21 @@ _Laatst bijgewerkt: 2026-06-07. Gegenereerd met `scripts/update-readme-status.ps
 
 De percentages zijn voortgangsindicatoren, geen harde planning. Berekening: `Done` en `Replaced` tellen als 100%, `Partial` telt als 50%, `Open` telt als 0%. `Parked` en `Obsolete` tellen niet mee in de actieve scope.
 
-Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy-coverage-register.md`. BootManagerV2-epicpercentages worden expliciet onderhouden in het generator-script, omdat de huidige epicdocumenten nog niet overal dezelfde statusstructuur hebben.
+Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy-coverage-register.md`. BootManagerV2-epicpercentages en de vakantiepilot worden expliciet onderhouden in het generator-script, omdat de bron-documenten nog niet overal dezelfde statusstructuur hebben.
 
 ### Samenvatting
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
+| Vakantiepilot 2026 | `[--------------------]` 0% | 14 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
 | Legacy scope | `[####----------------]` 17.9% | 126 |
+
+### Vakantiepilot 2026
+
+| Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
+|---:|---:|---:|---:|---:|---|---|
+| `[--------------------]` 0% | 0 | 0 | 14 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-SCAN-01 - Camera-, QR- en barcode-proof-of-concept |
 
 ### BootManagerV2 Epics
 
