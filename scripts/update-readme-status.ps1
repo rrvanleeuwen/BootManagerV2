@@ -1,6 +1,7 @@
 param(
     [string]$ReadmePath = "README.md",
-    [string]$LegacyCoveragePath = ".docs/legacy-analysis/legacy-coverage-register.md"
+    [string]$LegacyCoveragePath = ".docs/legacy-analysis/legacy-coverage-register.md",
+    [string]$HolidayPilotPath = ".docs/releases/holiday-pilot-2026.md"
 )
 
 $ErrorActionPreference = "Stop"
@@ -187,6 +188,30 @@ function Get-CurrentEpicStatus {
     }
 }
 
+function Get-HolidayPilotStatus {
+    param([string]$Document)
+
+    # De pilotstories hebben een vaste prioriteitsvolgorde in het releasedocument.
+    # Houd deze tellers bij wanneer een pilotstory administratief van status wijzigt.
+    $done = 0
+    $partial = 0
+    $open = 14
+    $parked = 0
+    $progress = Get-Progress -Done $done -Replaced 0 -Partial $partial -Open $open -Parked $parked -Obsolete 0
+
+    return [pscustomobject]@{
+        Name = "Vakantiepilot 2026"
+        Document = $Document
+        Done = $done
+        Partial = $partial
+        Open = $open
+        Parked = $parked
+        Active = $done + $partial + $open
+        Progress = $progress
+        Next = "PILOT-SCAN-01 - Camera-, QR- en barcode-proof-of-concept"
+    }
+}
+
 function New-MarkdownTable {
     param(
         [object[]]$Rows,
@@ -221,6 +246,7 @@ function New-MarkdownTable {
 
 $legacyRows = @(Get-LegacyEpicStatus -Path $LegacyCoveragePath)
 $currentRows = @(Get-CurrentEpicStatus)
+$holidayPilot = Get-HolidayPilotStatus -Document $HolidayPilotPath
 
 $legacyOverallActive = ($legacyRows | Measure-Object Active -Sum).Sum
 $legacyOverallScore = (($legacyRows | ForEach-Object { ($_.Progress / 100) * $_.Active }) | Measure-Object -Sum).Sum
@@ -240,14 +266,21 @@ $statusBlock = @(
     "",
     "De percentages zijn voortgangsindicatoren, geen harde planning. Berekening: ``Done`` en ``Replaced`` tellen als 100%, ``Partial`` telt als 50%, ``Open`` telt als 0%. ``Parked`` en ``Obsolete`` tellen niet mee in de actieve scope.",
     "",
-    "Legacy-percentages worden automatisch berekend uit ``.docs/legacy-analysis/legacy-coverage-register.md``. BootManagerV2-epicpercentages worden expliciet onderhouden in het generator-script, omdat de huidige epicdocumenten nog niet overal dezelfde statusstructuur hebben.",
+    "Legacy-percentages worden automatisch berekend uit ``.docs/legacy-analysis/legacy-coverage-register.md``. BootManagerV2-epicpercentages en de vakantiepilot worden expliciet onderhouden in het generator-script, omdat de bron-documenten nog niet overal dezelfde statusstructuur hebben.",
     "",
     "### Samenvatting",
     "",
     "| Scope | Voortgang | Actieve items |",
     "|---|---:|---:|",
+    "| Vakantiepilot 2026 | ``$(New-StatusBar -Percent $holidayPilot.Progress)`` $(Format-Percent $holidayPilot.Progress) | $($holidayPilot.Active) |",
     "| BootManagerV2 huidige epics | ``$(New-StatusBar -Percent $currentOverall)`` $(Format-Percent $currentOverall) | $currentOverallActive |",
     "| Legacy scope | ``$(New-StatusBar -Percent $legacyOverall)`` $(Format-Percent $legacyOverall) | $legacyOverallActive |",
+    "",
+    "### Vakantiepilot 2026",
+    "",
+    "| Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |",
+    "|---:|---:|---:|---:|---:|---|---|",
+    "| ``$(New-StatusBar -Percent $holidayPilot.Progress)`` $(Format-Percent $holidayPilot.Progress) | $($holidayPilot.Done) | $($holidayPilot.Partial) | $($holidayPilot.Open) | $($holidayPilot.Parked) | [$($holidayPilot.Document)]($($holidayPilot.Document)) | $($holidayPilot.Next) |",
     "",
     "### BootManagerV2 Epics",
     "",
