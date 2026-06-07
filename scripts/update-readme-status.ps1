@@ -194,8 +194,8 @@ function Get-HolidayPilotStatus {
     # De pilotstories hebben een vaste prioriteitsvolgorde in het releasedocument.
     # Houd deze tellers bij wanneer een pilotstory administratief van status wijzigt.
     $done = 0
-    $partial = 0
-    $open = 14
+    $partial = 1
+    $open = 13
     $parked = 0
     $progress = Get-Progress -Done $done -Replaced 0 -Partial $partial -Open $open -Parked $parked -Obsolete 0
 

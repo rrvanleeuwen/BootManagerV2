@@ -1,0 +1,302 @@
+@page "/scan"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+
+@inject IJSRuntime Js
+
+<PageTitle>Scannen</PageTitle>
+
+<h3>Scannen</h3>
+
+@if (_status == ScanStatus.InsecureContext)
+{
+    <div class="alert alert-danger">
+        <strong>Camera niet beschikbaar via HTTP.</strong>
+        Cameratoegang vereist een beveiligde verbinding (HTTPS).
+        Open de pagina via de operationeel geconfigureerde HTTPS-route.
+        De handmatige invoer hieronder blijft beschikbaar.
+    </div>
+}
+else if (_status == ScanStatus.Error && _errorMessage is not null)
+{
+    <div class="alert alert-warning">@_errorMessage</div>
+}
+
+<div class="scan-video-wrapper @(_showVideo ? "scan-video-visible" : "scan-video-hidden")">
+    <video id="scan-video" autoplay playsinline muted></video>
+</div>
+
+<p class="scan-status-text">@_statusText</p>
+
+<div class="scan-controls">
+    @if (_status is ScanStatus.NotStarted or ScanStatus.Stopped or ScanStatus.Error)
+    {
+        <button class="btn btn-primary" @onclick="StartScan">Starten</button>
+    }
+    else if (_status == ScanStatus.RequestingPermission)
+    {
+        <button class="btn btn-primary" disabled>Bezig met starten…</button>
+    }
+    else if (_status == ScanStatus.Active)
+    {
+        <button class="btn btn-secondary" @onclick="StopScan">Stoppen</button>
+    }
+    else if (_status is ScanStatus.Result or ScanStatus.ManualEntry)
+    {
+        <button class="btn btn-primary me-2" @onclick="StartScan">Opnieuw scannen</button>
+        <button class="btn btn-outline-secondary" @onclick="StopScan">Stoppen</button>
+    }
+</div>
+
+@if (_status is ScanStatus.Result or ScanStatus.ManualEntry)
+{
+    <div class="scan-result">
+        <div><strong>Waarde</strong></div>
+        <div class="scan-result-value">@_resultValue</div>
+        <div class="mt-2"><strong>Formaat</strong></div>
+        <div>@_resultFormat</div>
+    </div>
+}
+
+<div class="scan-manual">
+    <h5>Handmatige invoer</h5>
+    <div class="input-group">
+        <input class="form-control"
+               type="text"
+               placeholder="Voer barcode of QR-waarde in…"
+               @bind="_manualInput"
+               @bind:event="oninput"
+               @onkeydown="HandleManualKeyDown" />
+        <button class="btn btn-outline-primary"
+                @onclick="ApplyManualInput"
+                disabled="@string.IsNullOrWhiteSpace(_manualInput)">
+            Toepassen
+        </button>
+    </div>
+</div>
+
+@code {
+    private enum ScanStatus
+    {
+        NotStarted,
+        RequestingPermission,
+        Active,
+        Result,
+        ManualEntry,
+        Stopped,
+        Error,
+        InsecureContext
+    }
+
+    private ScanStatus _status = ScanStatus.NotStarted;
+    private string? _resultValue;
+    private string? _resultFormat;
+    private string? _errorMessage;
+    private string? _manualInput;
+
+    private IJSObjectReference? _scanModule;
+    private DotNetObjectReference<Scan>? _dotnetRef;
+
+    private bool _showVideo =>
+        _status is ScanStatus.RequestingPermission or ScanStatus.Active;
+
+    private string _statusText => _status switch
+    {
+        ScanStatus.NotStarted           => "Druk op Starten om de camera te activeren.",
+        ScanStatus.RequestingPermission => "Cameratoestemming aanvragen…",
+        ScanStatus.Active               => "Camera actief — houd een code voor de camera.",
+        ScanStatus.Result               => "Code herkend.",
+        ScanStatus.ManualEntry          => "Code handmatig ingevoerd.",
+        ScanStatus.Stopped              => "Scanner gestopt.",
+        ScanStatus.Error                => "Fout bij starten van de scanner.",
+        ScanStatus.InsecureContext      => "Cameratoegang niet mogelijk via HTTP.",
+        _                               => string.Empty
+    };
+
+    /// <summary>
+    /// Laadt de JavaScript-scanmodule bij de eerste render en bepaalt direct de beveiligde-contextstatus,
+    /// zodat de HTTP-waarschuwing zichtbaar is zonder dat de gebruiker actie hoeft te ondernemen.
+    /// Als de module niet kan worden geladen blijft de pagina bruikbaar via handmatige invoer.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _scanModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/barcodeScanner.js");
+            }
+            catch (JSException)
+            {
+                _status = ScanStatus.Error;
+                _errorMessage = "Scannermodule kon niet worden geladen. Handmatige invoer is beschikbaar.";
+                StateHasChanged();
+                return;
+            }
+
+            _dotnetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                var isSecure = await _scanModule.InvokeAsync<bool>("checkSecureContext");
+                if (!isSecure)
+                {
+                    _status = ScanStatus.InsecureContext;
+                    StateHasChanged();
+                }
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+    }
+
+    private async Task StartScan()
+    {
+        if (_scanModule is null || _dotnetRef is null)
+        {
+            return;
+        }
+
+        _resultValue = null;
+        _resultFormat = null;
+        _errorMessage = null;
+        _status = ScanStatus.RequestingPermission;
+        StateHasChanged();
+
+        try
+        {
+            await _scanModule.InvokeVoidAsync("startScan", _dotnetRef, "scan-video");
+        }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
+        catch (JSException ex)
+        {
+            _status = ScanStatus.Error;
+            _errorMessage = "Fout bij starten van de scanner: " + ex.Message;
+            StateHasChanged();
+            return;
+        }
+
+        // Als OnScanError de status al heeft gewijzigd, niet overschrijven.
+        if (_status == ScanStatus.RequestingPermission)
+        {
+            _status = ScanStatus.Active;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StopScan()
+    {
+        if (_scanModule is not null)
+        {
+            try
+            {
+                await _scanModule.InvokeVoidAsync("stopScan");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _status = ScanStatus.Stopped;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Past handmatige invoer toe. Stopt een actieve scanner en camerastream eerst.
+    /// </summary>
+    private async Task ApplyManualInput()
+    {
+        var value = _manualInput?.Trim();
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        if (_scanModule is not null &&
+            _status is ScanStatus.Active or ScanStatus.RequestingPermission)
+        {
+            try
+            {
+                await _scanModule.InvokeVoidAsync("stopScan");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _resultValue = value;
+        _resultFormat = "Handmatig ingevoerd";
+        _status = ScanStatus.ManualEntry;
+        _manualInput = null;
+        StateHasChanged();
+    }
+
+    private async Task HandleManualKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyManualInput();
+        }
+    }
+
+    /// <summary>
+    /// Ontvangt een succesvol scanresultaat vanuit JavaScript.
+    /// </summary>
+    [JSInvokable]
+    public void OnScanResult(string value, string format)
+    {
+        _resultValue = value;
+        _resultFormat = format;
+        _status = ScanStatus.Result;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt een foutcode vanuit JavaScript en vertaalt die naar een Nederlandse melding.
+    /// </summary>
+    [JSInvokable]
+    public void OnScanError(string errorCode)
+    {
+        _status = errorCode == "INSECURE_CONTEXT" ? ScanStatus.InsecureContext : ScanStatus.Error;
+        _errorMessage = errorCode switch
+        {
+            "INSECURE_CONTEXT"    => "Cameratoegang vereist een beveiligde verbinding (HTTPS).",
+            "NO_CAMERA_API"       => "Camera-API niet beschikbaar in deze browser.",
+            "PERMISSION_DENIED"   => "Cameratoestemming geweigerd. Sta cameratoegang toe in de browserinstellingen.",
+            "NO_CAMERA"           => "Geen camera gevonden op dit apparaat.",
+            "CAMERA_ERROR"        => "Camera kon niet worden gestart. Controleer of de camera beschikbaar is.",
+            "DECODER_LOAD_FAILED" => "Barcodedecoder kon niet worden geladen. Controleer of lib/zxing/zxing.min.js aanwezig is.",
+            _                     => "Onbekende fout bij het starten van de scanner."
+        };
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Stopt de camera en geeft JavaScript- en .NET-referenties vrij bij disposal van het component.
+    /// JSDisconnectedException en JSException worden onderdrukt; de browser-verbinding kan al gesloten zijn.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_scanModule is not null)
+        {
+            try
+            {
+                await _scanModule.InvokeVoidAsync("dispose");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+
+            try
+            {
+                await _scanModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _dotnetRef?.Dispose();
+    }
+}

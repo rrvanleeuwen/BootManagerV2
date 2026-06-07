@@ -15,15 +15,15 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[--------------------]` 0% | 14 |
+| Vakantiepilot 2026 | `[#-------------------]` 3.6% | 14 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
-| Legacy scope | `[####----------------]` 17.9% | 126 |
+| Legacy scope | `[####----------------]` 19.1% | 126 |
 
 ### Vakantiepilot 2026
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[--------------------]` 0% | 0 | 0 | 14 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-SCAN-01 - Camera-, QR- en barcode-proof-of-concept |
+| `[#-------------------]` 3.6% | 0 | 1 | 13 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-SCAN-01 - Camera-, QR- en barcode-proof-of-concept |
 
 ### BootManagerV2 Epics
 
@@ -43,7 +43,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 |---|---:|---:|---:|---:|---:|---:|
 | Epic 0: Installatie & Authenticatie | `[####################]` 100% | 4 | 2 | 0 | 0 | 0 |
 | Epic 1: Bootbeheer & Gebruikersbeheer | `[###-----------------]` 15% | 1 | 0 | 1 | 8 | 7 |
-| Epic 2: Inventarisbeheer | `[--------------------]` 0% | 0 | 0 | 0 | 19 | 2 |
+| Epic 2: Inventarisbeheer | `[#-------------------]` 5.3% | 0 | 0 | 2 | 17 | 2 |
 | Epic 3: Passageplanning | `[--------------------]` 0% | 0 | 0 | 0 | 13 | 1 |
 | Epic 4: Documentbeheer | `[--------------------]` 0% | 0 | 0 | 0 | 12 | 1 |
 | Epic 5: Logboek | `[############--------]` 61.5% | 4 | 0 | 8 | 1 | 1 |
@@ -53,6 +53,6 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 | Epic 9: Integraties & Synchronisatie | `[###-----------------]` 16.7% | 0 | 0 | 2 | 4 | 1 |
 | Epic 10: Rapportage & Analyse | `[###-----------------]` 16.7% | 0 | 0 | 2 | 4 | 0 |
 | Epic 11: Notificaties & Waarschuwingen | `[--------------------]` 0% | 0 | 0 | 0 | 6 | 0 |
-| Epic 12: Slimme Herkenning & AI-Ondersteuning | `[--------------------]` 0% | 0 | 0 | 0 | 1 | 5 |
+| Epic 12: Slimme Herkenning & AI-Ondersteuning | `[##########----------]` 50% | 0 | 0 | 1 | 0 | 5 |
 
 <!-- PROJECT-STATUS:END -->

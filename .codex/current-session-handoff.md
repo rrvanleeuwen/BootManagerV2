@@ -10,8 +10,9 @@ Updated: 2026-06-07.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- De actuele productprioriteit is rechtstreeks op `master` vastgelegd.
-- Er is geen actieve functionele featurebranch vanuit deze handoff.
+- Actieve featurebranch: `feature/pilot-scan-01`.
+- `PILOT-SCAN-01` is geïmplementeerd en lokaal op de laptop geaccepteerd.
+- Branch moet na commit/push tijdelijk op de Raspberry Pi worden getest.
 
 ## Actuele productdoelstelling
 
@@ -27,16 +28,16 @@ Tot deze pilot gereed is kiest Codex geen story buiten deze release, tenzij:
 - een noodzakelijke afhankelijkheid ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-## Eerstvolgende story
+## Eerstvolgende actie
 
 `PILOT-SCAN-01: Camera-, QR- en barcode-proof-of-concept`
 
-Doel:
+Open voor afronding:
 
-- vroeg bewijzen dat QR- en productbarcodescannen in de lokaal gehoste Blazor-app werkt;
-- testen op de telefoons van Roelof en Carla;
-- noodzakelijke HTTPS-, browser- en netwerkvoorwaarden vastleggen;
-- nog geen product-, locatie- of databasefunctionaliteit implementeren.
+- aanvullende HTTPS-ingang op de Raspberry Pi inrichten;
+- lokaal certificaat op beide Samsung-telefoons vertrouwen;
+- QR- en EAN-13-scanflow in Edge en Chrome op beide telefoons accepteren;
+- daarna story administratief afronden en PR maken.
 
 De volledige story, scope, buiten-scope en acceptatietest staan in `.docs/releases/holiday-pilot-2026.md`.
 
@@ -52,9 +53,9 @@ Bij iedere pilotstory controleert en actualiseert Codex ook:
 
 Als dezelfde functionaliteit al in een bestaande of legacy-story staat, wordt die status bijgewerkt en wordt geen los tegenstrijdig verhaal achtergelaten.
 
-## Laatst afgeronde productwijziging
+## Laatste relevante productwijziging
 
-`DSH-BUG-DBCTX-1: Gelijktijdige dashboard- en logboekqueries isoleren` is gemerged via PR #85 en op de Raspberry Pi gevalideerd.
+`PILOT-SCAN-01` is op de featurebranch geïmplementeerd en op de laptop gevalideerd; Pi- en telefoonsacceptatie staan nog open.
 
 ## Relevante actuele documenten
 
