@@ -4,6 +4,33 @@ Updated: 2026-06-07.
 
 ## Current Task
 
+`DEV-AGENT-1: Resourcezuinige Claude Code-workflow` is op branch
+`codex/claude-code-workflow` geïmplementeerd als documentatiewijziging.
+
+Status 2026-06-07:
+
+- PR #84 is gemerged met mergecommit `f25dfc8`.
+- Lokale `master` is fast-forward gesynchroniseerd met `origin/master` en was
+  schoon.
+- Nieuwe branch `codex/claude-code-workflow` is vanaf actuele `master`
+  aangemaakt.
+- De gebruiker heeft `DEV-AGENT-1` goedgekeurd.
+- Nieuwe bestanden:
+  - root `CLAUDE.md`;
+  - `.codex/implementation-packet-template.md`;
+  - `.docs/epics/development-agent-workflow.md`.
+- `AGENTS.md` en `.codex/working-agreement.md` gebruiken nu
+  `implementatie-agent` als generieke rol; Claude Code is de huidige primaire
+  uitvoerder.
+- `.codex/task-context-map.md` bevat een minimale Claude Code-contextflow.
+- Claude laadt standaard niet de Codex-handoff, volledige TODO, legacy-analyse,
+  ongerelateerde epics of brede source trees.
+- Historische Copilot-vermeldingen in afgeronde stories blijven behouden.
+- Geen applicatiecode, productroadmap of legacy coverage gewijzigd.
+- Alleen statische documentatie; geen handmatige runtime-test nodig.
+
+Vorige taak:
+
 Branch `codex/logbook-header-autofill` is gesynchroniseerd met
 `origin/master @ eba2f8a` nadat op 2026-06-06 nieuwe epic- en
 user-storydocumentatie op GitHub was toegevoegd.
@@ -80,20 +107,19 @@ Actuele status:
   - README-projectstatus is opnieuw gegenereerd.
 - De branch is klaar voor commit, push en PR.
 
-ASAP volgende processtap na afronding van de huidige `LOG-TRIP-AUTO-1A`-flow:
+Afgeronde processtap na `LOG-TRIP-AUTO-1A`:
 
-- Bereid de overstap van Copilot naar Claude Code als programmeeragent voor.
+- De overstap van Copilot naar Claude Code als programmeeragent is voorbereid.
 - Codex blijft architect-, proces-, review- en testassistent.
-- Maak de workflow programmeeragent-neutraal in `AGENTS.md` en
+- De workflow is programmeeragent-neutraal gemaakt in `AGENTS.md` en
   `.codex/working-agreement.md`.
-- Voeg een compacte, resourcezuinige `CLAUDE.md` toe.
-- Werk `.codex/task-context-map.md` bij met een minimaal implementatiepakket.
-- Overweeg een herbruikbaar implementation-packet-template met exacte scope,
-  verwachte write-set, relevante bestanden, gerichte tests en een kort
+- Een compacte, resourcezuinige `CLAUDE.md` is toegevoegd.
+- `.codex/task-context-map.md` gebruikt een minimaal implementatiepakket.
+- Een herbruikbaar implementation-packet-template bevat exacte scope,
+  verwachte write-set, relevante bestanden, gerichte tests en kort
   opleverformat.
 - Historische Copilot-vermeldingen in afgeronde stories blijven ongewijzigd.
-- Voer deze procesdocumentatiewijziging bij voorkeur uit op een aparte branch,
-  zodat zij niet wordt vermengd met de huidige feature-implementatie.
+- De wijziging staat op de aparte branch `codex/claude-code-workflow`.
 
 Vorige afgeronde taak:
 
@@ -422,10 +448,10 @@ Standing instruction from the user:
 2. When Codex proposes a next story or continuation, check the full legacy scope automatically before proposing it.
 3. Do not wait for the user to explicitly ask for this scope check.
 4. Determine whether the idea is already defined in the legacy scope, already implemented, partially implemented, parked, dependent on other modules, or genuinely new.
-5. Then map the answer to the current BootManagerV2 architecture, roadmap and Copilot workflow.
-6. For implementation work, after creating/selecting a branch, formulate the user story first and ask the user for approval before generating a Copilot prompt.
+5. Then map the answer to the current BootManagerV2 architecture, roadmap and implementation-agent workflow.
+6. For implementation work, after creating/selecting a branch, formulate the user story first and ask the user for approval before generating an implementation packet.
 7. The user story must include scope, out-of-scope, acceptance criteria, legacy US coverage impact, and manual test notes when relevant.
-8. After the user approves a user story, save it automatically in the relevant `.docs/epics/*.md` file before generating a Copilot prompt. Do not wait for the user to explicitly ask for this.
+8. After the user approves a user story, save it automatically in the relevant `.docs/epics/*.md` file before generating an implementation packet. Do not wait for the user to explicitly ask for this.
 9. During implementation/review/closure, keep that epic file updated with status, implementation details and verification.
 
 Primary scope files:

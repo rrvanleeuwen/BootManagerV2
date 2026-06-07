@@ -1,12 +1,13 @@
 # Agent Instructions
 
-This repository uses Copilot for most implementation work and Codex for project
-context, planning, prompt creation, review, documentation, and git-flow support.
+This repository separates the implementation-agent role from the Codex role.
+Claude Code is currently the primary implementation agent. Codex handles
+project context, planning, implementation packets, review, documentation, and
+git-flow support.
 
-Use a task-driven context-loading approach to keep Codex sessions efficient.
-Do not preload the full documentation set by default.
+Use task-driven context loading. Do not preload the full documentation set.
 
-At the start of a normal session, read only:
+At the start of a Codex session, read only:
 
 - `.codex/working-agreement.md`
 - `.codex/current-session-handoff.md`
@@ -16,6 +17,10 @@ Then load additional documents only when the task actually needs them. The
 context map defines which docs are relevant for common task types. Prefer
 targeted `Select-String`, `rg`, or small file sections over reading large files
 in full.
+
+At the start of a Claude Code implementation session, follow `CLAUDE.md` and
+the supplied implementation packet. Do not load the Codex start set unless the
+packet explicitly requires a specific file from it.
 
 Only read the old full documentation set when the task explicitly requires a
 broad roadmap/scope audit, legacy mapping, or project-wide planning decision.
@@ -32,8 +37,8 @@ The old full set is:
 - `.docs/legacy-analysis/proposed-backlog.md`
 - `.docs/legacy-analysis/implemented-or-obsolete.md`
 
-The `.codex/working-agreement.md` file is authoritative for the Codex/Copilot
-workflow. In particular:
+The `.codex/working-agreement.md` file is authoritative for the
+Codex/implementation-agent workflow. In particular:
 
 - Codex must not change application code unless the user explicitly asks Codex
   to implement or fix something directly.
@@ -41,12 +46,14 @@ workflow. In particular:
   build errors, and quick corrections in application code. Codex must not make
   those application-code edits itself unless the user explicitly asks Codex to
   do so.
-- If Codex finds that Copilot output needs a code fix, Codex should provide a
-  focused Copilot prompt or explicitly ask whether Codex may edit the code.
-- Codex should normally create scoped Copilot prompts, review Copilot output,
-  formulate acceptance tests, and guide the branch/PR flow.
+- If Codex finds that implementation-agent output needs a code fix, Codex
+  should provide focused review instructions or explicitly ask whether Codex
+  may edit the code.
+- Codex should normally create scoped implementation packets, review
+  implementation-agent output, formulate acceptance tests, and guide the
+  branch/PR flow.
 - If Codex finds a bug during review, Codex should first provide review advice
-  or a Copilot prompt instead of directly editing code.
+  or implementation-agent instructions instead of directly editing code.
 - For UI changes, onboarding/auth flow, deployment/configuration, database
   behavior, or other runtime-sensitive changes, Codex must give the user a
   short manual test step before commit/push/PR and wait for the user's feedback.
@@ -88,19 +95,26 @@ other directly affected status-tracking docs. Codex should update every
 reasonably afvinkbare/admin-complete status on its own; the user should not
 need to ask for this cleanup explicitly.
 
-For implementation work, Codex must not jump directly from branch creation to a
-Copilot prompt. After creating or selecting the feature branch, Codex must first
-formulate a concise user story together with scope, out-of-scope items,
+For implementation work, Codex must not jump directly from branch creation to
+an implementation packet. After creating or selecting the feature branch,
+Codex must first formulate a concise user story together with scope,
+out-of-scope items,
 acceptance criteria, legacy coverage impact, and required manual test notes.
 Codex must ask the user whether that user story is correct. After user approval,
 Codex must automatically save the approved user story in the relevant
-`.docs/epics/*.md` file before generating the Copilot prompt. The saved story
-must include the story sentence, scope, out-of-scope items, acceptance criteria,
-legacy coverage impact, and required manual test notes. If no suitable epic file
-exists yet, Codex should create a small appropriate epic document or first
-propose the documentation location when the choice is ambiguous. Only after the
-approved user story is stored in the epic file may Codex generate the Copilot
-prompt.
+`.docs/epics/*.md` file before generating the implementation packet. The saved
+story must include the story sentence, scope, out-of-scope items, acceptance
+criteria, legacy coverage impact, and required manual test notes. If no
+suitable epic file exists yet, Codex should create a small appropriate epic
+document or first propose the documentation location when the choice is
+ambiguous. Only after the approved user story is stored in the epic file may
+Codex generate the implementation packet.
+
+Implementation packets should follow
+`.codex/implementation-packet-template.md`. They must keep implementation-agent
+context minimal by naming the exact story section, expected write-set,
+necessary source files, targeted checks, and completion format. Claude Code
+also follows the compact root `CLAUDE.md`.
 
 For the legacy BootManager Word-source inventory, continue strictly one source
 file at a time. After each processed file, stop and ask the user for approval
