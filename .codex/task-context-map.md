@@ -1,127 +1,122 @@
 # Codex Task Context Map
 
-Purpose: keep Codex sessions token-efficient by loading only the project context
-needed for the current task.
+Doel: laad per taak alleen de minimaal noodzakelijke context.
 
-Always start with:
+## Start van iedere Codex-sessie
 
-- `.codex/working-agreement.md`
-- `.codex/current-session-handoff.md`
-- `.codex/task-context-map.md`
+Lees:
 
-Prefer targeted searches (`rg`, `Select-String`) and small file sections over
-reading large documents in full.
+- `.codex/current-session-handoff.md`;
+- dit bestand.
 
-## Common Task Types
+Lees `.codex/working-agreement.md` alleen als proces, storyflow, review, documentatie of git/PR aan de orde is.
 
-### Quick Status Or Handoff
+Gebruik `rg`, `Select-String`, gerichte diffs en kleine bestandssecties. Lees grote bestanden niet volledig tenzij dat aantoonbaar nodig is.
 
-Read:
+## Taaktypen
 
-- `.codex/current-session-handoff.md`
-- `git status --short --branch`
+### Status, overdracht of volgende stap
 
-Use when the user asks where we stand, what changed last, or what to do next.
+Lees:
 
-### Implementation Packet For An Existing Approved Story
+- actuele handoff;
+- `git status --short --branch`;
+- alleen de relevante TODO- of epicsectie.
 
-Read:
+### Nieuwe feature of volgende story
 
-- `.codex/working-agreement.md`
-- `.codex/current-session-handoff.md`
-- the specific `.docs/epics/*.md` section for that story
-- relevant source files only if needed to make the prompt precise
-- `.codex/implementation-packet-template.md`
+Lees gericht:
 
-Do not reread all legacy analysis files unless the story scope is changing.
+- relevante TODO-sectie;
+- relevante epicsectie;
+- `legacy-coverage-register.md` voor geraakte scope;
+- `mapped-epics.md` of `proposed-backlog.md` alleen bij onduidelijkheid;
+- `scope-inventory.md` alleen als de andere bronnen onvoldoende zijn.
 
-### Claude Code Implementation
+### Implementation packet voor goedgekeurde story
 
-Claude Code should read:
+Lees:
 
-- root `CLAUDE.md`;
-- the supplied implementation packet;
-- the exact approved story section named in the packet;
-- only the source files named in the packet.
+- goedgekeurde storysectie;
+- relevante architectuur- of beslisnotitie indien nodig;
+- alleen source files die nodig zijn om het packet precies te maken;
+- `.codex/implementation-packet-template.md`.
 
-Claude Code should not read `.codex/current-session-handoff.md`, the full TODO,
-legacy analysis, unrelated epics, or broad source trees by default. Use targeted
-`rg` and small file sections only when a concrete implementation dependency is
-missing.
+Lees geen volledige legacy-analyse wanneer de scope al vaststaat.
 
-### New Feature Idea Or Next Story Choice
+### Review van Claude Code-output
 
-Read:
+Lees/check:
 
-- `.docs/TODO.md` targeted around the relevant area
-- the relevant `.docs/epics/*.md`
-- `.docs/legacy-analysis/legacy-coverage-register.md`
-- `.docs/legacy-analysis/mapped-epics.md` if coverage/status is unclear
-- `.docs/legacy-analysis/proposed-backlog.md` if slicing is unclear
+- `git status --short --branch`;
+- `git diff --stat`;
+- gerichte diff van gewijzigde bestanden;
+- goedgekeurde storysectie;
+- relevante tests of architectuurafspraken.
 
-Only read `scope-inventory.md` when the idea cannot be mapped from the coverage
-register or mapped epics.
+### Bug in bestaande functionaliteit
 
-### Bug Report In Existing Feature
+Lees:
 
-Read:
+- relevante story- of epicsectie;
+- betrokken source files;
+- relevante logs of foutmelding;
+- handoff alleen voor actuele branch- en teststatus.
 
-- the relevant `.docs/epics/*.md` story section
-- the affected source file(s)
-- `.codex/current-session-handoff.md`
+Legacy-analyse is alleen nodig als de bug functionele scope verandert.
 
-Read legacy analysis only if the bug changes functional scope or acceptance
-criteria.
+### Commit, push, PR of merge
 
-### Review Implementation-Agent Output
+Controleer:
 
-Read:
+- branch en worktree;
+- gewijzigde bestanden en tests;
+- direct geraakte epic/TODO/coverage/handoff;
+- README-status alleen bij gewijzigde story- of epiccijfers.
 
-- `git status --short --branch`
-- `git diff --stat`
-- targeted `git diff -- <changed-files>`
-- the relevant story section if needed
+### Raspberry Pi, deployment of runtimeconfiguratie
 
-Focus on correctness, architecture, tests, and documented acceptance criteria.
+Lees:
 
-### Commit, Push, PR, Or Merge Follow-Up
+- actuele handoff;
+- relevante sectie van `system-operations.md`;
+- `docker-compose.yml` en alleen relevante configuratiebestanden;
+- runbook alleen wanneer commando's nodig zijn.
 
-Read/check:
+### Legacy Word-bron verwerken
 
-- `git status --short --branch`
-- relevant changed docs: story epic, `.docs/TODO.md`, `.codex/current-session-handoff.md`
-- `legacy-coverage-register.md` only for completed functional coverage changes
+Lees uitsluitend:
 
-When a PR is merged, verify the PR, checkout `master`, pull `--ff-only`, and
-check a clean worktree.
+- `word-source-progress.md`;
+- één bronbestand;
+- direct relevante analyse-uitvoer.
 
-### Raspberry Pi / Deployment / Runtime Config
+Verwerk één bronbestand per keer.
 
-Read:
+## Claude Code-context
 
-- `.codex/current-session-handoff.md`
-- `.docs/epics/system-operations.md` relevant section
-- `docker-compose.yml`
-- relevant `.docs/*deployment*.md` or runbook only when operator commands are
-  needed
+Claude Code leest uitsluitend:
 
-### Legacy Word Source Processing
+- `CLAUDE.md`;
+- het implementation packet;
+- de exact genoemde storysectie;
+- expliciet genoemde source files.
 
-Read:
+Claude leest niet standaard:
 
-- `.docs/legacy-analysis/word-source-progress.md`
-- the single legacy input/source file being processed
-- relevant legacy analysis output file(s)
+- `.codex/current-session-handoff.md`;
+- `.codex/working-agreement.md`;
+- volledige TODO of roadmap;
+- legacy-analyse;
+- ongerelateerde epics;
+- brede source trees.
 
-Process strictly one source file at a time.
+## Niet standaard laden
 
-## Avoid Loading By Default
-
-Do not read these unless the task specifically needs them:
-
-- `.docs/legacy-input/`
-- `.docs/extraInfo/`
-- `veldtests/`
-- full `.docs/legacy-analysis/scope-inventory.md`
-- full `.docs/TODO.md`
-- full epic files unrelated to the current task
+- `.docs/legacy-input/`;
+- `.docs/extraInfo/`;
+- `veldtests/`;
+- volledige `scope-inventory.md`;
+- volledige `.docs/TODO.md`;
+- volledige ongerelateerde epics;
+- historische handoff- of sessieverslagen.
