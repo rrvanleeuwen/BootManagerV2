@@ -24,6 +24,27 @@ Lees niet standaard:
 - ongerelateerde epics;
 - brede source trees.
 
+## Vaste architectuurregels
+
+- Target framework is .NET 8.
+- Behoud de bestaande solution-, project-, feature- en naamgevingsstructuur.
+- Respecteer de bestaande Clean Architecture-afhankelijkheden:
+  - `BootManager.Core` bevat domeinobjecten en domeincontracten;
+  - `BootManager.Application` bevat use-cases, applicatielogica, DTO's en applicatiecontracten;
+  - `BootManager.Infrastructure` bevat EF Core, repositories, opslag en externe technische implementaties;
+  - `BootManager.Web` bevat presentatie, Blazor-componenten, endpoints en composition root.
+- Laat afhankelijkheden naar binnen wijzen; Core kent Application, Infrastructure en Web niet.
+- Plaats geen domein- of applicatielogica in Razor-componenten, controllers of infrastructuurcode.
+- Gebruik bestaande repository-, DI-, DTO-, configuratie- en featurepatronen voordat een nieuw patroon wordt geïntroduceerd.
+- Voeg geen nieuwe dependency, framework, architectuurstijl of generieke abstractie toe zonder expliciete instructie in het implementation packet.
+- Sluit nieuwe code aan op omliggende conventies en hergebruik bestaande voorzieningen waar dat logisch is.
+- Voeg Nederlandse XML-documentatie toe aan nieuwe of aangepaste publieke C#-code waar die documentatie relevant is.
+- Neem simulator-, parsing-, opslag- en testaanpassingen mee wanneer de goedgekeurde verticale slice die functioneel raakt.
+- Houd interne canonieke meetwaarden gescheiden van presentatieconversies en gebruikersvoorkeuren.
+- Bij twijfel of een wijziging de architectuur verandert: stop en meld de concrete ontwerpkeuze aan Codex in plaats van zelf een nieuw patroon te kiezen.
+
+Het implementation packet kan voor een specifieke story aanvullende of strengere architectuurregels geven.
+
 ## Uitvoering
 
 - De story is al goedgekeurd; formuleer haar niet opnieuw en vraag geen nieuw akkoord.
@@ -31,7 +52,6 @@ Lees niet standaard:
 - Blijf binnen scope en verwachte write-set.
 - Maak geen ongerelateerde refactors, formatting, upgrades of documentatieaanpassingen.
 - Volg bestaande project- en architectuurpatronen.
-- Houd domein- en applicatielogica uit Razor-componenten waar praktisch mogelijk.
 - Voeg gerichte tests toe die passen bij het gewijzigde gedrag.
 - Draai eerst gerichte tests en daarna de voorgeschreven build/checks.
 - Commit, push, PR, storystatus en projectdocumentatie horen niet bij Claude, tenzij het packet dat uitzonderlijk expliciet opdraagt.
