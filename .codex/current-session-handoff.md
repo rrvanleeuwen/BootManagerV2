@@ -10,48 +10,61 @@ Updated: 2026-06-07.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Laatst bekende mastercommit vóór deze documentatiebranch: `842bed306abaa1fb2603cf2d2afb2e8022a55fcc`.
-- Actieve documentatiebranch: `codex/token-efficient-agent-context`.
-- Deze branch optimaliseert alleen agentinstructies en sessiecontext; geen applicatiecode of functionele scope wordt gewijzigd.
+- De actuele productprioriteit is rechtstreeks op `master` vastgelegd.
+- Er is geen actieve functionele featurebranch vanuit deze handoff.
 
-## Actuele taak
+## Actuele productdoelstelling
 
-Contextgebruik voor Codex en Claude Code verkleinen en verantwoordelijkheden scherper scheiden.
+De leidende productrelease is de **BootManager Holiday Pilot 2026** voor drie weken praktisch gebruik op Linde door Roelof en Carla.
 
-Beoogde uitkomst:
+Bron:
 
-- compacte root-instructies;
-- één gezaghebbende Codex-procesafspraak;
-- taakgerichte contextselectie;
-- korte handoff met uitsluitend actuele status;
-- Claude krijgt alleen codecontext uit het implementation packet en voert geen proces-, documentatie- of gitregie uit.
+- `.docs/releases/holiday-pilot-2026.md`
+
+Tot deze pilot gereed is kiest Codex geen story buiten deze release, tenzij:
+
+- een blocker eerst opgelost moet worden;
+- een noodzakelijke afhankelijkheid ontbreekt;
+- de gebruiker expliciet een andere prioriteit vaststelt.
+
+## Eerstvolgende story
+
+`PILOT-SCAN-01: Camera-, QR- en barcode-proof-of-concept`
+
+Doel:
+
+- vroeg bewijzen dat QR- en productbarcodescannen in de lokaal gehoste Blazor-app werkt;
+- testen op de telefoons van Roelof en Carla;
+- noodzakelijke HTTPS-, browser- en netwerkvoorwaarden vastleggen;
+- nog geen product-, locatie- of databasefunctionaliteit implementeren.
+
+De volledige story, scope, buiten-scope en acceptatietest staan in `.docs/releases/holiday-pilot-2026.md`.
+
+## Documentatieregel
+
+Bij iedere pilotstory controleert en actualiseert Codex ook:
+
+- relevante bestaande actuele userstories/epics;
+- `.docs/TODO.md`;
+- geraakte legacy-userstories en `legacy-coverage-register.md`;
+- deze handoff;
+- README-status wanneer cijfers wijzigen.
+
+Als dezelfde functionaliteit al in een bestaande of legacy-story staat, wordt die status bijgewerkt en wordt geen los tegenstrijdig verhaal achtergelaten.
 
 ## Laatst afgeronde productwijziging
 
-`DSH-BUG-DBCTX-1: Gelijktijdige dashboard- en logboekqueries isoleren` is gemerged via PR #85.
-
-Bevestigd:
-
-- dashboardmetingen gebruiken een context per laadoperatie;
-- polling is sequentieel en annuleerbaar;
-- navigatie-evaluaties worden geïsoleerd;
-- gerichte tests en build slaagden;
-- de gebruiker accepteerde de runtime-test;
-- Raspberry Pi is bijgewerkt en de concurrencyfout trad niet opnieuw op.
-
-## Eerstvolgende functionele kandidaat
-
-`DSH-LIVE-3: Logboekactiviteit en snelle doorsteek vanaf dashboard` is inhoudelijk akkoord, maar bewust uitgesteld. Kies deze alleen als de gebruiker geen andere prioriteit aangeeft.
+`DSH-BUG-DBCTX-1: Gelijktijdige dashboard- en logboekqueries isoleren` is gemerged via PR #85 en op de Raspberry Pi gevalideerd.
 
 ## Relevante actuele documenten
 
-- `.codex/working-agreement.md` — Codex-proces en verantwoordelijkheden;
+- `.docs/releases/holiday-pilot-2026.md` — leidende release-scope en prioriteitsvolgorde;
+- `.codex/working-agreement.md` — proces en administratieve afronding;
 - `.codex/task-context-map.md` — contextkeuze per taaktype;
-- `CLAUDE.md` — minimale instructies voor de programmeur;
-- `.docs/epics/dashboard-overview.md` — dashboardstories;
-- `.docs/epics/digital-logbook.md` — logboekstatus;
-- `.docs/TODO.md` — actuele backlog, alleen gericht lezen.
+- `.docs/epics/digital-logbook.md` — bestaande logboekstatus;
+- `.docs/legacy-analysis/legacy-coverage-register.md` — legacy-dekking;
+- `.docs/TODO.md` — algemene backlog, ondergeschikt aan de actieve pilot.
 
 ## Handoffregel
 
-Houd dit bestand bij volgende sessies kort. Bewaar alleen actuele branch, taak, blokkades, laatste relevante productwijziging en eerstvolgende actie. Historische details blijven vindbaar in git, PR's en epicdocumenten en worden hier niet herhaald.
+Houd dit bestand kort. Bewaar alleen actuele branch, release-doel, blokkades, laatste relevante productwijziging en eerstvolgende actie. Historische details blijven in git, PR's, epics en release-documentatie.
