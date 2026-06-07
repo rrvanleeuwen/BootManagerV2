@@ -49,6 +49,9 @@ function _buildHints(ZXing) {
         .filter(f => f !== undefined);
     const hints = new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+    // Verbetert herkenning van lineaire barcodes (EAN-13/EAN-8/UPC-A/Code 128)
+    // op mobiele camera's met lagere beeldkwaliteit of scherpte-variatie.
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
     return hints;
 }
 
@@ -135,7 +138,13 @@ export async function startScan(dotnetRef, videoElementId) {
         // decodeFromConstraints: awaits getUserMedia, start daarna de continue decode-loop
         // via setTimeout en retourneert Promise<void> zodra de loop actief is.
         await localReader.decodeFromConstraints(
-            { video: { facingMode: { ideal: 'environment' } } },
+            {
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width:      { ideal: 1920 },
+                    height:     { ideal: 1080 }
+                }
+            },
             videoEl,
             (result, _err) => {
                 // NotFoundException per frame zonder code is normaal; negeren.

@@ -8,6 +8,18 @@
 - De bestaande HTTP-route `http://bootmanager-pi:5000/` is **niet** geschikt voor cameragebruik.
 - De scanpagina bepaalt bij het openen of de context beveiligd is en toont de HTTP-waarschuwing direct, zonder dat de gebruiker iets hoeft te doen.
 
+### Bekende testbevinding — EAN-13 op mobiel
+
+Pi-test (Samsung Android, Chrome en Edge): QR-codes werden herkend; meerdere echte EAN-13-productbarcodes werden **niet** herkend, terwijl dezelfde barcodes op de laptop wel werkten.
+
+Werkhypothese: de standaard videoconstraints leveren op deze telefoons onvoldoende bruikbare details of scherpte voor smalle lineaire barcodes.
+
+Toegepaste correctie in `barcodeScanner.js`:
+- `DecodeHintType.TRY_HARDER = true` toegevoegd: ZXing doet uitgebreidere beeldanalyse per frame.
+- Camera-constraints uitgebreid met `width: { ideal: 1920 }` en `height: { ideal: 1080 }`: hogere resolutie vergroot de pixeldichtheid op de barcode en verbetert de decoderingsbetrouwbaarheid.
+
+Beide waarden zijn `ideal`, geen `exact`: de browser kiest de best beschikbare resolutie zonder een fout te geven als het toestel de voorkeur niet exact kan leveren.
+
 ### Ondersteunde browsers en toestellen
 
 - Samsung Android-telefoon (Android 16 of nieuwer).
