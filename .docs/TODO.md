@@ -20,9 +20,9 @@
 #### High Priority
 
 - [ ] **Holiday Pilot 2026 — PILOT-SCAN-01 camera-, QR- en barcode-proof-of-concept**
-  - **Status 2026-06-07:** implementatie en laptopacceptatie zijn geslaagd op `feature/pilot-scan-01`.
-  - **Bewezen:** QR en productbarcode scannen via laptopcamera, ruwe waarde/formaat tonen, scanner stoppen/herstarten, handmatige fallback tijdens actief scannen en cameravrijgave bij navigatie.
-  - **Open:** featurebranch op de Raspberry Pi testen, een aanvullende lokale HTTPS-ingang configureren, certificaat op beide Samsung-telefoons vertrouwen en de acceptatietest uitvoeren in Edge en Chrome.
+  - **Status 2026-06-08:** bestaande `/scan`-proef en een geïsoleerde `/scan-quagga-test`-pagina zijn geïmplementeerd op `feature/pilot-scan-01`; build, JavaScript-syntaxcontrole en lokale routecontrole slagen.
+  - **Bewezen:** ZXing leest QR op de Samsung-telefoon; de officiële Quagga2-demo leest beide echte EAN-13-testcodes met de vastgelegde 800px/large/halfSample-uit-configuratie. De lokale Quagga2-pagina levert dezelfde afgebakende configuratie, EAN-13-controlecijfer-validatie, tellers en race-veilige lifecycle.
+  - **Open:** featurebranch op de Raspberry Pi uitrollen; beide EAN-13-codes elk tienmaal testen op de geïsoleerde pagina; daarna QR en EAN-13 in Edge en Chrome op beide telefoons accepteren en ingest plus webapp via HTTP en HTTPS regressietesten.
   - **Bestaande route:** `http://bootmanager-pi:5000/` blijft beschikbaar voor gebruik zonder camera.
   - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.docs/scan-handmatige-test.md`.
 

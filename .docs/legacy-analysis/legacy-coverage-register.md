@@ -65,7 +65,7 @@ Bij afronding van een story of PR:
 | US2.3 Product aanmaken | Open | Inventory-module ontbreekt. |
 | US2.4 Product bewerken of verwijderen | Open | Inventory-module ontbreekt. |
 | US2.5 Barcodes en QR-codes koppelen aan producten | Open | Latere scanning-slice. |
-| US2.6 Barcode scannen bij zoeken | Partial | `PILOT-SCAN-01` levert het werkende barcode-scanfundament; productzoekactie en inventorykoppeling volgen in `PILOT-INV-04`. |
+| US2.6 Barcode scannen bij zoeken | Partial | `PILOT-SCAN-01` levert het QR-scanfundament en een geïsoleerde Quagga2 EAN-13-proef; Pi-/telefoonsacceptatie en productzoekactie volgen nog, de inventorykoppeling volgt in `PILOT-INV-04`. |
 | US2.7 Barcodeherkenning via foto en AI | Parked | AI-herkenning lage prioriteit. |
 | US2.8 Product koppelen aan opslaglocatie | Open | Afhankelijk van producten en opslaglocaties. |
 | US2.9 Voorraad bekijken per locatie | Open | Afhankelijk van voorraad per locatie. |
@@ -235,7 +235,7 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US12.1 Barcodeherkenning | Partial | Niet-AI barcodeherkenning is technisch geïmplementeerd en lokaal gevalideerd in `PILOT-SCAN-01`; Pi- en telefoonsacceptatie blijven open. |
+| US12.1 Barcodeherkenning | Partial | Niet-AI herkenning is technisch geïmplementeerd met ZXing voor de bestaande QR-proef en een geïsoleerde Quagga2 EAN-13-proef; Pi- en telefoonsacceptatie blijven open. |
 | US12.2 AI-herkenning via foto | Parked | Lage prioriteit; afhankelijk van inventory. |
 | US12.3 Automatische categorisatie | Parked | AI/lage prioriteit. |
 | US12.4 Suggesties voor aanvulling | Parked | Afhankelijk van verbruiksdata/trends. |

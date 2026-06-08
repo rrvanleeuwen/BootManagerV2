@@ -1,0 +1,9 @@
+Quagga2 — Real-time barcode detection library
+
+Package: @ericblade/quagga2
+Version: 1.12.1
+Repository: https://github.com/ericblade/quagga2
+License: MIT
+
+This library is vendored locally for offline functionality and is loaded at runtime
+from /lib/quagga2/quagga.min.js. The full license text is in LICENSE.txt.

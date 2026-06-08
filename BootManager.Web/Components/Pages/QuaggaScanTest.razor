@@ -1,0 +1,384 @@
+@page "/scan-quagga-test"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+
+@inject IJSRuntime Js
+
+<PageTitle>Quagga2 EAN-13 Test</PageTitle>
+
+<h3>Quagga2 EAN-13 Scan Test</h3>
+
+@if (_status == QuaggaStatus.InsecureContext)
+{
+    <div class="alert alert-danger">
+        <strong>Camera niet beschikbaar via HTTP.</strong>
+        Cameratoegang vereist een beveiligde verbinding (HTTPS).
+        Open de pagina via de operationeel geconfigureerde HTTPS-route.
+    </div>
+}
+else if (_status == QuaggaStatus.Error && _errorMessage is not null)
+{
+    <div class="alert alert-warning">@_errorMessage</div>
+}
+
+<div class="quagga-video-wrapper @(_showVideo ? "quagga-video-visible" : "quagga-video-hidden")">
+    <video id="quagga-video" autoplay playsinline muted></video>
+</div>
+
+<p class="quagga-status-text">@_statusText</p>
+
+<div class="quagga-controls">
+    @if (_status is QuaggaStatus.NotStarted or QuaggaStatus.Stopped or QuaggaStatus.Error)
+    {
+        <button class="btn btn-primary" @onclick="StartScan">Starten</button>
+    }
+    else if (_status == QuaggaStatus.RequestingPermission)
+    {
+        <button class="btn btn-primary" disabled>Bezig met starten…</button>
+    }
+    else if (_status == QuaggaStatus.Active)
+    {
+        <button class="btn btn-secondary me-2" @onclick="StopScan">Stoppen</button>
+        <button class="btn btn-outline-secondary" @onclick="RestartScan">Herstarten</button>
+    }
+    else if (_status is QuaggaStatus.Result)
+    {
+        <button class="btn btn-primary me-2" @onclick="StartScan">Opnieuw scannen</button>
+        <button class="btn btn-outline-secondary" @onclick="StopScan">Stoppen</button>
+    }
+</div>
+
+@if (_status is QuaggaStatus.Result)
+{
+    <div class="quagga-result">
+        <div><strong>Geaccepteerde waarde</strong></div>
+        <div class="quagga-result-value">@_resultValue</div>
+        <div class="mt-2"><strong>Formaat</strong></div>
+        <div>@_resultFormat</div>
+    </div>
+}
+
+<div class="quagga-test-values">
+    <h5>Bekende test-waarden</h5>
+    <div class="test-value-row">
+        <span class="test-value-code">4007817310809</span>
+        <span class="test-value-count">Geaccepteerd: <strong>@_acceptedCounts.GetValueOrDefault("4007817310809", 0)</strong>×</span>
+    </div>
+    <div class="test-value-row">
+        <span class="test-value-code">3662168005289</span>
+        <span class="test-value-count">Geaccepteerd: <strong>@_acceptedCounts.GetValueOrDefault("3662168005289", 0)</strong>×</span>
+    </div>
+</div>
+
+<div class="quagga-detection-log">
+    <h5>Detectie-log (ruwe detecties)</h5>
+    <div class="log-container">
+        @if (_detectionLog.Count == 0)
+        {
+            <div class="log-empty">Geen detecties nog.</div>
+        }
+        else
+        {
+            @foreach (var entry in _detectionLog)
+            {
+                <div class="log-entry @(entry.Accepted ? "log-accepted" : "log-rejected")">
+                    <span class="log-value">@entry.Value</span>
+                    <span class="log-status">@entry.Status</span>
+                    @if (!entry.Accepted && !string.IsNullOrEmpty(entry.Reason))
+                    {
+                        <span class="log-reason">@entry.Reason</span>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private enum QuaggaStatus
+    {
+        NotStarted,
+        RequestingPermission,
+        Active,
+        Result,
+        Stopped,
+        Error,
+        InsecureContext
+    }
+
+    /// <summary>
+    /// Eenvoudige DTO voor een detectie-log-invoer.
+    /// </summary>
+    public sealed class DetectionLogEntry
+    {
+        public string Value { get; set; } = string.Empty;
+        public bool Accepted { get; set; }
+        public string? Reason { get; set; }
+        public string Status => Accepted ? "✓ Geaccepteerd" : "✗ Afgewezen";
+    }
+
+    private QuaggaStatus _status = QuaggaStatus.NotStarted;
+    private string? _resultValue;
+    private string? _resultFormat;
+    private string? _errorMessage;
+
+    // Acceptatie-telwerk voor de twee bekende test-waarden.
+    private Dictionary<string, int> _acceptedCounts = new()
+    {
+        { "4007817310809", 0 },
+        { "3662168005289", 0 }
+    };
+
+    // Detectie-log (begrensd tot 50 items).
+    private List<DetectionLogEntry> _detectionLog = new();
+    private const int MaxLogEntries = 50;
+
+    // Monotoon request-ID per scan-sessie voor race-safe callbacks.
+    private int _requestId = 0;
+
+    private IJSObjectReference? _quaggaModule;
+    private DotNetObjectReference<QuaggaScanTest>? _dotnetRef;
+
+    private bool _showVideo =>
+        _status is QuaggaStatus.RequestingPermission or QuaggaStatus.Active;
+
+    private string _statusText => _status switch
+    {
+        QuaggaStatus.NotStarted           => "Druk op Starten om de camera te activeren.",
+        QuaggaStatus.RequestingPermission => "Cameratoestemming aanvragen…",
+        QuaggaStatus.Active               => "Camera actief — houd een EAN-13 barcode voor de camera.",
+        QuaggaStatus.Result               => "EAN-13 barcode herkend.",
+        QuaggaStatus.Stopped              => "Scanner gestopt.",
+        QuaggaStatus.Error                => "Fout bij starten van de scanner.",
+        QuaggaStatus.InsecureContext      => "Cameratoegang niet mogelijk via HTTP.",
+        _                                  => string.Empty
+    };
+
+    /// <summary>
+    /// Laadt de Quagga2-JavaScript-module bij de eerste render en bepaalt direct
+    /// de beveiligde-contextstatus.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _quaggaModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/quaggaScannerTest.js");
+            }
+            catch (JSException)
+            {
+                _status = QuaggaStatus.Error;
+                _errorMessage = "Quagga2-module kon niet worden geladen.";
+                StateHasChanged();
+                return;
+            }
+
+            _dotnetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                var isSecure = await _quaggaModule.InvokeAsync<bool>("checkSecureContext");
+                if (!isSecure)
+                {
+                    _status = QuaggaStatus.InsecureContext;
+                    StateHasChanged();
+                }
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+    }
+
+    /// <summary>
+    /// Interne helper: start de scanner race-safe met lokale request-ID.
+    /// </summary>
+    private async Task _internalStartScan(int localRequestId)
+    {
+        if (_quaggaModule is null || _dotnetRef is null)
+            return;
+
+        try
+        {
+            await _quaggaModule.InvokeVoidAsync("startScan", _dotnetRef, "quagga-video", localRequestId);
+
+            // Check: is dit nog de huidige request?
+            if (localRequestId != _requestId)
+                return;
+        }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
+        catch (JSException ex)
+        {
+            // Check: is dit nog de huidige request?
+            if (localRequestId != _requestId)
+                return;
+
+            _status = QuaggaStatus.Error;
+            _errorMessage = "Fout bij starten van Quagga2: " + ex.Message;
+            StateHasChanged();
+            return;
+        }
+
+        // Check opnieuw.
+        if (localRequestId != _requestId)
+            return;
+
+        // Als OnQuaggaError de status al heeft gewijzigd, niet overschrijven.
+        if (_status == QuaggaStatus.RequestingPermission)
+        {
+            _status = QuaggaStatus.Active;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartScan()
+    {
+        if (_quaggaModule is null || _dotnetRef is null)
+            return;
+
+        _resultValue  = null;
+        _resultFormat = null;
+        _errorMessage = null;
+        _requestId++;
+
+        var localRequestId = _requestId;
+
+        _status = QuaggaStatus.RequestingPermission;
+        StateHasChanged();
+
+        await _internalStartScan(localRequestId);
+    }
+
+    private async Task StopScan()
+    {
+        _requestId++;
+
+        if (_quaggaModule is not null)
+        {
+            try
+            {
+                await _quaggaModule.InvokeVoidAsync("stopScan");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _status = QuaggaStatus.Stopped;
+        StateHasChanged();
+    }
+
+    private async Task RestartScan()
+    {
+        await StopScan();
+        await Task.Delay(100);
+        await StartScan();
+    }
+
+    /// <summary>
+    /// Ontvangt een succesvol EAN-13 scanresultaat vanuit JavaScript.
+    /// </summary>
+    [JSInvokable]
+    public void OnQuaggaResult(int requestId, string value, string format)
+    {
+        // Negeer resultaten van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _resultValue  = value;
+        _resultFormat = format;
+        _status       = QuaggaStatus.Result;
+
+        // Increment acceptatie-teller voor bekende waarden.
+        if (_acceptedCounts.ContainsKey(value))
+        {
+            _acceptedCounts[value]++;
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt een detectie uit JavaScript (voor logging).
+    /// Negeer detections van vorige sessies (stale-callback bescherming).
+    /// </summary>
+    [JSInvokable]
+    public void OnQuaggaDetection(int requestId, DetectionLogEntry entry)
+    {
+        // Negeer callbacks van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _detectionLog.Add(entry);
+        if (_detectionLog.Count > MaxLogEntries)
+        {
+            _detectionLog.RemoveAt(0);
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt een foutcode vanuit JavaScript en vertaalt die naar Nederlandse melding.
+    /// </summary>
+    [JSInvokable]
+    public void OnQuaggaError(int requestId, string errorCode)
+    {
+        // Negeer fouten van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _status = errorCode == "INSECURE_CONTEXT" ? QuaggaStatus.InsecureContext : QuaggaStatus.Error;
+        _errorMessage = errorCode switch
+        {
+            "INSECURE_CONTEXT"    => "Cameratoegang vereist een beveiligde verbinding (HTTPS).",
+            "NO_CAMERA_API"       => "Camera-API niet beschikbaar in deze browser.",
+            "PERMISSION_DENIED"   => "Cameratoestemming geweigerd. Sta cameratoegang toe in de browserinstellingen.",
+            "NO_CAMERA"           => "Geen camera gevonden op dit apparaat.",
+            "CAMERA_ERROR"        => "Camera kon niet worden gestart. Controleer of de camera beschikbaar is.",
+            "DECODER_LOAD_FAILED" => "Quagga2-decoder kon niet worden geladen. Controleer of lib/quagga2/quagga.min.js aanwezig is.",
+            _                     => "Onbekende fout bij het starten van de scanner."
+        };
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt bevestiging dat Quagga2 is gestart.
+    /// </summary>
+    [JSInvokable]
+    public void OnQuaggaStarted(int requestId)
+    {
+        // Momenteel niet gebruikt; dient voor toekomstige extensions.
+    }
+
+    /// <summary>
+    /// Stopt de camera en geeft JavaScript- en .NET-referenties vrij bij disposal.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        _requestId++;
+
+        if (_quaggaModule is not null)
+        {
+            try
+            {
+                await _quaggaModule.InvokeVoidAsync("dispose");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+
+            try
+            {
+                await _quaggaModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _dotnetRef?.Dispose();
+    }
+}

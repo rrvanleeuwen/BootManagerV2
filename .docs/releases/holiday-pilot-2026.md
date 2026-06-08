@@ -219,13 +219,16 @@ Test eerst via `http://bootmanager-pi:5000/` dat de scanpagina de secure-context
 - Vraag video aan met voorkeur voor `facingMode: environment`, maar geef een begrijpelijke fout of bruikbare fallback wanneer het toestel die voorkeur niet exact kan leveren.
 - Houd de bestaande interne webcontainer en HTTP-poort `5000` intact. HTTPS-terminatie is een aanvullende operationele ingang en geen wijziging van interne servicecommunicatie.
 
-**Implementatiestatus 2026-06-07**
+**Implementatiestatus 2026-06-08**
 
 - De beveiligde `/scan`-pagina, lokale ZXing-decoder, camerastatussen, start/stop/herstart, resultaatweergave en handmatige fallback zijn geïmplementeerd op `feature/pilot-scan-01`.
 - Laptopacceptatie is geslaagd via `http://localhost:5046/scan` en `https://localhost:7299/scan`, inclusief QR-code, productbarcode, stoppen/herstarten, handmatige invoer tijdens actief scannen en cameravrijgave bij navigatie.
+- De bestaande ZXing-proef leest QR op de Samsung-telefoon, maar de geteste EAN-13-productbarcodes niet betrouwbaar. Daarom is een geïsoleerde, beveiligde `/scan-quagga-test`-pagina toegevoegd met lokaal meegeleverde Quagga2 1.12.1, uitsluitend voor EAN-13.
+- De Quagga2-proef gebruikt de op dezelfde telefoon bewezen instellingen: achtercamera, ideale breedte 800 px, `patchSize: large`, `halfSample: false`, locator actief en alleen `ean_reader`. Geldige resultaten worden aanvullend gecontroleerd op 13 cijfers en een correcte EAN-13-controlecijfer.
+- Start, stop, herstart, resultaatstop en component-disposal zijn beschermd tegen achterhaalde callbacks en overlappende Quagga2-initialisaties. De bestaande `/scan`-pagina en ZXing-implementatie zijn niet gewijzigd.
 - `dotnet build BootManager.sln`, JavaScript-syntaxcontrole, diffcheck en publishcontrole slagen.
 - Eén bestaande, ongerelateerde test blijft rood: `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect`; de overige 147 unit-tests slagen.
-- Open voor afronding: HTTPS-ingang op de Raspberry Pi inrichten, lokaal certificaat op beide Samsung-telefoons vertrouwen en de volledige Edge/Chrome-acceptatietest uitvoeren.
+- Open voor afronding: de branch op de Raspberry Pi uitrollen, de geïsoleerde Quagga2-pagina met beide EAN-13-testcodes accepteren en daarna de volledige QR-/EAN-13-flow in Edge en Chrome op beide telefoons uitvoeren. Ook moet ingest samen met de webapp via HTTP en HTTPS worden geregressietest.
 
 ## Niet-doelen voor deze pilot
 

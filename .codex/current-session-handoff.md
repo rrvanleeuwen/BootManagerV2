@@ -34,9 +34,10 @@ Tot deze pilot gereed is kiest Codex geen story buiten deze release, tenzij:
 
 Open voor afronding:
 
-- aanvullende HTTPS-ingang op de Raspberry Pi inrichten;
-- lokaal certificaat op beide Samsung-telefoons vertrouwen;
-- QR- en EAN-13-scanflow in Edge en Chrome op beide telefoons accepteren;
+- de huidige ZXing-JavaScriptdecoder voor EAN-13 op Android niet verder repareren; ZXing blijft voorlopig bruikbaar voor QR;
+- de geïsoleerde `/scan-quagga-test`-pagina op de Raspberry Pi uitrollen en beide vastgelegde EAN-13-codes elk tienmaal testen;
+- bij geslaagde Quagga2-proef de QR- en EAN-13-scanflow in Edge en Chrome op beide telefoons accepteren;
+- expliciet valideren dat ingest en de webapp sinds toevoeging van HTTPS samen nog correct werken, zowel via de bestaande HTTP-route als de aanvullende HTTPS-route;
 - daarna story administratief afronden en PR maken.
 
 De volledige story, scope, buiten-scope en acceptatietest staan in `.docs/releases/holiday-pilot-2026.md`.
@@ -55,7 +56,7 @@ Als dezelfde functionaliteit al in een bestaande of legacy-story staat, wordt di
 
 ## Laatste relevante productwijziging
 
-`PILOT-SCAN-01` is op de featurebranch geïmplementeerd en op de laptop gevalideerd; Pi- en telefoonsacceptatie staan nog open.
+`PILOT-SCAN-01` bevat nu naast de bestaande ZXing `/scan`-pagina een geïsoleerde `/scan-quagga-test`-pagina met lokaal meegeleverde Quagga2 1.12.1 voor EAN-13. De pagina gebruikt de op dezelfde Samsung-telefoon bewezen 800px/large/halfSample-uit-configuratie, valideert het EAN-13-controlecijfer en heeft een geserialiseerde, sessiegebonden camera-lifecycle. Build, JavaScript-syntaxcontrole en lokale routecontrole slagen; 147 van 148 unit-tests zijn groen met de bekende ongerelateerde owner-recoverytest rood. Eerstvolgend: branch op de Pi uitrollen, beide EAN-13-codes elk tienmaal testen en daarna de volledige telefoon- en ingest/webapp-regressietest uitvoeren.
 
 ## Relevante actuele documenten
 

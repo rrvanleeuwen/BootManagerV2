@@ -229,3 +229,95 @@ De volgende waarden zijn relevant voor EAN-13-scherpte:
 | 9d | Camerawissel terwijl actief herstart automatisch, status blijft "Camera actief" | ☐ | ☐ |
 | 9e | Camerawissel terwijl gestopt gebruikt gekozen camera bij Starten | ☐ | ☐ |
 | 9f | Bevindingstabel ingevuld: scherpste camera, AF-modi en AF-resultaat vastgesteld | ☐ | ☐ |
+
+## Quagga2 EAN-13 Scan Test (Experiment)
+
+### Doel
+
+Dit experimentele gedeelte valideert dat Quagga2 versie 1.12.1 beide bekende EAN-13-productbarcodes betrouwbaar scant op de Samsung-telefoons, en vormt de basis voor een eventuele vervangingsstrategie van ZXing voor lineaire barcodes.
+
+### Configuratie
+
+- **Decoder**: Quagga2 1.12.1 (`@ericblade/quagga2`), lokaal gemirrord in `BootManager.Web/wwwroot/lib/quagga2/quagga.min.js`
+- **Route**: `/scan-quagga-test` (geïsoleerd, geen menuvermelding)
+- **Barcode-type**: EAN-13 alleen
+- **Camera-instellingen**:
+  - `facingMode: "environment"` (achtercamera)
+  - `width: { ideal: 800 }` (bewezen breedte-instelling van demo)
+  - `locator.patchSize: "large"`
+  - `locator.halfSample: false`
+  - `locate: true`
+- **Validatie**: 13 decimale cijfers; controle van controleciffer via EAN-13 checksumalgoritme (alternerende vermenigvuldiging met 1 en 3 van de eerste 12 cijfers)
+
+### Acceptatiecriteria
+
+1. Pagina opent via HTTPS op beide telefoons in Edge en Chrome.
+2. Camera start na toestemmingsverlening zonder fouten.
+3. **Test-waarde 1**: `4007817310809` wordt 10 keer correct herkend en geaccepteerd.
+4. **Test-waarde 2**: `3662168005289` wordt 10 keer correct herkend en geaccepteerd.
+5. De ruwe detectie-log toont alle detecties (geldig en ongeldig).
+6. Invalid detections (verkeerde lengte, ongeldig checksum) worden afgewezen en gelogd zonder doorscanning te stoppen.
+7. Na elke geldige detectie stopt de scanner automatisch.
+8. De acceptatie-tellers per waarde staan op exact 10 nadat de twintig scans voltooid zijn.
+9. Camera en Quagga2 resources worden vrijgegeven bij Stoppen, Herstarten, navigatie en component-disposal.
+
+### Handmatige testprocedure — twintig scans (10 per waarde)
+
+**Voorbereiding:**
+
+1. Verzamel de twee fysieke product-barcodes:
+   - EAN-13: `4007817310809` (Haribo gummibeertjes, standaard Duitsland)
+   - EAN-13: `3662168005289` (Mayonaise Amora, standaard Frankrijk)
+2. Controleer dat beide barcodes onbeschadigd en leesbaar zijn.
+3. Open de HTTPS-route `/scan-quagga-test` op de eerste telefoon in Edge.
+4. Log in als nodig.
+5. Controleer dat geen HTTP-waarschuwing zichtbaar is.
+6. Controleer dat de twee test-waarden zichtbaar staan met tellers op 0.
+
+**Scan Serie 1 — Waarde `4007817310809` (10 scans):**
+
+1. Druk op **Starten**.
+2. Verleen cameratoestemming.
+3. Verwacht: statusregel toont "Camera actief"; videobeeld actief.
+4. Houd barcode `4007817310809` op ~15 cm afstand voor de camera (goed belicht, recht).
+5. Verwacht: scanner stopt automatisch; statusregel toont "EAN-13 barcode herkend"; waarde en formaat zichtbaar; teller "Geaccepteerd: 1×".
+6. Controleer in de detectie-log dat de rauwe detectie aanwezig is en als "Geaccepteerd" gemarkeerd.
+7. Druk op **Opnieuw scannen**.
+8. Verwacht: scanner herstart; statusregel toont "Camera actief" opnieuw; resultaatblok verdwijnt.
+9. Herhaal stap 4–8 nog **9 keer** (totaal 10 scans van `4007817310809`).
+10. Controleer na 10 scans: teller voor `4007817310809` staat op **Geaccepteerd: 10×**.
+
+**Scan Serie 2 — Waarde `3662168005289` (10 scans):**
+
+1. Druk op **Herstarten** (of **Stoppen** en vervolgens **Starten**).
+2. Verwacht: camera start opnieuw; statusregel "Camera actief".
+3. Houd barcode `3662168005289` op ~15 cm afstand voor de camera.
+4. Verwacht: scanner stopt; waarde `3662168005289` en formaat getoond; teller voor deze waarde wordt 1.
+5. Druk op **Opnieuw scannen**.
+6. Herhaal stap 3–5 nog **9 keer**.
+7. Controleer na 10 scans: beide tellers staan op **Geaccepteerd: 10×**.
+
+**Na twintig scans:**
+
+1. Controleer beide tellers: `4007817310809` = 10, `3662168005289` = 10.
+2. Controleer de detectie-log (begrensd tot de meest recente 50 invoeren):
+   - Bevat alleen deze twee waarden geaccepteerd (groen/✓).
+   - De twee tellers bewijzen dat exact 10 van elke waarde geaccepteerd zijn; de log is het bewijs van detecties inclusief afgewezen kandidaten.
+3. Druk op **Stoppen**.
+4. Verwacht: camera-indicatielampje op telefoon gaat uit.
+5. Controleer dat de pagina nog voluit bruikbaar is (tellers, log intact).
+
+**Aanvullende validatie:**
+
+- Herhaal dezelfde twintig scans op de tweede telefoon, in dezelfde browser (Edge of Chrome).
+- Test daarna in de andere browser op dezelfde telefoon (Chrome of Edge).
+- Test ongeldig gedecodeerde waarden: houd een beschadigde of onleesbare barcode voor de camera zodat Quagga2 deze als kandidaat decodeert maar de validatie afwijst. Verwacht: detectie in de log met status "Afgewezen" en reden (bijv. "Niet 13 cijfers" of "Ongeldig EAN-13 checksum").
+
+**Bevindingen vastleggen:**
+
+| Telefoon | Browser | 10× `4007817310809` | 10× `3662168005289` | Log volledig | Geen fouten |
+|----------|---------|---------------------|---------------------|-------------|------------|
+|          | Edge    | ☐                   | ☐                   | ☐          | ☐          |
+|          | Chrome  | ☐                   | ☐                   | ☐          | ☐          |
+|          | Edge    | ☐                   | ☐                   | ☐          | ☐          |
+|          | Chrome  | ☐                   | ☐                   | ☐          | ☐          |
