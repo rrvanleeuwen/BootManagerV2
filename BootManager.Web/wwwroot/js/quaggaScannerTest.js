@@ -270,7 +270,9 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
             type: 'LiveStream',
             size: 800,
             constraints: {
-                facingMode: 'environment'
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
             },
             target: containerEl
         },
@@ -361,6 +363,8 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
 
                     let cameraWidth = null;
                     let cameraHeight = null;
+                    let maxCameraWidth = null;
+                    let maxCameraHeight = null;
                     try {
                         const track = Quagga2.CameraAccess?.getActiveTrack?.();
                         if (track) {
@@ -369,6 +373,19 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
                                 cameraWidth = settings.width;
                                 cameraHeight = settings.height;
                             }
+                            try {
+                                const capabilities = track.getCapabilities?.();
+                                if (capabilities && capabilities.width && capabilities.height) {
+                                    const widthRange = capabilities.width;
+                                    const heightRange = capabilities.height;
+                                    if (widthRange && typeof widthRange.max !== 'undefined') {
+                                        maxCameraWidth = widthRange.max;
+                                    }
+                                    if (heightRange && typeof heightRange.max !== 'undefined') {
+                                        maxCameraHeight = heightRange.max;
+                                    }
+                                }
+                            } catch { }
                         }
                     } catch { }
 
@@ -377,6 +394,8 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
                         locatedBoxes: locatedBoxes,
                         cameraWidth: cameraWidth,
                         cameraHeight: cameraHeight,
+                        maxCameraWidth: maxCameraWidth,
+                        maxCameraHeight: maxCameraHeight,
                         configuredProcessingSize: 800
                     };
 

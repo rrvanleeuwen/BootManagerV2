@@ -243,6 +243,7 @@ Dit experimentele gedeelte valideert dat Quagga2 versie 1.12.1 beide bekende EAN
 - **Barcode-type**: EAN-13 alleen
 - **Camera en verwerkingsinstellingen**:
   - `facingMode: "environment"` (achtercamera voorkeur)
+  - cameraresolutie: `width: { ideal: 1280 }`, `height: { ideal: 720 }` (voorkeur; browser mag fallback kiezen)
   - `inputStream.size: 800` (bewezen verwerkingsgrootte — beheert Quagga2-frame-afmetingen)
   - `locator.patchSize: "large"`
   - `locator.halfSample: false`
@@ -299,11 +300,12 @@ Dit experimentele gedeelte valideert dat Quagga2 versie 1.12.1 beide bekende EAN
 
 **Scannerdiagnostiek aflezen**:
 
-Tijdens het scannen toont de pagina vier diagnostische velden:
+Tijdens het scannen toont de pagina vijf diagnostische velden:
 
 - **Verwerkte frames**: aantal frames dat Quagga2 heeft verwerkt. Stijgt continu als scanner actief.
 - **Gelokaliseerde boxen**: aantal potentiële barcode-kandidaten in het huidige frame. Groter dan nul wanneer Quagga2 streeppatronen ziet.
 - **Camera resolutie**: werkelijke videobreedte × -hoogte van de actieve camera (bijvoorbeeld 1920×1440). Hangt af van telefoonmodel en browser.
+- **Camera maximum**: maximale cameraresolutie die de browser voor de actieve track meldt, of `onbekend` als de browser dit niet ondersteunt.
 - **Verwerkingsgrootte**: ingestelde verwerkingsgrootte (800 px). Dit is de Quagga2 `inputStream.size` — de afmetingen waarvoor de barcode wordt geanalyseerd.
 
 **Na twintig scans:**
@@ -316,6 +318,7 @@ Tijdens het scannen toont de pagina vier diagnostische velden:
    - Verwerkte frames eindstand
    - Aantal gelokaliseerde boxen in de laatste frame
    - Camera resolutie (werkelijk)
+   - Camera maximum (indien beschikbaar)
    - Verwerkingsgrootte moet altijd 800 zijn
 4. Druk op **Stoppen**.
 5. Verwacht: camera-indicatielampje op telefoon gaat uit.

@@ -76,6 +76,10 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
             <span class="diag-value">@(_diagnostics.CameraWidth)×@(_diagnostics.CameraHeight)</span>
         </div>
         <div class="diag-row">
+            <span>Camera maximum:</span>
+            <span class="diag-value">@((_diagnostics.MaxCameraWidth is not null && _diagnostics.MaxCameraHeight is not null) ? $"{_diagnostics.MaxCameraWidth}×{_diagnostics.MaxCameraHeight}" : "onbekend")</span>
+        </div>
+        <div class="diag-row">
             <span>Verwerkingsgrootte:</span>
             <span class="diag-value">@_diagnostics.ConfiguredProcessingSize px</span>
         </div>
@@ -150,6 +154,8 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
         public int LocatedBoxes { get; set; }
         public int? CameraWidth { get; set; }
         public int? CameraHeight { get; set; }
+        public int? MaxCameraWidth { get; set; }
+        public int? MaxCameraHeight { get; set; }
         public int ConfiguredProcessingSize { get; set; }
     }
 
