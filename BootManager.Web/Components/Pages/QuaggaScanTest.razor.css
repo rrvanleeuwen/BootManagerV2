@@ -162,3 +162,37 @@
     font-style: italic;
     font-size: 0.8rem;
 }
+
+.quagga-diagnostics {
+    margin-bottom: 1.5rem;
+    max-width: 480px;
+}
+
+.quagga-diagnostics h5 {
+    font-size: 0.95rem;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.diag-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 3px;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.3rem;
+    font-size: 0.85rem;
+}
+
+.diag-row span:first-child {
+    color: #495057;
+    font-weight: 500;
+}
+
+.diag-value {
+    font-family: monospace;
+    color: #0c5ec3;
+    font-weight: 600;
+}

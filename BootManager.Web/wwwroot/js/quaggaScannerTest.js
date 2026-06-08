@@ -18,6 +18,9 @@ let _currentQuagga = null;
 // De geregistreerde detection handler (voor cleanup).
 let _activeDetectionHandler = null;
 
+// De geregistreerde processed handler (voor diagnostics).
+let _activeProcessedHandler = null;
+
 // Video-element (voor track cleanup op Quagga's eigendom).
 let _videoElement = null;
 
@@ -26,6 +29,13 @@ let _containerElementId = null;
 
 // Flag: is een result al ontvangen en verwerkt in deze sessie?
 let _resultReceived = false;
+
+// Diagnostics throttling: last report timestamp.
+let _lastDiagnosticsReport = 0;
+const DIAGNOSTICS_THROTTLE_MS = 1000;
+
+// Verwerkte frames: module-level counter voor cumulative frame count per sessie.
+let _processedFrames = 0;
 
 // Serialize Quagga2.init(): promise van huidge init in flight.
 let _currentInitPromise = Promise.resolve();
@@ -98,6 +108,14 @@ function _cleanup(sessionId) {
         _activeDetectionHandler = null;
     }
 
+    // Unregister processed handler.
+    if (_currentQuagga && _activeProcessedHandler) {
+        try {
+            _currentQuagga.offProcessed(_activeProcessedHandler);
+        } catch { }
+        _activeProcessedHandler = null;
+    }
+
     // Stop Quagga2.
     if (_currentQuagga) {
         try {
@@ -113,6 +131,8 @@ function _cleanup(sessionId) {
 
     _resultReceived = false;
     _activeSessionId = null;
+    _processedFrames = 0;
+    _lastDiagnosticsReport = 0;
 }
 
 /**
@@ -187,6 +207,7 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
     _activeSessionId = mySession;
     _dotnetRef = dotnetRef;
     _containerElementId = videoElementId;
+    _lastDiagnosticsReport = 0;
 
     // Controleer secure context.
     if (!window.isSecureContext) {
@@ -243,12 +264,13 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
 
     // Quagga2 init met EAN-13 configuratie (proven instellingen).
     // Pass container element zodat Quagga2 de video element vindt en gebruiken.
+    // size: 800 is de proven processing size (NIET hetzelfde als camera constraints width).
     const config = {
         inputStream: {
             type: 'LiveStream',
+            size: 800,
             constraints: {
-                facingMode: 'environment',
-                width: { ideal: 800 }
+                facingMode: 'environment'
             },
             target: containerEl
         },
@@ -321,6 +343,49 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
 
             _activeDetectionHandler = detectionHandler;
             Quagga2.onDetected(detectionHandler);
+
+            // Registreer processed handler voor minimale diagnostics.
+            const processedHandler = (result) => {
+                if (_sessionId !== mySession || _activeSessionId !== mySession || !_dotnetRef) return;
+
+                // Incrementeer frame counter op elke verwerking.
+                _processedFrames++;
+
+                const now = Date.now();
+                if (now - _lastDiagnosticsReport < DIAGNOSTICS_THROTTLE_MS) return;
+                _lastDiagnosticsReport = now;
+
+                try {
+                    // Verzamel diagnostics.
+                    const locatedBoxes = result.boxes ? result.boxes.length : 0;
+
+                    let cameraWidth = null;
+                    let cameraHeight = null;
+                    try {
+                        const track = Quagga2.CameraAccess?.getActiveTrack?.();
+                        if (track) {
+                            const settings = track.getSettings?.();
+                            if (settings) {
+                                cameraWidth = settings.width;
+                                cameraHeight = settings.height;
+                            }
+                        }
+                    } catch { }
+
+                    const diagnostics = {
+                        processedFrames: _processedFrames,
+                        locatedBoxes: locatedBoxes,
+                        cameraWidth: cameraWidth,
+                        cameraHeight: cameraHeight,
+                        configuredProcessingSize: 800
+                    };
+
+                    _dotnetRef.invokeMethodAsync('OnQuaggaDiagnostics', requestId, diagnostics).catch(() => { });
+                } catch { }
+            };
+
+            _activeProcessedHandler = processedHandler;
+            Quagga2.onProcessed(processedHandler);
 
             // Start de scanner.
             Quagga2.start();

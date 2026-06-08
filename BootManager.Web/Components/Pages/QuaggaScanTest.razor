@@ -59,6 +59,29 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
     </div>
 }
 
+@if (_diagnostics is not null)
+{
+    <div class="quagga-diagnostics">
+        <h5>Scannerdiagnostiek</h5>
+        <div class="diag-row">
+            <span>Verwerkte frames:</span>
+            <span class="diag-value">@_diagnostics.ProcessedFrames</span>
+        </div>
+        <div class="diag-row">
+            <span>Gelokaliseerde boxen:</span>
+            <span class="diag-value">@_diagnostics.LocatedBoxes</span>
+        </div>
+        <div class="diag-row">
+            <span>Camera resolutie:</span>
+            <span class="diag-value">@(_diagnostics.CameraWidth)×@(_diagnostics.CameraHeight)</span>
+        </div>
+        <div class="diag-row">
+            <span>Verwerkingsgrootte:</span>
+            <span class="diag-value">@_diagnostics.ConfiguredProcessingSize px</span>
+        </div>
+    </div>
+}
+
 <div class="quagga-test-values">
     <h5>Bekende test-waarden</h5>
     <div class="test-value-row">
@@ -118,6 +141,18 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
         public string Status => Accepted ? "✓ Geaccepteerd" : "✗ Afgewezen";
     }
 
+    /// <summary>
+    /// Minimale verwerk- en camera-diagnostics voor Pi-retest.
+    /// </summary>
+    public sealed class ScannerDiagnostics
+    {
+        public int ProcessedFrames { get; set; }
+        public int LocatedBoxes { get; set; }
+        public int? CameraWidth { get; set; }
+        public int? CameraHeight { get; set; }
+        public int ConfiguredProcessingSize { get; set; }
+    }
+
     private QuaggaStatus _status = QuaggaStatus.NotStarted;
     private string? _resultValue;
     private string? _resultFormat;
@@ -133,6 +168,9 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
     // Detectie-log (begrensd tot 50 items).
     private List<DetectionLogEntry> _detectionLog = new();
     private const int MaxLogEntries = 50;
+
+    // Minimale scanner- en camera-diagnostics (null als niet actief).
+    private ScannerDiagnostics? _diagnostics;
 
     // Monotoon request-ID per scan-sessie voor race-safe callbacks.
     private int _requestId = 0;
@@ -243,6 +281,7 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
         _resultValue  = null;
         _resultFormat = null;
         _errorMessage = null;
+        _diagnostics  = null;
         _requestId++;
 
         var localRequestId = _requestId;
@@ -343,6 +382,20 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
             _                     => "Onbekende fout bij het starten van de scanner."
         };
 
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt minimale scanner- en camera-diagnostics vanuit JavaScript.
+    /// </summary>
+    [JSInvokable]
+    public void OnQuaggaDiagnostics(int requestId, ScannerDiagnostics diagnostics)
+    {
+        // Negeer diagnostics van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _diagnostics = diagnostics;
         StateHasChanged();
     }
 

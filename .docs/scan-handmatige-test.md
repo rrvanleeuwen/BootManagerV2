@@ -241,9 +241,9 @@ Dit experimentele gedeelte valideert dat Quagga2 versie 1.12.1 beide bekende EAN
 - **Decoder**: Quagga2 1.12.1 (`@ericblade/quagga2`), lokaal gemirrord in `BootManager.Web/wwwroot/lib/quagga2/quagga.min.js`
 - **Route**: `/scan-quagga-test` (geïsoleerd, geen menuvermelding)
 - **Barcode-type**: EAN-13 alleen
-- **Camera-instellingen**:
-  - `facingMode: "environment"` (achtercamera)
-  - `width: { ideal: 800 }` (bewezen breedte-instelling van demo)
+- **Camera en verwerkingsinstellingen**:
+  - `facingMode: "environment"` (achtercamera voorkeur)
+  - `inputStream.size: 800` (bewezen verwerkingsgrootte — beheert Quagga2-frame-afmetingen)
   - `locator.patchSize: "large"`
   - `locator.halfSample: false`
   - `locate: true`
@@ -297,15 +297,29 @@ Dit experimentele gedeelte valideert dat Quagga2 versie 1.12.1 beide bekende EAN
 6. Herhaal stap 3–5 nog **9 keer**.
 7. Controleer na 10 scans: beide tellers staan op **Geaccepteerd: 10×**.
 
+**Scannerdiagnostiek aflezen**:
+
+Tijdens het scannen toont de pagina vier diagnostische velden:
+
+- **Verwerkte frames**: aantal frames dat Quagga2 heeft verwerkt. Stijgt continu als scanner actief.
+- **Gelokaliseerde boxen**: aantal potentiële barcode-kandidaten in het huidige frame. Groter dan nul wanneer Quagga2 streeppatronen ziet.
+- **Camera resolutie**: werkelijke videobreedte × -hoogte van de actieve camera (bijvoorbeeld 1920×1440). Hangt af van telefoonmodel en browser.
+- **Verwerkingsgrootte**: ingestelde verwerkingsgrootte (800 px). Dit is de Quagga2 `inputStream.size` — de afmetingen waarvoor de barcode wordt geanalyseerd.
+
 **Na twintig scans:**
 
 1. Controleer beide tellers: `4007817310809` = 10, `3662168005289` = 10.
 2. Controleer de detectie-log (begrensd tot de meest recente 50 invoeren):
    - Bevat alleen deze twee waarden geaccepteerd (groen/✓).
    - De twee tellers bewijzen dat exact 10 van elke waarde geaccepteerd zijn; de log is het bewijs van detecties inclusief afgewezen kandidaten.
-3. Druk op **Stoppen**.
-4. Verwacht: camera-indicatielampje op telefoon gaat uit.
-5. Controleer dat de pagina nog voluit bruikbaar is (tellers, log intact).
+3. Noteer de diagnostische velden:
+   - Verwerkte frames eindstand
+   - Aantal gelokaliseerde boxen in de laatste frame
+   - Camera resolutie (werkelijk)
+   - Verwerkingsgrootte moet altijd 800 zijn
+4. Druk op **Stoppen**.
+5. Verwacht: camera-indicatielampje op telefoon gaat uit.
+6. Controleer dat de pagina nog voluit bruikbaar is (tellers, log intact).
 
 **Aanvullende validatie:**
 
