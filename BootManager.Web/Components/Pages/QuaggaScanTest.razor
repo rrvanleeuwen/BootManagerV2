@@ -22,7 +22,7 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
     <div class="alert alert-warning">@_errorMessage</div>
 }
 
-<div class="quagga-video-wrapper @(_showVideo ? "quagga-video-visible" : "quagga-video-hidden")">
+<div id="quagga-scanner-target" class="quagga-video-wrapper @(_showVideo ? "quagga-video-visible" : "quagga-video-hidden")">
     <video id="quagga-video" autoplay playsinline muted></video>
 </div>
 
@@ -201,7 +201,7 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
 
         try
         {
-            await _quaggaModule.InvokeVoidAsync("startScan", _dotnetRef, "quagga-video", localRequestId);
+            await _quaggaModule.InvokeVoidAsync("startScan", _dotnetRef, "quagga-scanner-target", localRequestId);
 
             // Check: is dit nog de huidige request?
             if (localRequestId != _requestId)

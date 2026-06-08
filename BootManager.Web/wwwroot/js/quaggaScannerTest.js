@@ -18,8 +18,11 @@ let _currentQuagga = null;
 // De geregistreerde detection handler (voor cleanup).
 let _activeDetectionHandler = null;
 
-// Video-element ID (voor track cleanup).
-let _videoElementId = null;
+// Video-element (voor track cleanup op Quagga's eigendom).
+let _videoElement = null;
+
+// Container-element ID (target voor Quagga2).
+let _containerElementId = null;
 
 // Flag: is een result al ontvangen en verwerkt in deze sessie?
 let _resultReceived = false;
@@ -105,7 +108,8 @@ function _cleanup(sessionId) {
 
     // Stop video tracks.
     _stopVideoTracks();
-    _videoElementId = null;
+    _videoElement = null;
+    _containerElementId = null;
 
     _resultReceived = false;
     _activeSessionId = null;
@@ -162,11 +166,10 @@ function _validateDetection(detection) {
  * Defensief: stopt alle mediatracks op het video-element.
  */
 function _stopVideoTracks() {
-    if (!_videoElementId) return;
-    const videoEl = document.getElementById(_videoElementId);
-    if (videoEl && videoEl.srcObject) {
-        videoEl.srcObject.getTracks?.().forEach(t => { try { t.stop(); } catch { } });
-        videoEl.srcObject = null;
+    if (!_videoElement) return;
+    if (_videoElement.srcObject) {
+        _videoElement.srcObject.getTracks?.().forEach(t => { try { t.stop(); } catch { } });
+        _videoElement.srcObject = null;
     }
 }
 
@@ -183,7 +186,7 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
     // Assign eigenaarschap en nieuwe refs na cleanup.
     _activeSessionId = mySession;
     _dotnetRef = dotnetRef;
-    _videoElementId = videoElementId;
+    _containerElementId = videoElementId;
 
     // Controleer secure context.
     if (!window.isSecureContext) {
@@ -214,7 +217,17 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
 
     if (_sessionId !== mySession) return;
 
-    const videoEl = document.getElementById(videoElementId);
+    // Resolve container element (Quagga2 target).
+    const containerEl = document.getElementById(videoElementId);
+    if (!containerEl) {
+        if (_sessionId === mySession && _dotnetRef) {
+            await _dotnetRef.invokeMethodAsync('OnQuaggaError', requestId, 'CAMERA_ERROR');
+        }
+        return;
+    }
+
+    // Resolve video element inside container (voor cleanup).
+    const videoEl = containerEl.querySelector('video');
     if (!videoEl) {
         if (_sessionId === mySession && _dotnetRef) {
             await _dotnetRef.invokeMethodAsync('OnQuaggaError', requestId, 'CAMERA_ERROR');
@@ -222,10 +235,14 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
         return;
     }
 
+    // Sla video element op voor cleanup.
+    _videoElement = videoEl;
+
     // Bewaar de Quagga-instantie voor deze sessie.
     _currentQuagga = Quagga2;
 
     // Quagga2 init met EAN-13 configuratie (proven instellingen).
+    // Pass container element zodat Quagga2 de video element vindt en gebruiken.
     const config = {
         inputStream: {
             type: 'LiveStream',
@@ -233,7 +250,7 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
                 facingMode: 'environment',
                 width: { ideal: 800 }
             },
-            target: videoEl
+            target: containerEl
         },
         locator: {
             patchSize: 'large',
