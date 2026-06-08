@@ -243,8 +243,8 @@ Dit experimentele gedeelte valideert dat Quagga2 versie 1.12.1 beide bekende EAN
 - **Barcode-type**: EAN-13 alleen
 - **Camera en verwerkingsinstellingen**:
   - `facingMode: "environment"` (achtercamera voorkeur)
-  - cameraresolutie: `width: { ideal: 1280 }`, `height: { ideal: 720 }` (voorkeur; browser mag fallback kiezen)
-  - `inputStream.size: 800` (bewezen verwerkingsgrootte — beheert Quagga2-frame-afmetingen)
+  - cameraresolutie: `width: { ideal: 1920 }`, `height: { ideal: 1080 }` (voorkeur; browser mag fallback kiezen)
+  - `inputStream.size`: testbaar met 800, 1280 (standaard) of 1600 px
   - `locator.patchSize: "large"`
   - `locator.halfSample: false`
   - `locate: true`
@@ -300,13 +300,14 @@ Dit experimentele gedeelte valideert dat Quagga2 versie 1.12.1 beide bekende EAN
 
 **Scannerdiagnostiek aflezen**:
 
-Tijdens het scannen toont de pagina vijf diagnostische velden:
+Tijdens het scannen toont de pagina zes diagnostische velden:
 
 - **Verwerkte frames**: aantal frames dat Quagga2 heeft verwerkt. Stijgt continu als scanner actief.
 - **Gelokaliseerde boxen**: aantal potentiële barcode-kandidaten in het huidige frame. Groter dan nul wanneer Quagga2 streeppatronen ziet.
 - **Camera resolutie**: werkelijke videobreedte × -hoogte van de actieve camera (bijvoorbeeld 1920×1440). Hangt af van telefoonmodel en browser.
 - **Camera maximum**: maximale cameraresolutie die de browser voor de actieve track meldt, of `onbekend` als de browser dit niet ondersteunt.
-- **Verwerkingsgrootte**: ingestelde verwerkingsgrootte (800 px). Dit is de Quagga2 `inputStream.size` — de afmetingen waarvoor de barcode wordt geanalyseerd.
+- **Verwerkingsgrootte**: gekozen Quagga2 `inputStream.size`; standaard 1280 px.
+- **Analyse resolutie**: berekende effectieve frame-afmetingen die Quagga2 analyseert na behoud van de cameraverhouding.
 
 **Na twintig scans:**
 
@@ -319,7 +320,8 @@ Tijdens het scannen toont de pagina vijf diagnostische velden:
    - Aantal gelokaliseerde boxen in de laatste frame
    - Camera resolutie (werkelijk)
    - Camera maximum (indien beschikbaar)
-   - Verwerkingsgrootte moet altijd 800 zijn
+   - Gekozen verwerkingsgrootte
+   - Berekende analyse resolutie
 4. Druk op **Stoppen**.
 5. Verwacht: camera-indicatielampje op telefoon gaat uit.
 6. Controleer dat de pagina nog voluit bruikbaar is (tellers, log intact).

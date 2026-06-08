@@ -196,12 +196,18 @@ function _stopVideoTracks() {
 /**
  * Start de Quagga2-scanner met EAN-13 decode configuratie.
  * requestId: unieke request-ID uit Blazor (voor callbacks).
+ * processingSize: Quagga2 inputStream.size (800, 1280 of 1600). Default 1280 als niet gegeven/ongeldig.
  */
-export async function startScan(dotnetRef, videoElementId, requestId) {
+export async function startScan(dotnetRef, videoElementId, requestId, processingSize) {
     const mySession = ++_sessionId;
 
     // Cleanup eerdere sessie (voordat nieuwe refs toekennen).
     _cleanup();
+
+    // Valideer en stel processingSize in (default 1280).
+    if (!processingSize || ![800, 1280, 1600].includes(processingSize)) {
+        processingSize = 1280;
+    }
 
     // Assign eigenaarschap en nieuwe refs na cleanup.
     _activeSessionId = mySession;
@@ -264,15 +270,15 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
 
     // Quagga2 init met EAN-13 configuratie (proven instellingen).
     // Pass container element zodat Quagga2 de video element vindt en gebruiken.
-    // size: 800 is de proven processing size (NIET hetzelfde als camera constraints width).
+    // size: processingSize is de instelbare Quagga2 processing size (NIET hetzelfde als camera constraints width).
     const config = {
         inputStream: {
             type: 'LiveStream',
-            size: 800,
+            size: processingSize,
             constraints: {
                 facingMode: 'environment',
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
             },
             target: containerEl
         },
@@ -365,6 +371,9 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
                     let cameraHeight = null;
                     let maxCameraWidth = null;
                     let maxCameraHeight = null;
+                    let analysisWidth = null;
+                    let analysisHeight = null;
+
                     try {
                         const track = Quagga2.CameraAccess?.getActiveTrack?.();
                         if (track) {
@@ -389,6 +398,17 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
                         }
                     } catch { }
 
+                    // Bereken effectieve analyse-resolutie volgens Quagga2-regel.
+                    if (cameraWidth && cameraHeight) {
+                        if (cameraWidth / cameraHeight > 1) {
+                            analysisWidth = processingSize;
+                            analysisHeight = Math.floor(cameraHeight / cameraWidth * processingSize);
+                        } else {
+                            analysisWidth = Math.floor(cameraWidth / cameraHeight * processingSize);
+                            analysisHeight = processingSize;
+                        }
+                    }
+
                     const diagnostics = {
                         processedFrames: _processedFrames,
                         locatedBoxes: locatedBoxes,
@@ -396,7 +416,9 @@ export async function startScan(dotnetRef, videoElementId, requestId) {
                         cameraHeight: cameraHeight,
                         maxCameraWidth: maxCameraWidth,
                         maxCameraHeight: maxCameraHeight,
-                        configuredProcessingSize: 800
+                        configuredProcessingSize: processingSize,
+                        analysisWidth: analysisWidth,
+                        analysisHeight: analysisHeight
                     };
 
                     _dotnetRef.invokeMethodAsync('OnQuaggaDiagnostics', requestId, diagnostics).catch(() => { });

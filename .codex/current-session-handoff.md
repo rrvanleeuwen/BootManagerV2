@@ -56,7 +56,7 @@ Als dezelfde functionaliteit al in een bestaande of legacy-story staat, wordt di
 
 ## Laatste relevante productwijziging
 
-`PILOT-SCAN-01` bevat nu naast de bestaande ZXing `/scan`-pagina een geïsoleerde `/scan-quagga-test`-pagina met lokaal meegeleverde Quagga2 1.12.1 voor EAN-13. De pagina vraagt een 1280×720 camerastream aan, verwerkt met Quagga2-grootte 800 px, gebruikt `patchSize: large` en `halfSample: false`, valideert het EAN-13-controlecijfer en heeft een geserialiseerde, sessiegebonden camera-lifecycle met diagnostiek voor echte en maximale cameraresolutie. Build, JavaScript-syntaxcontrole en lokale routecontrole slagen; 147 van 148 unit-tests zijn groen met de bekende ongerelateerde owner-recoverytest rood. Eerstvolgend: branch op de Pi uitrollen, beide EAN-13-codes elk tienmaal testen en daarna de volledige telefoon- en ingest/webapp-regressietest uitvoeren.
+`PILOT-SCAN-01` bevat nu naast de bestaande ZXing `/scan`-pagina een geïsoleerde `/scan-quagga-test`-pagina met lokaal meegeleverde Quagga2 1.12.1 voor EAN-13. De pagina vraagt een 1920×1080 camerastream aan en vergelijkt Quagga2-verwerkingsgroottes 800, 1280 (standaard) en 1600 px. `patchSize: large` en `halfSample: false`, EAN-13-controlecijfercontrole en de geserialiseerde, sessiegebonden camera-lifecycle blijven behouden. Diagnostiek toont echte en maximale cameraresolutie plus berekende analyse-afmetingen. Build en JavaScript-syntaxcontrole slagen; 147 van 148 unit-tests zijn groen met de bekende ongerelateerde owner-recoverytest rood. Eerstvolgend: de drie profielen op de Pi met een kleine EAN-13 vergelijken en daarna bij een werkend profiel de volledige telefoon- en ingest/webapp-regressietest uitvoeren.
 
 ## Relevante actuele documenten
 

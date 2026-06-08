@@ -29,6 +29,24 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
 <p class="quagga-status-text">@_statusText</p>
 
 <div class="quagga-controls">
+    <fieldset disabled="@(_status is QuaggaStatus.Active or QuaggaStatus.RequestingPermission or QuaggaStatus.Result)">
+        <legend class="quagga-processing-legend">Verwerkingsgrootte</legend>
+        <div class="quagga-processing-options">
+            <label>
+                <input type="radio" name="processingSize" value="800" @onchange="@((ChangeEventArgs e) => SetProcessingSize(800))" checked="@(_processingSize == 800)" />
+                800 px
+            </label>
+            <label>
+                <input type="radio" name="processingSize" value="1280" @onchange="@((ChangeEventArgs e) => SetProcessingSize(1280))" checked="@(_processingSize == 1280)" />
+                1280 px (standaard)
+            </label>
+            <label>
+                <input type="radio" name="processingSize" value="1600" @onchange="@((ChangeEventArgs e) => SetProcessingSize(1600))" checked="@(_processingSize == 1600)" />
+                1600 px
+            </label>
+        </div>
+    </fieldset>
+
     @if (_status is QuaggaStatus.NotStarted or QuaggaStatus.Stopped or QuaggaStatus.Error)
     {
         <button class="btn btn-primary" @onclick="StartScan">Starten</button>
@@ -82,6 +100,10 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
         <div class="diag-row">
             <span>Verwerkingsgrootte:</span>
             <span class="diag-value">@_diagnostics.ConfiguredProcessingSize px</span>
+        </div>
+        <div class="diag-row">
+            <span>Analyse resolutie:</span>
+            <span class="diag-value">@((_diagnostics.AnalysisWidth is not null && _diagnostics.AnalysisHeight is not null) ? $"{_diagnostics.AnalysisWidth}×{_diagnostics.AnalysisHeight}" : "berekening…")</span>
         </div>
     </div>
 }
@@ -157,12 +179,15 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
         public int? MaxCameraWidth { get; set; }
         public int? MaxCameraHeight { get; set; }
         public int ConfiguredProcessingSize { get; set; }
+        public int? AnalysisWidth { get; set; }
+        public int? AnalysisHeight { get; set; }
     }
 
     private QuaggaStatus _status = QuaggaStatus.NotStarted;
     private string? _resultValue;
     private string? _resultFormat;
     private string? _errorMessage;
+    private int _processingSize = 1280;
 
     // Acceptatie-telwerk voor de twee bekende test-waarden.
     private Dictionary<string, int> _acceptedCounts = new()
@@ -186,6 +211,14 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
 
     private bool _showVideo =>
         _status is QuaggaStatus.RequestingPermission or QuaggaStatus.Active;
+
+    private void SetProcessingSize(int size)
+    {
+        if (_status is QuaggaStatus.NotStarted or QuaggaStatus.Stopped or QuaggaStatus.Error or QuaggaStatus.Result)
+        {
+            _processingSize = size;
+        }
+    }
 
     private string _statusText => _status switch
     {
@@ -245,7 +278,7 @@ else if (_status == QuaggaStatus.Error && _errorMessage is not null)
 
         try
         {
-            await _quaggaModule.InvokeVoidAsync("startScan", _dotnetRef, "quagga-scanner-target", localRequestId);
+            await _quaggaModule.InvokeVoidAsync("startScan", _dotnetRef, "quagga-scanner-target", localRequestId, _processingSize);
 
             // Check: is dit nog de huidige request?
             if (localRequestId != _requestId)
