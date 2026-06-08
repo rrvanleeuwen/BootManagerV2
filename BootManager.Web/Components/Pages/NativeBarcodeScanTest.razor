@@ -1,0 +1,480 @@
+@page "/scan-native-barcode-test"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+
+@inject IJSRuntime Js
+
+<PageTitle>Native BarcodeDetector Test</PageTitle>
+
+<h3>Native BarcodeDetector EAN-13 Test</h3>
+
+@if (_status == NativeScanStatus.UnsupportedBrowser)
+{
+    <div class="alert alert-warning">
+        <strong>BarcodeDetector niet ondersteund in deze browser.</strong>
+        @if (!string.IsNullOrEmpty(_browserSupportInfo))
+        {
+            <div class="mt-2">@_browserSupportInfo</div>
+        }
+    </div>
+}
+else if (_status == NativeScanStatus.UnsupportedFormat)
+{
+    <div class="alert alert-warning">
+        <strong>EAN-13 formaat niet ondersteund.</strong>
+        @if (!string.IsNullOrEmpty(_supportedFormats))
+        {
+            <div class="mt-2">Ondersteunde formaten: @_supportedFormats</div>
+        }
+    </div>
+}
+else if (_status == NativeScanStatus.InsecureContext)
+{
+    <div class="alert alert-danger">
+        <strong>Camera niet beschikbaar via HTTP.</strong>
+        Cameratoegang vereist een beveiligde verbinding (HTTPS).
+        Open de pagina via de operationeel geconfigureerde HTTPS-route.
+    </div>
+}
+else if (_status == NativeScanStatus.Error && _errorMessage is not null)
+{
+    <div class="alert alert-warning">@_errorMessage</div>
+}
+
+<div id="native-scanner-target" class="native-video-wrapper @(_showVideo ? "native-video-visible" : "native-video-hidden")">
+    <video id="native-video" autoplay playsinline muted></video>
+</div>
+
+<p class="native-status-text">@_statusText</p>
+
+<div class="native-controls">
+    @if (_status == NativeScanStatus.NotStarted || _status == NativeScanStatus.Stopped || _status == NativeScanStatus.Error)
+    {
+        <button class="btn btn-primary" @onclick="StartScan">Starten</button>
+    }
+    else if (_status == NativeScanStatus.RequestingPermission)
+    {
+        <button class="btn btn-primary" disabled>Bezig met starten…</button>
+    }
+    else if (_status == NativeScanStatus.Active)
+    {
+        <button class="btn btn-secondary me-2" @onclick="StopScan">Stoppen</button>
+        <button class="btn btn-outline-secondary" @onclick="RestartScan">Herstarten</button>
+    }
+    else if (_status == NativeScanStatus.Result)
+    {
+        <button class="btn btn-primary me-2" @onclick="StartScan">Opnieuw scannen</button>
+        <button class="btn btn-outline-secondary" @onclick="StopScan">Stoppen</button>
+    }
+</div>
+
+@if (_status == NativeScanStatus.Result)
+{
+    <div class="native-result">
+        <div><strong>Geaccepteerde waarde</strong></div>
+        <div class="native-result-value">@_resultValue</div>
+        <div class="mt-2"><strong>Formaat</strong></div>
+        <div>@_resultFormat</div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_supportedFormats) && _status != NativeScanStatus.UnsupportedFormat)
+{
+    <div class="native-support-info">
+        <h5>BarcodeDetector ondersteuning</h5>
+        <div class="diag-row">
+            <span>Ondersteunde formaten:</span>
+            <span class="diag-value">@_supportedFormats</span>
+        </div>
+    </div>
+}
+
+@if (_diagnostics is not null)
+{
+    <div class="native-diagnostics">
+        <h5>Scannerdiagnostiek</h5>
+        <div class="diag-row">
+            <span>Detectiepogingen:</span>
+            <span class="diag-value">@_diagnostics.DetectionAttempts</span>
+        </div>
+        <div class="diag-row">
+            <span>Laatste detecties per poging:</span>
+            <span class="diag-value">@_diagnostics.LastDetectionCount</span>
+        </div>
+        <div class="diag-row">
+            <span>Camera resolutie:</span>
+            <span class="diag-value">@(_diagnostics.CameraWidth)×@(_diagnostics.CameraHeight)</span>
+        </div>
+    </div>
+}
+
+<div class="native-detection-log">
+    <h5>Detectie-log (ruwe detecties)</h5>
+    <div class="log-container">
+        @if (_detectionLog.Count == 0)
+        {
+            <div class="log-empty">Geen detecties nog.</div>
+        }
+        else
+        {
+            @foreach (var entry in _detectionLog)
+            {
+                <div class="log-entry @(entry.Accepted ? "log-accepted" : "log-rejected")">
+                    <span class="log-value">@entry.Value</span>
+                    <span class="log-status">@entry.Status</span>
+                    @if (!entry.Accepted && !string.IsNullOrEmpty(entry.Reason))
+                    {
+                        <span class="log-reason">@entry.Reason</span>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private enum NativeScanStatus
+    {
+        NotStarted,
+        RequestingPermission,
+        Active,
+        Result,
+        Stopped,
+        Error,
+        InsecureContext,
+        UnsupportedBrowser,
+        UnsupportedFormat
+    }
+
+    /// <summary>
+    /// DTO voor BarcodeDetector support-informatie.
+    /// </summary>
+    public sealed class SupportInfo
+    {
+        public bool IsSecureContext { get; set; }
+        public bool IsBarcodeDetectorAvailable { get; set; }
+        public bool SupportCheckSucceeded { get; set; }
+        public bool IsEan13Supported { get; set; }
+        public string SupportedFormats { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Eenvoudige DTO voor een detectie-log-invoer.
+    /// </summary>
+    public sealed class DetectionLogEntry
+    {
+        public string Value { get; set; } = string.Empty;
+        public bool Accepted { get; set; }
+        public string? Reason { get; set; }
+        public string Status => Accepted ? "✓ Geaccepteerd" : "✗ Afgewezen";
+    }
+
+    /// <summary>
+    /// Minimale camera- en detectie-diagnostics voor native BarcodeDetector.
+    /// </summary>
+    public sealed class ScannerDiagnostics
+    {
+        public int DetectionAttempts { get; set; }
+        public int LastDetectionCount { get; set; }
+        public int? CameraWidth { get; set; }
+        public int? CameraHeight { get; set; }
+    }
+
+    private NativeScanStatus _status = NativeScanStatus.NotStarted;
+    private string? _resultValue;
+    private string? _resultFormat;
+    private string? _errorMessage;
+    private string? _browserSupportInfo;
+    private string? _supportedFormats;
+
+    // Detectie-log (begrensd tot 50 items).
+    private List<DetectionLogEntry> _detectionLog = new();
+    private const int MaxLogEntries = 50;
+
+    // Minimale camera- en detectie-diagnostics (null als niet actief).
+    private ScannerDiagnostics? _diagnostics;
+
+    // Monotoon request-ID per scan-sessie voor race-safe callbacks.
+    private int _requestId = 0;
+
+    private IJSObjectReference? _nativeModule;
+    private DotNetObjectReference<NativeBarcodeScanTest>? _dotnetRef;
+
+    private bool _showVideo =>
+        _status is NativeScanStatus.RequestingPermission or NativeScanStatus.Active;
+
+    private string _statusText => _status switch
+    {
+        NativeScanStatus.NotStarted           => "Druk op Starten om de camera te activeren.",
+        NativeScanStatus.RequestingPermission => "Cameratoestemming aanvragen…",
+        NativeScanStatus.Active               => "Camera actief — houd een EAN-13 barcode voor de camera.",
+        NativeScanStatus.Result               => "EAN-13 barcode herkend.",
+        NativeScanStatus.Stopped              => "Scanner gestopt.",
+        NativeScanStatus.Error                => "Fout bij starten van de scanner.",
+        NativeScanStatus.InsecureContext      => "Cameratoegang niet mogelijk via HTTP.",
+        NativeScanStatus.UnsupportedBrowser   => "BarcodeDetector niet ondersteund.",
+        NativeScanStatus.UnsupportedFormat    => "EAN-13 niet ondersteund.",
+        _                                      => string.Empty
+    };
+
+    /// <summary>
+    /// Laadt de native BarcodeDetector JavaScript-module bij de eerste render
+    /// en controleert browserondersteuning.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _nativeModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/nativeBarcodeScannerTest.js");
+            }
+            catch (JSException)
+            {
+                _status = NativeScanStatus.Error;
+                _errorMessage = "Native BarcodeDetector-module kon niet worden geladen.";
+                StateHasChanged();
+                return;
+            }
+
+            _dotnetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                var supportInfo = await _nativeModule.InvokeAsync<SupportInfo>("checkBarcodeDetectorSupport");
+
+                if (!supportInfo.IsSecureContext)
+                {
+                    _status = NativeScanStatus.InsecureContext;
+                    StateHasChanged();
+                    return;
+                }
+
+                if (!supportInfo.IsBarcodeDetectorAvailable)
+                {
+                    _status = NativeScanStatus.UnsupportedBrowser;
+                    _browserSupportInfo = "Zorg dat je browser BarcodeDetector ondersteunt (Chrome, Edge op Android).";
+                    StateHasChanged();
+                    return;
+                }
+
+                if (!supportInfo.SupportCheckSucceeded)
+                {
+                    _status = NativeScanStatus.Error;
+                    _errorMessage = "Browserondersteuning kon niet worden vastgesteld. getSupportedFormats() ontbreekt of is mislukt.";
+                    StateHasChanged();
+                    return;
+                }
+
+                if (!supportInfo.IsEan13Supported)
+                {
+                    _status = NativeScanStatus.UnsupportedFormat;
+                    _supportedFormats = supportInfo.SupportedFormats;
+                    StateHasChanged();
+                    return;
+                }
+
+                _supportedFormats = supportInfo.SupportedFormats;
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException ex)
+            {
+                _status = NativeScanStatus.Error;
+                _errorMessage = "Fout bij controleren van browserondersteuning: " + ex.Message;
+                StateHasChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Interne helper: start de scanner race-safe met lokale request-ID.
+    /// </summary>
+    private async Task _internalStartScan(int localRequestId)
+    {
+        if (_nativeModule is null || _dotnetRef is null)
+            return;
+
+        try
+        {
+            await _nativeModule.InvokeVoidAsync("startScan", _dotnetRef, "native-scanner-target", localRequestId);
+
+            // Check: is dit nog de huidge request?
+            if (localRequestId != _requestId)
+                return;
+        }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
+        catch (JSException ex)
+        {
+            // Check: is dit nog de huidge request?
+            if (localRequestId != _requestId)
+                return;
+
+            _status = NativeScanStatus.Error;
+            _errorMessage = "Fout bij starten van BarcodeDetector: " + ex.Message;
+            StateHasChanged();
+            return;
+        }
+
+        // Check opnieuw.
+        if (localRequestId != _requestId)
+            return;
+
+        // Als OnNativeError de status al heeft gewijzigd, niet overschrijven.
+        if (_status == NativeScanStatus.RequestingPermission)
+        {
+            _status = NativeScanStatus.Active;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartScan()
+    {
+        if (_nativeModule is null || _dotnetRef is null)
+            return;
+
+        _resultValue  = null;
+        _resultFormat = null;
+        _errorMessage = null;
+        _diagnostics  = null;
+        _requestId++;
+
+        var localRequestId = _requestId;
+
+        _status = NativeScanStatus.RequestingPermission;
+        StateHasChanged();
+
+        await _internalStartScan(localRequestId);
+    }
+
+    private async Task StopScan()
+    {
+        _requestId++;
+
+        if (_nativeModule is not null)
+        {
+            try
+            {
+                await _nativeModule.InvokeVoidAsync("stopScan");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _status = NativeScanStatus.Stopped;
+        StateHasChanged();
+    }
+
+    private async Task RestartScan()
+    {
+        await StopScan();
+        await Task.Delay(100);
+        await StartScan();
+    }
+
+    /// <summary>
+    /// Ontvangt een succesvol EAN-13 scanresultaat vanuit JavaScript.
+    /// </summary>
+    [JSInvokable]
+    public void OnNativeResult(int requestId, string value, string format)
+    {
+        // Negeer resultaten van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _resultValue  = value;
+        _resultFormat = format;
+        _status       = NativeScanStatus.Result;
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt een detectie uit JavaScript (voor logging).
+    /// Negeer detecties van vorige sessies (stale-callback bescherming).
+    /// </summary>
+    [JSInvokable]
+    public void OnNativeDetection(int requestId, DetectionLogEntry entry)
+    {
+        // Negeer callbacks van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _detectionLog.Add(entry);
+        if (_detectionLog.Count > MaxLogEntries)
+        {
+            _detectionLog.RemoveAt(0);
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt diagnostics vanuit JavaScript.
+    /// </summary>
+    [JSInvokable]
+    public void OnNativeDiagnostics(int requestId, ScannerDiagnostics diagnostics)
+    {
+        // Negeer diagnostics van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _diagnostics = diagnostics;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt een foutcode vanuit JavaScript en vertaalt die naar Nederlandse melding.
+    /// </summary>
+    [JSInvokable]
+    public void OnNativeError(int requestId, string errorCode)
+    {
+        // Negeer fouten van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        _status = errorCode == "INSECURE_CONTEXT" ? NativeScanStatus.InsecureContext : NativeScanStatus.Error;
+        _errorMessage = errorCode switch
+        {
+            "INSECURE_CONTEXT"    => "Cameratoegang vereist een beveiligde verbinding (HTTPS).",
+            "NO_CAMERA_API"       => "Camera-API niet beschikbaar in deze browser.",
+            "PERMISSION_DENIED"   => "Cameratoestemming geweigerd. Sta cameratoegang toe in de browserinstellingen.",
+            "NO_CAMERA"           => "Geen camera gevonden op dit apparaat.",
+            "CAMERA_ERROR"        => "Camera kon niet worden gestart. Controleer of de camera beschikbaar is.",
+            "DETECTOR_NOT_READY"  => "BarcodeDetector kon niet worden geïnitialiseerd.",
+            _                     => "Onbekende fout bij het starten van de scanner."
+        };
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Stopt de camera en geeft JavaScript- en .NET-referenties vrij bij disposal.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        _requestId++;
+
+        if (_nativeModule is not null)
+        {
+            try
+            {
+                await _nativeModule.InvokeVoidAsync("dispose");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+
+            try
+            {
+                await _nativeModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _dotnetRef?.Dispose();
+    }
+}

@@ -332,6 +332,23 @@ Tijdens het scannen toont de pagina zes diagnostische velden:
 - Test daarna in de andere browser op dezelfde telefoon (Chrome of Edge).
 - Test ongeldig gedecodeerde waarden: houd een beschadigde of onleesbare barcode voor de camera zodat Quagga2 deze als kandidaat decodeert maar de validatie afwijst. Verwacht: detectie in de log met status "Afgewezen" en reden (bijv. "Niet 13 cijfers" of "Ongeldig EAN-13 checksum").
 
+### Native BarcodeDetector EAN-13-proef
+
+Gebruik route `/scan-native-barcode-test` als afzonderlijke vergelijking wanneer Quagga2 een kleine EAN-13 wel lokaliseert maar niet decodeert.
+
+1. Open de route via HTTPS in Chrome en Edge op Android.
+2. Controleer dat de pagina meldt of `BarcodeDetector` beschikbaar is en welke formaten de browser ondersteunt.
+3. Als `ean_13` ontbreekt, noteer de zichtbare ondersteunde-formatenlijst en stop de test voor die browser.
+4. Druk op **Starten** wanneer `ean_13` wordt ondersteund.
+5. Houd de kleine EAN-13 `9789059965607` op normaal productformaat voor de camera.
+6. Noteer:
+   - cameraresolutie;
+   - detectiepogingen na ongeveer tien seconden;
+   - laatste aantal detecties per poging;
+   - herkend ja/nee.
+7. Bij herkenning verwacht: waarde `9789059965607`, formaat `EAN_13`, automatische stop en een geaccepteerde logregel.
+8. Test **Stoppen**, **Herstarten** en navigeren; het camera-indicatielampje moet uitgaan.
+
 **Bevindingen vastleggen:**
 
 | Telefoon | Browser | 10× `4007817310809` | 10× `3662168005289` | Log volledig | Geen fouten |
