@@ -34,6 +34,21 @@ Het packet bevat alleen de exacte storybron, scope, buiten scope, verwachte writ
 
 Claude voert geen projectregie, documentatiebeheer of git/PR-regie uit.
 
+Ieder implementation packet bevat daarnaast verplicht:
+
+- expliciete uitvoeringsgrenzen: wat Claude wel en niet mag wijzigen of uitvoeren;
+- een verbod op story-, release-, TODO-, legacy-, README- en handoffwijzigingen;
+- een verbod op commits, pushes, branches, PR's, merges, releases en deployments;
+- een definitie van technische oplevering met verplichte tests, build, diffcheck en
+  migratiebewijs wanneer de story dataopslag raakt;
+- concrete situaties waarin Claude `niet gereed` moet rapporteren;
+- de regel dat Claude een story nooit zelf `Done`, geaccepteerd of productierijp noemt.
+
+Claude mag uitsluitend `gereed voor Codex-review` melden wanneer de volledige packetscope
+is geïmplementeerd en alle verplichte checks acceptabel zijn. Codex bepaalt na review of
+de implementatie naar handmatige acceptatie kan; alleen na die acceptatie wordt een
+storystatus administratief afgerond.
+
 ## Review en testen
 
 Codex beoordeelt functionele juistheid, architectuur, regressierisico, tests, build en acceptatiecriteria. Bij UI-, database-, configuratie-, authenticatie-, deployment- of runtimewijzigingen volgt een handmatige acceptatietest vóór commit/push/PR.

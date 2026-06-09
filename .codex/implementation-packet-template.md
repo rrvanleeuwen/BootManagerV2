@@ -30,6 +30,18 @@ discovered:
 
 Before changing an additional area, explain why it is required.
 
+## Execution Boundaries
+
+- Implement only application code, migrations, configuration and tests explicitly
+  required by this packet.
+- Do not change story, release, TODO, legacy, README, handoff or other project
+  documentation.
+- Do not create commits, pushes, branches, PRs, merges, releases or deployments.
+- Do not change scope, acceptance criteria or architectural direction. Stop and report
+  the smallest missing decision when an approved direction cannot be followed.
+- Never declare the story `Done`, accepted or production-ready. Only report
+  `ready for Codex review` after satisfying the technical completion definition.
+
 ## Minimal Context
 
 Read:
@@ -68,6 +80,23 @@ dotnet build BootManager.sln
 git diff --check
 ```
 
+## Definition of Technical Completion
+
+Report `ready for Codex review` only when:
+
+- every scope item and acceptance criterion is technically implemented;
+- all targeted tests pass;
+- the full required test run contains no new failure;
+- build and `git diff --check` pass;
+- migration or compatibility behavior is proven when relevant;
+- no unexplained change exists outside the expected write-set;
+- remaining manual acceptance steps are listed explicitly.
+
+Report `not ready` when any scope item is incomplete, migration/compatibility is
+unproven, a new or changed test fails, build/diffcheck fails, a required decision is
+missing, or an additional write area cannot be justified. Do not downgrade failures to
+warnings or weaken tests or acceptance criteria to claim completion.
+
 ## Completion Notes
 
 Return only:
@@ -75,4 +104,5 @@ Return only:
 1. changed files and implemented behavior;
 2. tests/checks and results;
 3. migration/configuration impact;
-4. remaining risks and manual test requirements.
+4. remaining risks and manual test requirements;
+5. final status: `ready for Codex review` or `not ready`, with the concrete reason.
