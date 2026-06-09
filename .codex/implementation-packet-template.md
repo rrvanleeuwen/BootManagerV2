@@ -9,9 +9,14 @@ irrelevant sections and keep the completed packet concise.
 - Approved story:
 - Story source:
 - Goal:
+- Required branch:
 
 The story is already approved. Do not restate it or ask for approval. Give a
 short plan, implement directly, run the checks, and provide completion notes.
+
+Codex must create and verify the required feature branch before giving this packet to
+Claude. Claude must stop and report `not ready` when the active branch is `master` or
+does not match the required branch.
 
 ## Scope
 
@@ -34,6 +39,8 @@ Before changing an additional area, explain why it is required.
 
 - Implement only application code, migrations, configuration and tests explicitly
   required by this packet.
+- Before editing, verify that the active branch matches `Required branch` and is not
+  `master`.
 - Do not change story, release, TODO, legacy, README, handoff or other project
   documentation.
 - Do not create commits, pushes, branches, PRs, merges, releases or deployments.

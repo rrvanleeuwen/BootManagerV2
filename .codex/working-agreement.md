@@ -34,6 +34,17 @@ Het packet bevat alleen de exacte storybron, scope, buiten scope, verwachte writ
 
 Claude voert geen projectregie, documentatiebeheer of git/PR-regie uit.
 
+Voordat Codex een implementation packet als uitvoeropdracht aan Claude geeft:
+
+1. controleert Codex branch en worktree;
+2. maakt Codex vanaf de afgesproken basisbranch een specifieke featurebranch;
+3. bevestigt Codex dat de actuele branch niet `master` is;
+4. geeft Codex pas daarna het Claude-commando.
+
+Een Claude-implementatie mag niet op `master` starten. Als Claude al wijzigingen in een
+on-gecommitte worktree heeft gemaakt, verplaatst Codex die worktree eerst door naar een
+featurebranch zonder de wijzigingen te verliezen of te committen.
+
 Ieder implementation packet bevat daarnaast verplicht:
 
 - expliciete uitvoeringsgrenzen: wat Claude wel en niet mag wijzigen of uitvoeren;
@@ -79,6 +90,12 @@ Als dezelfde functionaliteit in een bestaande actuele of legacy-story staat, wor
 Werk alleen direct geraakte documentatie bij. Historische details horen in epic-, commit- of PR-historie, niet in de actuele handoff.
 
 ## Git-flow
+
+Vóór implementatie:
+
+1. controleer dat de basisbranch actueel en schoon is;
+2. maak een featurebranch voor de goedgekeurde story;
+3. controleer dat Claude's write-set op die featurebranch terechtkomt.
 
 Na goedgekeurde implementatie en test:
 
