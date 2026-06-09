@@ -221,7 +221,7 @@ Test eerst via `http://bootmanager-pi:5000/` dat de scanpagina de secure-context
 
 **Implementatiestatus 2026-06-09**
 
-- De beveiligde `/scan`-pagina, camerastatussen, start/stop/herstart, resultaatweergave en handmatige fallback zijn geïmplementeerd op `feature/pilot-scan-01`.
+- De beveiligde `/scan`-pagina, camerastatussen, start/stop/herstart, resultaatweergave en handmatige fallback zijn via PR #88 gemerged naar `master`.
 - De productiepagina gebruikt één gedeelde camerastream: lokale ZXing uitsluitend voor QR en native `BarcodeDetector` uitsluitend voor EAN-13. Browsers zonder native EAN-13-ondersteuning behouden QR en handmatige invoer.
 - Laptopacceptatie is geslaagd via `http://localhost:5046/scan` en `https://localhost:7299/scan`, inclusief QR-code, productbarcode, stoppen/herstarten, handmatige invoer tijdens actief scannen en cameravrijgave bij navigatie.
 - De bestaande ZXing-proef leest QR op de Samsung-telefoon, maar de geteste EAN-13-productbarcodes niet betrouwbaar. Daarom is een geïsoleerde, beveiligde `/scan-quagga-test`-pagina toegevoegd met lokaal meegeleverde Quagga2 1.12.1, uitsluitend voor EAN-13.
@@ -231,7 +231,7 @@ Test eerst via `http://bootmanager-pi:5000/` dat de scanpagina de secure-context
 - De deterministische moduleharness laadt de echte productie-exportfuncties en bewijst zes scenario's: fallback zonder native support, geldige EAN-13-detectie, vroege QR-callback, sessie-isolatie, oplopende supportrevisions en idempotente cleanup bij pending native detecties.
 - JavaScript-syntaxcontrole, de moduleharness (6/6), `dotnet build BootManager.sln --no-restore` en `git diff --check` slagen.
 - Publishcontrole slaagt met bestaande waarschuwingen buiten deze story. De simulator-tests slagen 5/5; van de unit-tests slagen 147/148. Alleen de bestaande, ongerelateerde `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` blijft rood.
-- Open voor storyacceptatie: de branch op de Raspberry Pi uitrollen en de volledige geïntegreerde QR-/EAN-13-flow in Edge en Chrome op beide telefoons uitvoeren. Ook moet ingest samen met de webapp via HTTP en HTTPS worden geregressietest.
+- Open voor storyacceptatie: `master` op de Raspberry Pi uitrollen en de volledige geïntegreerde QR-/EAN-13-flow in Edge en Chrome op beide telefoons uitvoeren. Ook moet ingest samen met de webapp via HTTP en HTTPS worden geregressietest.
 
 ## Niet-doelen voor deze pilot
 

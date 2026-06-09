@@ -20,9 +20,9 @@
 #### High Priority
 
 - [ ] **Holiday Pilot 2026 — PILOT-SCAN-01 camera-, QR- en barcode-proof-of-concept**
-  - **Status 2026-06-09:** technisch geaccepteerd op `feature/pilot-scan-01`. `/scan` gebruikt één camerastream met lokale ZXing voor QR en native `BarcodeDetector` voor EAN-13; zonder native EAN-13 blijven QR en handmatige invoer beschikbaar.
+  - **Status 2026-06-09:** technisch geaccepteerd en via PR #88 gemerged naar `master`. `/scan` gebruikt één camerastream met lokale ZXing voor QR en native `BarcodeDetector` voor EAN-13; zonder native EAN-13 blijven QR en handmatige invoer beschikbaar.
   - **Bewezen:** native EAN-13 werkte op de Samsung-telefoon; de echte-module-harness slaagt 6/6 voor supportfallback, EAN-resultaat, races, revisions en resourcecleanup. JavaScript-syntaxcontrole, build, publish en diffcheck zijn groen. Simulator-tests slagen 5/5; unit-tests 147/148 met alleen de bestaande ongerelateerde owner-recoverytest rood.
-  - **Open:** featurebranch op de Raspberry Pi uitrollen; QR en EAN-13 in Edge en Chrome op beide telefoons accepteren en ingest plus webapp via HTTP en HTTPS regressietesten.
+  - **Open:** `master` op de Raspberry Pi uitrollen; QR en EAN-13 in Edge en Chrome op beide telefoons accepteren en ingest plus webapp via HTTP en HTTPS regressietesten.
   - **Bestaande route:** `http://bootmanager-pi:5000/` blijft beschikbaar voor gebruik zonder camera.
   - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.docs/scan-handmatige-test.md`.
 

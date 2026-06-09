@@ -30,7 +30,8 @@ Tot deze pilot gereed is kiest Codex geen story buiten deze release, tenzij:
 
 ## Eerstvolgende actie
 
-Rond draft-PR #88 af en voer daarna de handmatige productietest op de Raspberry Pi uit.
+Herstel SSH-toegang tot de Raspberry Pi, rol `master` uit en voer de handmatige
+productietest uit.
 
 De productiecode en deterministische echte-module-harness zijn op 2026-06-09 technisch
 geaccepteerd. De zes harnessscenario's slagen, inclusief sessie-isolatie,
@@ -47,14 +48,15 @@ Geslaagde checks:
   `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` rood;
 - `git diff --check`.
 
-De relevante release-, TODO-, legacy- en testdocumentatie is bijgewerkt. Commit
-`fe7c1a4` staat op `origin/feature/pilot-scan-01`; draft-PR #88 is geopend.
+De relevante release-, TODO-, legacy- en testdocumentatie is bijgewerkt. PR #88 is
+gemerged naar `master` als mergecommit `a8b5d96`.
 
 Open voor storyacceptatie:
 
-- PR #88 mergen naar `master`; de Pi pullt volgens het runbook geen featurebranches;
-- SSH-toegang vanaf de uitvoerende laptop herstellen of interactief uitvoeren; de huidige
-  non-interactieve poging naar `roelof@bootmanager-pi.local` werd geweigerd;
+- SSH-toegang vanaf de uitvoerende laptop herstellen of interactief uitvoeren;
+  `bootmanager-pi.local` is netwerkbereikbaar, maar public-key-authenticatie voor
+  `roelof` werd geweigerd; het oude IPv4-adres `192.168.2.29` weigert verbinding;
+- op de Pi `master` pullen, beide Docker-images bouwen en Compose opnieuw toepassen;
 - daarna de volledige QR-/EAN-13-productietest op de Raspberry Pi in Edge en Chrome op
   beide telefoons uitvoeren, inclusief ingest-regressie via HTTP en HTTPS.
 
@@ -80,10 +82,8 @@ Samsung-telefoon direct vanaf circa 15 cm bij 1080×1920. Daarom wordt de produc
 `BarcodeDetector` uitsluitend voor EAN-13. Browsers zonder native EAN-13 houden QR en
 handmatige invoer.
 
-Claude heeft hiervoor niet-gecommitte wijzigingen gemaakt in `Scan.razor`,
-`Scan.razor.css`, `barcodeScanner.js` en de lokale verificatieharness. De implementatie is
-technisch geaccepteerd, maar nog niet administratief afgerond, gecommit, gepusht of op de
-Raspberry Pi geaccepteerd.
+De productie-integratie, verificatieharness en documentatie staan op `master`. Alleen de
+Raspberry Pi- en telefoonsacceptatie blijven open.
 
 ## Relevante actuele documenten
 
