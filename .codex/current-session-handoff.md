@@ -10,9 +10,9 @@ Updated: 2026-06-09.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve featurebranch: `feature/pilot-scan-01`.
-- `PILOT-SCAN-01` is geïmplementeerd en lokaal op de laptop geaccepteerd.
-- Branch moet na commit/push tijdelijk op de Raspberry Pi worden getest.
+- Er is geen actieve featurebranch; `master` is gelijk aan `origin/master`.
+- `PILOT-SCAN-01` is afgerond, gemerged en op de Raspberry Pi uitgerold.
+- De geïntegreerde scanflow is op de Samsung-telefoons van Roelof en Carla in Edge en Chrome geaccepteerd.
 
 ## Actuele productdoelstelling
 
@@ -30,8 +30,8 @@ Tot deze pilot gereed is kiest Codex geen story buiten deze release, tenzij:
 
 ## Eerstvolgende actie
 
-Herstel SSH-toegang tot de Raspberry Pi, rol `master` uit en voer de handmatige
-productietest uit.
+Bereid de eerstvolgende pilotstory `PILOT-AUTH-01` voor: Owner/Crew-model en een eigen
+login voor Carla.
 
 De productiecode en deterministische echte-module-harness zijn op 2026-06-09 technisch
 geaccepteerd. De zes harnessscenario's slagen, inclusief sessie-isolatie,
@@ -51,14 +51,14 @@ Geslaagde checks:
 De relevante release-, TODO-, legacy- en testdocumentatie is bijgewerkt. PR #88 is
 gemerged naar `master` als mergecommit `a8b5d96`.
 
-Open voor storyacceptatie:
+Pi- en telefoonstatus:
 
-- SSH-toegang vanaf de uitvoerende laptop herstellen of interactief uitvoeren;
-  `bootmanager-pi.local` is netwerkbereikbaar, maar public-key-authenticatie voor
-  `roelof` werd geweigerd; het oude IPv4-adres `192.168.2.29` weigert verbinding;
-- op de Pi `master` pullen, beide Docker-images bouwen en Compose opnieuw toepassen;
-- daarna de volledige QR-/EAN-13-productietest op de Raspberry Pi in Edge en Chrome op
-  beide telefoons uitvoeren, inclusief ingest-regressie via HTTP en HTTPS.
+- `master` is door de gebruiker handmatig op de Raspberry Pi uitgerold;
+- HTTP-webapp en login zijn gecontroleerd; na het wissen van een oude browsercookie
+  werkte de login normaal;
+- HTTPS-scannen op de Samsung-telefoons van Roelof en Carla is in Edge en Chrome
+  geslaagd, inclusief QR-codes en verschillende productbarcodes;
+- `PILOT-SCAN-01` voldoet aan alle acceptatiecriteria en is op 2026-06-09 afgerond.
 
 De volledige story, scope, buiten-scope en acceptatietest staan in `.docs/releases/holiday-pilot-2026.md`.
 
@@ -82,8 +82,8 @@ Samsung-telefoon direct vanaf circa 15 cm bij 1080×1920. Daarom wordt de produc
 `BarcodeDetector` uitsluitend voor EAN-13. Browsers zonder native EAN-13 houden QR en
 handmatige invoer.
 
-De productie-integratie, verificatieharness en documentatie staan op `master`. Alleen de
-Raspberry Pi- en telefoonsacceptatie blijven open.
+De productie-integratie, verificatieharness en documentatie staan op `master`.
+`PILOT-SCAN-01` is volledig geaccepteerd; `PILOT-AUTH-01` is de volgende story.
 
 ## Relevante actuele documenten
 

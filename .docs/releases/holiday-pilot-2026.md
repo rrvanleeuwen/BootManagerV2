@@ -154,11 +154,13 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-## Eerstvolgende story
+**Eerstvolgende story:** `PILOT-AUTH-01` — Owner/Crew-model en eigen login voor Carla.
+
+## Uitgewerkte stories
 
 ### PILOT-SCAN-01 — Camera-, QR- en barcode-proof-of-concept
 
-**Status:** In Progress
+**Status:** Done
 
 **Als** gebruiker  
 **wil ik** in de lokaal gehoste Blazor-app op mijn telefoon een QR-code en productbarcode kunnen scannen  
@@ -231,7 +233,9 @@ Test eerst via `http://bootmanager-pi:5000/` dat de scanpagina de secure-context
 - De deterministische moduleharness laadt de echte productie-exportfuncties en bewijst zes scenario's: fallback zonder native support, geldige EAN-13-detectie, vroege QR-callback, sessie-isolatie, oplopende supportrevisions en idempotente cleanup bij pending native detecties.
 - JavaScript-syntaxcontrole, de moduleharness (6/6), `dotnet build BootManager.sln --no-restore` en `git diff --check` slagen.
 - Publishcontrole slaagt met bestaande waarschuwingen buiten deze story. De simulator-tests slagen 5/5; van de unit-tests slagen 147/148. Alleen de bestaande, ongerelateerde `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` blijft rood.
-- Open voor storyacceptatie: `master` op de Raspberry Pi uitrollen en de volledige geïntegreerde QR-/EAN-13-flow in Edge en Chrome op beide telefoons uitvoeren. Ook moet ingest samen met de webapp via HTTP en HTTPS worden geregressietest.
+- `master` is op de Raspberry Pi uitgerold. Op de Samsung-telefoons van Roelof en Carla is de geïntegreerde scanflow via HTTPS in Edge en Chrome geslaagd, inclusief QR-codes en verschillende productbarcodes.
+- De webapp en login zijn via HTTP gecontroleerd. Op Roelofs telefoon moest eenmaal een oude browsercookie worden gewist. Op Carla's telefoon is de Caddy-root-CA geïnstalleerd en werkte de HTTPS-route zonder afwijkingen.
+- Alle acceptatiecriteria van `PILOT-SCAN-01` zijn op 2026-06-09 behaald; de story is afgerond.
 
 ## Niet-doelen voor deze pilot
 

@@ -193,8 +193,8 @@ function Get-HolidayPilotStatus {
 
     # De pilotstories hebben een vaste prioriteitsvolgorde in het releasedocument.
     # Houd deze tellers bij wanneer een pilotstory administratief van status wijzigt.
-    $done = 0
-    $partial = 1
+    $done = 1
+    $partial = 0
     $open = 13
     $parked = 0
     $progress = Get-Progress -Done $done -Replaced 0 -Partial $partial -Open $open -Parked $parked -Obsolete 0
@@ -208,7 +208,7 @@ function Get-HolidayPilotStatus {
         Parked = $parked
         Active = $done + $partial + $open
         Progress = $progress
-        Next = "PILOT-SCAN-01 - Camera-, QR- en barcode-proof-of-concept"
+        Next = "PILOT-AUTH-01 - Owner/Crew-model en eigen login voor Carla"
     }
 }
 
