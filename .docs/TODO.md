@@ -20,9 +20,9 @@
 #### High Priority
 
 - [ ] **Holiday Pilot 2026 — PILOT-SCAN-01 camera-, QR- en barcode-proof-of-concept**
-  - **Status 2026-06-08:** bestaande `/scan`-proef en een geïsoleerde `/scan-quagga-test`-pagina zijn geïmplementeerd op `feature/pilot-scan-01`; build, JavaScript-syntaxcontrole en lokale routecontrole slagen.
-  - **Bewezen:** ZXing leest QR op de Samsung-telefoon; de officiële Quagga2-demo leest beide echte EAN-13-testcodes met de vastgelegde 800px/large/halfSample-uit-configuratie. De lokale Quagga2-pagina levert dezelfde afgebakende configuratie, EAN-13-controlecijfer-validatie, tellers en race-veilige lifecycle.
-  - **Open:** featurebranch op de Raspberry Pi uitrollen; beide EAN-13-codes elk tienmaal testen op de geïsoleerde pagina; daarna QR en EAN-13 in Edge en Chrome op beide telefoons accepteren en ingest plus webapp via HTTP en HTTPS regressietesten.
+  - **Status 2026-06-09:** technisch geaccepteerd op `feature/pilot-scan-01`. `/scan` gebruikt één camerastream met lokale ZXing voor QR en native `BarcodeDetector` voor EAN-13; zonder native EAN-13 blijven QR en handmatige invoer beschikbaar.
+  - **Bewezen:** native EAN-13 werkte op de Samsung-telefoon; de echte-module-harness slaagt 6/6 voor supportfallback, EAN-resultaat, races, revisions en resourcecleanup. JavaScript-syntaxcontrole, build, publish en diffcheck zijn groen. Simulator-tests slagen 5/5; unit-tests 147/148 met alleen de bestaande ongerelateerde owner-recoverytest rood.
+  - **Open:** featurebranch op de Raspberry Pi uitrollen; QR en EAN-13 in Edge en Chrome op beide telefoons accepteren en ingest plus webapp via HTTP en HTTPS regressietesten.
   - **Bestaande route:** `http://bootmanager-pi:5000/` blijft beschikbaar voor gebruik zonder camera.
   - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.docs/scan-handmatige-test.md`.
 

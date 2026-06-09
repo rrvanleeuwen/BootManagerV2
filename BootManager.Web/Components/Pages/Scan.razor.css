@@ -28,6 +28,35 @@
     margin: 0.5rem 0 0.75rem;
 }
 
+.scan-decoder-support {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    max-width: 480px;
+    margin-bottom: 0.75rem;
+}
+
+.scan-support-item {
+    font-size: 0.85rem;
+    color: #155724;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 3px;
+    padding: 0.15rem 0.5rem;
+}
+
+.scan-support-warning {
+    color: #856404;
+    background: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.scan-support-neutral {
+    color: #495057;
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
 .scan-controls {
     margin-bottom: 1rem;
 }

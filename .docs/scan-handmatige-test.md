@@ -8,26 +8,21 @@
 - De bestaande HTTP-route `http://bootmanager-pi:5000/` is **niet** geschikt voor cameragebruik.
 - De scanpagina bepaalt bij het openen of de context beveiligd is en toont de HTTP-waarschuwing direct, zonder dat de gebruiker iets hoeft te doen.
 
-### Bekende testbevinding — EAN-13 op mobiel
+### Productiedecoders
 
-Pi-test (Samsung Android, Chrome en Edge): QR-codes werden herkend; meerdere echte EAN-13-productbarcodes werden **niet** herkend, terwijl dezelfde barcodes op de laptop wel werkten.
-
-Werkhypothese: de standaard videoconstraints leveren op deze telefoons onvoldoende bruikbare details of scherpte voor smalle lineaire barcodes.
-
-Toegepaste correctie in `barcodeScanner.js`:
-- `DecodeHintType.TRY_HARDER = true` toegevoegd: ZXing doet uitgebreidere beeldanalyse per frame.
-- Camera-constraints uitgebreid met `width: { ideal: 1920 }` en `height: { ideal: 1080 }`: hogere resolutie vergroot de pixeldichtheid op de barcode en verbetert de decoderingsbetrouwbaarheid.
-- Camera-enumeratie na toestemmingsverlening: de gebruiker kan expliciet een camera kiezen.
-- Continuous autofocus (verplichte constraint `{ exact: 'continuous' }`): automatisch toegepast als ondersteund, met verificatie na toepassing.
-
-Beide resolutiewaarden zijn `ideal`, geen `exact`: de browser kiest de best beschikbare resolutie zonder een fout te geven als het toestel de voorkeur niet exact kan leveren.
+- `/scan` gebruikt één gedeelde camerastream.
+- Lokale ZXing decodeert uitsluitend QR.
+- Native `BarcodeDetector` decodeert uitsluitend EAN-13 en valideert het controlecijfer.
+- Als de browser geen native EAN-13 ondersteunt, blijven QR en handmatige invoer beschikbaar.
+- De pagina toont afzonderlijk of QR en EAN-13 beschikbaar zijn.
+- Camera-enumeratie, 1920×1080 als ideale resolutie en continuous autofocus worden toegepast waar de browser dit ondersteunt.
 
 ### Ondersteunde browsers en toestellen
 
 - Samsung Android-telefoon (Android 16 of nieuwer).
 - Microsoft Edge voor Android.
 - Google Chrome voor Android.
-- De native `BarcodeDetector`-API wordt **niet** als enige decoder gebruikt; de lokale ZXing-decoder werkt in beide browsers.
+- Native EAN-13-ondersteuning moet per browser worden vastgesteld; QR blijft via lokale ZXing beschikbaar.
 
 ### Lokale barcodedecoder
 
@@ -87,9 +82,15 @@ Voer de volgende stappen uit op beide Samsung-telefoons, in zowel Edge als Chrom
 ### 4. EAN-13-barcode scannen
 
 1. Druk op **Opnieuw scannen**.
-2. Houd een echt product met EAN-13-barcode voor de camera.
-3. Verwacht: scanner stopt automatisch na detectie.
-4. Verwacht: 13-cijferige waarde en **Formaat** (EAN_13) worden zichtbaar getoond.
+2. Controleer dat de decoderstatus **EAN-13: beschikbaar** toont.
+3. Houd een echt product met EAN-13-barcode voor de camera.
+4. Verwacht: scanner stopt automatisch na detectie.
+5. Verwacht: 13-cijferige waarde en **Formaat** (EAN_13) worden zichtbaar getoond.
+
+Als de decoderstatus meldt dat EAN-13 niet wordt ondersteund, noteer browser en toestel,
+controleer dat QR blijft werken en voer de code handmatig in. De story slaagt pas wanneer
+minimaal één echte EAN-13-productbarcode op beide telefoons in Edge en Chrome wordt
+herkend.
 
 ### 5. Stoppen en opnieuw starten
 
@@ -230,11 +231,13 @@ De volgende waarden zijn relevant voor EAN-13-scherpte:
 | 9e | Camerawissel terwijl gestopt gebruikt gekozen camera bij Starten | ☐ | ☐ |
 | 9f | Bevindingstabel ingevuld: scherpste camera, AF-modi en AF-resultaat vastgesteld | ☐ | ☐ |
 
-## Quagga2 EAN-13 Scan Test (Experiment)
+## Quagga2 EAN-13 Scan Test (Historisch experiment)
 
 ### Doel
 
-Dit experimentele gedeelte valideert dat Quagga2 versie 1.12.1 beide bekende EAN-13-productbarcodes betrouwbaar scant op de Samsung-telefoons, en vormt de basis voor een eventuele vervangingsstrategie van ZXing voor lineaire barcodes.
+Dit gedeelte blijft alleen beschikbaar voor diagnose en vergelijking. Quagga2 is geen
+onderdeel van de productie-acceptatie; `/scan` gebruikt native `BarcodeDetector` voor
+EAN-13.
 
 ### Configuratie
 

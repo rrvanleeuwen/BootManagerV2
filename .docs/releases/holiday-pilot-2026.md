@@ -219,17 +219,19 @@ Test eerst via `http://bootmanager-pi:5000/` dat de scanpagina de secure-context
 - Vraag video aan met voorkeur voor `facingMode: environment`, maar geef een begrijpelijke fout of bruikbare fallback wanneer het toestel die voorkeur niet exact kan leveren.
 - Houd de bestaande interne webcontainer en HTTP-poort `5000` intact. HTTPS-terminatie is een aanvullende operationele ingang en geen wijziging van interne servicecommunicatie.
 
-**Implementatiestatus 2026-06-08**
+**Implementatiestatus 2026-06-09**
 
-- De beveiligde `/scan`-pagina, lokale ZXing-decoder, camerastatussen, start/stop/herstart, resultaatweergave en handmatige fallback zijn geïmplementeerd op `feature/pilot-scan-01`.
+- De beveiligde `/scan`-pagina, camerastatussen, start/stop/herstart, resultaatweergave en handmatige fallback zijn geïmplementeerd op `feature/pilot-scan-01`.
+- De productiepagina gebruikt één gedeelde camerastream: lokale ZXing uitsluitend voor QR en native `BarcodeDetector` uitsluitend voor EAN-13. Browsers zonder native EAN-13-ondersteuning behouden QR en handmatige invoer.
 - Laptopacceptatie is geslaagd via `http://localhost:5046/scan` en `https://localhost:7299/scan`, inclusief QR-code, productbarcode, stoppen/herstarten, handmatige invoer tijdens actief scannen en cameravrijgave bij navigatie.
 - De bestaande ZXing-proef leest QR op de Samsung-telefoon, maar de geteste EAN-13-productbarcodes niet betrouwbaar. Daarom is een geïsoleerde, beveiligde `/scan-quagga-test`-pagina toegevoegd met lokaal meegeleverde Quagga2 1.12.1, uitsluitend voor EAN-13.
 - De Quagga2-proef gebruikt een ideale camerastream van 1920×1080 en maakt de Quagga2-verwerkingsgrootte op de geïsoleerde testpagina vergelijkbaar met 800, 1280 (standaard) en 1600 px. `patchSize: large`, `halfSample: false`, locator en alleen `ean_reader` blijven actief. Geldige resultaten worden aanvullend gecontroleerd op 13 cijfers en een correct EAN-13-controlecijfer.
-- Omdat Quagga2 de kleine EAN-13 bij analyse-resoluties 720×1280 en 900×1600 wel lokaliseert maar niet decodeert, is daarnaast een geïsoleerde `/scan-native-barcode-test` toegevoegd. Deze controleert runtime of de browser-API `BarcodeDetector` en formaat `ean_13` ondersteunt en test dezelfde barcode zonder Quagga2.
-- Start, stop, herstart, resultaatstop en component-disposal zijn beschermd tegen achterhaalde callbacks en overlappende Quagga2-initialisaties. De bestaande `/scan`-pagina en ZXing-implementatie zijn niet gewijzigd.
-- `dotnet build BootManager.sln`, JavaScript-syntaxcontrole, diffcheck en publishcontrole slagen.
-- Eén bestaande, ongerelateerde test blijft rood: `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect`; de overige 147 unit-tests slagen.
-- Open voor afronding: de branch op de Raspberry Pi uitrollen, de geïsoleerde Quagga2-pagina met beide EAN-13-testcodes accepteren en daarna de volledige QR-/EAN-13-flow in Edge en Chrome op beide telefoons uitvoeren. Ook moet ingest samen met de webapp via HTTP en HTTPS worden geregressietest.
+- Omdat Quagga2 de kleine EAN-13 niet betrouwbaar decodeerde, is daarnaast een geïsoleerde `/scan-native-barcode-test` toegevoegd. Native `BarcodeDetector` herkende EAN-13 `9789059965607` op de Samsung-telefoon direct vanaf circa 15 cm; die bewezen route is vervolgens in `/scan` geïntegreerd.
+- Start, stop, herstart, camerawissel, resultaatstop en component-disposal zijn beschermd tegen achterhaalde callbacks, oude streams en overlappende sessies.
+- De deterministische moduleharness laadt de echte productie-exportfuncties en bewijst zes scenario's: fallback zonder native support, geldige EAN-13-detectie, vroege QR-callback, sessie-isolatie, oplopende supportrevisions en idempotente cleanup bij pending native detecties.
+- JavaScript-syntaxcontrole, de moduleharness (6/6), `dotnet build BootManager.sln --no-restore` en `git diff --check` slagen.
+- Publishcontrole slaagt met bestaande waarschuwingen buiten deze story. De simulator-tests slagen 5/5; van de unit-tests slagen 147/148. Alleen de bestaande, ongerelateerde `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` blijft rood.
+- Open voor storyacceptatie: de branch op de Raspberry Pi uitrollen en de volledige geïntegreerde QR-/EAN-13-flow in Edge en Chrome op beide telefoons uitvoeren. Ook moet ingest samen met de webapp via HTTP en HTTPS worden geregressietest.
 
 ## Niet-doelen voor deze pilot
 

@@ -67,6 +67,36 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     </div>
 }
 
+@if (_decoderSupport is not null)
+{
+    <div class="scan-decoder-support">
+        @if (_decoderSupport.QrAvailable)
+        {
+            <span class="scan-support-item">QR-code: beschikbaar</span>
+        }
+        @if (_decoderSupport.NativeEan13Available)
+        {
+            <span class="scan-support-item scan-support-success">EAN-13: beschikbaar</span>
+        }
+        else
+        {
+            @switch (_decoderSupport.NativeFailureReason)
+            {
+                case "initializing":
+                    <span class="scan-support-item scan-support-neutral">EAN-13: controleren…</span>
+                    break;
+                case "not_available":
+                case "format_not_supported":
+                    <span class="scan-support-item scan-support-warning">EAN-13: niet ondersteund in deze browser; gebruik handmatige invoer</span>
+                    break;
+                default:
+                    <span class="scan-support-item scan-support-warning">EAN-13: decoder niet beschikbaar; gebruik handmatige invoer</span>
+                    break;
+            }
+        }
+    </div>
+}
+
 @if (_diagnostics is not null)
 {
     <div class="scan-diagnostics">
@@ -170,6 +200,20 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         public string? Autofocus            { get; set; }
     }
 
+    /// <summary>
+    /// Rapportage van beschikbare decoders (ZXing QR en native EAN-13).
+    /// </summary>
+    public sealed class DecoderSupport
+    {
+        public bool QrAvailable { get; set; }
+        public bool NativeSupportCheckSucceeded { get; set; }
+        public bool NativeEan13Available { get; set; }
+        public string[] SupportedFormats { get; set; } = Array.Empty<string>();
+        public string? NativeFailureReason { get; set; }
+        /// <summary>Per-sessie oplopende revision: voorkomt terug-in-de-tijd callbacks.</summary>
+        public int SupportRevision { get; set; }
+    }
+
     private ScanStatus _status = ScanStatus.NotStarted;
     private string? _resultValue;
     private string? _resultFormat;
@@ -185,6 +229,12 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
 
     // Diagnostics van de actieve track; null = diagnosticsblok verborgen.
     private CameraDiagnostics? _diagnostics;
+
+    // Decoderondersteuning; null = blok verborgen.
+    private DecoderSupport? _decoderSupport;
+
+    // Laatste support-revision gezien; voorkomt terug-in-de-tijd updates.
+    private int _lastSupportRevision = -1;
 
     // Monotoon request-ID per scan-sessie voor race-safe callbacks.
     private int _requestId = 0;
@@ -299,6 +349,8 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         _resultFormat = null;
         _errorMessage = null;
         _diagnostics  = null;
+        _decoderSupport = null;
+        _lastSupportRevision = -1;
         _requestId++;
 
         // Leg lokaal vast vóór aanroep.
@@ -364,6 +416,8 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
             _resultFormat = null;
             _errorMessage = null;
             _diagnostics  = null;
+            _decoderSupport = null;
+            _lastSupportRevision = -1;
             _requestId++;
             var localStartRequestId = _requestId;
 
@@ -475,6 +529,26 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
             return;
 
         _diagnostics = diagnostics;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ontvangt rapportage van beschikbare decoders (ZXing QR en native EAN-13).
+    /// Ignoreert oudere of gelijke revisions om terug-in-de-tijd updates te voorkomen.
+    /// </summary>
+    [JSInvokable]
+    public void OnDecoderSupport(int requestId, DecoderSupport support)
+    {
+        // Negeer ondersteuning van vorige sessies.
+        if (requestId != _requestId)
+            return;
+
+        // Negeer oudere of gelijke revisions (terug-in-de-tijd bescherming).
+        if (support.SupportRevision <= _lastSupportRevision)
+            return;
+
+        _lastSupportRevision = support.SupportRevision;
+        _decoderSupport = support;
         StateHasChanged();
     }
 
