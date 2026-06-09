@@ -14,25 +14,29 @@ scope-, uitvoerings- en oplevergrenzen blijven gelden.
 
 ## Blocking Findings
 
-1. **EF-migratie is niet uitvoerbaar.**  
+1. **EF-migratie is niet uitvoerbaar.**
+
    `BootManagerDbContextModelSnapshot.cs` bevat nog `OwnerProfile`/`OwnerProfiles`.
    Een migratieproef op een tijdelijke kopie stopt met
    `PendingModelChangesWarning`. Genereer een consistente migratie, designer en
    modelsnapshot voor `LocalUser`, en bewijs daarna de in-place migratie op een
    tijdelijke databasekopie.
 
-2. **Crew kan dagelijkse pilotflows niet openen.**  
+2. **Crew kan dagelijkse pilotflows niet openen.**
+
    `Dashboard.razor`, `Logbook.razor`, `LogbookEntryDetails.razor`,
    `LogbookPrint.razor` en `LogbookAttachmentsController` zijn nog Owner-only.
    Autoriseer deze expliciet voor `Owner,Crew`. Houd Analysis, Settings, System en
    shutdown Owner-only.
 
-3. **Verplichte Crew-wachtwoordwijziging wordt niet afgedwongen.**  
+3. **Verplichte Crew-wachtwoordwijziging wordt niet afgedwongen.**
+
    `OnboardingGate` retourneert direct voor iedere Crew-user. Een nieuwe of geresette
    Crew moet uitsluitend `/account` en logout kunnen gebruiken totdat
    `PasswordChangeRequired=false`; Owner-onboarding blijft naar `/onboarding` gaan.
 
-4. **Sessie vernieuwen na wachtwoordwijziging kan niet betrouwbaar werken.**  
+4. **Sessie vernieuwen na wachtwoordwijziging kan niet betrouwbaar werken.**
+
    `AccountService` verhoogt eerst `CredentialVersion`; de daaropvolgende browser-POST
    naar het geautoriseerde `/auth/renew-session` gebruikt nog de oude cookie, die door
    `OnValidatePrincipal` wordt ingetrokken voordat het endpoint kan vernieuwen.
@@ -40,23 +44,26 @@ scope-, uitvoerings- en oplevergrenzen blijven gelden.
    wijzigt en in dezelfde request de cookie met de nieuwe versie uitgeeft. Laat
    `Account.razor` uitsluitend dat endpoint gebruiken.
 
-5. **Crew-beheer toont de verkeerde en onvolledige lijst.**  
+5. **Crew-beheer toont de verkeerde en onvolledige lijst.**
+
    Settings gebruikt `GetActiveUsersAsync()`, waardoor:
    - de Owner als Crew-regel verschijnt;
    - inactieve Crew ontbreekt;
    - opnieuw activeren onmogelijk is;
    - iedere getoonde gebruiker kunstmatig `IsActive=true` krijgt.
-   
+
    Voeg een afzonderlijk Owner-only beheercontract toe dat uitsluitend alle
    Crew-accounts met echte actieve status retourneert. Houd de anonieme loginselector
    beperkt tot actieve id en displaynaam.
 
-6. **Navigatie is inconsistent.**  
+6. **Navigatie is inconsistent.**
+
    Dashboard staat in `NavMenu` ten onrechte onder Owner-only. `MainLayout` toont Crew
    nog steeds een link naar `/settings`. Toon dashboard voor Owner en Crew, toon
    Settings/Beheerder alleen voor Owner en toon `Mijn account` voor beide rollen.
 
-7. **Nieuwe kernservices zijn niet gericht getest.**  
+7. **Nieuwe kernservices zijn niet gericht getest.**
+
    Voeg tests toe voor minimaal:
    - Crew aanmaken, naamuniciteit en wachtwoordminimum;
    - reset, uitschakelen, heractiveren en credentialversie;
@@ -66,7 +73,8 @@ scope-, uitvoerings- en oplevergrenzen blijven gelden.
    - Owner/Crew-autorisatie van dagelijkse routes;
    - migratiebehoud van id, hashes, payload, legacyvelden, timestamps en setupflags.
 
-8. **Opleverrapport was feitelijk onjuist.**  
+8. **Opleverrapport was feitelijk onjuist.**
+
    Meld geen `0 warnings`: de onafhankelijke build bevat 13 bestaande waarschuwingen.
    Rapporteer exacte aantallen en onderscheid bestaande waarschuwingen van nieuwe
    fouten.
