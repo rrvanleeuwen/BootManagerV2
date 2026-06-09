@@ -296,15 +296,19 @@ Tijdens de drie weken worden minimaal deze vragen beantwoord:
 
 Bij voorbereiding én afronding van iedere pilotstory controleert Codex gericht:
 
-1. dit release-document;
-2. de relevante actuele epic of userstory;
-3. `.docs/TODO.md`;
-4. `.docs/legacy-analysis/legacy-coverage-register.md`;
-5. de oorspronkelijke legacy-US wanneer dezelfde functionaliteit daar beschreven staat;
-6. `.codex/current-session-handoff.md`;
-7. README-projectstatus wanneer story- of epiccijfers wijzigen.
+1. dit release-document, inclusief status in de prioriteitsvolgorde;
+2. `README.md`, inclusief pilotvoortgang en eerstvolgende story;
+3. de relevante actuele epic of userstory;
+4. `.docs/TODO.md`;
+5. `.docs/legacy-analysis/legacy-coverage-register.md`;
+6. de oorspronkelijke legacy-US wanneer dezelfde functionaliteit daar beschreven staat;
+7. `.codex/current-session-handoff.md`.
 
 Als een pilotstory bestaande actuele of legacy-functionaliteit geheel of gedeeltelijk realiseert, worden die story/status en legacy-dekking in dezelfde administratieve afronding bijgewerkt. Er worden geen parallelle verhalen met tegenstrijdige statussen achtergelaten.
+
+Documentatiewijzigingen worden na controle automatisch gecommit en naar de actuele
+remote branch gepusht, tenzij de gebruiker expliciet anders vraagt of dit door de
+branch/worktreestatus onveilig is.
 
 ## Werkwijze per story
 

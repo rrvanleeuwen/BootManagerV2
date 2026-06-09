@@ -43,12 +43,21 @@ Codex beoordeelt functionele juistheid, architectuur, regressierisico, tests, bu
 Bij afgeronde functionaliteit controleert en actualiseert Codex gericht:
 
 - actieve release of pilot;
+- `README.md`;
 - relevante actuele epic en userstory;
 - `.docs/TODO.md`;
 - geraakte legacy-userstories;
 - `.docs/legacy-analysis/legacy-coverage-register.md`;
 - `.codex/current-session-handoff.md`;
-- README-projectstatus wanneer cijfers wijzigen.
+
+Zolang de Holiday Pilot 2026 actief is, worden `README.md` en
+`.docs/releases/holiday-pilot-2026.md` bij iedere documentatie-update expliciet
+gecontroleerd en waar nodig samen bijgewerkt. Storystatus, voortgang en eerstvolgende
+story moeten in beide documenten overeenkomen.
+
+Documentatiewijzigingen worden na controle zonder afzonderlijk verzoek gecommit en naar
+de actuele remote branch gepusht, tenzij de gebruiker expliciet vraagt dit niet te doen
+of de worktree/branchstatus dat onveilig maakt.
 
 Als dezelfde functionaliteit in een bestaande actuele of legacy-story staat, wordt die story in dezelfde afronding bijgewerkt. Er mogen geen parallelle stories met tegenstrijdige statussen blijven bestaan.
 
@@ -59,7 +68,7 @@ Werk alleen direct geraakte documentatie bij. Historische details horen in epic-
 Na goedgekeurde implementatie en test:
 
 1. controleer status en diff;
-2. werk release, geraakte epics, TODO, legacy-dekking en handoff bij;
+2. werk `README.md`, actieve release, geraakte epics, TODO, legacy-dekking en handoff bij;
 3. commit en push de featurebranch;
 4. maak of begeleid de PR;
 5. controleer na merge `master` en een schone worktree;

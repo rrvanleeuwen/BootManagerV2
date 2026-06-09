@@ -56,3 +56,10 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 | Epic 12: Slimme Herkenning & AI-Ondersteuning | `[##########----------]` 50% | 0 | 0 | 1 | 0 | 5 |
 
 <!-- PROJECT-STATUS:END -->
+
+## Actieve release
+
+De leidende release is de
+[BootManager Holiday Pilot 2026](.docs/releases/holiday-pilot-2026.md). De pilotstatus,
+voortgang en eerstvolgende story worden bij iedere documentatie-update samen met deze
+README gecontroleerd en bijgewerkt.

@@ -66,11 +66,17 @@ De volledige story, scope, buiten-scope en acceptatietest staan in `.docs/releas
 
 Bij iedere pilotstory controleert en actualiseert Codex ook:
 
+- `README.md`;
+- `.docs/releases/holiday-pilot-2026.md`;
 - relevante bestaande actuele userstories/epics;
 - `.docs/TODO.md`;
 - geraakte legacy-userstories en `legacy-coverage-register.md`;
 - deze handoff;
-- README-status wanneer cijfers wijzigen.
+
+Storystatus, voortgang en eerstvolgende story blijven in README en pilotdocument gelijk.
+Documentatiewijzigingen worden na controle automatisch gecommit en naar de actuele
+remote branch gepusht, tenzij de gebruiker expliciet anders vraagt of dit door de
+branch/worktreestatus onveilig is.
 
 Als dezelfde functionaliteit al in een bestaande of legacy-story staat, wordt die status bijgewerkt en wordt geen los tegenstrijdig verhaal achtergelaten.
 
