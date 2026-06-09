@@ -19,6 +19,13 @@
 
 #### High Priority
 
+- [ ] **Holiday Pilot 2026 — PILOT-SCAN-01 camera-, QR- en barcode-proof-of-concept**
+  - **Status 2026-06-09:** technisch geaccepteerd op `feature/pilot-scan-01`. `/scan` gebruikt één camerastream met lokale ZXing voor QR en native `BarcodeDetector` voor EAN-13; zonder native EAN-13 blijven QR en handmatige invoer beschikbaar.
+  - **Bewezen:** native EAN-13 werkte op de Samsung-telefoon; de echte-module-harness slaagt 6/6 voor supportfallback, EAN-resultaat, races, revisions en resourcecleanup. JavaScript-syntaxcontrole, build, publish en diffcheck zijn groen. Simulator-tests slagen 5/5; unit-tests 147/148 met alleen de bestaande ongerelateerde owner-recoverytest rood.
+  - **Open:** featurebranch op de Raspberry Pi uitrollen; QR en EAN-13 in Edge en Chrome op beide telefoons accepteren en ingest plus webapp via HTTP en HTTPS regressietesten.
+  - **Bestaande route:** `http://bootmanager-pi:5000/` blijft beschikbaar voor gebruik zonder camera.
+  - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.docs/scan-handmatige-test.md`.
+
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**
   - **Aanleiding 2026-05-26:** Tijdens Raspberry Pi test vóór login/onboarding stond in het menu nog **Register Owner**. Klikken navigeert naar `/register-owner`. Dit is oude vrije registratie en hoort niet meer bij de huidige bootstrap owner + verplichte onboarding flow.
   - **Status:** afgerond via PR #64, merge commit `a441ca8`. User story `US7: Legacy Register Owner Route En Menu Verwijderen` staat als gereed in `.docs/epics/first-run-onboarding.md`.

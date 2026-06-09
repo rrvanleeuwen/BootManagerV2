@@ -1,0 +1,6 @@
+Package:  @zxing/library 0.20.0
+Source:   https://github.com/zxing-js/library
+License:  Apache License 2.0 (zie LICENSE.txt)
+
+Dit bestand (zxing.min.js) is de UMD-build van @zxing/library 0.20.0,
+lokaal opgeslagen voor offline gebruik. Het wordt niet via een CDN geladen.

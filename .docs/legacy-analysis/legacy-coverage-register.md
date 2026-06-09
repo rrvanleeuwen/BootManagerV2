@@ -65,7 +65,7 @@ Bij afronding van een story of PR:
 | US2.3 Product aanmaken | Open | Inventory-module ontbreekt. |
 | US2.4 Product bewerken of verwijderen | Open | Inventory-module ontbreekt. |
 | US2.5 Barcodes en QR-codes koppelen aan producten | Open | Latere scanning-slice. |
-| US2.6 Barcode scannen bij zoeken | Open | Latere scanning-slice. |
+| US2.6 Barcode scannen bij zoeken | Partial | `PILOT-SCAN-01` levert een technisch geaccepteerde generieke scanner met ZXing voor QR en native `BarcodeDetector` voor EAN-13; Pi-/telefoonsacceptatie en productzoekactie volgen nog, de inventorykoppeling volgt in `PILOT-INV-04`. |
 | US2.7 Barcodeherkenning via foto en AI | Parked | AI-herkenning lage prioriteit. |
 | US2.8 Product koppelen aan opslaglocatie | Open | Afhankelijk van producten en opslaglocaties. |
 | US2.9 Voorraad bekijken per locatie | Open | Afhankelijk van voorraad per locatie. |
@@ -73,7 +73,7 @@ Bij afronding van een story of PR:
 | US2.11 Minimumvoorraad en waarschuwing | Open | Afhankelijk van inventory en notificaties. |
 | US2.12 Zoeken en filteren | Open | Inventory-module ontbreekt. |
 | US2.13 Voorraadlogboek | Open | Voorraadmutaties ontbreken. |
-| US2.14 QR-scanner-modus | Open | Latere QR/location-flow. |
+| US2.14 QR-scanner-modus | Partial | `PILOT-SCAN-01` levert een generieke QR-scanner; locatie-QR-flow en tokens volgen in `PILOT-LOC-02`. |
 | US2.15 Bulkimport/export voorraad | Open | Later na datamodel. |
 | US2.16 Voorraadstatus in dashboard | Open | Afhankelijk van inventory en dashboard. |
 | US2.17 Integratie met passageplanning | Open | Afhankelijk van inventory en passageplanning. |
@@ -235,7 +235,7 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US12.1 Barcodeherkenning | Open | Kan later als niet-AI inventory/scanning-feature. |
+| US12.1 Barcodeherkenning | Partial | Niet-AI herkenning is technisch geaccepteerd in `/scan` met ZXing voor QR en native `BarcodeDetector` voor EAN-13; Pi- en telefoonsacceptatie blijven open. |
 | US12.2 AI-herkenning via foto | Parked | Lage prioriteit; afhankelijk van inventory. |
 | US12.3 Automatische categorisatie | Parked | AI/lage prioriteit. |
 | US12.4 Suggesties voor aanvulling | Parked | Afhankelijk van verbruiksdata/trends. |

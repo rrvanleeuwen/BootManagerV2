@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-07.
+Updated: 2026-06-09.
 
 ## Rollen
 
@@ -10,8 +10,9 @@ Updated: 2026-06-07.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- De actuele productprioriteit is rechtstreeks op `master` vastgelegd.
-- Er is geen actieve functionele featurebranch vanuit deze handoff.
+- Actieve featurebranch: `feature/pilot-scan-01`.
+- `PILOT-SCAN-01` is geïmplementeerd en lokaal op de laptop geaccepteerd.
+- Branch moet na commit/push tijdelijk op de Raspberry Pi worden getest.
 
 ## Actuele productdoelstelling
 
@@ -27,16 +28,35 @@ Tot deze pilot gereed is kiest Codex geen story buiten deze release, tenzij:
 - een noodzakelijke afhankelijkheid ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-## Eerstvolgende story
+## Eerstvolgende actie
 
-`PILOT-SCAN-01: Camera-, QR- en barcode-proof-of-concept`
+Rond draft-PR #88 af en voer daarna de handmatige productietest op de Raspberry Pi uit.
 
-Doel:
+De productiecode en deterministische echte-module-harness zijn op 2026-06-09 technisch
+geaccepteerd. De zes harnessscenario's slagen, inclusief sessie-isolatie,
+supportrevisions, EAN-13-resultaatcleanup en idempotente native cleanup bij pending
+detecties.
 
-- vroeg bewijzen dat QR- en productbarcodescannen in de lokaal gehoste Blazor-app werkt;
-- testen op de telefoons van Roelof en Carla;
-- noodzakelijke HTTPS-, browser- en netwerkvoorwaarden vastleggen;
-- nog geen product-, locatie- of databasefunctionaliteit implementeren.
+Geslaagde checks:
+
+- JavaScript-syntaxcontrole productiecode en harness;
+- `node test-final-verification-harness.js`: 6/6 scenario's;
+- `dotnet build BootManager.sln --no-restore`: 0 warnings, 0 errors;
+- publishcontrole geslaagd met bestaande waarschuwingen buiten deze story;
+- simulator-tests 5/5; unit-tests 147/148 met alleen de bekende ongerelateerde
+  `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` rood;
+- `git diff --check`.
+
+De relevante release-, TODO-, legacy- en testdocumentatie is bijgewerkt. Commit
+`fe7c1a4` staat op `origin/feature/pilot-scan-01`; draft-PR #88 is geopend.
+
+Open voor storyacceptatie:
+
+- PR #88 mergen naar `master`; de Pi pullt volgens het runbook geen featurebranches;
+- SSH-toegang vanaf de uitvoerende laptop herstellen of interactief uitvoeren; de huidige
+  non-interactieve poging naar `roelof@bootmanager-pi.local` werd geweigerd;
+- daarna de volledige QR-/EAN-13-productietest op de Raspberry Pi in Edge en Chrome op
+  beide telefoons uitvoeren, inclusief ingest-regressie via HTTP en HTTPS.
 
 De volledige story, scope, buiten-scope en acceptatietest staan in `.docs/releases/holiday-pilot-2026.md`.
 
@@ -52,9 +72,18 @@ Bij iedere pilotstory controleert en actualiseert Codex ook:
 
 Als dezelfde functionaliteit al in een bestaande of legacy-story staat, wordt die status bijgewerkt en wordt geen los tegenstrijdig verhaal achtergelaten.
 
-## Laatst afgeronde productwijziging
+## Laatste relevante productwijziging
 
-`DSH-BUG-DBCTX-1: Gelijktijdige dashboard- en logboekqueries isoleren` is gemerged via PR #85 en op de Raspberry Pi gevalideerd.
+De geïsoleerde native `BarcodeDetector`-test herkende EAN-13 `9789059965607` op de
+Samsung-telefoon direct vanaf circa 15 cm bij 1080×1920. Daarom wordt de productiepagina
+`/scan` aangepast naar één gedeelde camerastream met ZXing uitsluitend voor QR en native
+`BarcodeDetector` uitsluitend voor EAN-13. Browsers zonder native EAN-13 houden QR en
+handmatige invoer.
+
+Claude heeft hiervoor niet-gecommitte wijzigingen gemaakt in `Scan.razor`,
+`Scan.razor.css`, `barcodeScanner.js` en de lokale verificatieharness. De implementatie is
+technisch geaccepteerd, maar nog niet administratief afgerond, gecommit, gepusht of op de
+Raspberry Pi geaccepteerd.
 
 ## Relevante actuele documenten
 

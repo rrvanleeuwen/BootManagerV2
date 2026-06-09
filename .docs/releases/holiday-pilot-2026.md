@@ -158,7 +158,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 
 ### PILOT-SCAN-01 — Camera-, QR- en barcode-proof-of-concept
 
-**Status:** Ready
+**Status:** In Progress
 
 **Als** gebruiker  
 **wil ik** in de lokaal gehoste Blazor-app op mijn telefoon een QR-code en productbarcode kunnen scannen  
@@ -167,13 +167,18 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 **Scope**
 
 - Proof-of-concept binnen de bestaande .NET 8/Blazor-oplossing.
-- Test op de telefoons van Roelof en Carla.
+- Test op de Samsung-telefoons van Roelof en Carla; het oudste toestel draait Android 16.
+- Validatie in zowel Microsoft Edge als Google Chrome op Android.
 - Achtercamera als voorkeurscamera.
-- Een QR-code en gangbare lineaire productbarcode herkennen.
-- Herkende ruwe codewaarde zichtbaar tonen.
-- Duidelijke cameratoestemming, start-, stop- en foutstatus.
-- Handmatige code-invoer als fallback.
-- Vaststellen welke lokale HTTPS/browser/netwerkvoorwaarden nodig zijn.
+- QR Code en de lineaire formaten EAN-13, EAN-8, UPC-A en Code 128 herkennen.
+- Herkende ruwe codewaarde en het herkende formaat zichtbaar tonen.
+- Na een herkenning stoppen met doorlopend detecteren, zodat dezelfde code niet herhaald wordt verwerkt.
+- Duidelijke statussen voor niet gestart, toestemming aanvragen, actief scannen, herkend, handmatig ingevoerd en gestopt.
+- Begrijpelijke fouten voor ontbrekende HTTPS/secure context, geweigerde toestemming, ontbrekende camera en decoder- of camerafouten.
+- Scannen expliciet kunnen starten, stoppen en opnieuw starten.
+- Handmatige code-invoer als fallback via hetzelfde zichtbare resultaatgebied.
+- De bestaande route `http://bootmanager-pi:5000/` blijft beschikbaar voor gebruik zonder camera.
+- Een aanvullende HTTPS-route voor cameragebruik vaststellen en de lokale certificaat-, browser- en netwerkvoorwaarden documenteren.
 
 **Buiten scope**
 
@@ -183,22 +188,50 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - Nog geen QR-generatie.
 - Nog geen voorraadmutaties.
 - Nog geen definitieve styling.
+- Geen externe EAN-productdatabase of interpretatie van de gescande waarde.
+- Geen automatische navigatie of functionele actie op basis van de gescande waarde.
+- Geen brede wijziging van de bestaande Docker- of netwerkarchitectuur buiten wat voor de secure context aantoonbaar nodig is.
 
 **Acceptatiecriteria**
 
-- De scanpagina opent op beide telefoons.
-- Cameratoestemming kan worden verleend of geeft een begrijpelijke fout.
-- Een test-QR wordt op beide telefoons herkend.
-- Minimaal één echte productbarcode wordt op beide telefoons herkend.
-- De gedecodeerde waarde wordt zichtbaar getoond.
+- De beveiligde scanpagina opent op beide telefoons in Edge en Chrome.
+- De scanpagina meldt op de bestaande HTTP-route begrijpelijk dat cameragebruik HTTPS vereist.
+- Cameratoestemming kan via de HTTPS-route worden verleend of geeft een begrijpelijke fout.
+- De achtercamera wordt bij voorkeur gebruikt.
+- Een BootManager-test-QR wordt op beide telefoons herkend.
+- Minimaal één echte EAN-13-productbarcode wordt op beide telefoons herkend.
+- De gedecodeerde ruwe waarde en het herkende formaat worden zichtbaar getoond.
 - Scannen kan worden gestopt en opnieuw gestart.
 - Handmatige invoer werkt als fallback.
-- De noodzakelijke hosting- en beveiligingsvoorwaarden zijn gedocumenteerd.
+- Stoppen of verlaten van de pagina beëindigt de actieve camerastream.
+- De noodzakelijke HTTPS-, certificaat-, hostname-, browser- en netwerkvoorwaarden zijn gedocumenteerd.
 - `dotnet build BootManager.sln` slaagt.
 
 **Handmatige acceptatietest**
 
-Test op beide telefoons via dezelfde beoogde lokale boordnetwerkroute. Scan achtereenvolgens een BootManager-test-QR en een echte productbarcode, stop/herstart de camera en controleer de fallback-invoer.
+Test eerst via `http://bootmanager-pi:5000/` dat de scanpagina de secure-contextbeperking begrijpelijk meldt. Open daarna dezelfde pagina via de aanvullende HTTPS-route op beide telefoons, in Edge en Chrome. Verleen cameratoestemming, controleer dat bij voorkeur de achtercamera actief is en scan achtereenvolgens een BootManager-test-QR en een echte EAN-13-productbarcode. Controleer ruwe waarde en formaat, stop en herstart de camera, verlaat de pagina en controleer dat de camera stopt. Weiger daarnaast eenmaal cameratoestemming en controleer de foutmelding. Sluit af met handmatige invoer via de fallback.
+
+**Technische richting**
+
+- Gebruik een lokaal meegeleverde browserdecoder met ondersteuning voor QR en meerdere lineaire formaten; de pilot mag niet afhankelijk zijn van internet of een CDN.
+- Beheer camerastream en decoder in een afzonderlijke JavaScriptmodule die via bestaande Blazor-JavaScript-interop wordt aangeroepen.
+- Gebruik de native `BarcodeDetector` API niet als enige decoder, omdat de pilot in zowel Edge als Chrome en op beide toestellen moet werken.
+- Vraag video aan met voorkeur voor `facingMode: environment`, maar geef een begrijpelijke fout of bruikbare fallback wanneer het toestel die voorkeur niet exact kan leveren.
+- Houd de bestaande interne webcontainer en HTTP-poort `5000` intact. HTTPS-terminatie is een aanvullende operationele ingang en geen wijziging van interne servicecommunicatie.
+
+**Implementatiestatus 2026-06-09**
+
+- De beveiligde `/scan`-pagina, camerastatussen, start/stop/herstart, resultaatweergave en handmatige fallback zijn geïmplementeerd op `feature/pilot-scan-01`.
+- De productiepagina gebruikt één gedeelde camerastream: lokale ZXing uitsluitend voor QR en native `BarcodeDetector` uitsluitend voor EAN-13. Browsers zonder native EAN-13-ondersteuning behouden QR en handmatige invoer.
+- Laptopacceptatie is geslaagd via `http://localhost:5046/scan` en `https://localhost:7299/scan`, inclusief QR-code, productbarcode, stoppen/herstarten, handmatige invoer tijdens actief scannen en cameravrijgave bij navigatie.
+- De bestaande ZXing-proef leest QR op de Samsung-telefoon, maar de geteste EAN-13-productbarcodes niet betrouwbaar. Daarom is een geïsoleerde, beveiligde `/scan-quagga-test`-pagina toegevoegd met lokaal meegeleverde Quagga2 1.12.1, uitsluitend voor EAN-13.
+- De Quagga2-proef gebruikt een ideale camerastream van 1920×1080 en maakt de Quagga2-verwerkingsgrootte op de geïsoleerde testpagina vergelijkbaar met 800, 1280 (standaard) en 1600 px. `patchSize: large`, `halfSample: false`, locator en alleen `ean_reader` blijven actief. Geldige resultaten worden aanvullend gecontroleerd op 13 cijfers en een correct EAN-13-controlecijfer.
+- Omdat Quagga2 de kleine EAN-13 niet betrouwbaar decodeerde, is daarnaast een geïsoleerde `/scan-native-barcode-test` toegevoegd. Native `BarcodeDetector` herkende EAN-13 `9789059965607` op de Samsung-telefoon direct vanaf circa 15 cm; die bewezen route is vervolgens in `/scan` geïntegreerd.
+- Start, stop, herstart, camerawissel, resultaatstop en component-disposal zijn beschermd tegen achterhaalde callbacks, oude streams en overlappende sessies.
+- De deterministische moduleharness laadt de echte productie-exportfuncties en bewijst zes scenario's: fallback zonder native support, geldige EAN-13-detectie, vroege QR-callback, sessie-isolatie, oplopende supportrevisions en idempotente cleanup bij pending native detecties.
+- JavaScript-syntaxcontrole, de moduleharness (6/6), `dotnet build BootManager.sln --no-restore` en `git diff --check` slagen.
+- Publishcontrole slaagt met bestaande waarschuwingen buiten deze story. De simulator-tests slagen 5/5; van de unit-tests slagen 147/148. Alleen de bestaande, ongerelateerde `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` blijft rood.
+- Open voor storyacceptatie: de branch op de Raspberry Pi uitrollen en de volledige geïntegreerde QR-/EAN-13-flow in Edge en Chrome op beide telefoons uitvoeren. Ook moet ingest samen met de webapp via HTTP en HTTPS worden geregressietest.
 
 ## Niet-doelen voor deze pilot
 
