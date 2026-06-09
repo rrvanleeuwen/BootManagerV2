@@ -91,6 +91,23 @@ Verwijder of pas bestaande Owner-gerichte types alleen aan wanneer ze door het u
 model zijn vervangen. Leg vóór wijziging buiten deze modules uit waarom die
 compile-time of functioneel noodzakelijk is.
 
+## Execution Boundaries
+
+- Claude implementeert uitsluitend applicatiecode, migraties en tests binnen dit packet.
+- Claude wijzigt geen story-, release-, TODO-, legacy-, README-, handoff- of andere
+  projectdocumentatie.
+- Claude maakt geen commit, push, branch, PR, merge, release of deployment.
+- Claude wijzigt de storyscope, acceptatiecriteria of architectuurrichting niet. Bij
+  een noodzakelijke afwijking stopt Claude en meldt de concrete ontbrekende beslissing
+  aan Codex.
+- Claude voert geen database-reset uit en gebruikt geen productiedatabase. Een
+  migratietest gebruikt uitsluitend een tijdelijke database of veilige kopie.
+- Claude verklaart `PILOT-AUTH-01` niet `Done`, geaccepteerd of productierijp. Alleen
+  Codex mag na review en de gebruiker na handmatige acceptatie die status vaststellen.
+- Claude mag de technische implementatie alleen als gereed voor Codex-review melden
+  wanneer de volledige scope is geïmplementeerd en alle onderstaande vereiste checks
+  zijn uitgevoerd met acceptabele resultaten.
+
 ## Minimal Context
 
 Lees:
@@ -174,6 +191,33 @@ De bestaande
 alleen als niet-gerelateerde baseline worden gemeld wanneer exact dezelfde test als
 enige bestaande failure overblijft.
 
+## Definition of Technical Completion
+
+Claude meldt uitsluitend `gereed voor Codex-review` wanneer:
+
+- ieder scopepunt en acceptatiecriterium technisch is geïmplementeerd;
+- de in-place migratie aantoonbaar werkt op een tijdelijke database met een bestaand
+  Owner-record en de Owner-id, hash, payload en setupstatus behouden blijven;
+- de toegevoegde en geraakte gerichte tests slagen;
+- de volledige unit-testuitkomst geen nieuwe failure bevat;
+- `dotnet build BootManager.sln --no-restore` en `git diff --check` slagen;
+- er geen onverklaarde wijziging buiten de verwachte write-set staat;
+- resterende handmatige acceptatiestappen expliciet zijn vermeld.
+
+Claude meldt de implementatie nadrukkelijk **niet gereed** wanneer:
+
+- een scopepunt of acceptatiecriterium ontbreekt of slechts gedeeltelijk werkt;
+- migratiebehoud niet is getest of niet bewezen kan worden;
+- een nieuwe of gewijzigde test faalt;
+- build of diffcheck faalt;
+- de bestaande recoverytest niet de enige en exact bekende baselinefailure is;
+- een architectuur- of productbeslissing ontbreekt;
+- een noodzakelijke wijziging buiten de write-set niet vooraf verantwoord kan worden.
+
+In zo'n geval rapporteert Claude de concrete blokkade, de reeds uitgevoerde wijzigingen
+en checks, en de kleinste benodigde beslissing. Claude maskeert een failure niet als
+waarschuwing en verlaagt geen test- of acceptatie-eis om de oplevering groen te noemen.
+
 ## Completion Notes
 
 Retourneer alleen:
@@ -181,4 +225,5 @@ Retourneer alleen:
 1. gewijzigde bestanden en geïmplementeerd gedrag;
 2. tests/checks en resultaten;
 3. migratie- en configuratie-impact;
-4. resterende risico's en exacte handmatige testvereisten.
+4. resterende risico's en exacte handmatige testvereisten;
+5. eindstatus: `gereed voor Codex-review` of `niet gereed`, met concrete reden.
