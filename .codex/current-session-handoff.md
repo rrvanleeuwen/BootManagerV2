@@ -20,7 +20,7 @@ gebruik op Linde door Roelof en Carla:
 
 - bron: `.docs/releases/holiday-pilot-2026.md`;
 - `PILOT-SCAN-01` is Done en op de Raspberry Pi en beide Samsung-telefoons geaccepteerd;
-- `PILOT-AUTH-01` is de eerstvolgende story;
+- `PILOT-AUTH-01` is goedgekeurd en het implementation packet is gereed;
 - er zijn momenteel geen bekende blockers.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
@@ -28,12 +28,9 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Werk `PILOT-AUTH-01` uit: Owner/Crew-model en een eigen lokale login voor Carla.
-
-Controleer eerst de feitelijke authenticatie- en gebruikersbeheerstatus. Leg daarna een
-kleine story vast met scope, buiten scope, acceptatiecriteria, legacy-impact en handmatige
-acceptatietest. Na gebruikersgoedkeuring maakt Codex het implementation packet voor
-Claude Code.
+Laat Claude Code `PILOT-AUTH-01` implementeren vanuit
+`.codex/PILOT-AUTH-01-implementation-packet.md`. Codex reviewt daarna de gerichte diff,
+build, tests, migratie en autorisatie voordat de handmatige acceptatietest start.
 
 ## Documentatie
 

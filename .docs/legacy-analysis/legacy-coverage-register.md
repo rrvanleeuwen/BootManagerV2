@@ -40,12 +40,12 @@ Bij afronding van een story of PR:
 |---|---|---|
 | US1.1 Eerste opstart en bootaanmaak | Done | Afgedekt door onboarding + `VesselProfile`. |
 | US1.2 Bootinformatie bewerken | Partial | Bootgegevens wijzigen in Settings geïmplementeerd via `IVesselProfileService`; naast VesselName, HomePort, CallSign en MMSI beheert `LOG-TRIP-AUTO-1A` nu ook actuele motoruren- en logstandwaarden met expliciete reset/leegmaakflow. Launchpad-gerelateerd bootbeheer (gebieden, opslaglocaties) blijft open. |
-| US1.3 Gebruikers aanmaken en rollen toewijzen | Parked | Multi-user buiten huidige single-owner scope. |
-| US1.4 Inloggen als bestaande gebruiker | Parked | Multi-user buiten huidige single-owner scope. |
+| US1.3 Gebruikers aanmaken en rollen toewijzen | Parked | `PILOT-AUTH-01` is op 2026-06-09 goedgekeurd en zal na implementatie Crew aanmaken met een vaste rol gedeeltelijk afdekken. Tot implementatie blijft de status `Parked`. |
+| US1.4 Inloggen als bestaande gebruiker | Parked | `PILOT-AUTH-01` is op 2026-06-09 goedgekeurd en zal dit na implementatie afdekken voor lokale Owner- en Crew-accounts. Tot implementatie blijft de status `Parked`. |
 | US1.5 Meerdere boten beheren | Parked | BootManagerV2 gebruikt voorlopig single-vessel installatie. |
 | US1.6 Boot selecteren bij opstart | Parked | Multi-boot geparkeerd. |
-| US1.7 Gebruikersrechten wijzigen | Parked | Rollenbeheer geparkeerd. |
-| US1.8 Gebruiker verwijderen | Parked | Rollenbeheer geparkeerd. |
+| US1.7 Gebruikersrechten wijzigen | Parked | Algemene rolwijziging blijft buiten `PILOT-AUTH-01`; alleen de vaste rollen Owner en Crew worden gebruikt. |
+| US1.8 Gebruiker verwijderen | Parked | Definitief verwijderen blijft buiten `PILOT-AUTH-01`; uitschakelen wordt de pilotroute voor het intrekken van toegang. |
 | US1.9 Bootstructuurbeheer: gebieden en opslaglocaties | Open | Toekomstige inventaris/opslaglocatie-epic. |
 | US1.10 Opslaglocatie aanmaken binnen gebied | Open | Toekomstige inventaris/opslaglocatie-epic. |
 | US1.11 Opslaglocatie bewerken | Open | Toekomstige inventaris/opslaglocatie-epic. |
@@ -185,10 +185,10 @@ Bij afronding van een story of PR:
 | US8.1 Instellingenpagina openen | Done | Settings-pagina aanwezig. |
 | US8.2 Eenheden configureren | Open | Niet aanwezig. |
 | US8.3 Taal en regio instellen | Open | Niet aanwezig. |
-| US8.4 Gebruikersrollen beheren | Parked | Multi-user/rollen geparkeerd. |
+| US8.4 Gebruikersrollen beheren | Parked | `PILOT-AUTH-01` introduceert vaste Owner/Crew-rollen, maar geen algemene rolwijziging of rollenmatrix. |
 | US8.5 Sensorintegratie configureren | Partial | Operationele ingest settings aanwezig; `SYS-CTRL-1` voegt een centrale `IngestProcessingEnabled` instelling toe waarmee verwerking bewust aan/uit kan. `SYS-CTRL-2` maakt reload van ingest-instellingen robuuster tegen foutieve runtime `ApiBaseUrl` en laat capture logging de runtime/database setting respecteren. Pi-databaseanalyse op 2026-05-31 laat zien dat de huidige `Source`-waarde Docker/UDP-endpointmetadata is en niet stabiel genoeg is voor fysieke bronvoorkeuren. Story 8 legt vast dat bronidentiteit uit NMEA-inhoud moet komen, niet uit UDP/YDEN transport. Story 9 past dat uitgangspunt toe voor Fluid Level gatewayberichten door PGN/tanktype/instance uit de NMEA-inhoud te gebruiken. Bredere sensorconfig en bronvoorkeuren-UI blijven open. |
 | US8.6 Raspberry Pi-configuratie beheren | Partial | Pi deployment runbook en resourcechecks gedocumenteerd; eerste metingen voor opslag/RAM/load vastgelegd. Eerste echte Pi-veldtest met bootdata op 2026-05-29 bevestigde health, ingest, API, parsing en measurement-opslag op `master @ 1db5534`. `SYS-ANALYSIS-1` voegt een technische analysepagina toe; `SYS-CTRL-1` voegt dashboardbediening voor ingest-verwerking en goedkope disabled-mode toe; `SYS-CTRL-2` voorkomt dat een foutieve `ApiBaseUrl` de ingest reload-flow blijvend blokkeert. `SYS-SHUTDOWN-1` voegt een veilige in-app BootManager Pi shutdown-flow toe via een begrensde Unix-domain-socket naar een host-side systemd helper; deze is op 2026-05-31 gevalideerd op de Pi vanaf `master @ b7818f8`. Volledige in-app Pi systeemstatus/configuratiebeheer, persistent warning/error-overzicht en langdurige observatie blijven open. |
-| US8.7 Gebruikersbeheer | Parked | Multi-user geparkeerd. |
+| US8.7 Gebruikersbeheer | Parked | `PILOT-AUTH-01` is goedgekeurd voor Crew toevoegen, wachtwoord resetten en toegang uitschakelen; status wijzigt pas na implementatie. |
 | US8.8 Back-up maken en herstellen | Open | Procedureel beschreven; UI/helper open. |
 | US8.9 Cloudinstellingen beheren | Parked | Cloud-sync geparkeerd. |
 | US8.10 Automatische synchronisatie plannen | Parked | Cloud-sync geparkeerd. |

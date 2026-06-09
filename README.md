@@ -23,7 +23,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[#-------------------]` 7.1% | 1 | 0 | 13 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-AUTH-01 - Owner/Crew-model en eigen login voor Carla |
+| `[#-------------------]` 7.1% | 1 | 0 | 13 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-AUTH-01 - goedgekeurd en klaar voor Claude Code |
 
 ### BootManagerV2 Epics
 

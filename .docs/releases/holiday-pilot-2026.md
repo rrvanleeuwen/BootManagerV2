@@ -134,7 +134,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 ## Prioriteitsvolgorde
 
 1. **PILOT-SCAN-01** — **Done** — Camera-, QR- en barcode-proof-of-concept op de telefoons.
-2. **PILOT-AUTH-01** — **Volgende** — Owner/Crew-model en eigen login voor Carla.
+2. **PILOT-AUTH-01** — **Goedgekeurd** — Owner/Crew-model en eigen login voor Carla; klaar voor implementatie.
 3. **PILOT-LOC-01** — **Gepland** — Opslaggebieden en opslaglocaties.
 4. **PILOT-LOC-02** — **Gepland** — QR-token genereren, koppelen en locatie openen.
 5. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
@@ -154,9 +154,98 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-AUTH-01` — Owner/Crew-model en eigen login voor Carla.
+**Eerstvolgende story:** `PILOT-AUTH-01` — goedgekeurd en klaar voor implementatie door Claude Code.
 
 ## Uitgewerkte stories
+
+### PILOT-AUTH-01 — Lokale Owner- en Crew-accounts
+
+**Status:** Goedgekeurd op 2026-06-09; implementation packet gereed.
+
+**Als** Owner<br>
+**wil ik** Carla een eigen lokaal Crew-account geven<br>
+**zodat** zij zelfstandig kan inloggen en BootManager kan gebruiken zonder toegang tot systeembeheer.
+
+**Scope**
+
+- De bestaande Owner wordt zonder gegevensverlies opgenomen in één uniform lokaal gebruikersmodel.
+- Het model ondersteunt de rollen `Owner` en `Crew` en technisch meerdere Crew-accounts; de pilot maakt alleen Carla aan.
+- De loginpagina toont actieve lokale accounts als naamkeuze, gevolgd door het eigen wachtwoord en `Ingelogd blijven`.
+- De zichtbare accountnaam is hoofdletterongevoelig uniek en is tevens de lokale loginidentiteit.
+- Owner kan in `Instellingen > Account > Lokale gebruikers`:
+  - een Crew-account met tijdelijk wachtwoord aanmaken;
+  - het wachtwoord van Crew resetten naar een tijdelijk wachtwoord;
+  - een Crew-account uitschakelen en opnieuw activeren.
+- Een nieuw of gereset Crew-account moet bij de eerstvolgende login via een gedeelde pagina `Mijn account` een eigen wachtwoord kiezen.
+- Owner en Crew kunnen via `Mijn account` hun eigen wachtwoord wijzigen.
+- Crew kan dashboard, scannen en het volledige huidige logboek gebruiken.
+- Alleen Owner kan Instellingen, Beheerder, shutdown, systeeminstellingen en lokale gebruikers beheren.
+- Navigatie toont alleen functies die bij de ingelogde rol horen.
+- Uitschakelen of wachtwoordreset maakt bestaande cookies en tokens van die gebruiker direct ongeldig.
+- De bestaande bootstrap-Owner en verplichte Owner-onboarding blijven werken.
+
+**Buiten scope**
+
+- Uitnodigingen, e-mailverificatie of een externe identity provider.
+- Meer rollen dan `Owner` en `Crew`, een uitgebreide rechtenmatrix of rolwijziging.
+- Een tweede Owner aanmaken.
+- Lokale gebruikers definitief verwijderen.
+- Meerdere boten of accountselectie per boot.
+- Pincode-, recovery- of master-keyfunctionaliteit terugbrengen in de normale gebruikersflow.
+- In deze story uitvoerende gebruikers vastleggen op bestaande logboekentiteiten.
+- Voorraad- of logboekmutatiehistorie; latere `PILOT-INV-*`- en `PILOT-LOG-*`-stories gebruiken daarvoor de stabiele lokale gebruikers-id.
+
+**Acceptatiecriteria**
+
+- Een bestaande database migreert zonder verlies van Owner-id, wachtwoord, profielgegevens en onboardingstatus.
+- Roelof kan na migratie met zijn bestaande wachtwoord als Owner inloggen.
+- Een lege database maakt nog steeds één bootstrap-Owner en dwingt de bestaande Owner-onboarding af.
+- De loginselector toont alleen actieve lokale accounts en toont geen wachtwoord- of profielgegevens.
+- Accountnamen zijn hoofdletterongevoelig uniek.
+- Owner kan Carla als Crew aanmaken met een tijdelijk wachtwoord.
+- Carla wordt na de eerste login verplicht naar `Mijn account` geleid en kan pas na een geslaagde wachtwoordwijziging de overige Crew-routes gebruiken.
+- Na de verplichte wijziging werkt alleen Carla's nieuwe wachtwoord.
+- Carla kan dashboard, scanpagina en het huidige logboek gebruiken.
+- Carla ziet geen links naar Instellingen of Beheerder en krijgt bij directe toegang tot Owner-routes geen toegang.
+- Owner kan Carla's wachtwoord resetten; alle bestaande Carla-sessies en tokens worden dan ongeldig en een nieuwe wachtwoordwijziging wordt verplicht.
+- Owner kan Carla uitschakelen; bestaande sessies en tokens worden ongeldig en nieuwe login wordt geweigerd.
+- Opnieuw activeren herstelt login met het laatst geldige wachtwoord en de bestaande wachtwoordwijzigingsstatus.
+- Owner kan zichzelf niet uitschakelen en kan geen tweede Owner of andere rol aanmaken.
+- Cookie- en JWT-claims bevatten de werkelijke gebruikers-id, zichtbare naam en rol en zijn niet langer hardcoded als Owner.
+- `dotnet build BootManager.sln` slaagt.
+
+**Legacy-impact**
+
+- `US1.3 Gebruikers aanmaken en rollen toewijzen` wordt na implementatie gedeeltelijk afgedekt: Owner kan Crew aanmaken met een vaste rol.
+- `US1.4 Inloggen als bestaande gebruiker` wordt na implementatie afgedekt voor lokale Owner- en Crew-accounts.
+- `US1.7` en `US8.4` blijven grotendeels geparkeerd: er komt geen algemene rolwijziging.
+- `US1.8` blijft geparkeerd: uitschakelen vervangt voor de pilot definitief verwijderen.
+- `US8.7` wordt na implementatie gedeeltelijk afgedekt: toevoegen en uitschakelen, zonder verwijderen.
+
+**Handmatige acceptatietest**
+
+Upgrade eerst een kopie van de actuele Raspberry Pi-database. Controleer dat Roelof met
+zijn bestaande wachtwoord als Owner kan inloggen en dat de bestaande onboardingstatus
+behouden is. Maak daarna in Instellingen een Crew-account voor Carla met een tijdelijk
+wachtwoord. Log uit, kies Carla op de loginpagina en controleer dat zij verplicht via
+`Mijn account` een ander wachtwoord moet instellen. Controleer daarna dashboard, scan en
+logboek en probeer de directe URL's van Instellingen en Beheerder.
+
+Log Carla vervolgens gelijktijdig in twee browsers in. Reset als Owner haar wachtwoord
+en controleer dat beide bestaande sessies vervallen, het tijdelijke wachtwoord werkt en
+opnieuw een wijziging wordt verplicht. Herhaal de sessiecontrole met uitschakelen,
+controleer dat nieuwe login wordt geweigerd en activeer het account opnieuw. Sluit af
+met een controle dat Roelofs Owner-routes, bootstrapflow en onboarding intact zijn.
+
+**Technische richting**
+
+- Gebruik één lokale gebruiker-entiteit met stabiele `Guid`-id, zichtbare en genormaliseerde accountnaam, rol, wachtwoordhash, actieve status, setupstatus en credentialversie.
+- Migreer het bestaande Owner-record naar dit uniforme model; kopieer geen Owner naar een los Crew- of accountmodel.
+- Gebruik de credentialversie samen met actieve status bij cookie- en JWT-validatie, zodat reset en uitschakelen direct alle oude authenticatiebewijzen intrekken.
+- Houd `Ingelogd blijven` en de bestaande niet-persistente sessieopslag intact.
+- Laat de verplichte Owner-onboarding en de verplichte Crew-wachtwoordwijziging als afzonderlijke gates werken.
+- Laat een geslaagde eigen wachtwoordwijziging de huidige browser opnieuw aanmelden met de nieuwe credentialversie; andere sessies blijven ingetrokken.
+- Sla de accountnaam leesbaar op omdat deze bewust op de anonieme lokale loginselector wordt getoond. Bestaande versleutelde Owner-profielgegevens blijven behouden.
 
 ### PILOT-SCAN-01 — Camera-, QR- en barcode-proof-of-concept
 

@@ -26,6 +26,13 @@
   - **Bestaande route:** `http://bootmanager-pi:5000/` blijft beschikbaar voor gebruik zonder camera.
   - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.docs/scan-handmatige-test.md`.
 
+- [ ] **Holiday Pilot 2026 — PILOT-AUTH-01 lokale Owner- en Crew-accounts**
+  - **Status 2026-06-09:** story goedgekeurd en implementation packet gereed voor Claude Code.
+  - **Doel:** Carla krijgt een eigen lokaal Crew-account; Roelof beheert Crew vanuit Owner-only Instellingen.
+  - **Toegang:** Crew gebruikt dashboard, scan en logboek; Instellingen, Beheerder en systeemacties blijven Owner-only.
+  - **Beheer:** Crew aanmaken, tijdelijk wachtwoord resetten, uitschakelen en opnieuw activeren; geen rolwijziging of definitief verwijderen.
+  - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.codex/PILOT-AUTH-01-implementation-packet.md`.
+
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**
   - **Aanleiding 2026-05-26:** Tijdens Raspberry Pi test vóór login/onboarding stond in het menu nog **Register Owner**. Klikken navigeert naar `/register-owner`. Dit is oude vrije registratie en hoort niet meer bij de huidige bootstrap owner + verplichte onboarding flow.
   - **Status:** afgerond via PR #64, merge commit `a441ca8`. User story `US7: Legacy Register Owner Route En Menu Verwijderen` staat als gereed in `.docs/epics/first-run-onboarding.md`.
