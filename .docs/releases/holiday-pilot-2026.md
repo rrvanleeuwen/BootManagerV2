@@ -133,20 +133,20 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 
 ## Prioriteitsvolgorde
 
-1. **PILOT-SCAN-01** — Camera-, QR- en barcode-proof-of-concept op de telefoons.
-2. **PILOT-AUTH-01** — Owner/Crew-model en eigen login voor Carla.
-3. **PILOT-LOC-01** — Opslaggebieden en opslaglocaties.
-4. **PILOT-LOC-02** — QR-token genereren, koppelen en locatie openen.
-5. **PILOT-INV-01** — Productcategorieën, producten en productbarcodes.
-6. **PILOT-INV-02** — Voorraad per product en locatie, inclusief meerdere locaties per product.
-7. **PILOT-INV-03** — Product aanmaken met gescande locatie-QR.
-8. **PILOT-INV-04** — Product terugvinden via barcode.
-9. **PILOT-INV-05** — Voorraadmutaties en eenvoudige historie.
-10. **PILOT-LOG-01** — Handmatig logboekmoment met actuele NMEA-snapshot.
-11. **PILOT-LOG-02** — Gebeurteniskeuze, weericonen en notitie.
-12. **PILOT-E2E-01** — End-to-end gebruikstest door Roelof en Carla.
-13. **PILOT-OPS-01** — Duur-, herstart-, opslag- en back-uptest.
-14. **PILOT-REL-01** — Release-freeze en uitsluitend blockerfixes.
+1. **PILOT-SCAN-01** — **Done** — Camera-, QR- en barcode-proof-of-concept op de telefoons.
+2. **PILOT-AUTH-01** — **Volgende** — Owner/Crew-model en eigen login voor Carla.
+3. **PILOT-LOC-01** — **Gepland** — Opslaggebieden en opslaglocaties.
+4. **PILOT-LOC-02** — **Gepland** — QR-token genereren, koppelen en locatie openen.
+5. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
+6. **PILOT-INV-02** — **Gepland** — Voorraad per product en locatie, inclusief meerdere locaties per product.
+7. **PILOT-INV-03** — **Gepland** — Product aanmaken met gescande locatie-QR.
+8. **PILOT-INV-04** — **Gepland** — Product terugvinden via barcode.
+9. **PILOT-INV-05** — **Gepland** — Voorraadmutaties en eenvoudige historie.
+10. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
+11. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
+12. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
+13. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
+14. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
 
 Codex kiest geen story buiten deze volgorde, tenzij:
 
