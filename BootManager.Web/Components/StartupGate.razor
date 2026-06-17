@@ -1,43 +1,4 @@
-@* 
-Component: StartupGate
-Purpose:
-- Acts as a startup guard that runs once on first render and routes the user to the correct entry page:
-  - If this is the first run (no owner profile exists): navigate to "/login" (bootstrap owner is created automatically at startup).
-  - Otherwise: navigate to "/login" if not authenticated, or "/dashboard" if already authenticated.
-
-How it works:
-- Uses OnAfterRenderAsync(firstRender: true) so navigation occurs after the first UI render (safe for NavigationManager redirect).
-- Calls IOwnerRegistrationService.CheckFirstRunAsync() to determine first-run state.
-- Uses a local _checked flag to ensure the navigation logic runs only once per render cycle and avoids duplicate redirects.
-
-Where to place:
-- Include once in Routes.razor inside the <Found> block so it evaluates on application startup or first navigation:
-  <Router ...>
-    <Found Context="routeData">
-      <StartupGate />
-      <RouteView RouteData="routeData" />
-    </Found>
-    ...
-  </Router>
-
-Dependencies:
-- IOwnerRegistrationService: provides the first-run check.
-- NavigationManager: performs the redirect.
-
-Blazor hosting notes:
-- Blazor Server: interactive by default; no extra render mode needed.
-- Blazor Web App (.NET 8): ensure this component (or its parent) uses an interactive render mode (e.g., InteractiveServer) so eventing and navigation occur on the server.
-
-Extensibility ideas (optional):
-- Add error handling (try/catch) and fallback route if the service call fails.
-- Add a small loading indicator while the check is in progress.
-- Add a parameter to opt-out of automatic navigation for testing.
-
-Testing guidance:
-- Mock IOwnerRegistrationService.CheckFirstRunAsync() to return true/false and assert that NavigationManager.NavigateTo is called with the expected route.
-*@
 @using Microsoft.AspNetCore.Components.Authorization
-@inject BootManager.Application.OwnerRegistration.Services.IOwnerRegistrationService RegistrationService
 @inject NavigationManager Nav
 
 @code {
@@ -48,29 +9,17 @@ Testing guidance:
     {
         if (!firstRender || _checked) return;
 
-        var relative = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
-
-        // 1) First run: navigate to login (bootstrap owner is already created at startup)
-        var firstRun = await RegistrationService.CheckFirstRunAsync();
-        if (firstRun.IsFirstRun)
-        {
-            _checked = true;
-            if (!string.Equals(relative, "login", StringComparison.OrdinalIgnoreCase))
-                Nav.NavigateTo("/login", replace: true);
-            return;
-        }
-
-        // 2) Not first run: only gate the site root
-        if (string.IsNullOrEmpty(relative))
-        {
-            var auth = AuthenticationStateTask is null ? null : await AuthenticationStateTask;
-            var isAuth = auth?.User?.Identity?.IsAuthenticated == true;
-            _checked = true;
-            Nav.NavigateTo(isAuth ? "/dashboard" : "/login", replace: true);
-            return;
-        }
-
-        // 3) Any other route: no redirect
         _checked = true;
+
+        // Bootstrap guarantees that a local Owner exists. The startup gate therefore
+        // only decides where the site root should lead and must not call legacy
+        // OwnerProfile registration services.
+        var relative = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+        if (!string.IsNullOrEmpty(relative))
+            return;
+
+        var auth = AuthenticationStateTask is null ? null : await AuthenticationStateTask;
+        var isAuthenticated = auth?.User?.Identity?.IsAuthenticated == true;
+        Nav.NavigateTo(isAuthenticated ? "/dashboard" : "/login", replace: true);
     }
 }

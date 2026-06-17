@@ -2,6 +2,7 @@ using BootManager.Application.OwnerRegistration.DTOs;
 using BootManager.Application.VesselProfile.DTOs;
 using BootManager.Application.VesselProfile.Services;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 using BootManager.Core.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -10,13 +11,13 @@ using System.Text.Json;
 namespace BootManager.Application.OwnerRegistration.Services;
 
 /// <summary>
-/// Service voor het voltooien van de initiale onboarding met eigenaar-, boot- en wachtwoordgegevens.
+/// Service voor het voltooien van de initiale Owner-onboarding met eigenaar-, boot- en wachtwoordgegevens.
 /// </summary>
 public class OnboardingService : IOnboardingService
 {
     private const int MinPasswordLength = 8;
 
-    private readonly IRepository<OwnerProfile> _ownerRepository;
+    private readonly IRepository<LocalUser> _ownerRepository;
     private readonly IPasswordHasher _hasher;
     private readonly IEncryptionService _encryption;
     private readonly ISystemClock _clock;
@@ -24,7 +25,7 @@ public class OnboardingService : IOnboardingService
     private readonly ILogger<OnboardingService> _logger;
 
     public OnboardingService(
-        IRepository<OwnerProfile> ownerRepository,
+        IRepository<LocalUser> ownerRepository,
         IPasswordHasher hasher,
         IEncryptionService encryption,
         ISystemClock clock,
@@ -86,7 +87,10 @@ public class OnboardingService : IOnboardingService
             var payloadObj = new { Name = request.OwnerName, Email = request.OwnerEmail ?? string.Empty };
             var json = JsonSerializer.Serialize(payloadObj);
             var encrypted = _encryption.Encrypt(json);
-            owner.ReplaceEncryptedPayload(encrypted, 1, _clock.UtcNow);
+            owner.ReplaceEncryptedPayload(encrypted, owner.EncryptionVersion, _clock.UtcNow);
+
+            // Synchronize DisplayName with onboarded name
+            owner.UpdateDisplayName(request.OwnerName, _clock.UtcNow);
 
             // Wijzig het wachtwoord
             var newHash = _hasher.Hash(request.NewPassword);

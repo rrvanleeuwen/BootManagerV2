@@ -1,5 +1,5 @@
 @page "/dashboard"
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
 @implements IAsyncDisposable
 @using System.Globalization
 @using System.Text.Json

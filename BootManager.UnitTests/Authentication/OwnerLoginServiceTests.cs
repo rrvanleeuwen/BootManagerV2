@@ -1,6 +1,7 @@
 using BootManager.Application.Authentication.DTOs;
 using BootManager.Application.Authentication.Services;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 using BootManager.Core.ValueObjects;
 using System.Linq.Expressions;
@@ -14,85 +15,94 @@ public class OwnerLoginServiceTests
     [Fact]
     public async Task ValidateAsync_ReturnsSuccess_ForValidPassword()
     {
-        var owner = CreateOwner(password: "123456");
-        var repo = FakeOwnerRepository.WithOwner(owner);
+        var user = CreateLocalUser(displayName: "TestOwner", password: "12345678", role: LocalUserRole.Owner);
+        var repo = FakeLocalUserRepository.WithUser(user);
         var sut = new OwnerLoginService(repo, _hasher);
 
-        var result = await sut.ValidateAsync(new LoginRequestDto { Password = "123456" });
+        var result = await sut.ValidateAsync(new LoginRequestDto { UserId = user.Id, Password = "12345678" });
 
         Assert.True(result.Success);
-        Assert.Equal(owner.Id, result.OwnerId);
+        Assert.Equal(user.Id, result.UserId);
+        Assert.Equal("TestOwner", result.DisplayName);
+        Assert.Equal(LocalUserRole.Owner, result.Role);
     }
 
     [Fact]
     public async Task ValidateAsync_ReturnsFailure_ForWrongPassword()
     {
-        var owner = CreateOwner(password: "123456");
-        var repo = FakeOwnerRepository.WithOwner(owner);
+        var user = CreateLocalUser(displayName: "TestOwner", password: "12345678");
+        var repo = FakeLocalUserRepository.WithUser(user);
         var sut = new OwnerLoginService(repo, _hasher);
 
-        var result = await sut.ValidateAsync(new LoginRequestDto { Password = "bad" });
+        var result = await sut.ValidateAsync(new LoginRequestDto { UserId = user.Id, Password = "wrongpass" });
 
         Assert.False(result.Success);
         Assert.Equal("Ongeldig wachtwoord.", result.Message);
     }
 
     [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenNoOwnerExists()
+    public async Task ValidateAsync_ReturnsFailure_WhenUserNotFound()
     {
-        var repo = FakeOwnerRepository.Empty();
+        var repo = FakeLocalUserRepository.Empty();
+        var sut = new OwnerLoginService(repo, _hasher);
+
+        var result = await sut.ValidateAsync(new LoginRequestDto { UserId = Guid.NewGuid(), Password = "irrelevant" });
+
+        Assert.False(result.Success);
+        Assert.Equal("Gebruiker niet gevonden.", result.Message);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsFailure_WhenUserInactive()
+    {
+        var user = CreateLocalUser(displayName: "Inactive", password: "12345678");
+        user.SetActive(false, DateTime.UtcNow);
+        var repo = FakeLocalUserRepository.WithUser(user);
+        var sut = new OwnerLoginService(repo, _hasher);
+
+        var result = await sut.ValidateAsync(new LoginRequestDto { UserId = user.Id, Password = "12345678" });
+
+        Assert.False(result.Success);
+        Assert.Equal("Dit account is uitgeschakeld.", result.Message);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsSuccess_ForValidCrew()
+    {
+        var user = CreateLocalUser(displayName: "TestCrew", password: "crewpass", role: LocalUserRole.Crew);
+        var repo = FakeLocalUserRepository.WithUser(user);
+        var sut = new OwnerLoginService(repo, _hasher);
+
+        var result = await sut.ValidateAsync(new LoginRequestDto { UserId = user.Id, Password = "crewpass" });
+
+        Assert.True(result.Success);
+        Assert.Equal(LocalUserRole.Crew, result.Role);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsFailure_WhenNoUserIdProvided()
+    {
+        var repo = FakeLocalUserRepository.Empty();
         var sut = new OwnerLoginService(repo, _hasher);
 
         var result = await sut.ValidateAsync(new LoginRequestDto { Password = "irrelevant" });
 
         Assert.False(result.Success);
-        Assert.Equal("Geen eigenaarprofiel gevonden.", result.Message);
+        Assert.Equal("Geen gebruiker geselecteerd.", result.Message);
     }
 
-    [Fact]
-    public async Task ValidateAsync_UsesPin_WhenPasswordMissing()
-    {
-        var owner = CreateOwner(password: "abcdef", pin: "7777");
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var sut = new OwnerLoginService(repo, _hasher);
-
-        var result = await sut.ValidateAsync(new LoginRequestDto { Pin = "7777" });
-
-        Assert.True(result.Success);
-        Assert.Equal(owner.Id, result.OwnerId);
-    }
-
-    [Fact]
-    public async Task ValidateAsync_ReturnsFailure_WhenPinNotConfigured()
-    {
-        var owner = CreateOwner(password: "abcdef");
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var sut = new OwnerLoginService(repo, _hasher);
-
-        var result = await sut.ValidateAsync(new LoginRequestDto { Pin = "1234" });
-
-        Assert.False(result.Success);
-        Assert.Equal("Er is geen pincode ingesteld.", result.Message);
-    }
-
-    private OwnerProfile CreateOwner(string password, string? pin = null)
+    private LocalUser CreateLocalUser(string displayName, string password, LocalUserRole role = LocalUserRole.Owner)
     {
         var passwordHash = _hasher.Hash(password);
-        var owner = OwnerProfile.Create(
+        return LocalUser.Create(
+            displayName: displayName,
+            role: role,
             passwordHash: passwordHash.Hash,
             passwordSalt: passwordHash.Salt,
             hashAlgorithm: passwordHash.Algorithm,
             encryptedProfilePayload: Array.Empty<byte>(),
             encryptionVersion: 1,
             createdUtc: DateTime.UtcNow);
-
-        if (!string.IsNullOrEmpty(pin))
-        {
-            var pinHash = _hasher.Hash(pin);
-            owner.SetPin(pinHash.Hash, pinHash.Salt, DateTime.UtcNow);
-        }
-
-        return owner;
     }
 
     private sealed class FakePasswordHasher : IPasswordHasher
@@ -108,95 +118,75 @@ public class OwnerLoginServiceTests
         }
     }
 
-    private sealed class FakeOwnerRepository : IRepository<OwnerProfile>
+    private sealed class FakeLocalUserRepository : IRepository<LocalUser>
     {
-        private OwnerProfile? _owner;
+        private readonly List<LocalUser> _users = new();
 
-        private FakeOwnerRepository(OwnerProfile? owner)
+        private FakeLocalUserRepository(LocalUser? user)
         {
-            _owner = owner;
+            if (user != null)
+                _users.Add(user);
         }
 
-        public static FakeOwnerRepository WithOwner(OwnerProfile owner) => new(owner);
-        public static FakeOwnerRepository Empty() => new(null);
+        public static FakeLocalUserRepository WithUser(LocalUser user) => new(user);
+        public static FakeLocalUserRepository Empty() => new(null);
 
-        public Task<OwnerProfile?> GetByIdAsync(Guid id, CancellationToken ct = default)
-            => Task.FromResult(_owner is not null && _owner.Id == id ? _owner : null);
+        public Task<LocalUser?> GetByIdAsync(Guid id, CancellationToken ct = default)
+            => Task.FromResult(_users.FirstOrDefault(u => u.Id == id));
 
-        public Task<OwnerProfile?> SingleOrDefaultAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<LocalUser?> SingleOrDefaultAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
-            if (_owner is null || predicate is null)
-            {
-                return Task.FromResult(_owner);
-            }
-
-            var compiled = predicate.Compile();
-            return Task.FromResult(compiled(_owner) ? _owner : null);
-        }
-
-        public Task<IReadOnlyList<OwnerProfile>> ListAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
-        {
-            var list = _owner is null ? Array.Empty<OwnerProfile>() : new[] { _owner };
-            if (predicate is null || _owner is null)
-            {
-                return Task.FromResult((IReadOnlyList<OwnerProfile>)list);
-            }
-
-            var compiled = predicate.Compile();
-            return Task.FromResult((IReadOnlyList<OwnerProfile>)(compiled(_owner) ? list : Array.Empty<OwnerProfile>()));
-        }
-
-        public Task<bool> AnyAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
-        {
-            if (_owner is null)
-            {
-                return Task.FromResult(false);
-            }
-
             if (predicate is null)
-            {
-                return Task.FromResult(true);
-            }
+                return Task.FromResult(_users.FirstOrDefault());
 
             var compiled = predicate.Compile();
-            return Task.FromResult(compiled(_owner));
+            return Task.FromResult(_users.FirstOrDefault(compiled));
         }
 
-        public Task<int> CountAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<IReadOnlyList<LocalUser>> ListAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
-            if (_owner is null)
-            {
-                return Task.FromResult(0);
-            }
-
             if (predicate is null)
-            {
-                return Task.FromResult(1);
-            }
+                return Task.FromResult((IReadOnlyList<LocalUser>)_users);
 
             var compiled = predicate.Compile();
-            return Task.FromResult(compiled(_owner) ? 1 : 0);
+            return Task.FromResult((IReadOnlyList<LocalUser>)_users.Where(compiled).ToList());
         }
 
-        public Task AddAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task<bool> AnyAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
-            _owner = entity;
+            if (predicate is null)
+                return Task.FromResult(_users.Any());
+
+            var compiled = predicate.Compile();
+            return Task.FromResult(_users.Any(compiled));
+        }
+
+        public Task<int> CountAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
+        {
+            if (predicate is null)
+                return Task.FromResult(_users.Count());
+
+            var compiled = predicate.Compile();
+            return Task.FromResult(_users.Count(compiled));
+        }
+
+        public Task AddAsync(LocalUser entity, CancellationToken ct = default)
+        {
+            _users.Add(entity);
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task UpdateAsync(LocalUser entity, CancellationToken ct = default)
         {
-            _owner = entity;
+            var index = _users.FindIndex(u => u.Id == entity.Id);
+            if (index >= 0)
+                _users[index] = entity;
             return Task.CompletedTask;
         }
 
-        public Task DeleteAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task DeleteAsync(LocalUser entity, CancellationToken ct = default)
         {
-            if (_owner == entity)
-            {
-                _owner = null;
-            }
-
+            _users.RemoveAll(u => u.Id == entity.Id);
             return Task.CompletedTask;
         }
     }

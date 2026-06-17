@@ -1,6 +1,6 @@
 @page "/logbook"
 @implements IAsyncDisposable
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
 @using BootManager.Application.OperationalSettings.DTOs

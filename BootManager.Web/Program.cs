@@ -10,6 +10,7 @@ using BootManager.Web.Options;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
@@ -64,12 +65,30 @@ builder.Services
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // use Always if HTTPS-only
         options.SlidingExpiration = true;
-        options.Events.OnValidatePrincipal = context =>
+        options.Events.OnValidatePrincipal = async context =>
         {
             var persistentClaim = context.Principal?.FindFirst("bm.persistent")?.Value;
             if (string.Equals(persistentClaim, "true", StringComparison.OrdinalIgnoreCase))
             {
-                return Task.CompletedTask;
+                // Persistent cookies still need to validate user exists, is active, and credential version matches
+                var userIdClaim = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var userId) &&
+                    int.TryParse(context.Principal?.FindFirst("bm.credential_version")?.Value, out var claimVersion))
+                {
+                    try
+                    {
+                        var repo = context.HttpContext.RequestServices.GetRequiredService<BootManager.Core.Interfaces.IRepository<BootManager.Core.Entities.LocalUser>>();
+                        var user = await repo.SingleOrDefaultAsync(u => u.Id == userId);
+                        if (user != null && user.IsActive && user.CredentialVersion == claimVersion)
+                        {
+                            return;
+                        }
+                    }
+                    catch { }
+                }
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
             }
 
             var sessionId = context.Principal?.FindFirst("bm.session_id")?.Value;
@@ -77,10 +96,38 @@ builder.Services
             if (!sessions.IsValid(sessionId))
             {
                 context.RejectPrincipal();
-                return context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
             }
 
-            return Task.CompletedTask;
+            // Non-persistent sessions also validate user exists, is active, and credential version matches.
+            // Cookies met ontbrekende of ongeldige claims worden geweigerd.
+            var userIdClaim2 = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(userIdClaim2, out var userId2) &&
+                int.TryParse(context.Principal?.FindFirst("bm.credential_version")?.Value, out var claimVersion2))
+            {
+                try
+                {
+                    var repo = context.HttpContext.RequestServices.GetRequiredService<BootManager.Core.Interfaces.IRepository<BootManager.Core.Entities.LocalUser>>();
+                    var user = await repo.SingleOrDefaultAsync(u => u.Id == userId2);
+                    if (user == null || !user.IsActive || user.CredentialVersion != claimVersion2)
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    }
+                }
+                catch
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                }
+            }
+            else
+            {
+                // User-id of credentialversie claim ontbreekt of is ongeldig: cookie weigeren.
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            }
         };
     })
     .AddJwtBearer(options =>
@@ -95,11 +142,42 @@ builder.Services
             ValidateAudience = false,
             ClockSkew = TimeSpan.Zero
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userIdClaim = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var credentialVersionClaim = context.Principal?.FindFirst("bm.credential_version")?.Value;
+
+                if (Guid.TryParse(userIdClaim, out var userId) &&
+                    int.TryParse(credentialVersionClaim, out var claimVersion))
+                {
+                    try
+                    {
+                        var repo = context.HttpContext.RequestServices.GetRequiredService<BootManager.Core.Interfaces.IRepository<BootManager.Core.Entities.LocalUser>>();
+                        var user = await repo.GetByIdAsync(userId);
+                        if (user == null || !user.IsActive || user.CredentialVersion != claimVersion)
+                        {
+                            context.Fail("User is inactive or credential version mismatch");
+                        }
+                    }
+                    catch
+                    {
+                        context.Fail("Failed to validate user credentials");
+                    }
+                }
+                else
+                {
+                    context.Fail("Invalid token claims");
+                }
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IAuthSessionStore, AuthSessionStore>();
+builder.Services.AddScoped<AuthenticationStateProvider, LocalUserRevalidatingAuthenticationStateProvider>();
 
 // Provide AuthenticationState to Razor Components
 builder.Services.AddCascadingAuthenticationState();
@@ -151,7 +229,7 @@ using (var scope = app.Services.CreateScope())
     var db = services.GetRequiredService<BootManagerDbContext>();
     await db.Database.MigrateAsync();
 
-    // Ensure bootstrap owner exists
+    // Ensure bootstrap owner exists and backfill DisplayName from encrypted payload
     try
     {
         var bootstrap = services.GetRequiredService<BootManager.Application.OwnerRegistration.Services.IBootstrapOwnerService>();
@@ -166,6 +244,10 @@ using (var scope = app.Services.CreateScope())
         {
             logger.LogInformation("Bootstrap owner created successfully.");
         }
+
+        // Backfill DisplayName from encrypted payload for migrated owners
+        var backfill = services.GetRequiredService<BootManager.Application.Authentication.Services.DisplayNameBackfillService>();
+        await backfill.BackfillDisplayNamesAsync();
     }
     catch (InvalidOperationException ex)
     {
@@ -176,7 +258,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Unexpected error during bootstrap owner setup.");
+        logger.LogError(ex, "Unexpected error during bootstrap owner setup or backfill.");
         throw;
     }
 }
@@ -199,6 +281,7 @@ app.UseAntiforgery();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<BootManager.Web.Middleware.PcrGateMiddleware>();
 
 app.MapControllers();
 
@@ -209,15 +292,17 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
 app.MapPost("/auth/login", async (LoginRequestDto req, IOwnerLoginService login, HttpContext http) =>
 {
     var result = await login.ValidateAsync(req, http.RequestAborted);
-    if (!result.Success || result.OwnerId is null)
+    if (!result.Success || result.UserId is null)
         return Results.BadRequest(new { message = result.Message ?? "Inloggen mislukt." });
 
     var claims = new List<Claim>
     {
-        new(ClaimTypes.NameIdentifier, result.OwnerId.Value.ToString()),
-        new(ClaimTypes.Name, "Owner"),
-        new(ClaimTypes.Role, "Owner"),
-        new("bm.persistent", req.RememberMe ? "true" : "false")
+        new(ClaimTypes.NameIdentifier, result.UserId.Value.ToString()),
+        new(ClaimTypes.Name, result.DisplayName ?? "User"),
+        new(ClaimTypes.Role, result.Role?.ToString() ?? ""),
+        new("bm.persistent", req.RememberMe ? "true" : "false"),
+        new("bm.credential_version", result.CredentialVersion.ToString()),
+        new("bm.password_change_required", result.PasswordChangeRequired ? "true" : "false")
     };
 
     if (!req.RememberMe)
@@ -248,6 +333,57 @@ app.MapPost("/auth/logout", async (HttpContext http) =>
 })
 .DisableAntiforgery();
 
+// Minimal API: wachtwoord wijzigen en sessie atomisch vernieuwen
+// Delegeert alle validatielogica aan IAccountService (inclusief same-password check).
+app.MapPost("/auth/change-password", async (
+    BootManager.Application.Authentication.DTOs.ChangePasswordDto request,
+    IAccountService accountService,
+    HttpContext http) =>
+{
+    if (http.User.Identity?.IsAuthenticated != true)
+        return Results.Unauthorized();
+
+    var userIdClaim = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (!Guid.TryParse(userIdClaim, out var userId))
+        return Results.BadRequest(new { message = "Ongeldige gebruikerscontext." });
+
+    var result = await accountService.ChangePasswordAsync(userId, request, http.RequestAborted);
+    if (!result.Success)
+        return Results.BadRequest(new { message = result.Message });
+
+    // Nieuwe cookie uitgeven met bijgewerkte credentialversie
+    var rememberMeClaim = http.User.FindFirst("bm.persistent")?.Value;
+    var claims = new List<Claim>
+    {
+        new(ClaimTypes.NameIdentifier, userId.ToString()),
+        new(ClaimTypes.Name, result.DisplayName ?? "User"),
+        new(ClaimTypes.Role, result.Role?.ToString() ?? ""),
+        new("bm.persistent", rememberMeClaim ?? "false"),
+        new("bm.credential_version", result.NewCredentialVersion!.Value.ToString()),
+        new("bm.password_change_required", "false")
+    };
+
+    if (rememberMeClaim != "true")
+    {
+        var sessions = http.RequestServices.GetRequiredService<IAuthSessionStore>();
+        var oldSessionId = http.User.FindFirst("bm.session_id")?.Value;
+        sessions.Remove(oldSessionId);
+        claims.Add(new Claim("bm.session_id", sessions.CreateSession()));
+    }
+
+    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+    var principal = new ClaimsPrincipal(identity);
+    var props = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+    {
+        IsPersistent = rememberMeClaim == "true"
+    };
+
+    await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
+    return Results.Ok();
+})
+.RequireAuthorization()
+.DisableAntiforgery();
+
 // NOTE: change-password / set-pin / clear-pin minimal APIs removed.
 // These operations are invoked directly from Blazor Server components via DI
 // (IOwnerSettingsService). Keep login/logout endpoints because they must be
@@ -257,3 +393,6 @@ app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();
 
 app.Run();
+
+// Toegankelijk voor integratietests via WebApplicationFactory<Program>.
+public partial class Program { }

@@ -10,7 +10,9 @@
 @using BootManager.Core.Enums
 @inject HttpClient Http
 @inject NavigationManager Nav
+@inject IJSRuntime Js
 @inject BootManager.Application.Authentication.Services.IOwnerSettingsService SettingsService
+@inject BootManager.Application.Authentication.Services.ILocalUserManagementService LocalUserManagementService
 @inject IOperationalSettingsService OperationalSettingsService
 @inject IOperationalSettingsWithReloadService OperationalSettingsWithReloadService
 @inject IVesselProfileService VesselProfileService
@@ -86,6 +88,83 @@
                     </EditForm>
                     @if (!string.IsNullOrEmpty(pwdError)) { <div class="text-danger">@pwdError</div> }
                     @if (pwdSuccess) { <div class="text-success">Wachtwoord gewijzigd.</div> }
+                </div>
+
+                <!-- Crew Management -->
+                <div class="mt-4">
+                    <h5>Crew-management</h5>
+
+                    <!-- Crew list -->
+                    @if (_crewListLoading)
+                    {
+                        <p>Laden...</p>
+                    }
+                    else if (_crewList != null && _crewList.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Naam</th>
+                                        <th>Status</th>
+                                        <th>Acties</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var crew in _crewList)
+                                    {
+                                        <tr>
+                                            <td>@crew.DisplayName</td>
+                                            <td>
+                                                @if (crew.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Actief</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Uitgeschakeld</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-warning" @onclick="() => ShowResetPasswordModal(crew.Id)">Wachtwoord reset</button>
+                                                @if (crew.IsActive)
+                                                {
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => DisableCrew(crew.Id)">Uitschakelen</button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-success" @onclick="() => ReactivateCrew(crew.Id)">Activeren</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p>Geen Crew-accounts aanwezig.</p>
+                    }
+
+                    <!-- Create crew -->
+                    <div class="mt-3">
+                        <h6>Nieuwe Crew toevoegen</h6>
+                        <div class="mb-2">
+                            <label>Accountnaam</label>
+                            <InputText class="form-control" @bind-Value="_newCrewName" disabled="@_crewActionBusy" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Tijdelijk wachtwoord</label>
+                            <InputText class="form-control" type="password" @bind-Value="_newCrewPassword" disabled="@_crewActionBusy" />
+                            <small class="form-text text-muted">Minimaal 8 tekens.</small>
+                        </div>
+                        <button class="btn btn-primary" @onclick="CreateCrew" disabled="@_crewActionBusy">
+                            @(_crewActionBusy ? "Bezig..." : "Crew toevoegen")
+                        </button>
+                        @if (!string.IsNullOrEmpty(_crewError)) { <div class="alert alert-danger mt-2">@_crewError</div> }
+                        @if (!string.IsNullOrEmpty(_crewSuccess)) { <div class="alert alert-success mt-2">@_crewSuccess</div> }
+                    </div>
                 </div>
             </div>
         </div>
@@ -363,37 +442,6 @@
     private bool _vesselSuccess;
     private string? _vesselSuccessMessage;
 
-    protected override async Task OnInitializedAsync()
-    {
-        // Initialize owner profile
-        await LoadOwnerProfile();
-
-        // Laad operationele instellingen
-        _opsModel = await OperationalSettingsService.GetAsync();
-
-        // Laad bootgegevens
-        try
-        {
-            _vesselModel = await VesselProfileService.GetOrCreateVesselProfileAsync();
-            if (_vesselModel != null)
-            {
-                _vesselEditModel = new VesselEditModel
-                {
-                    VesselName = _vesselModel.VesselName ?? string.Empty,
-                    HomePort = _vesselModel.HomePort,
-                    CallSign = _vesselModel.CallSign,
-                    Mmsi = _vesselModel.Mmsi,
-                    CurrentEngineHours = _vesselModel.CurrentEngineHours,
-                    CurrentLogstand = _vesselModel.CurrentLogstand
-                };
-            }
-        }
-        catch (Exception)
-        {
-            _vesselError = "Bootgegevens konden niet worden geladen. Probeer later opnieuw.";
-        }
-    }
-
     private async Task HandleOpsSubmit()
     {
         _opsBusy = true;
@@ -570,6 +618,205 @@
         {
             // Initialize lazy
             _ = LoadOwnerProfile();
+        }
+    }
+
+    // --- Crew Management ---
+
+    private class CrewUser
+    {
+        public Guid Id { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+    }
+
+    private List<CrewUser>? _crewList;
+    private bool _crewListLoading;
+    private string _newCrewName = string.Empty;
+    private string _newCrewPassword = string.Empty;
+    private bool _crewActionBusy;
+    private string? _crewError;
+    private string? _crewSuccess;
+
+    private async Task LoadCrewList()
+    {
+        _crewListLoading = true;
+        try
+        {
+            var crewList = await LocalUserManagementService.GetAllCrewAsync();
+            _crewList = crewList
+                .Select(u => new CrewUser { Id = u.Id, DisplayName = u.DisplayName, IsActive = u.IsActive })
+                .ToList();
+        }
+        catch (Exception)
+        {
+            _crewError = "Crew-lijst kon niet worden geladen.";
+            _crewList = [];
+        }
+        finally
+        {
+            _crewListLoading = false;
+        }
+    }
+
+    private async Task CreateCrew()
+    {
+        _crewError = null;
+        _crewSuccess = null;
+        _crewActionBusy = true;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_newCrewName))
+            {
+                _crewError = "Accountnaam is verplicht.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_newCrewPassword) || _newCrewPassword.Length < 8)
+            {
+                _crewError = "Wachtwoord moet minimaal 8 tekens zijn.";
+                return;
+            }
+
+            var result = await LocalUserManagementService.CreateCrewAsync(_newCrewName, _newCrewPassword);
+
+            if (result.Success)
+            {
+                _crewSuccess = $"Crew '{_newCrewName}' aangemaakt. Het tijdelijke wachtwoord is: {_newCrewPassword}";
+                _newCrewName = string.Empty;
+                _newCrewPassword = string.Empty;
+                await LoadCrewList();
+            }
+            else
+            {
+                _crewError = result.Message ?? "Crew kon niet worden aangemaakt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _crewError = $"Fout: {ex.Message}";
+        }
+        finally
+        {
+            _crewActionBusy = false;
+        }
+    }
+
+    private async Task DisableCrew(Guid crewId)
+    {
+        _crewActionBusy = true;
+        try
+        {
+            var success = await LocalUserManagementService.DisableCrewAsync(crewId);
+            if (success)
+            {
+                await LoadCrewList();
+                _crewSuccess = "Crew uitgeschakeld.";
+            }
+            else
+            {
+                _crewError = "Crew kon niet worden uitgeschakeld.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _crewError = $"Fout: {ex.Message}";
+        }
+        finally
+        {
+            _crewActionBusy = false;
+        }
+    }
+
+    private async Task ReactivateCrew(Guid crewId)
+    {
+        _crewActionBusy = true;
+        try
+        {
+            var success = await LocalUserManagementService.ReactivateCrewAsync(crewId);
+            if (success)
+            {
+                await LoadCrewList();
+                _crewSuccess = "Crew geactiveerd.";
+            }
+            else
+            {
+                _crewError = "Crew kon niet worden geactiveerd.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _crewError = $"Fout: {ex.Message}";
+        }
+        finally
+        {
+            _crewActionBusy = false;
+        }
+    }
+
+    private async Task ShowResetPasswordModal(Guid crewId)
+    {
+        // Simplified: just prompt for new password and reset
+        var newPassword = await Js.InvokeAsync<string>("prompt", "Voer nieuw wachtwoord in (minimaal 8 tekens):");
+
+        if (!string.IsNullOrWhiteSpace(newPassword) && newPassword.Length >= 8)
+        {
+            _crewActionBusy = true;
+            try
+            {
+                var result = await LocalUserManagementService.ResetCrewPasswordAsync(crewId, newPassword);
+                if (result.Success)
+                {
+                    _crewSuccess = $"Wachtwoord gereset. Nieuw wachtwoord: {newPassword}";
+                }
+                else
+                {
+                    _crewError = result.Message ?? "Wachtwoord kon niet worden gereset.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _crewError = $"Fout: {ex.Message}";
+            }
+            finally
+            {
+                _crewActionBusy = false;
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize owner profile
+        await LoadOwnerProfile();
+
+        // Load crew list
+        await LoadCrewList();
+
+        // Laad operationele instellingen
+        _opsModel = await OperationalSettingsService.GetAsync();
+
+        // Laad bootgegevens
+        try
+        {
+            _vesselModel = await VesselProfileService.GetOrCreateVesselProfileAsync();
+            if (_vesselModel != null)
+            {
+                _vesselEditModel = new VesselEditModel
+                {
+                    VesselName = _vesselModel.VesselName ?? string.Empty,
+                    HomePort = _vesselModel.HomePort,
+                    CallSign = _vesselModel.CallSign,
+                    Mmsi = _vesselModel.Mmsi,
+                    CurrentEngineHours = _vesselModel.CurrentEngineHours,
+                    CurrentLogstand = _vesselModel.CurrentLogstand
+                };
+            }
+        }
+        catch (Exception)
+        {
+            _vesselError = "Bootgegevens konden niet worden geladen. Probeer later opnieuw.";
         }
     }
 }

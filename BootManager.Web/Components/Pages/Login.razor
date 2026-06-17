@@ -6,9 +6,11 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
 @using System.Text.Json
+@using BootManager.Application.Authentication.Services
 
 @inject NavigationManager Nav
 @inject IJSRuntime Js
+@inject ILocalUserManagementService UserManagementService
 
 @if (_redirectingAuthenticatedUser)
 {
@@ -32,6 +34,16 @@ else
     <EditForm Model="@_model" OnValidSubmit="HandleLogin">
         <DataAnnotationsValidator />
         <div class="mb-2">
+            <label class="form-label">Account</label>
+            <select class="form-control" @onchange="HandleUserChanged" disabled="@_busy">
+                <option value="">-- Selecteer een account --</option>
+                @foreach (var user in _users)
+                {
+                    <option value="@user.Id">@user.DisplayName</option>
+                }
+            </select>
+        </div>
+        <div class="mb-2">
             <label class="form-label">Wachtwoord</label>
             <InputText class="form-control" type="password" @bind-Value="_model.Password" />
         </div>
@@ -40,7 +52,7 @@ else
             <label class="form-check-label">Ingelogd blijven</label>
         </div>
 
-        <button class="btn btn-primary" type="submit" disabled="@_busy">@(_busy ? "Bezig..." : "Inloggen")</button>
+        <button class="btn btn-primary" type="submit" disabled="@(_busy || _model.UserId == Guid.Empty)">@(_busy ? "Bezig..." : "Inloggen")</button>
     </EditForm>
 }
 
@@ -53,10 +65,19 @@ else
     private string? _error;
     private string? _targetDescription;
     private IJSObjectReference? _authModule;
+    private List<BootManager.Application.Authentication.DTOs.ActiveUsersListDto> _users = [];
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "returnUrl")]
     public string? ReturnUrl { get; set; }
+
+    private async Task HandleUserChanged(ChangeEventArgs e)
+    {
+        if (e.Value is string userIdStr && Guid.TryParse(userIdStr, out var userId))
+        {
+            _model.UserId = userId;
+        }
+    }
 
     /// <summary>
     /// Computes a friendly description of the return target whenever navigation parameters change.
@@ -75,6 +96,16 @@ else
         {
             _redirectingAuthenticatedUser = true;
             Nav.NavigateTo("/dashboard", replace: true);
+            return;
+        }
+
+        try
+        {
+            _users = await UserManagementService.GetActiveUsersAsync();
+        }
+        catch
+        {
+            _error = "Kon lijst met accounts niet laden.";
         }
     }
 
@@ -85,18 +116,31 @@ else
     {
         if (firstRender)
         {
-            _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/authClient.js");
+            try
+            {
+                _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "/js/authClient.js");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException)
+            {
+                _error = "Loginmodule kon niet worden geladen. Ververs de pagina.";
+                StateHasChanged();
+            }
         }
     }
 
     /// <summary>
     /// Disposes the imported JavaScript module when the component is torn down.
     /// </summary>
+    /// <summary>
+    /// Verwijdert de JS-module. JSDisconnectedException wordt genegeerd: het circuit is al weg.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         if (_authModule is not null)
         {
-            await _authModule.DisposeAsync();
+            try { await _authModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
         }
     }
 

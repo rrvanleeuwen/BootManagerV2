@@ -15,7 +15,7 @@ namespace BootManager.Web.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Owner")]
+[Authorize(Roles = "Owner,Crew")]
 public class LogbookAttachmentsController : ControllerBase
 {
     private readonly ILogbookAttachmentService _attachmentService;

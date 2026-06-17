@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-09.
+Updated: 2026-06-17.
 
 ## Rollen
 
@@ -12,9 +12,9 @@ Updated: 2026-06-09.
 - Basisbranch: `master`.
 - Actieve branch: `feature/pilot-auth-01-local-users`.
 - De featurebranch volgt `origin/feature/pilot-auth-01-local-users`.
-- De worktree bevat de nog niet gecommitte applicatiecode van Claude voor
-  `PILOT-AUTH-01`; deze wijzigingen niet resetten, overschrijven of naar `master`
-  verplaatsen.
+- De worktree bevat de afgeronde maar nog niet gecommitte applicatiecode en
+  documentatie voor `PILOT-AUTH-01`; deze wijzigingen niet resetten, overschrijven
+  of naar `master` verplaatsen.
 
 ## Actieve release
 
@@ -23,36 +23,30 @@ gebruik op Linde door Roelof en Carla:
 
 - bron: `.docs/releases/holiday-pilot-2026.md`;
 - `PILOT-SCAN-01` is Done en op de Raspberry Pi en beide Samsung-telefoons geaccepteerd;
-- `PILOT-AUTH-01` is goedgekeurd en wordt door Claude geïmplementeerd;
-- de bekende reviewblockers staan in
-  `.codex/PILOT-AUTH-01-review-fix-2-packet.md` en zijn nog niet opnieuw geverifieerd.
+- `PILOT-AUTH-01` is op 2026-06-17 technisch gecontroleerd en handmatig
+  geaccepteerd;
+- tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
+  toestaan in de Crew-PCR-gate en open Blazor-sessies periodiek valideren tegen
+  `CredentialVersion`.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Claude werkt aan de tweede reviewherstelronde vanuit
-`.codex/PILOT-AUTH-01-review-fix-2-packet.md`.
+1. controleer de finale diff van `PILOT-AUTH-01`;
+2. commit en push de featurebranch;
+3. open of actualiseer de PR;
+4. na merge is `PILOT-LOC-01` de eerstvolgende pilotstory.
 
-Wanneer Claude klaar meldt:
+Laatste verificatie op 2026-06-17:
 
-1. controleer dat de branch `feature/pilot-auth-01-local-users` actief is;
-2. review de volledige on-gecommitte diff tegen het oorspronkelijke packet en beide
-   review-fix-packets;
-3. voer `git diff --check`, volledige unit-tests en solution-build sequentieel uit;
-4. test de EF-migratie op een tijdelijke kopie van een bestaande SQLite-database;
-5. controleer minimaal Crew-wachtwoordgate, Owner/Crew-routeautorisatie,
-   sessievernieuwing en beheer van actieve én inactieve Crew;
-6. voer pas daarna `dotnet run` uit op de lokale database wanneer migratie en review
-   geen blocker tonen.
-
-De vorige onafhankelijke review vond onder meer een verouderde EF-modelsnapshot,
-Owner-only dagelijkse routes, ontbrekende Crew-wachtwoordgate, onbruikbare
-cookievernieuwing en een onvolledige Crew-beheerlijst. De build slaagde met 13 bestaande
-waarschuwingen; unit-tests waren 136/137 met alleen de bekende recoverybaseline rood.
-De tijdelijke migratieproef faalde met `PendingModelChangesWarning`. Deze resultaten
-moeten na Claude's herstel opnieuw onafhankelijk worden vastgesteld.
+- handmatige acceptatie met Owner en Carla geslaagd;
+- unit-tests: 210/211, alleen de bekende
+  `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` baseline rood;
+- integratietests: 12/12;
+- `dotnet build BootManager.sln --no-restore`: geslaagd met 0 warnings en 0 errors;
+- `git diff --check`: geslaagd met alleen CRLF-waarschuwingen.
 
 ## Documentatie
 
