@@ -34,6 +34,8 @@ Dependencies:
 @code {
     [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
     private CancellationTokenSource? _evaluationCancellationTokenSource;
+    private PeriodicTimer? _credentialTimer;
+    private CancellationTokenSource? _credentialTimerCancellation;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -41,6 +43,8 @@ Dependencies:
 
         // Subscribe to location changes for all future navigations
         Nav.LocationChanged += OnLocationChanged;
+        _credentialTimerCancellation = new CancellationTokenSource();
+        _ = RunCredentialTimerAsync(_credentialTimerCancellation.Token);
 
         // Evaluate gate on initial render
         await EvaluateLatestGateAsync();
@@ -92,20 +96,57 @@ Dependencies:
             return;
         }
 
+        var relative = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+        if (!await CurrentCredentialIsValidAsync(auth!.User, cancellationToken))
+        {
+            Nav.NavigateTo("/login", forceLoad: true, replace: true);
+            return;
+        }
+
+        var userRole = auth?.User?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var isCrew = userRole == "Crew";
+
+        // Whitelist of routes that are always allowed
+        var allowAlways = new[] { "login", "logout", "account", "health" };
+        var isAlwaysAllowed = allowAlways.Any(r => string.Equals(relative, r, StringComparison.OrdinalIgnoreCase));
+
+        if (isAlwaysAllowed)
+            return;
+
+        // Crew users: enforce password change requirement
+        if (isCrew)
+        {
+            var passwordChangeRequired = auth?.User?.FindFirst("bm.password_change_required")?.Value == "true";
+            if (passwordChangeRequired && !string.Equals(relative, "account", StringComparison.OrdinalIgnoreCase))
+            {
+                // Crew must change password first; redirect to account
+                Nav.NavigateTo("/account", replace: true);
+            }
+            else if (!passwordChangeRequired && string.Equals(relative, "account", StringComparison.OrdinalIgnoreCase))
+            {
+                // Crew is done with password change but still on /account; redirect to logbook
+                Nav.NavigateTo("/logbook", replace: true);
+            }
+            return;
+        }
+
+        // Owner user: apply onboarding gate
+        var userIdClaim = auth?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = Guid.TryParse(userIdClaim, out var id) ? id : (Guid?)null;
+
         await using var scope = ScopeFactory.CreateAsyncScope();
         var setupStateService = scope.ServiceProvider.GetRequiredService<
             BootManager.Application.OwnerRegistration.Services.IOwnerSetupStateService>();
-        var setupState = await setupStateService.GetSetupStateAsync(cancellationToken);
-        var relative = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+        var setupState = await setupStateService.GetSetupStateAsync(userId, cancellationToken);
 
         // Whitelist of routes that are allowed before setup is complete
-        var allowBeforeSetup = new[] { "login", "logout", "onboarding", "health" };
+        var allowBeforeSetup = new[] { "onboarding" };
         var isWhitelisted = allowBeforeSetup.Any(r => string.Equals(relative, r, StringComparison.OrdinalIgnoreCase));
 
         if (setupState.SetupRequired)
         {
             // User has setup requirements
-            if (!string.Equals(relative, "onboarding", StringComparison.OrdinalIgnoreCase) && !isWhitelisted)
+            if (!isWhitelisted)
             {
                 // User is on a protected route; redirect to onboarding
                 Nav.NavigateTo("/onboarding", replace: true);
@@ -121,10 +162,54 @@ Dependencies:
         }
     }
 
+    private async Task<bool> CurrentCredentialIsValidAsync(
+        System.Security.Claims.ClaimsPrincipal user,
+        CancellationToken cancellationToken)
+    {
+        var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var credentialVersionClaim = user.FindFirst("bm.credential_version")?.Value;
+        if (!Guid.TryParse(userIdClaim, out var userId) ||
+            !int.TryParse(credentialVersionClaim, out var credentialVersion))
+        {
+            return false;
+        }
+
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<
+            BootManager.Core.Interfaces.IRepository<BootManager.Core.Entities.LocalUser>>();
+        var localUser = await users.GetByIdAsync(userId, cancellationToken);
+        return localUser is not null &&
+               localUser.IsActive &&
+               localUser.CredentialVersion == credentialVersion;
+    }
+
+    private async Task RunCredentialTimerAsync(CancellationToken cancellationToken)
+    {
+        _credentialTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        try
+        {
+            while (await _credentialTimer.WaitForNextTickAsync(cancellationToken))
+            {
+                await InvokeAsync(EvaluateLatestGateAsync);
+            }
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
         // Unsubscribe from LocationChanged to prevent memory leaks
         Nav.LocationChanged -= OnLocationChanged;
+
+        if (_credentialTimerCancellation != null)
+        {
+            await _credentialTimerCancellation.CancelAsync();
+            _credentialTimerCancellation.Dispose();
+        }
+        _credentialTimer?.Dispose();
 
         if (_evaluationCancellationTokenSource != null)
         {

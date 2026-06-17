@@ -1,17 +1,29 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @implements IAsyncDisposable
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Routing
 
+@using Microsoft.Extensions.Logging
 @inject NavigationManager Nav
 @inject IJSRuntime Js
+@inject ILogger<MainLayout> Logger
 
 <!-- SB Admin 2 theme and FontAwesome -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin-2@4.1.4/css/sb-admin-2.min.css" rel="stylesheet" />
 <link href="/css/site.css" rel="stylesheet" />
+
+@if (!string.IsNullOrEmpty(_logoutError))
+{
+    <div class="alert alert-danger" style="position: fixed; top: 4.5rem; right: 1rem; z-index: 1200; min-width: 250px;" role="alert">
+        @_logoutError
+        <button type="button" class="close ml-2" @onclick="@(() => _logoutError = null)" aria-label="Sluiten">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
 
 <div class="navbar navbar-expand-lg navbar-light bg-white topbar mb-4 static-top shadow site-header">
     <div class="container-fluid">
@@ -23,28 +35,36 @@
         <NavMenu />
 
         <ul class="navbar-nav ml-auto">
-            <AuthorizeView>
-                <Authorized>
-                    <li class="nav-item">
-                        <button class="btn btn-link nav-link" @onclick="Logout" disabled="@_logoutBusy" title="Uitloggen">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span class="d-none d-lg-inline"> Uitloggen</span>
-                        </button>
-                    </li>
-                </Authorized>
-            </AuthorizeView>
-            <li class="nav-item dropdown no-arrow">
+            <li class="nav-item dropdown no-arrow" style="position: relative;">
                 <AuthorizeView>
                     <Authorized Context="authState">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <button class="btn btn-link nav-link d-flex align-items-center"
+                                @onclick="ToggleMenu"
+                                id="userDropdown"
+                                aria-haspopup="true"
+                                aria-expanded="@_menuOpen.ToString().ToLower()"
+                                title="Accountmenu">
                             <span class="mr-2 d-none d-lg-inline text-gray-600 small">Ingelogd als @GetDisplayName(authState)</span>
                             <i class="fas fa-user-circle fa-lg"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-                            <a class="dropdown-item" href="/settings">Instellingen</a>
-                            <div class="dropdown-divider"></div>
-                            <button class="dropdown-item" @onclick="Logout" disabled="@_logoutBusy">@(_logoutBusy ? "Uitloggen..." : "Uitloggen")</button>
-                        </div>
+                        </button>
+                        @if (_menuOpen)
+                        {
+                            <!-- Transparante overlay: klik buiten dropdown sluit hem -->
+                            <div style="position: fixed; inset: 0; z-index: 1040;" @onclick="CloseMenu" aria-hidden="true"></div>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in show"
+                                 style="z-index: 1050; display: block;"
+                                 aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="/account" @onclick="CloseMenu">Mijn account</a>
+                                <AuthorizeView Roles="Owner">
+                                    <Authorized>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="/settings" @onclick="CloseMenu">Instellingen</a>
+                                    </Authorized>
+                                </AuthorizeView>
+                                <div class="dropdown-divider"></div>
+                                <button class="dropdown-item" @onclick="Logout" disabled="@_logoutBusy">@(_logoutBusy ? "Uitloggen..." : "Uitloggen")</button>
+                            </div>
+                        }
                     </Authorized>
                     <NotAuthorized>
                         <a class="nav-link" href="/login">Inloggen</a>
@@ -82,15 +102,32 @@
     private bool _menuOpen;
 
     /// <summary>
-    /// Imports the shared auth JavaScript helper so the layout can trigger logout via fetch.
+    /// Importeert de auth-JavaScript-helper en stelt auto-collapse in voor het mobiele menu.
     /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/authClient.js");
-            // Setup auto-collapse for mobile menu so clicking outside or on items closes it
-            await Js.InvokeVoidAsync("setupAutoCollapse", "topNavbarSupportedContent", null);
+            try
+            {
+                _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "/js/authClient.js");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException ex)
+            {
+                _logoutError = "Navigatiemodule kon niet worden geladen. Ververs de pagina.";
+                Logger.LogError(ex, "MainLayout: module-import (/js/authClient.js) mislukt.");
+                StateHasChanged();
+            }
+            try
+            {
+                await Js.InvokeVoidAsync("setupAutoCollapse", "topNavbarSupportedContent", null);
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException ex)
+            {
+                Logger.LogWarning(ex, "MainLayout: setupAutoCollapse mislukt; navbar-animatie niet beschikbaar.");
+            }
         }
     }
 
@@ -105,7 +142,7 @@
     }
 
     /// <summary>
-    /// Returns the display name shown in the header, defaulting to "Owner" if none is present.
+    /// Geeft de displaynaam terug die in de header wordt getoond.
     /// </summary>
     private string GetDisplayName(AuthenticationState authState)
     {
@@ -113,10 +150,13 @@
     }
 
     /// <summary>
-    /// Calls the logout endpoint via the JS module so the cookie gets cleared in the browser context, then navigates to login.
+    /// Roept het logout-endpoint aan via de JS-helper zodat de cookie in de browsersessie wordt gewist,
+    /// sluit daarna de dropdown en navigeert naar /login.
     /// </summary>
     private async Task Logout()
     {
+        _menuOpen = false;
+
         if (_authModule is null)
         {
             _logoutError = "Actie mislukt. Probeer opnieuw.";
@@ -148,13 +188,14 @@
     }
 
     /// <summary>
-    /// Disposes the imported JS module for cleanliness.
+    /// Ruimt de geïmporteerde JS-module op. JSDisconnectedException wordt genegeerd: het circuit is al weg.
     /// </summary>
     public async ValueTask DisposeAsync()
     {
         if (_authModule is not null)
         {
-            await _authModule.DisposeAsync();
+            try { await _authModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
         }
     }
 

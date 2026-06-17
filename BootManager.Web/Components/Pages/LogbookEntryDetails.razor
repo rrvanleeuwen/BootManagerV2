@@ -1,5 +1,5 @@
 @page "/logbook/entries/{EntryId:int}/details"
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
 @using BootManager.Web.Helpers

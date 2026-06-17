@@ -7,7 +7,7 @@ public class BootManagerDbContext : DbContext
 {
     public BootManagerDbContext(DbContextOptions<BootManagerDbContext> options) : base(options) { }
 
-    public DbSet<OwnerProfile> OwnerProfiles => Set<OwnerProfile>();
+    public DbSet<LocalUser> LocalUsers => Set<LocalUser>();
 
     /// <summary>
     /// DbSet voor het bootprofiel (singleton per installatie).
@@ -86,7 +86,7 @@ public class BootManagerDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfiguration(new Configurations.OwnerProfileConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.LocalUserConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.VesselProfileConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.NetworkMessageConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.BatteryMeasurementConfiguration());

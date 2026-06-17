@@ -1,0 +1,164 @@
+@page "/account"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@implements IAsyncDisposable
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.Security.Claims
+@using BootManager.Application.Authentication.DTOs
+
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+
+<h3>Account</h3>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@if (!string.IsNullOrEmpty(_success))
+{
+    <div class="alert alert-success">@_success</div>
+}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">Wachtwoord wijzigen</h5>
+    </div>
+    <div class="card-body">
+        @* EditContext-binding zonder OnValidSubmit: de browser submit nooit native naar /account.
+           De knop is type="button" zodat Enter of een circuit-uitval geen POST /account kan veroorzaken. *@
+        <EditForm EditContext="@_editContext">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label">Huidig wachtwoord</label>
+                <InputText type="password" class="form-control" @bind-Value="_changePasswordModel.CurrentPassword" />
+                <ValidationMessage For="@(() => _changePasswordModel.CurrentPassword)" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Nieuw wachtwoord</label>
+                <InputText type="password" class="form-control" @bind-Value="_changePasswordModel.NewPassword" />
+                <ValidationMessage For="@(() => _changePasswordModel.NewPassword)" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Bevestig nieuw wachtwoord</label>
+                <InputText type="password" class="form-control" @bind-Value="_changePasswordModel.ConfirmNewPassword" />
+                <ValidationMessage For="@(() => _changePasswordModel.ConfirmNewPassword)" />
+            </div>
+            <button type="button" class="btn btn-primary" @onclick="HandleChangePassword" disabled="@_busy">
+                @(_busy ? "Bezig..." : "Wachtwoord wijzigen")
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private ChangePasswordDto _changePasswordModel = new();
+    private EditContext _editContext = default!;
+    private bool _busy;
+    private string? _error;
+    private string? _success;
+    private IJSObjectReference? _authModule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(_changePasswordModel);
+
+        if (AuthStateTask is null) return;
+        var authState = await AuthStateTask;
+        if (authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value is null)
+            _error = "Kan gebruiker niet identificeren.";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _authModule = await Js.InvokeAsync<IJSObjectReference>("import", "/js/authClient.js");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException)
+            {
+                _error = "Authenticatiemodule kon niet worden geladen. Ververs de pagina.";
+                StateHasChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Verwijdert de JS-module. JSDisconnectedException wordt genegeerd: het circuit is al weg.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_authModule is not null)
+        {
+            try { await _authModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+    }
+
+    private async Task HandleChangePassword()
+    {
+        // Valideer client-side voordat de request verstuurd wordt
+        if (!_editContext.Validate()) return;
+
+        try
+        {
+            _busy = true;
+            _error = null;
+            _success = null;
+
+            if (_authModule is null)
+            {
+                _error = "Authenticatiemodule niet geladen. Ververs de pagina.";
+                return;
+            }
+
+            var response = await _authModule.InvokeAsync<FetchResult>("postJson", "/auth/change-password", _changePasswordModel);
+
+            if (response.Ok)
+            {
+                _success = "Wachtwoord succesvol gewijzigd.";
+                _changePasswordModel = new();
+                _editContext = new EditContext(_changePasswordModel);
+                await Task.Delay(800);
+                // forceLoad: true zodat de browser het vernieuwde cookie laadt en
+                // het circuit een nieuwe auth-state krijgt (PCR=false).
+                Nav.NavigateTo("/logbook", forceLoad: true);
+            }
+            else
+            {
+                var errorMsg = "Wachtwoordwijziging mislukt.";
+                try
+                {
+                    var json = System.Text.Json.JsonSerializer.Deserialize<
+                        System.Collections.Generic.Dictionary<string, string>>(response.Body ?? "");
+                    if (json?.TryGetValue("message", out var msg) == true)
+                        errorMsg = msg;
+                }
+                catch { }
+                _error = errorMsg;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Fout: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed class FetchResult
+    {
+        public bool Ok { get; set; }
+        public int Status { get; set; }
+        public string? Body { get; set; }
+    }
+}

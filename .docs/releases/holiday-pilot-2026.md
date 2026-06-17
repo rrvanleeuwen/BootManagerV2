@@ -134,7 +134,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 ## Prioriteitsvolgorde
 
 1. **PILOT-SCAN-01** — **Done** — Camera-, QR- en barcode-proof-of-concept op de telefoons.
-2. **PILOT-AUTH-01** — **Goedgekeurd** — Owner/Crew-model en eigen login voor Carla; klaar voor implementatie.
+2. **PILOT-AUTH-01** — **Done** — Owner/Crew-model en eigen login voor Carla.
 3. **PILOT-LOC-01** — **Gepland** — Opslaggebieden en opslaglocaties.
 4. **PILOT-LOC-02** — **Gepland** — QR-token genereren, koppelen en locatie openen.
 5. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
@@ -154,13 +154,13 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-AUTH-01` — goedgekeurd en klaar voor implementatie door Claude Code.
+**Eerstvolgende story:** `PILOT-LOC-01` — opslaggebieden en opslaglocaties.
 
 ## Uitgewerkte stories
 
 ### PILOT-AUTH-01 — Lokale Owner- en Crew-accounts
 
-**Status:** Goedgekeurd op 2026-06-09; implementation packet gereed.
+**Status:** Done op 2026-06-17; technisch gecontroleerd en handmatig geaccepteerd.
 
 **Als** Owner<br>
 **wil ik** Carla een eigen lokaal Crew-account geven<br>
@@ -216,11 +216,21 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 
 **Legacy-impact**
 
-- `US1.3 Gebruikers aanmaken en rollen toewijzen` wordt na implementatie gedeeltelijk afgedekt: Owner kan Crew aanmaken met een vaste rol.
-- `US1.4 Inloggen als bestaande gebruiker` wordt na implementatie afgedekt voor lokale Owner- en Crew-accounts.
+- `US1.3 Gebruikers aanmaken en rollen toewijzen` is gedeeltelijk afgedekt: Owner kan Crew aanmaken met een vaste rol.
+- `US1.4 Inloggen als bestaande gebruiker` is afgedekt voor lokale Owner- en Crew-accounts.
 - `US1.7` en `US8.4` blijven grotendeels geparkeerd: er komt geen algemene rolwijziging.
 - `US1.8` blijft geparkeerd: uitschakelen vervangt voor de pilot definitief verwijderen.
-- `US8.7` wordt na implementatie gedeeltelijk afgedekt: toevoegen en uitschakelen, zonder verwijderen.
+- `US8.7` is gedeeltelijk afgedekt: toevoegen, wachtwoord resetten, uitschakelen en reactiveren, zonder verwijderen.
+
+**Implementatiestatus 2026-06-17**
+
+- Bestaande Owner-gegevens migreren naar het uniforme lokale gebruikersmodel met behoud van wachtwoord, profielgegevens en onboardingstatus.
+- Owner kan lokale Crew aanmaken, wachtwoorden resetten, Crew uitschakelen en opnieuw activeren.
+- Crew moet bij tijdelijk of gereset wachtwoord eerst via `Mijn account` een nieuw wachtwoord kiezen.
+- Crew heeft toegang tot Dashboard, Scannen en Logboek; Instellingen en beheer blijven Owner-only.
+- Wachtwoordreset en uitschakelen trekken bestaande cookies, tokens en open Blazor-sessies in via credentialversiecontrole.
+- Handmatige acceptatie is lokaal uitgevoerd met Owner en Carla: onboarding, Crew-aanmaak, wachtwoordwijziging, autorisatie, reset, uitschakelen, reactiveren en Owner-eindcontrole zijn geslaagd.
+- Eindchecks: unit-tests 210/211 met alleen de bekende owner-recoverybaseline rood; integratietests 12/12; `dotnet build BootManager.sln --no-restore`; `git diff --check`.
 
 **Handmatige acceptatietest**
 

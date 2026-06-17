@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-09.
+Updated: 2026-06-17.
 
 ## Rollen
 
@@ -10,8 +10,11 @@ Updated: 2026-06-09.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Er is geen actieve featurebranch.
-- `master` is gelijk aan `origin/master`; de worktree is schoon.
+- Actieve branch: `feature/pilot-auth-01-local-users`.
+- De featurebranch volgt `origin/feature/pilot-auth-01-local-users`.
+- De worktree bevat de afgeronde maar nog niet gecommitte applicatiecode en
+  documentatie voor `PILOT-AUTH-01`; deze wijzigingen niet resetten, overschrijven
+  of naar `master` verplaatsen.
 
 ## Actieve release
 
@@ -20,17 +23,30 @@ gebruik op Linde door Roelof en Carla:
 
 - bron: `.docs/releases/holiday-pilot-2026.md`;
 - `PILOT-SCAN-01` is Done en op de Raspberry Pi en beide Samsung-telefoons geaccepteerd;
-- `PILOT-AUTH-01` is goedgekeurd en het implementation packet is gereed;
-- er zijn momenteel geen bekende blockers.
+- `PILOT-AUTH-01` is op 2026-06-17 technisch gecontroleerd en handmatig
+  geaccepteerd;
+- tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
+  toestaan in de Crew-PCR-gate en open Blazor-sessies periodiek valideren tegen
+  `CredentialVersion`.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Laat Claude Code `PILOT-AUTH-01` implementeren vanuit
-`.codex/PILOT-AUTH-01-implementation-packet.md`. Codex reviewt daarna de gerichte diff,
-build, tests, migratie en autorisatie voordat de handmatige acceptatietest start.
+1. controleer de finale diff van `PILOT-AUTH-01`;
+2. commit en push de featurebranch;
+3. open of actualiseer de PR;
+4. na merge is `PILOT-LOC-01` de eerstvolgende pilotstory.
+
+Laatste verificatie op 2026-06-17:
+
+- handmatige acceptatie met Owner en Carla geslaagd;
+- unit-tests: 210/211, alleen de bekende
+  `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` baseline rood;
+- integratietests: 12/12;
+- `dotnet build BootManager.sln --no-restore`: geslaagd met 0 warnings en 0 errors;
+- `git diff --check`: geslaagd met alleen CRLF-waarschuwingen.
 
 ## Documentatie
 

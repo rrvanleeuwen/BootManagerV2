@@ -1,199 +1,209 @@
 using BootManager.Application.OwnerRegistration.Services;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 using BootManager.Core.ValueObjects;
-using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
-using System.Text.Json;
 
 namespace BootManager.UnitTests.OwnerRegistration;
 
 public class OwnerSetupStateServiceTests
 {
     [Fact]
-    public async Task GetSetupStateAsync_ReturnsHasOwnerFalse_WhenNoDatabaseRecord()
+    public async Task GetSetupStateAsync_ReturnsHasOwnerFalse_WhenNullUserId()
     {
-        var repo = FakeOwnerRepository.Empty();
+        var repo = FakeLocalUserRepository.Empty();
         var sut = new OwnerSetupStateService(repo);
 
-        var result = await sut.GetSetupStateAsync();
+        var result = await sut.GetSetupStateAsync(null);
 
         Assert.False(result.HasOwner);
+        Assert.False(result.PasswordChangeRequired);
+        Assert.False(result.OnboardingCompleted);
+    }
+
+    [Fact]
+    public async Task GetSetupStateAsync_ReturnsHasOwnerFalse_WhenUserNotFound()
+    {
+        var repo = FakeLocalUserRepository.Empty();
+        var sut = new OwnerSetupStateService(repo);
+
+        var result = await sut.GetSetupStateAsync(Guid.NewGuid());
+
+        Assert.False(result.HasOwner);
+    }
+
+    [Fact]
+    public async Task GetSetupStateAsync_ReturnsSetupRequired_WhenOwnerPasswordChangeRequired()
+    {
+        var owner = CreateLocalUser(displayName: "Owner", role: LocalUserRole.Owner, passwordChangeRequired: true, onboardingCompleted: true);
+        var repo = FakeLocalUserRepository.WithUser(owner);
+        var sut = new OwnerSetupStateService(repo);
+
+        var result = await sut.GetSetupStateAsync(owner.Id);
+
+        Assert.True(result.HasOwner);
+        Assert.True(result.PasswordChangeRequired);
+        Assert.True(result.OnboardingCompleted);
+        Assert.True(result.SetupRequired);
+    }
+
+    [Fact]
+    public async Task GetSetupStateAsync_ReturnsSetupRequired_WhenOwnerOnboardingNotCompleted()
+    {
+        var owner = CreateLocalUser(displayName: "Owner", role: LocalUserRole.Owner, passwordChangeRequired: false, onboardingCompleted: false);
+        var repo = FakeLocalUserRepository.WithUser(owner);
+        var sut = new OwnerSetupStateService(repo);
+
+        var result = await sut.GetSetupStateAsync(owner.Id);
+
+        Assert.True(result.HasOwner);
         Assert.False(result.PasswordChangeRequired);
         Assert.False(result.OnboardingCompleted);
         Assert.True(result.SetupRequired);
     }
 
     [Fact]
-    public async Task GetSetupStateAsync_ReturnsSetupRequired_WhenPasswordChangeRequired()
+    public async Task GetSetupStateAsync_ReturnsSetupNotRequired_WhenOwnerComplete()
     {
-        var owner = CreateOwner(passwordChangeRequired: true, onboardingCompleted: true);
-        var repo = FakeOwnerRepository.WithOwner(owner);
+        var owner = CreateLocalUser(displayName: "Owner", role: LocalUserRole.Owner, passwordChangeRequired: false, onboardingCompleted: true);
+        var repo = FakeLocalUserRepository.WithUser(owner);
         var sut = new OwnerSetupStateService(repo);
 
-        var result = await sut.GetSetupStateAsync();
+        var result = await sut.GetSetupStateAsync(owner.Id);
+
+        Assert.True(result.HasOwner);
+        Assert.False(result.PasswordChangeRequired);
+        Assert.True(result.OnboardingCompleted);
+        Assert.False(result.SetupRequired);
+    }
+
+    [Fact]
+    public async Task GetSetupStateAsync_CrewWithPasswordChangeRequired()
+    {
+        var crew = CreateLocalUser(displayName: "Crew", role: LocalUserRole.Crew, passwordChangeRequired: true, onboardingCompleted: true);
+        var repo = FakeLocalUserRepository.WithUser(crew);
+        var sut = new OwnerSetupStateService(repo);
+
+        var result = await sut.GetSetupStateAsync(crew.Id);
 
         Assert.True(result.HasOwner);
         Assert.True(result.PasswordChangeRequired);
-        Assert.True(result.OnboardingCompleted);
-        Assert.True(result.SetupRequired); // true because PasswordChangeRequired=true
+        Assert.True(result.SetupRequired);
     }
 
     [Fact]
-    public async Task GetSetupStateAsync_ReturnsSetupRequired_WhenOnboardingNotCompleted()
+    public async Task GetSetupStateAsync_CrewWithoutPasswordChange()
     {
-        var owner = CreateOwner(passwordChangeRequired: false, onboardingCompleted: false);
-        var repo = FakeOwnerRepository.WithOwner(owner);
+        var crew = CreateLocalUser(displayName: "Crew", role: LocalUserRole.Crew, passwordChangeRequired: false, onboardingCompleted: true);
+        var repo = FakeLocalUserRepository.WithUser(crew);
         var sut = new OwnerSetupStateService(repo);
 
-        var result = await sut.GetSetupStateAsync();
+        var result = await sut.GetSetupStateAsync(crew.Id);
 
         Assert.True(result.HasOwner);
         Assert.False(result.PasswordChangeRequired);
-        Assert.False(result.OnboardingCompleted);
-        Assert.True(result.SetupRequired); // true because OnboardingCompleted=false
+        Assert.False(result.SetupRequired);
     }
 
-    [Fact]
-    public async Task GetSetupStateAsync_ReturnsSetupNotRequired_WhenBothFlagsTrue()
-    {
-        var owner = CreateOwner(passwordChangeRequired: false, onboardingCompleted: true);
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var sut = new OwnerSetupStateService(repo);
-
-        var result = await sut.GetSetupStateAsync();
-
-        Assert.True(result.HasOwner);
-        Assert.False(result.PasswordChangeRequired);
-        Assert.True(result.OnboardingCompleted);
-        Assert.False(result.SetupRequired); // false because both flags are in "done" state
-    }
-
-    [Fact]
-    public async Task GetSetupStateAsync_ReturnsSetupRequired_WhenBothFlagsFalse()
-    {
-        var owner = CreateOwner(passwordChangeRequired: false, onboardingCompleted: false);
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var sut = new OwnerSetupStateService(repo);
-
-        var result = await sut.GetSetupStateAsync();
-
-        Assert.True(result.HasOwner);
-        Assert.False(result.PasswordChangeRequired);
-        Assert.False(result.OnboardingCompleted);
-        Assert.True(result.SetupRequired); // true because OnboardingCompleted=false
-    }
-
-    // Helpers
-    private static OwnerProfile CreateOwner(bool passwordChangeRequired, bool onboardingCompleted)
+    private static LocalUser CreateLocalUser(
+        string displayName,
+        LocalUserRole role,
+        bool passwordChangeRequired,
+        bool onboardingCompleted)
     {
         var hasher = new FakePasswordHasher();
-        var encryption = new FakeEncryptionService();
+        var hash = hasher.Hash("DefaultPassword123!");
 
-        var payload = JsonSerializer.SerializeToUtf8Bytes(new { Name = "Test Owner", Email = "test@example.com" });
-        var encrypted = encryption.Encrypt("Test Owner");
-
-        return OwnerProfile.Create(
-            passwordHash: hasher.Hash("Password123!").Hash,
-            passwordSalt: "salt",
-            hashAlgorithm: "fake",
-            encryptedProfilePayload: encrypted,
+        var user = LocalUser.Create(
+            displayName: displayName,
+            role: role,
+            passwordHash: hash.Hash,
+            passwordSalt: hash.Salt,
+            hashAlgorithm: hash.Algorithm,
+            encryptedProfilePayload: Array.Empty<byte>(),
             encryptionVersion: 1,
             createdUtc: DateTime.UtcNow,
             passwordChangeRequired: passwordChangeRequired,
-            onboardingCompleted: onboardingCompleted
-        );
+            onboardingCompleted: onboardingCompleted);
+
+        return user;
     }
 
-    // Fake Implementations
-    private class FakeOwnerRepository : IRepository<OwnerProfile>
+    private sealed class FakeLocalUserRepository : IRepository<LocalUser>
     {
-        private List<OwnerProfile> _owners = [];
+        private readonly List<LocalUser> _users = [];
 
-        public IReadOnlyList<OwnerProfile> Owners => _owners.AsReadOnly();
+        public static FakeLocalUserRepository Empty() => new();
 
-        public static FakeOwnerRepository Empty() => new();
-
-        public static FakeOwnerRepository WithOwner(OwnerProfile owner)
+        public static FakeLocalUserRepository WithUser(LocalUser user)
         {
-            var repo = new FakeOwnerRepository();
-            repo._owners.Add(owner);
+            var repo = new FakeLocalUserRepository();
+            repo._users.Add(user);
             return repo;
         }
 
-        public Task<OwnerProfile?> GetByIdAsync(Guid id, CancellationToken ct = default)
-            => Task.FromResult(_owners.FirstOrDefault(o => o.Id == id));
+        public Task<LocalUser?> GetByIdAsync(Guid id, CancellationToken ct = default)
+            => Task.FromResult(_users.FirstOrDefault(u => u.Id == id));
 
-        public Task<OwnerProfile?> SingleOrDefaultAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<LocalUser?> SingleOrDefaultAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.FirstOrDefault());
+                return Task.FromResult(_users.FirstOrDefault());
 
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.FirstOrDefault(compiled));
+            return Task.FromResult(_users.FirstOrDefault(compiled));
         }
 
-        public Task<IReadOnlyList<OwnerProfile>> ListAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<IReadOnlyList<LocalUser>> ListAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult((IReadOnlyList<OwnerProfile>)_owners.AsReadOnly());
+                return Task.FromResult((IReadOnlyList<LocalUser>)_users.AsReadOnly());
 
             var compiled = predicate.Compile();
-            return Task.FromResult((IReadOnlyList<OwnerProfile>)_owners.Where(compiled).ToList().AsReadOnly());
+            return Task.FromResult((IReadOnlyList<LocalUser>)_users.Where(compiled).ToList().AsReadOnly());
         }
 
-        public Task<bool> AnyAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<bool> AnyAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.Any());
+                return Task.FromResult(_users.Any());
 
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.Any(compiled));
+            return Task.FromResult(_users.Any(compiled));
         }
 
-        public Task<int> CountAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<int> CountAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.Count);
+                return Task.FromResult(_users.Count);
 
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.Count(compiled));
+            return Task.FromResult(_users.Count(compiled));
         }
 
-        public Task AddAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task AddAsync(LocalUser entity, CancellationToken ct = default)
         {
-            _owners.Add(entity);
+            _users.Add(entity);
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task UpdateAsync(LocalUser entity, CancellationToken ct = default)
         {
-            var existing = _owners.FirstOrDefault(o => o.Id == entity.Id);
-            if (existing is not null)
-            {
-                _owners.Remove(existing);
-                _owners.Add(entity);
-            }
+            var index = _users.FindIndex(u => u.Id == entity.Id);
+            if (index >= 0)
+                _users[index] = entity;
             return Task.CompletedTask;
         }
 
-        public Task DeleteAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task DeleteAsync(LocalUser entity, CancellationToken ct = default)
         {
-            _owners.Remove(entity);
+            _users.RemoveAll(u => u.Id == entity.Id);
             return Task.CompletedTask;
         }
     }
 
-    private class FakeEncryptionService : IEncryptionService
-    {
-        public byte[] Encrypt(string plaintext)
-            => System.Text.Encoding.UTF8.GetBytes(plaintext);
-
-        public string Decrypt(byte[] ciphertext)
-            => System.Text.Encoding.UTF8.GetString(ciphertext);
-    }
-
-    private class FakePasswordHasher : IPasswordHasher
+    private sealed class FakePasswordHasher : IPasswordHasher
     {
         public HashResult Hash(string password)
             => new($"hash::{password}", "salt", "fake");

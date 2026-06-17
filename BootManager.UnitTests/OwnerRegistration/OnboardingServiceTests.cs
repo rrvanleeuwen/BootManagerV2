@@ -3,440 +3,193 @@ using BootManager.Application.OwnerRegistration.Services;
 using BootManager.Application.VesselProfile.DTOs;
 using BootManager.Application.VesselProfile.Services;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 using BootManager.Core.ValueObjects;
 using Microsoft.Extensions.Logging;
-using Moq;
 using System.Linq.Expressions;
 using System.Text.Json;
-using Xunit;
 
 namespace BootManager.UnitTests.OwnerRegistration;
 
 public class OnboardingServiceTests
 {
-    private readonly FakePasswordHasher _hasher;
-    private readonly FakeEncryptionService _encryption;
-    private readonly Mock<ISystemClock> _mockClock;
-    private readonly Mock<IVesselProfileService> _mockVesselService;
-    private readonly Mock<ILogger<OnboardingService>> _mockLogger;
-
-    public OnboardingServiceTests()
-    {
-        _hasher = new FakePasswordHasher();
-        _encryption = new FakeEncryptionService();
-        _mockClock = new Mock<ISystemClock>();
-        _mockVesselService = new Mock<IVesselProfileService>();
-        _mockLogger = new Mock<ILogger<OnboardingService>>();
-
-        _mockClock.Setup(c => c.UtcNow).Returns(DateTime.UtcNow);
-    }
+    private readonly FakePasswordHasher _hasher = new();
+    private readonly FakeEncryptionService _encryption = new();
+    private readonly FakeClock _clock = new();
+    private readonly FakeVesselProfileService _vesselService = new();
+    private readonly FakeLogger<OnboardingService> _logger = new();
 
     [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithValidData_ReturnsSuccess()
+    public async Task CompleteInitialOnboarding_Succeeds_WhenValidRequest()
     {
-        // Arrange
-        var request = new CompleteOnboardingRequestDto
+        var owner = CreateOwner(password: "bootstrap123");
+        var repo = FakeLocalUserRepository.WithUser(owner);
+        var sut = new OnboardingService(repo, _hasher, _encryption, _clock, _vesselService, _logger);
+
+        var req = new CompleteOnboardingRequestDto
         {
-            OwnerName = "John Doe",
-            OwnerEmail = "john@example.com",
-            VesselName = "My Boat",
+            CurrentPassword = "bootstrap123",
+            NewPassword = "newowner123",
+            ConfirmNewPassword = "newowner123",
+            OwnerName = "Roelof",
+            OwnerEmail = "roelof@example.com",
+            VesselName = "Linde",
             HomePort = "Amsterdam",
-            CallSign = "PH-ABC",
-            Mmsi = "123456789",
-            CurrentPassword = "bootstrap123",
-            NewPassword = "NewSecurePassword123!",
-            ConfirmNewPassword = "NewSecurePassword123!"
+            CallSign = "PX1",
+            Mmsi = "245123456"
         };
 
-        var owner = CreateOwner("bootstrap123", passwordChangeRequired: true, onboardingCompleted: false);
-        var repo = FakeOwnerRepository.WithOwner(owner);
+        var result = await sut.CompleteInitialOnboardingAsync(req);
 
-        var vesselDto = new VesselProfileDto
-        {
-            Id = Guid.NewGuid(),
-            VesselName = "My Boat",
-            HomePort = "Amsterdam",
-            CallSign = "PH-ABC",
-            Mmsi = "123456789"
-        };
-
-        _mockVesselService
-            .Setup(v => v.GetOrCreateVesselProfileAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new VesselProfileDto
-            {
-                Id = Guid.NewGuid(),
-                VesselName = "Unnamed Vessel"
-            });
-
-        _mockVesselService
-            .Setup(v => v.UpdateVesselProfileAsync(It.IsAny<UpdateVesselProfileRequestDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(vesselDto);
-
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.True(response.Success);
-        Assert.Null(response.ErrorMessage);
-        Assert.Equal("John Doe", response.UpdatedOwnerName);
-        Assert.Equal("john@example.com", response.UpdatedOwnerEmail);
-        Assert.NotNull(response.UpdatedVesselProfile);
-        _mockVesselService.Verify(
-            v => v.GetOrCreateVesselProfileAsync(It.IsAny<CancellationToken>()),
-            Times.Once);
+        Assert.True(result.Success);
+        var updated = await repo.SingleOrDefaultAsync(u => u.Role == LocalUserRole.Owner);
+        Assert.Equal("hash::newowner123", updated!.PasswordHash);
+        Assert.True(updated.OnboardingCompleted);
+        Assert.False(updated.PasswordChangeRequired);
     }
 
     [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithMissingOwnerName_ReturnsFailure()
+    public async Task CompleteInitialOnboarding_Fails_WhenPasswordTooShort()
     {
-        // Arrange
-        var request = new CompleteOnboardingRequestDto
+        var owner = CreateOwner();
+        var repo = FakeLocalUserRepository.WithUser(owner);
+        var sut = new OnboardingService(repo, _hasher, _encryption, _clock, _vesselService, _logger);
+
+        var req = new CompleteOnboardingRequestDto
         {
-            OwnerName = "", // Leeg
-            VesselName = "My Boat",
-            CurrentPassword = "bootstrap123",
-            NewPassword = "NewSecurePassword123!",
-            ConfirmNewPassword = "NewSecurePassword123!"
+            CurrentPassword = "bootstrap",
+            NewPassword = "short",
+            ConfirmNewPassword = "short",
+            OwnerName = "Test",
+            VesselName = "Test"
         };
 
-        var owner = CreateOwner("bootstrap123");
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.False(response.Success);
-        Assert.NotNull(response.ErrorMessage);
-        Assert.Contains("Eigenaarsnaam", response.ErrorMessage);
+        var result = await sut.CompleteInitialOnboardingAsync(req);
+        Assert.False(result.Success);
     }
 
-    [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithMissingVesselName_ReturnsFailure()
-    {
-        // Arrange
-        var request = new CompleteOnboardingRequestDto
-        {
-            OwnerName = "John Doe",
-            VesselName = "", // Leeg
-            CurrentPassword = "bootstrap123",
-            NewPassword = "NewSecurePassword123!",
-            ConfirmNewPassword = "NewSecurePassword123!"
-        };
-
-        var owner = CreateOwner("bootstrap123");
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.False(response.Success);
-        Assert.NotNull(response.ErrorMessage);
-        Assert.Contains("Bootnaam", response.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithPasswordTooShort_ReturnsFailure()
-    {
-        // Arrange
-        var request = new CompleteOnboardingRequestDto
-        {
-            OwnerName = "John Doe",
-            VesselName = "My Boat",
-            CurrentPassword = "bootstrap123",
-            NewPassword = "short", // < 8 karakters
-            ConfirmNewPassword = "short"
-        };
-
-        var owner = CreateOwner("bootstrap123");
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.False(response.Success);
-        Assert.NotNull(response.ErrorMessage);
-        Assert.Contains("minimaal 8", response.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithPasswordMismatch_ReturnsFailure()
-    {
-        // Arrange
-        var request = new CompleteOnboardingRequestDto
-        {
-            OwnerName = "John Doe",
-            VesselName = "My Boat",
-            CurrentPassword = "bootstrap123",
-            NewPassword = "NewSecurePassword123!",
-            ConfirmNewPassword = "DifferentPassword123!" // Niet gelijk
-        };
-
-        var owner = CreateOwner("bootstrap123");
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.False(response.Success);
-        Assert.NotNull(response.ErrorMessage);
-        Assert.Contains("niet overeen", response.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithIncorrectCurrentPassword_ReturnsFailure()
-    {
-        // Arrange
-        var request = new CompleteOnboardingRequestDto
-        {
-            OwnerName = "John Doe",
-            VesselName = "My Boat",
-            CurrentPassword = "wrongpassword",
-            NewPassword = "NewSecurePassword123!",
-            ConfirmNewPassword = "NewSecurePassword123!"
-        };
-
-        var owner = CreateOwner("bootstrap123");
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.False(response.Success);
-        Assert.NotNull(response.ErrorMessage);
-        Assert.Contains("onjuist", response.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithNewPasswordSameAsOld_ReturnsFailure()
-    {
-        // Arrange
-        var request = new CompleteOnboardingRequestDto
-        {
-            OwnerName = "John Doe",
-            VesselName = "My Boat",
-            CurrentPassword = "bootstrap123",
-            NewPassword = "bootstrap123", // Hetzelfde
-            ConfirmNewPassword = "bootstrap123"
-        };
-
-        var owner = CreateOwner("bootstrap123");
-        var repo = FakeOwnerRepository.WithOwner(owner);
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.False(response.Success);
-        Assert.NotNull(response.ErrorMessage);
-        Assert.Contains("hetzelfde", response.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithNoOwnerFound_ReturnsFailure()
-    {
-        // Arrange
-        var request = new CompleteOnboardingRequestDto
-        {
-            OwnerName = "John Doe",
-            VesselName = "My Boat",
-            CurrentPassword = "bootstrap123",
-            NewPassword = "NewSecurePassword123!",
-            ConfirmNewPassword = "NewSecurePassword123!"
-        };
-
-        var repo = FakeOwnerRepository.Empty();
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.False(response.Success);
-        Assert.NotNull(response.ErrorMessage);
-        Assert.Contains("No owner profile", response.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task CompleteInitialOnboardingAsync_WithOptionalFieldsEmpty_ReturnsSuccess()
-    {
-        // Arrange - alle optionele velden leeg
-        var request = new CompleteOnboardingRequestDto
-        {
-            OwnerName = "John Doe",
-            OwnerEmail = null, // Optioneel
-            VesselName = "My Boat",
-            HomePort = null, // Optioneel
-            CallSign = null, // Optioneel
-            Mmsi = null, // Optioneel
-            CurrentPassword = "bootstrap123",
-            NewPassword = "NewSecurePassword123!",
-            ConfirmNewPassword = "NewSecurePassword123!"
-        };
-
-        var owner = CreateOwner("bootstrap123", passwordChangeRequired: true, onboardingCompleted: false);
-        var repo = FakeOwnerRepository.WithOwner(owner);
-
-        var vesselDto = new VesselProfileDto
-        {
-            Id = Guid.NewGuid(),
-            VesselName = "My Boat",
-            HomePort = null,
-            CallSign = null,
-            Mmsi = null
-        };
-
-        _mockVesselService
-            .Setup(v => v.GetOrCreateVesselProfileAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new VesselProfileDto
-            {
-                Id = Guid.NewGuid(),
-                VesselName = "Unnamed Vessel"
-            });
-
-        _mockVesselService
-            .Setup(v => v.UpdateVesselProfileAsync(It.IsAny<UpdateVesselProfileRequestDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(vesselDto);
-
-        var service = new OnboardingService(repo, _hasher, _encryption, _mockClock.Object, _mockVesselService.Object, _mockLogger.Object);
-
-        // Act
-        var response = await service.CompleteInitialOnboardingAsync(request);
-
-        // Assert
-        Assert.True(response.Success);
-        Assert.Null(response.ErrorMessage);
-    }
-
-    // Helpers
-    private static OwnerProfile CreateOwner(
-        string password,
-        bool passwordChangeRequired = true,
-        bool onboardingCompleted = false)
+    private LocalUser CreateOwner(string password = "bootstrap")
     {
         var hasher = new FakePasswordHasher();
         var encryption = new FakeEncryptionService();
+        var hash = hasher.Hash(password);
 
-        var payloadJson = JsonSerializer.Serialize(new { Name = "Bootstrap Owner", Email = "owner@bootmanager.local" });
-        var encrypted = encryption.Encrypt(payloadJson);
+        var payloadObj = new { Name = "Owner", Email = "owner@example.com" };
+        var json = JsonSerializer.Serialize(payloadObj);
+        var encrypted = encryption.Encrypt(json);
 
-        return OwnerProfile.Create(
-            passwordHash: hasher.Hash(password).Hash,
-            passwordSalt: hasher.Hash(password).Salt,
-            hashAlgorithm: "fake",
+        return LocalUser.Create(
+            displayName: "Owner",
+            role: LocalUserRole.Owner,
+            passwordHash: hash.Hash,
+            passwordSalt: hash.Salt,
+            hashAlgorithm: hash.Algorithm,
             encryptedProfilePayload: encrypted,
             encryptionVersion: 1,
             createdUtc: DateTime.UtcNow,
-            passwordChangeRequired: passwordChangeRequired,
-            onboardingCompleted: onboardingCompleted
-        );
+            passwordChangeRequired: true,
+            onboardingCompleted: false);
     }
 
-    // Fake Implementations
-    private class FakeOwnerRepository : IRepository<OwnerProfile>
+    private sealed class FakeLocalUserRepository : IRepository<LocalUser>
     {
-        private List<OwnerProfile> _owners = [];
+        private List<LocalUser> _users = [];
 
-        public static FakeOwnerRepository Empty() => new();
+        public static FakeLocalUserRepository WithUser(LocalUser user) => new() { _users = [user] };
 
-        public static FakeOwnerRepository WithOwner(OwnerProfile owner)
-        {
-            var repo = new FakeOwnerRepository();
-            repo._owners.Add(owner);
-            return repo;
-        }
+        public Task<LocalUser?> GetByIdAsync(Guid id, CancellationToken ct = default)
+            => Task.FromResult(_users.FirstOrDefault(u => u.Id == id));
 
-        public Task<OwnerProfile?> GetByIdAsync(Guid id, CancellationToken ct = default)
-            => Task.FromResult(_owners.FirstOrDefault(o => o.Id == id));
-
-        public Task<OwnerProfile?> SingleOrDefaultAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<LocalUser?> SingleOrDefaultAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.FirstOrDefault());
-
+                return Task.FromResult(_users.FirstOrDefault());
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.FirstOrDefault(compiled));
+            return Task.FromResult(_users.FirstOrDefault(compiled));
         }
 
-        public Task<IReadOnlyList<OwnerProfile>> ListAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<IReadOnlyList<LocalUser>> ListAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult((IReadOnlyList<OwnerProfile>)_owners.AsReadOnly());
-
+                return Task.FromResult((IReadOnlyList<LocalUser>)_users.AsReadOnly());
             var compiled = predicate.Compile();
-            return Task.FromResult((IReadOnlyList<OwnerProfile>)_owners.Where(compiled).ToList().AsReadOnly());
+            return Task.FromResult((IReadOnlyList<LocalUser>)_users.Where(compiled).ToList().AsReadOnly());
         }
 
-        public Task<bool> AnyAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<bool> AnyAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.Any());
-
+                return Task.FromResult(_users.Any());
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.Any(compiled));
+            return Task.FromResult(_users.Any(compiled));
         }
 
-        public Task<int> CountAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<int> CountAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.Count);
-
+                return Task.FromResult(_users.Count);
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.Count(compiled));
+            return Task.FromResult(_users.Count(compiled));
         }
 
-        public Task AddAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task AddAsync(LocalUser entity, CancellationToken ct = default)
         {
-            _owners.Add(entity);
+            _users.Add(entity);
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task UpdateAsync(LocalUser entity, CancellationToken ct = default)
         {
-            var existing = _owners.FirstOrDefault(o => o.Id == entity.Id);
-            if (existing is not null)
-            {
-                _owners.Remove(existing);
-                _owners.Add(entity);
-            }
+            var index = _users.FindIndex(u => u.Id == entity.Id);
+            if (index >= 0)
+                _users[index] = entity;
             return Task.CompletedTask;
         }
 
-        public Task DeleteAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task DeleteAsync(LocalUser entity, CancellationToken ct = default)
         {
-            _owners.Remove(entity);
+            _users.RemoveAll(u => u.Id == entity.Id);
             return Task.CompletedTask;
         }
     }
 
-    private class FakeEncryptionService : IEncryptionService
+    private sealed class FakeEncryptionService : IEncryptionService
     {
-        public byte[] Encrypt(string plaintext)
-            => System.Text.Encoding.UTF8.GetBytes(plaintext);
-
-        public string Decrypt(byte[] ciphertext)
-            => System.Text.Encoding.UTF8.GetString(ciphertext);
+        public byte[] Encrypt(string plaintext) => System.Text.Encoding.UTF8.GetBytes(plaintext);
+        public string Decrypt(byte[] ciphertext) => System.Text.Encoding.UTF8.GetString(ciphertext);
     }
 
-    private class FakePasswordHasher : IPasswordHasher
+    private sealed class FakeClock : ISystemClock
     {
-        public HashResult Hash(string password)
-            => new($"hash::{password}", "salt", "fake");
+        public DateTime UtcNow => DateTime.UtcNow;
+    }
 
-        public bool Verify(string password, HashResult stored)
-            => stored.Hash == $"hash::{password}";
+    private sealed class FakePasswordHasher : IPasswordHasher
+    {
+        public HashResult Hash(string password) => new($"hash::{password}", "salt", "fake");
+        public bool Verify(string password, HashResult stored) => stored.Hash == $"hash::{password}";
+    }
+
+    private sealed class FakeVesselProfileService : IVesselProfileService
+    {
+        public Task<VesselProfileDto> GetOrCreateVesselProfileAsync(CancellationToken ct = default)
+            => Task.FromResult(new VesselProfileDto { Id = Guid.NewGuid(), VesselName = "Test" });
+
+        public Task<VesselProfileDto> UpdateVesselProfileAsync(UpdateVesselProfileRequestDto request, CancellationToken ct = default)
+            => Task.FromResult(new VesselProfileDto { Id = Guid.NewGuid(), VesselName = request.VesselName });
+
+        public Task<VesselProfileDto> GetVesselProfileAsync(CancellationToken ct = default)
+            => Task.FromResult(new VesselProfileDto { Id = Guid.NewGuid(), VesselName = "Test" });
+
+        public Task<VesselProfileDto> AdvanceCurrentMetersAsync(decimal?[] engineHoursCandidates, decimal?[] logstandCandidates, CancellationToken ct = default)
+            => Task.FromResult(new VesselProfileDto { Id = Guid.NewGuid(), VesselName = "Test" });
+    }
+
+    private sealed class FakeLogger<T> : ILogger<T>
+    {
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
     }
 }

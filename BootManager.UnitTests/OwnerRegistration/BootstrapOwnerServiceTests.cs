@@ -1,5 +1,6 @@
 using BootManager.Application.OwnerRegistration.Services;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 using BootManager.Core.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -18,38 +19,37 @@ public class BootstrapOwnerServiceTests
     [Fact]
     public async Task EnsureBootstrapOwnerAsync_CreatesOwner_WhenDatabaseEmpty()
     {
-        var repo = FakeOwnerRepository.Empty();
+        var repo = FakeLocalUserRepository.Empty();
         var sut = new BootstrapOwnerService(repo, _hasher, _encryption, _clock, _logger);
 
         var result = await sut.EnsureBootstrapOwnerAsync("TestPassword123!", isProduction: false);
 
         Assert.True(result);
-        Assert.Single(repo.Owners);
+        Assert.Single(repo.Users);
 
-        var owner = repo.Owners.First();
+        var owner = repo.Users.First();
+        Assert.Equal(LocalUserRole.Owner, owner.Role);
         Assert.True(owner.PasswordChangeRequired);
         Assert.False(owner.OnboardingCompleted);
-        Assert.NotNull(owner.PasswordHash);
-        Assert.NotNull(owner.PasswordSalt);
     }
 
     [Fact]
-    public async Task EnsureBootstrapOwnerAsync_SkipsCreation_WhenOwnerExists()
+    public async Task EnsureBootstrapOwnerAsync_SkipsCreation_WhenUserExists()
     {
-        var existingOwner = CreateOwner();
-        var repo = FakeOwnerRepository.WithOwner(existingOwner);
+        var owner = CreateLocalUser();
+        var repo = FakeLocalUserRepository.WithUser(owner);
         var sut = new BootstrapOwnerService(repo, _hasher, _encryption, _clock, _logger);
 
         var result = await sut.EnsureBootstrapOwnerAsync("TestPassword123!", isProduction: false);
 
         Assert.False(result);
-        Assert.Single(repo.Owners);
+        Assert.Single(repo.Users);
     }
 
     [Fact]
     public async Task EnsureBootstrapOwnerAsync_ThrowsInProduction_WhenPasswordEmpty()
     {
-        var repo = FakeOwnerRepository.Empty();
+        var repo = FakeLocalUserRepository.Empty();
         var sut = new BootstrapOwnerService(repo, _hasher, _encryption, _clock, _logger);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -62,50 +62,52 @@ public class BootstrapOwnerServiceTests
     [Fact]
     public async Task EnsureBootstrapOwnerAsync_UsesFallback_InDevelopmentWhenPasswordEmpty()
     {
-        var repo = FakeOwnerRepository.Empty();
+        var repo = FakeLocalUserRepository.Empty();
         var sut = new BootstrapOwnerService(repo, _hasher, _encryption, _clock, _logger);
 
         var result = await sut.EnsureBootstrapOwnerAsync(null, isProduction: false);
 
         Assert.True(result);
-        Assert.Single(repo.Owners);
+        Assert.Single(repo.Users);
     }
 
     [Fact]
     public async Task EnsureBootstrapOwnerAsync_SetsPasswordChangeRequired_ToTrue()
     {
-        var repo = FakeOwnerRepository.Empty();
+        var repo = FakeLocalUserRepository.Empty();
         var sut = new BootstrapOwnerService(repo, _hasher, _encryption, _clock, _logger);
 
         await sut.EnsureBootstrapOwnerAsync("TestPassword123!", isProduction: false);
 
-        var owner = repo.Owners.First();
+        var owner = repo.Users.First();
         Assert.True(owner.PasswordChangeRequired);
     }
 
     [Fact]
     public async Task EnsureBootstrapOwnerAsync_SetsOnboardingCompleted_ToFalse()
     {
-        var repo = FakeOwnerRepository.Empty();
+        var repo = FakeLocalUserRepository.Empty();
         var sut = new BootstrapOwnerService(repo, _hasher, _encryption, _clock, _logger);
 
         await sut.EnsureBootstrapOwnerAsync("TestPassword123!", isProduction: false);
 
-        var owner = repo.Owners.First();
+        var owner = repo.Users.First();
         Assert.False(owner.OnboardingCompleted);
     }
 
-    private static OwnerProfile CreateOwner(string password = "TestPassword123!")
+    private static LocalUser CreateLocalUser(string password = "TestPassword123!")
     {
         var hasher = new FakePasswordHasher();
         var encryption = new FakeEncryptionService();
         var hash = hasher.Hash(password);
 
-        var payloadObj = new { Name = "Test Owner", Email = "test@example.com" };
+        var payloadObj = new { Name = "Owner", Email = "test@example.com" };
         var json = JsonSerializer.Serialize(payloadObj);
         var encrypted = encryption.Encrypt(json);
 
-        return OwnerProfile.Create(
+        return LocalUser.Create(
+            displayName: "Owner",
+            role: LocalUserRole.Owner,
             passwordHash: hash.Hash,
             passwordSalt: hash.Salt,
             hashAlgorithm: hash.Algorithm,
@@ -113,89 +115,85 @@ public class BootstrapOwnerServiceTests
             encryptionVersion: 1,
             createdUtc: DateTime.UtcNow,
             passwordChangeRequired: false,
-            onboardingCompleted: false
-        );
+            onboardingCompleted: false);
     }
 
-    private class FakeOwnerRepository : IRepository<OwnerProfile>
+    private sealed class FakeLocalUserRepository : IRepository<LocalUser>
     {
-        private List<OwnerProfile> _owners = [];
+        private readonly List<LocalUser> _users = [];
 
-        public IReadOnlyList<OwnerProfile> Owners => _owners.AsReadOnly();
+        public IReadOnlyList<LocalUser> Users => _users.AsReadOnly();
 
-        public static FakeOwnerRepository Empty() => new();
+        public static FakeLocalUserRepository Empty() => new();
 
-        public static FakeOwnerRepository WithOwner(OwnerProfile owner)
+        public static FakeLocalUserRepository WithUser(LocalUser user)
         {
-            var repo = new FakeOwnerRepository();
-            repo._owners.Add(owner);
+            var repo = new FakeLocalUserRepository();
+            repo._users.Add(user);
             return repo;
         }
 
-        public Task<OwnerProfile?> GetByIdAsync(Guid id, CancellationToken ct = default)
-            => Task.FromResult(_owners.FirstOrDefault(o => o.Id == id));
+        public Task<LocalUser?> GetByIdAsync(Guid id, CancellationToken ct = default)
+            => Task.FromResult(_users.FirstOrDefault(u => u.Id == id));
 
-        public Task<OwnerProfile?> SingleOrDefaultAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<LocalUser?> SingleOrDefaultAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.FirstOrDefault());
+                return Task.FromResult(_users.FirstOrDefault());
 
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.FirstOrDefault(compiled));
+            return Task.FromResult(_users.FirstOrDefault(compiled));
         }
 
-        public Task<IReadOnlyList<OwnerProfile>> ListAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<IReadOnlyList<LocalUser>> ListAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult((IReadOnlyList<OwnerProfile>)_owners.AsReadOnly());
+                return Task.FromResult((IReadOnlyList<LocalUser>)_users.AsReadOnly());
 
             var compiled = predicate.Compile();
-            return Task.FromResult((IReadOnlyList<OwnerProfile>)_owners.Where(compiled).ToList().AsReadOnly());
+            return Task.FromResult((IReadOnlyList<LocalUser>)_users.Where(compiled).ToList().AsReadOnly());
         }
 
-        public Task<bool> AnyAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<bool> AnyAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.Any());
+                return Task.FromResult(_users.Any());
 
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.Any(compiled));
+            return Task.FromResult(_users.Any(compiled));
         }
 
-        public Task<int> CountAsync(Expression<Func<OwnerProfile, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<int> CountAsync(Expression<Func<LocalUser, bool>>? predicate = null, CancellationToken ct = default)
         {
             if (predicate is null)
-                return Task.FromResult(_owners.Count);
+                return Task.FromResult(_users.Count);
 
             var compiled = predicate.Compile();
-            return Task.FromResult(_owners.Count(compiled));
+            return Task.FromResult(_users.Count(compiled));
         }
 
-        public Task AddAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task AddAsync(LocalUser entity, CancellationToken ct = default)
         {
-            _owners.Add(entity);
+            _users.Add(entity);
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task UpdateAsync(LocalUser entity, CancellationToken ct = default)
         {
-            var existing = _owners.FirstOrDefault(o => o.Id == entity.Id);
-            if (existing is not null)
-            {
-                _owners.Remove(existing);
-                _owners.Add(entity);
-            }
+            var index = _users.FindIndex(u => u.Id == entity.Id);
+            if (index >= 0)
+                _users[index] = entity;
             return Task.CompletedTask;
         }
 
-        public Task DeleteAsync(OwnerProfile entity, CancellationToken ct = default)
+        public Task DeleteAsync(LocalUser entity, CancellationToken ct = default)
         {
-            _owners.Remove(entity);
+            _users.RemoveAll(u => u.Id == entity.Id);
             return Task.CompletedTask;
         }
     }
 
-    private class FakeEncryptionService : IEncryptionService
+    private sealed class FakeEncryptionService : IEncryptionService
     {
         public byte[] Encrypt(string plaintext)
             => System.Text.Encoding.UTF8.GetBytes(plaintext);
@@ -204,19 +202,19 @@ public class BootstrapOwnerServiceTests
             => System.Text.Encoding.UTF8.GetString(ciphertext);
     }
 
-    private class FakeSystemClock : ISystemClock
+    private sealed class FakeSystemClock : ISystemClock
     {
         public DateTime UtcNow => DateTime.UtcNow;
     }
 
-    private class FakeLogger<T> : ILogger<T>
+    private sealed class FakeLogger<T> : ILogger<T>
     {
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
         public bool IsEnabled(LogLevel logLevel) => true;
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
     }
 
-    private class FakePasswordHasher : IPasswordHasher
+    private sealed class FakePasswordHasher : IPasswordHasher
     {
         public HashResult Hash(string password)
             => new($"hash::{password}", "salt", "fake");

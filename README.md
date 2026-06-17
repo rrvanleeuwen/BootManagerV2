@@ -1,11 +1,11 @@
-# BootManagerV2
+﻿# BootManagerV2
 
 BootManagerV2 is een lokale, Raspberry Pi-vriendelijke bootmanagementapplicatie met digitaal logboek, NMEA/YDEN-ingest, live dashboard en systeembeheer voor gebruik aan boord.
 
 <!-- PROJECT-STATUS:START -->
 ## Projectstatus
 
-_Laatst bijgewerkt: 2026-06-09. Gegenereerd met `scripts/update-readme-status.ps1`._
+_Laatst bijgewerkt: 2026-06-17. Gegenereerd met `scripts/update-readme-status.ps1`._
 
 De percentages zijn voortgangsindicatoren, geen harde planning. Berekening: `Done` en `Replaced` tellen als 100%, `Partial` telt als 50%, `Open` telt als 0%. `Parked` en `Obsolete` tellen niet mee in de actieve scope.
 
@@ -15,15 +15,15 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[#-------------------]` 7.1% | 14 |
+| Vakantiepilot 2026 | `[###-----------------]` 14.3% | 14 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
-| Legacy scope | `[####----------------]` 19.1% | 126 |
+| Legacy scope | `[####----------------]` 20.2% | 129 |
 
 ### Vakantiepilot 2026
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[#-------------------]` 7.1% | 1 | 0 | 13 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-AUTH-01 - goedgekeurd en klaar voor Claude Code |
+| `[###-----------------]` 14.3% | 2 | 0 | 12 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-LOC-01 - Opslaggebieden en opslaglocaties |
 
 ### BootManagerV2 Epics
 
@@ -42,14 +42,14 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 | Legacy epic | Voortgang | Done | Replaced | Partial | Open | Parked |
 |---|---:|---:|---:|---:|---:|---:|
 | Epic 0: Installatie & Authenticatie | `[####################]` 100% | 4 | 2 | 0 | 0 | 0 |
-| Epic 1: Bootbeheer & Gebruikersbeheer | `[###-----------------]` 15% | 1 | 0 | 1 | 8 | 7 |
+| Epic 1: Bootbeheer & Gebruikersbeheer | `[#####---------------]` 25% | 2 | 0 | 2 | 8 | 5 |
 | Epic 2: Inventarisbeheer | `[#-------------------]` 5.3% | 0 | 0 | 2 | 17 | 2 |
 | Epic 3: Passageplanning | `[--------------------]` 0% | 0 | 0 | 0 | 13 | 1 |
 | Epic 4: Documentbeheer | `[--------------------]` 0% | 0 | 0 | 0 | 12 | 1 |
 | Epic 5: Logboek | `[############--------]` 61.5% | 4 | 0 | 8 | 1 | 1 |
 | Epic 6: Onderhoudsbeheer | `[--------------------]` 0% | 0 | 0 | 0 | 13 | 1 |
 | Epic 7: Dashboard | `[#####---------------]` 25% | 0 | 0 | 6 | 6 | 2 |
-| Epic 8: Systeembeheer & Configuratie | `[####----------------]` 22.2% | 1 | 0 | 2 | 6 | 5 |
+| Epic 8: Systeembeheer & Configuratie | `[#####---------------]` 25% | 1 | 0 | 3 | 6 | 4 |
 | Epic 9: Integraties & Synchronisatie | `[###-----------------]` 16.7% | 0 | 0 | 2 | 4 | 1 |
 | Epic 10: Rapportage & Analyse | `[###-----------------]` 16.7% | 0 | 0 | 2 | 4 | 0 |
 | Epic 11: Notificaties & Waarschuwingen | `[--------------------]` 0% | 0 | 0 | 0 | 6 | 0 |

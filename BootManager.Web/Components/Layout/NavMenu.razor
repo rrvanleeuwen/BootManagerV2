@@ -11,8 +11,9 @@
             </NavLink>
         </li>
 
-        <AuthorizeView>
+        <AuthorizeView Context="authContext">
             <Authorized>
+                <!-- Shared features for all authenticated users -->
                 <li class="nav-item">
                     <NavLink class="nav-link" href="scan">
                         <i class="fas fa-qrcode"></i>
@@ -31,22 +32,28 @@
                         <span class="ml-2">Dashboard</span>
                     </NavLink>
                 </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="analysis">
-                        <i class="fas fa-chart-line"></i>
-                        <span class="ml-2">Beheerder</span>
-                    </NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="settings">
-                        <i class="fas fa-cogs"></i>
-                        <span class="ml-2">Instellingen</span>
-                    </NavLink>
-                </li>
+
+                <!-- Owner-only features -->
+                <AuthorizeView Roles="Owner" Context="ownerContext">
+                    <Authorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="analysis">
+                                <i class="fas fa-chart-line"></i>
+                                <span class="ml-2">Beheerder</span>
+                            </NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="settings">
+                                <i class="fas fa-cogs"></i>
+                                <span class="ml-2">Instellingen</span>
+                            </NavLink>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+
             </Authorized>
             <NotAuthorized>
             </NotAuthorized>
         </AuthorizeView>
     </ul>
 </div>
-

@@ -168,6 +168,89 @@ namespace BootManager.Infrastructure.Migrations
                     b.ToTable("HeadingMeasurements", (string)null);
                 });
 
+            modelBuilder.Entity("BootManager.Core.Entities.LocalUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CredentialVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("EncryptedProfilePayload")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("EncryptionVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HashAlgorithm")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("OnboardingCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PasswordChangeRequired")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordSalt")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PinHash")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PinSalt")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecoveryCodeHash")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecoveryCodeSalt")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("LocalUsers", (string)null);
+                });
+
             modelBuilder.Entity("BootManager.Core.Entities.LogbookAttachment", b =>
                 {
                     b.Property<int>("Id")
@@ -481,70 +564,6 @@ namespace BootManager.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("OperationalSettings", (string)null);
-                });
-
-            modelBuilder.Entity("BootManager.Core.Entities.OwnerProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<byte[]>("EncryptedProfilePayload")
-                        .IsRequired()
-                        .HasColumnType("BLOB");
-
-                    b.Property<int>("EncryptionVersion")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("HashAlgorithm")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("OnboardingCompleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("PasswordChangeRequired")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PasswordSalt")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PinHash")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PinSalt")
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RecoveryCodeHash")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RecoveryCodeSalt")
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdatedUtc")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Id")
-                        .IsUnique();
-
-                    b.ToTable("OwnerProfiles", (string)null);
                 });
 
             modelBuilder.Entity("BootManager.Core.Entities.PositionMeasurement", b =>

@@ -25,7 +25,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Token([FromBody] LoginRequestDto req, CancellationToken ct)
     {
         var result = await _login.ValidateAsync(req, ct);
-        if (!result.Success || result.OwnerId is null)
+        if (!result.Success || result.UserId is null)
             return BadRequest(new { message = result.Message ?? "Inloggen mislukt." });
 
         var key = _config["Jwt:Key"] ?? "please_change_this_secret_for_production";
@@ -34,9 +34,10 @@ public class AuthController : ControllerBase
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, result.OwnerId.Value.ToString()),
-            new(ClaimTypes.Name, "Owner"),
-            new(ClaimTypes.Role, "Owner")
+            new(ClaimTypes.NameIdentifier, result.UserId.Value.ToString()),
+            new(ClaimTypes.Name, result.DisplayName ?? "User"),
+            new(ClaimTypes.Role, result.Role?.ToString() ?? ""),
+            new("bm.credential_version", result.CredentialVersion.ToString())
         };
 
         var keyBytes = Encoding.UTF8.GetBytes(key);

@@ -1,5 +1,6 @@
 using BootManager.Application.OwnerRegistration.DTOs;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -7,23 +8,22 @@ using System.Text.Json;
 namespace BootManager.Application.OwnerRegistration.Services;
 
 /// <summary>
-/// Bootstrap-service die automatisch een eigenaar aanmaakt bij een lege database.
-/// Verwendet het bootstrap wachtwoord dat vanuit configuratie wordt doorgegeven.
+/// Bootstrap-service die automatisch een Owner aanmaakt bij een lege database.
 /// </summary>
 public class BootstrapOwnerService : IBootstrapOwnerService
 {
-    private const string BootstrapOwnerName = "BootManager Owner";
+    private const string BootstrapOwnerName = "Owner";
     private const string BootstrapOwnerEmail = "owner@bootmanager.local";
     private const string DevFallbackPassword = "BootManagerDev123!";
 
-    private readonly IRepository<OwnerProfile> _repo;
+    private readonly IRepository<LocalUser> _repo;
     private readonly IPasswordHasher _hasher;
     private readonly IEncryptionService _encryption;
     private readonly ISystemClock _clock;
     private readonly ILogger<BootstrapOwnerService> _logger;
 
     public BootstrapOwnerService(
-        IRepository<OwnerProfile> repo,
+        IRepository<LocalUser> repo,
         IPasswordHasher hasher,
         IEncryptionService encryption,
         ISystemClock clock,
@@ -37,11 +37,11 @@ public class BootstrapOwnerService : IBootstrapOwnerService
     }
 
     /// <summary>
-    /// Zet de bootstrap eigenaar op als de database leeg is.
+    /// Zet de bootstrap Owner op als de database leeg is.
     /// </summary>
     public async Task<bool> EnsureBootstrapOwnerAsync(string? bootstrapPassword, bool isProduction, CancellationToken ct = default)
     {
-        // Controleer of er al een eigenaar bestaat
+        // Controleer of er al een Owner bestaat
         var ownerExists = await _repo.AnyAsync(ct: ct);
         if (ownerExists)
         {
@@ -67,15 +67,17 @@ public class BootstrapOwnerService : IBootstrapOwnerService
                 + "DO NOT USE THIS IN PRODUCTION.");
         }
 
-        // Maak bootstrap eigenaar aan
-        _logger.LogInformation("Creating bootstrap owner: {Name} ({Email})", BootstrapOwnerName, BootstrapOwnerEmail);
+        // Maak bootstrap Owner aan
+        _logger.LogInformation("Creating bootstrap Owner");
 
         var hash = _hasher.Hash(bootstrapPassword);
         var payloadObj = new { Name = BootstrapOwnerName, Email = BootstrapOwnerEmail };
         var json = JsonSerializer.Serialize(payloadObj);
         var encrypted = _encryption.Encrypt(json);
 
-        var owner = OwnerProfile.Create(
+        var owner = LocalUser.Create(
+            displayName: BootstrapOwnerName,
+            role: LocalUserRole.Owner,
             passwordHash: hash.Hash,
             passwordSalt: hash.Salt,
             hashAlgorithm: hash.Algorithm,

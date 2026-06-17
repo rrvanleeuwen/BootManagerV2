@@ -37,6 +37,9 @@ public static class DependencyInjection
         services.AddScoped<IOwnerLoginService, OwnerLoginService>();
         services.AddScoped<IOwnerRecoveryService, OwnerRecoveryService>();
         services.AddScoped<IOwnerSettingsService, OwnerSettingsService>();
+        services.AddScoped<ILocalUserManagementService, LocalUserManagementService>();
+        services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<DisplayNameBackfillService>();
 
         // Registratie van VesselProfile application-service
         services.AddScoped<IVesselProfileService, VesselProfileService>();
