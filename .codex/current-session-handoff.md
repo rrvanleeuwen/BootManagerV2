@@ -10,11 +10,9 @@ Updated: 2026-06-17.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `feature/pilot-auth-01-local-users`.
-- De featurebranch volgt `origin/feature/pilot-auth-01-local-users`.
-- De worktree bevat de afgeronde maar nog niet gecommitte applicatiecode en
-  documentatie voor `PILOT-AUTH-01`; deze wijzigingen niet resetten, overschrijven
-  of naar `master` verplaatsen.
+- Actieve branch: `master`.
+- `master` is bijgewerkt tot na de merge van `PILOT-AUTH-01`.
+- De worktree was schoon na de mergecontrole.
 
 ## Actieve release
 
@@ -34,10 +32,18 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-1. controleer de finale diff van `PILOT-AUTH-01`;
-2. commit en push de featurebranch;
-3. open of actualiseer de PR;
-4. na merge is `PILOT-LOC-01` de eerstvolgende pilotstory.
+Start de volgende sessie op `master` en controleer eerst `git status --short --branch`.
+De eerstvolgende pilotstory is `PILOT-LOC-01` — opslaggebieden en opslaglocaties.
+
+Aanpak voor de volgende sessie:
+
+1. laad alleen deze handoff, `.codex/task-context-map.md` en
+   `.docs/releases/holiday-pilot-2026.md`;
+2. lees gericht de `PILOT-LOC-01` scope in het releasedocument;
+3. controleer `.docs/TODO.md` en legacy-dekking alleen voor opslaggebieden en
+   opslaglocaties;
+4. stel een compacte story/implementation packet op voor Claude Code;
+5. maak pas daarna een nieuwe featurebranch voor `PILOT-LOC-01`.
 
 Laatste verificatie op 2026-06-17:
 
