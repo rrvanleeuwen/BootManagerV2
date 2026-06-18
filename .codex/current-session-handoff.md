@@ -10,7 +10,7 @@ Updated: 2026-06-18.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `master`.
+- Actieve branch: `feature/pilot-loc-01-storage-locations`.
 - `master` is bijgewerkt tot na de merge van `PILOT-AUTH-01`.
 - De worktree was schoon na de mergecontrole.
 
@@ -36,18 +36,11 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Start de volgende sessie op `master` en controleer eerst `git status --short --branch`.
-De eerstvolgende uitvoeringsactie is een featurebranch en implementation packet voor
-`PILOT-LOC-01` — opslaggebieden en opslaglocaties.
-
-Aanpak voor de volgende sessie:
-
-1. laad alleen deze handoff, `.codex/task-context-map.md` en
-   `.docs/releases/holiday-pilot-2026.md`;
-2. lees gericht de uitgewerkte `PILOT-LOC-01` story in het releasedocument;
-3. controleer branch en worktree;
-4. maak de featurebranch voor `PILOT-LOC-01`;
-5. stel daarna het compacte implementation packet op voor Claude Code.
+Laat Claude Code `PILOT-LOC-01` implementeren op
+`feature/pilot-loc-01-storage-locations` vanuit
+`.codex/PILOT-LOC-01-implementation-packet.md`. Controleer daarna branch, status,
+gerichte diff, migratiebewijs, tests en build voordat de handmatige acceptatietest
+wordt gestart.
 
 Laatste verificatie op 2026-06-17:
 

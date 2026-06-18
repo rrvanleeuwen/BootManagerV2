@@ -162,7 +162,8 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 
 ### PILOT-LOC-01 — Opslaggebieden en opslaglocaties
 
-**Status:** Gepland; story uitgewerkt op 2026-06-18.
+**Status:** Gereed voor implementatie; featurebranch en implementation packet gemaakt
+op 2026-06-18.
 
 **Als** Owner<br>
 **wil ik** opslaggebieden en opslaglocaties vastleggen<br>
