@@ -52,7 +52,24 @@ Het implementation packet kan voor een specifieke story aanvullende of strengere
 - Blijf binnen scope en verwachte write-set.
 - Maak geen ongerelateerde refactors, formatting, upgrades of documentatieaanpassingen.
 - Volg bestaande project- en architectuurpatronen.
-- Voeg gerichte tests toe die passen bij het gewijzigde gedrag.
+- Voeg gerichte tests toe die echte productcode of componenten uitvoeren en concrete
+  calls, argumenten, toestand en uitkomsten asserten.
+- Een test die alleen gewenst gedrag beschrijft is geen test. Gebruik geen
+  `Assert.True(true)`, lege testmethode, broncodevormcontrole als vervanging voor
+  gedrag, of `async` test zonder relevante `await`.
+- Toon bij bugs en reviewcorrecties red-green-bewijs: de regressietest faalt tegen het
+  bestaande defect en slaagt na de fix. Als een voorafgaande rode run technisch niet
+  mogelijk is, stop vóór de fix en meld de reden en het benodigde alternatieve bewijs.
+- Behoud bij gerichte correcties bestaande succes- en foutpaden en dek het relevante
+  bestaande gedrag af met regressiechecks. Verwijder geen foutafhandeling om de
+  bedoelde fix eenvoudiger te maken.
+- UI-tests renderen het echte component en voeren echte gebruikersinteracties uit met
+  het aanwezige componenttestframework; commentaar of inspectie van veldnamen geldt
+  niet als UI-test.
+- Migratietests voor upgradeveiligheid migreren expliciet naar de genoemde vorige
+  migratie, bewijzen de toegepaste migraties vóór en na, voegen vooraf bestaande data
+  toe en controleren dat die data na de upgrade behouden is. Een lege database direct
+  naar latest migreren is onvoldoende.
 - Draai eerst gerichte tests en daarna de voorgeschreven build/checks.
 - Commit, push, PR, storystatus en projectdocumentatie horen niet bij Claude, tenzij het packet dat uitzonderlijk expliciet opdraagt.
 
@@ -62,6 +79,8 @@ Rapporteer alleen:
 
 - gewijzigde bestanden en gedrag;
 - uitgevoerde tests/checks en resultaten;
+- exacte nieuwe of gewijzigde testnamen, welk productiegedrag ze uitvoeren en het
+  red-green-bewijs bij een fix;
 - migratie- of configuratie-impact;
 - resterende risico's en noodzakelijke handmatige test.
 

@@ -55,6 +55,22 @@ Ieder implementation packet bevat daarnaast verplicht:
 - concrete situaties waarin Claude `niet gereed` moet rapporteren;
 - de regel dat Claude een story nooit zelf `Done`, geaccepteerd of productierijp noemt.
 
+Voor iedere nieuwe test of regressietest beschrijft het packet welk defect of gedrag
+de test daadwerkelijk uitvoert en welke concrete uitkomst wordt geassert. Tests die
+alleen commentaar, reflectie, broncodevorm of een constante waarheid controleren zijn
+geen bewijs. `Assert.True(true)`, lege testmethoden en een `async` test zonder relevante
+`await` zijn niet toegestaan.
+
+Bij een bugfix of reviewcorrectie geldt red-green-bewijs: de nieuwe regressietest moet
+aantoonbaar falen tegen het bestaande defect en slagen na de fix. Als een echte
+voorafgaande rode run technisch niet reproduceerbaar is, meldt Claude dit vóór de fix
+met de concrete reden en beschrijft het packet een gelijkwaardig bewijs. Een groene
+testrun zonder aangetoonde defectgevoeligheid telt niet als regressiebewijs.
+
+Bij een gerichte correctie benoemt het packet naast het defect ook bestaand gedrag dat
+behouden moet blijven. Kritieke succes- en foutpaden krijgen regressiechecks; "laat
+bestaand gedrag ongewijzigd" zonder controleerbaar bewijs is onvoldoende.
+
 Claude mag uitsluitend `gereed voor Codex-review` melden wanneer de volledige packetscope
 is geïmplementeerd en alle verplichte checks acceptabel zijn. Codex bepaalt na review of
 de implementatie naar handmatige acceptatie kan; alleen na die acceptatie wordt een
@@ -62,7 +78,32 @@ storystatus administratief afgerond.
 
 ## Review en testen
 
-Codex beoordeelt functionele juistheid, architectuur, regressierisico, tests, build en acceptatiecriteria. Bij UI-, database-, configuratie-, authenticatie-, deployment- of runtimewijzigingen volgt een handmatige acceptatietest vóór commit/push/PR.
+Codex beoordeelt functionele juistheid, architectuur, regressierisico, tests, build en
+acceptatiecriteria. Vóór een groene suite als bewijs telt, controleert Codex eerst de
+kwaliteit van nieuwe en gewijzigde tests:
+
+- de test roept de werkelijke productcode of component aan;
+- de test kan falen wanneer het bedoelde defect aanwezig is;
+- interacties, argumenten, toestand en uitkomst worden concreet geassert;
+- testnaam en commentaar komen overeen met de werkelijk uitgevoerde code;
+- mocks of test-doubles registreren en bewijzen relevante calls in plaats van gedrag
+  alleen te beschrijven;
+- verwijderde foutafhandeling of ander bestaand gedrag is niet ongemerkt uit de
+  regressiedekking verdwenen.
+
+Voor UI-componenttests betekent dit echte rendering en gebruikersinteractie met het
+bestaande componenttestframework. Voor migratietests betekent dit expliciet migreren
+naar de afgesproken eerdere migratie, controleren welke migraties vóór en na zijn
+toegepast, bestaande data invoegen en databehoud na migratie bewijzen. Direct migreren
+van een lege database naar latest is geen bewijs van een upgradepad.
+
+Codex vergelijkt bij een correctieronde de nieuwe diff met de vóór de correctie
+vastgestelde write-set en controleert expliciet op regressies buiten het bedoelde
+defect. Bij meerdere onafhankelijke defecten gebruikt Codex bij voorkeur kleine,
+afzonderlijk verifieerbare correctierondes.
+
+Bij UI-, database-, configuratie-, authenticatie-, deployment- of runtimewijzigingen
+volgt een handmatige acceptatietest vóór commit/push/PR.
 
 ## Administratieve afronding
 
