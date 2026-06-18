@@ -34,8 +34,11 @@
   - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.codex/PILOT-AUTH-01-implementation-packet.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-LOC-01 opslaggebieden en opslaglocaties**
-  - **Status 2026-06-17:** eerstvolgende pilotstory.
-  - **Doel:** opslaggebieden en opslaglocaties vastleggen als basis voor locatie-QR's en voorraad.
+  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand; implementatiebranch en Claude-packet volgen later.
+  - **Doel:** Owner kan opslaggebieden en opslaglocaties vastleggen als basis voor locatie-QR's en voorraad.
+  - **Scope:** beheer via `Instellingen > Opslag`; Owner beheert gebieden en locaties; Owner/Crew kunnen een locatie-detailpagina lezen.
+  - **Buiten scope:** QR-token/tagbeheer, scan-navigatie, producten, voorraadregels, hoeveelheden en product-locatiekoppeling.
+  - **Legacy-koppeling:** raakt `US1.9`, `US1.10` en `US1.11`; QR/tag-stories `US1.12` t/m `US1.15` en inventory-stories `US2.8` en `US2.9` blijven open.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**

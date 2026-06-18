@@ -46,11 +46,11 @@ Bij afronding van een story of PR:
 | US1.6 Boot selecteren bij opstart | Parked | Multi-boot geparkeerd. |
 | US1.7 Gebruikersrechten wijzigen | Parked | Algemene rolwijziging blijft buiten `PILOT-AUTH-01`; alleen de vaste rollen Owner en Crew worden gebruikt. |
 | US1.8 Gebruiker verwijderen | Parked | Definitief verwijderen blijft buiten `PILOT-AUTH-01`; uitschakelen wordt de pilotroute voor het intrekken van toegang. |
-| US1.9 Bootstructuurbeheer: gebieden en opslaglocaties | Open | Toekomstige inventaris/opslaglocatie-epic. |
-| US1.10 Opslaglocatie aanmaken binnen gebied | Open | Toekomstige inventaris/opslaglocatie-epic. |
-| US1.11 Opslaglocatie bewerken | Open | Toekomstige inventaris/opslaglocatie-epic. |
-| US1.12 Tag genereren voor opslaglocatie | Open | Latere QR/tag-slice binnen inventaris. |
-| US1.13 Locatie openen via QR-code | Open | Latere QR/tag-slice binnen inventaris. |
+| US1.9 Bootstructuurbeheer: gebieden en opslaglocaties | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-01`: persistent beheer van gebieden en opslaglocaties. QR/tag- en voorraadfunctionaliteit blijven buiten die story. |
+| US1.10 Opslaglocatie aanmaken binnen gebied | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-01`: locatie aanmaken onder precies één gebied met naam en korte omschrijving. |
+| US1.11 Opslaglocatie bewerken | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-01`: locatie hernoemen, beschrijving aanpassen en gebiedskoppeling wijzigen. |
+| US1.12 Tag genereren voor opslaglocatie | Open | Blijft open voor `PILOT-LOC-02` of latere QR/tag-slice. |
+| US1.13 Locatie openen via QR-code | Open | Blijft open voor `PILOT-LOC-02`; `PILOT-LOC-01` levert alleen de detailpagina die later via QR geopend kan worden. |
 | US1.14 Tag opnieuw koppelen of vervangen | Open | Latere QR/tag-slice binnen inventaris. |
 | US1.15 Overzicht van alle tags | Open | Latere QR/tag-slice binnen inventaris. |
 | US1.16 Bootgegevens exporteren/importeren | Open | Later bij backup/restore of systeemconfiguratie. |
@@ -67,8 +67,8 @@ Bij afronding van een story of PR:
 | US2.5 Barcodes en QR-codes koppelen aan producten | Open | Latere scanning-slice. |
 | US2.6 Barcode scannen bij zoeken | Partial | `PILOT-SCAN-01` levert een op de Pi en beide telefoons geaccepteerde generieke scanner met ZXing voor QR en native `BarcodeDetector` voor EAN-13; de productzoekactie en inventorykoppeling volgen in `PILOT-INV-04`. |
 | US2.7 Barcodeherkenning via foto en AI | Parked | AI-herkenning lage prioriteit. |
-| US2.8 Product koppelen aan opslaglocatie | Open | Afhankelijk van producten en opslaglocaties. |
-| US2.9 Voorraad bekijken per locatie | Open | Afhankelijk van voorraad per locatie. |
+| US2.8 Product koppelen aan opslaglocatie | Open | Blijft open voor latere inventory-stories; `PILOT-LOC-01` levert alleen de opslaglocatiebasis. |
+| US2.9 Voorraad bekijken per locatie | Open | Blijft open voor latere inventory-stories; `PILOT-LOC-01` levert alleen een locatie-detailpagina zonder voorraadregels. |
 | US2.10 Voorraad aanpassen | Open | Voorraadmutaties ontbreken. |
 | US2.11 Minimumvoorraad en waarschuwing | Open | Afhankelijk van inventory en notificaties. |
 | US2.12 Zoeken en filteren | Open | Inventory-module ontbreekt. |

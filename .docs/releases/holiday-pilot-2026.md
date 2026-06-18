@@ -158,6 +158,103 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 
 ## Uitgewerkte stories
 
+### PILOT-LOC-01 — Opslaggebieden en opslaglocaties
+
+**Status:** Gepland; story uitgewerkt op 2026-06-18.
+
+**Als** Owner<br>
+**wil ik** opslaggebieden en opslaglocaties vastleggen<br>
+**zodat** voorraad later aan fysieke plekken aan boord gekoppeld kan worden.
+
+**Scope**
+
+- Owner beheert opslaggebieden en opslaglocaties via `Instellingen > Opslag`.
+- Owner kan opslaggebieden aanmaken, hernoemen en verwijderen.
+- Owner kan opslaglocaties onder precies één gebied aanmaken, bewerken, verplaatsen
+  naar een ander gebied en verwijderen.
+- Een opslaglocatie heeft minimaal een naam en optioneel een korte beschrijving.
+- De locatie-id blijft stabiel wanneer een locatie wordt hernoemd of naar een ander
+  gebied wordt verplaatst.
+- Owner en Crew kunnen een locatie-detailpagina openen waarop gebied, locatienaam
+  en beschrijving zichtbaar zijn.
+- Handmatige locatiekeuze via de beheer- en detailpagina vormt de basis voor latere
+  QR- en voorraadflows.
+
+**Buiten scope**
+
+- QR-token genereren, koppelen, vervangen of ongeldig maken.
+- Tagstatus, tagoverzicht, printen of exporteren van QR-codes.
+- Scan-navigatie vanaf een QR-code naar een locatie.
+- Producten, productbarcodes, voorraadregels, hoeveelheden en voorraadmutaties.
+- Producten koppelen aan opslaglocaties.
+- Voorraad bekijken per locatie, export/import en voorraadlogboek.
+- Crew-beheerrechten voor opslaggebieden of opslaglocaties; Crew mag in deze story
+  alleen de locatie-detailpagina lezen.
+
+**Acceptatiecriteria**
+
+- Owner ziet in `Instellingen` een sectie voor opslagbeheer.
+- Owner kan een gebied aanmaken met een verplichte naam.
+- Owner kan een gebied hernoemen.
+- Owner kan een leeg gebied verwijderen.
+- Een gebied met locaties kan niet per ongeluk worden verwijderd zonder eerst de
+  locaties te verwijderen of te verplaatsen.
+- Owner kan een locatie aanmaken onder een bestaand gebied met naam en optionele
+  beschrijving.
+- Owner kan de naam en beschrijving van een locatie aanpassen.
+- Owner kan een locatie naar een ander gebied verplaatsen zonder dat de locatie-id
+  verandert.
+- Owner kan een locatie verwijderen.
+- Locatienamen zijn binnen hetzelfde gebied niet dubbel; dezelfde locatienaam mag in
+  een ander gebied opnieuw voorkomen.
+- Owner en Crew kunnen de detailpagina van een bestaande locatie openen.
+- Crew krijgt geen toegang tot `Instellingen > Opslag` of andere Owner-only
+  beheerschermen.
+- `dotnet build BootManager.sln` slaagt.
+
+**Legacy-impact**
+
+- `US1.9 Bootstructuurbeheer: gebieden en opslaglocaties` wordt met deze story
+  gepland voor gedeeltelijke dekking: BootManagerV2 krijgt persistent beheer van
+  gebieden en locaties, zonder QR/tag- en voorraadfunctionaliteit.
+- `US1.10 Opslaglocatie aanmaken binnen gebied` wordt met deze story gepland voor
+  functionele dekking van aanmaken met naam en korte omschrijving.
+- `US1.11 Opslaglocatie bewerken` wordt met deze story gepland voor functionele
+  dekking van naam, omschrijving en gebiedskoppeling.
+- `US1.12 Tag genereren voor opslaglocatie` blijft open voor `PILOT-LOC-02`.
+- `US1.13 Locatie openen via QR-code` blijft open voor `PILOT-LOC-02`; deze story
+  levert alleen de detailpagina die later door QR-scans geopend kan worden.
+- `US1.14 Tag opnieuw koppelen of vervangen` blijft open voor een latere QR/tag-slice.
+- `US1.15 Overzicht van alle tags` blijft open voor een latere QR/tag-slice.
+- `US2.8 Product koppelen aan opslaglocatie` en `US2.9 Voorraad bekijken per
+  locatie` blijven open voor de latere inventory-stories; `PILOT-LOC-01` levert
+  alleen de locatiebasis.
+
+**Handmatige acceptatietest**
+
+Log in als Owner en open `Instellingen > Opslag`. Maak de gebieden `Kombuis`,
+`Salon`, `Voorhut`, `Bakskist` en `Techniek` aan. Maak onder minimaal twee gebieden
+een locatie met beschrijving aan. Hernoem een gebied, bewerk een locatiebeschrijving
+en verplaats een locatie naar een ander gebied. Open de detailpagina van die locatie
+en controleer dat de naam, beschrijving en het nieuwe gebied kloppen. Probeer een
+gebied met locaties te verwijderen en controleer dat dit niet ongemerkt kan.
+
+Log daarna in als Carla/Crew. Controleer dat `Instellingen` en opslagbeheer niet
+toegankelijk zijn, maar dat een bestaande locatie-detailpagina wel leesbaar opent.
+
+**Technische richting**
+
+- Voeg een kleine opslagmodule toe binnen de bestaande Core/Application/Infrastructure
+  en Web-laag; introduceer geen brede inventory-module in deze story.
+- Gebruik persistente entiteiten voor `StorageArea` en `StorageLocation` met een
+  verplichte relatie van locatie naar gebied.
+- Houd validatie in de application-service: trim namen, blokkeer lege namen, blokkeer
+  dubbele gebiedsnamen en blokkeer dubbele locatienamen binnen hetzelfde gebied.
+- Plaats de beheer-UI onder de bestaande Owner-only `Settings`-route en gebruik waar
+  nodig een apart component om `Settings.razor` beheersbaar te houden.
+- Maak de locatie-detailpagina `Owner,Crew` toegankelijk zodat `PILOT-LOC-02` daar
+  later bekende locatie-QR's naartoe kan routeren.
+
 ### PILOT-AUTH-01 — Lokale Owner- en Crew-accounts
 
 **Status:** Done op 2026-06-17; technisch gecontroleerd en handmatig geaccepteerd.

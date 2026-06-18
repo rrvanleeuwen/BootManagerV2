@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-17.
+Updated: 2026-06-18.
 
 ## Rollen
 
@@ -23,6 +23,8 @@ gebruik op Linde door Roelof en Carla:
 - `PILOT-SCAN-01` is Done en op de Raspberry Pi en beide Samsung-telefoons geaccepteerd;
 - `PILOT-AUTH-01` is op 2026-06-17 technisch gecontroleerd en handmatig
   geaccepteerd;
+- `PILOT-LOC-01` is op 2026-06-18 documentair uitgewerkt in het holidaybestand,
+  inclusief scope, acceptatiecriteria, handmatige acceptatietest en legacy-koppeling;
 - tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
   toestaan in de Crew-PCR-gate en open Blazor-sessies periodiek valideren tegen
   `CredentialVersion`.
@@ -33,17 +35,17 @@ of expliciete andere prioriteit van de gebruiker.
 ## Eerstvolgende actie
 
 Start de volgende sessie op `master` en controleer eerst `git status --short --branch`.
-De eerstvolgende pilotstory is `PILOT-LOC-01` — opslaggebieden en opslaglocaties.
+De eerstvolgende uitvoeringsactie is een featurebranch en implementation packet voor
+`PILOT-LOC-01` — opslaggebieden en opslaglocaties.
 
 Aanpak voor de volgende sessie:
 
 1. laad alleen deze handoff, `.codex/task-context-map.md` en
    `.docs/releases/holiday-pilot-2026.md`;
-2. lees gericht de `PILOT-LOC-01` scope in het releasedocument;
-3. controleer `.docs/TODO.md` en legacy-dekking alleen voor opslaggebieden en
-   opslaglocaties;
-4. stel een compacte story/implementation packet op voor Claude Code;
-5. maak pas daarna een nieuwe featurebranch voor `PILOT-LOC-01`.
+2. lees gericht de uitgewerkte `PILOT-LOC-01` story in het releasedocument;
+3. controleer branch en worktree;
+4. maak de featurebranch voor `PILOT-LOC-01`;
+5. stel daarna het compacte implementation packet op voor Claude Code.
 
 Laatste verificatie op 2026-06-17:
 
