@@ -33,16 +33,17 @@
   - **Verificatie:** unit-tests 210/211 met alleen de bekende owner-recoverybaseline rood; integratietests 12/12; `dotnet build BootManager.sln --no-restore`; `git diff --check`.
   - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.codex/PILOT-AUTH-01-implementation-packet.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-LOC-01 opslaggebieden en opslaglocaties**
-  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand; implementatiebranch en Claude-packet volgen later.
+- [x] **Holiday Pilot 2026 — PILOT-LOC-01 opslaggebieden en opslaglocaties**
+  - **Status 2026-06-18:** afgerond, technisch gecontroleerd en handmatig geaccepteerd met Owner- en Crew-toegang.
   - **Doel:** Owner kan opslaggebieden en opslaglocaties vastleggen als basis voor locatie-QR's en voorraad.
   - **Scope:** beheer via `Instellingen > Opslag`; Owner beheert gebieden en locaties; Owner/Crew kunnen een locatie-detailpagina lezen.
   - **Buiten scope:** QR-token/tagbeheer, scan-navigatie, producten, voorraadregels, hoeveelheden en product-locatiekoppeling.
   - **Legacy-koppeling:** raakt `US1.9`, `US1.10` en `US1.11`; QR/tag-stories `US1.12` t/m `US1.15` en inventory-stories `US2.8` en `US2.9` blijven open.
-  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+  - **Verificatie:** storage unit-tests 40/40; volledige unit-suite 248/249 met alleen de bekende owner-recoverybaseline rood; integratietests 22/22; `dotnet build BootManager.sln --no-restore`; `git diff --check`; handmatige CRUD-, autorisatie- en navigatietest geslaagd.
+  - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.codex/PILOT-LOC-01-implementation-packet.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-LOC-02 QR-token genereren, koppelen en locatie openen**
-  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand; wacht op `PILOT-LOC-01`.
+  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand en is de eerstvolgende pilotstory.
   - **Doel:** bekende locatie-QR's openen de locatiepagina; Owner kan onbekende BootManager-QR's koppelen.
   - **Buiten scope:** print/export, token vervangen, tagoverzicht, producten en voorraad.
   - **Legacy-koppeling:** raakt `US1.12`, `US1.13` en `US2.14`.

@@ -1,0 +1,76 @@
+@page "/storage/locations/{LocationId:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Services
+@inject IStorageService StorageService
+@inject IJSRuntime JsRuntime
+
+<div class="mb-4">
+    <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="GoBackAsync">← Terug</button>
+</div>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else if (_detail == null)
+{
+    <div class="alert alert-warning">Opslaglocatie niet gevonden.</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">@_detail.LocationName</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <span class="text-muted small">Opslaggebied</span>
+                <div class="h5 mb-0">@_detail.AreaName</div>
+            </div>
+            <div class="mb-3">
+                <span class="text-muted small">Locatienaam</span>
+                <div class="h5 mb-0">@_detail.LocationName</div>
+            </div>
+            @if (!string.IsNullOrEmpty(_detail.Description))
+            {
+                <div class="mb-3">
+                    <span class="text-muted small">Beschrijving</span>
+                    <div>@_detail.Description</div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid LocationId { get; set; }
+
+    private StorageLocationDetailDto? _detail;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDetail();
+    }
+
+    private async Task LoadDetail()
+    {
+        _loading = true;
+        try
+        {
+            var result = await StorageService.GetLocationDetailAsync(LocationId);
+            _detail = result.Success ? result.Data : null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task GoBackAsync()
+    {
+        await JsRuntime.InvokeVoidAsync("history.back");
+    }
+}

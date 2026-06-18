@@ -84,6 +84,16 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<LogbookAttachment> LogbookAttachments => Set<LogbookAttachment>();
 
+    /// <summary>
+    /// DbSet voor opslaggebieden.
+    /// </summary>
+    public DbSet<StorageArea> StorageAreas => Set<StorageArea>();
+
+    /// <summary>
+    /// DbSet voor opslaglocaties.
+    /// </summary>
+    public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.LocalUserConfiguration());
@@ -102,5 +112,7 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.LogbookEntryConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogbookAttachmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.OperationalSettingsConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.StorageAreaConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.StorageLocationConfiguration());
     }
 }

@@ -1,0 +1,513 @@
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Services
+@inject IStorageService StorageService
+
+<h5>Opslag</h5>
+
+@if (_loading)
+{
+    <p>Laden...</p>
+}
+else
+{
+    <div class="mb-4">
+        <h6>Opslaggebieden</h6>
+
+        @if (!string.IsNullOrEmpty(_areaError))
+        {
+            <div class="alert alert-danger alert-dismissible fade show">@_areaError<button type="button" class="btn-close" @onclick="() => _areaError = null"></button></div>
+        }
+
+        <div class="mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Gebiedsnaam" @bind="_newAreaName" />
+                <button class="btn btn-primary" @onclick="CreateArea" disabled="@(_areaCreating || string.IsNullOrWhiteSpace(_newAreaName))">
+                    @(_areaCreating ? "Bezig..." : "Toevoegen")
+                </button>
+            </div>
+        </div>
+
+        @if (_areas != null && _areas.Count > 0)
+        {
+            <div class="table-responsive mb-4">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Gebiedsnaam</th>
+                            <th>Acties</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var area in _areas)
+                        {
+                            <tr>
+                                <td>
+                                    @if (_editingAreaId == area.Id)
+                                    {
+                                        <input type="text" class="form-control form-control-sm" @bind="_editAreaName" />
+                                    }
+                                    else
+                                    {
+                                        <span>@area.Name</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (_editingAreaId == area.Id)
+                                    {
+                                        <button class="btn btn-sm btn-success me-1" @onclick="() => SaveAreaName(area.Id)" disabled="@_areaCreating">Opslaan</button>
+                                        <button class="btn btn-sm btn-secondary" @onclick="() => _editingAreaId = Guid.Empty">Annulieren</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditArea(area)">Hernoemen</button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteArea(area.Id)">Verwijderen</button>
+                                    }
+                                </td>
+                            </tr>
+
+                            <!-- Locaties voor dit gebied -->
+                            <tr class="table-light">
+                                <td colspan="2">
+                                    <h6 class="mb-2">Locaties in @area.Name</h6>
+                                    <div class="mb-2">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SelectAreaForCreation(area.Id)">Locatie toevoegen</button>
+                                    </div>
+
+                                    @{
+                                        var areaLocations = _locations.Where(l => l.StorageAreaId == area.Id).ToList();
+                                    }
+
+                                    @if (areaLocations != null && areaLocations.Count > 0)
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Locatienaam</th>
+                                                        <th>Beschrijving</th>
+                                                        <th>Acties</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var location in areaLocations)
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                @if (_editingLocationId == location.Id)
+                                                                {
+                                                                    <input type="text" class="form-control form-control-sm" @bind="_editLocationName" />
+                                                                }
+                                                                else
+                                                                {
+                                                                    <a href="/storage/locations/@location.Id">@location.Name</a>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                @if (_editingLocationId == location.Id)
+                                                                {
+                                                                    <input type="text" class="form-control form-control-sm" @bind="_editLocationDesc" />
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span>@location.Description</span>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                @if (_editingLocationId == location.Id)
+                                                                {
+                                                                    <button class="btn btn-sm btn-success me-1" @onclick="() => SaveLocation(location.Id)" disabled="@_locationCreating">Opslaan</button>
+                                                                    <button class="btn btn-sm btn-secondary" @onclick="() => _editingLocationId = Guid.Empty">Annulieren</button>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditLocation(location)">Bewerk</button>
+                                                                    <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ShowMoveDialog(location, area.Id)">Verplaats</button>
+                                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteLocation(location.Id)">Verwijder</button>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted">Geen locaties.</p>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Geen opslaggebieden aangemaakt.</p>
+        }
+
+        @if (!string.IsNullOrEmpty(_locationOperationError))
+        {
+            <div class="alert alert-danger alert-dismissible fade show">@_locationOperationError<button type="button" class="btn-close" @onclick="() => _locationOperationError = null"></button></div>
+        }
+    </div>
+
+    <!-- Location Creation Modal (single modal tied to selected area) -->
+    @if (_createLocationAreaId.HasValue && _areas != null)
+    {
+        var selectedArea = _areas.FirstOrDefault(a => a.Id == _createLocationAreaId.Value);
+        @if (selectedArea != null)
+        {
+            <div class="modal show d-block" style="background-color: rgba(0,0,0,.5);">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Locatie toevoegen in @selectedArea.Name</h5>
+                            <button type="button" class="btn-close" @onclick="CancelLocationCreation"></button>
+                        </div>
+                        <div class="modal-body">
+                            @if (!string.IsNullOrEmpty(_createLocationError))
+                            {
+                                <div class="alert alert-danger alert-dismissible fade show">@_createLocationError<button type="button" class="btn-close" @onclick="() => _createLocationError = null"></button></div>
+                            }
+
+                            <div class="mb-2">
+                                <label class="form-label">Locatienaam <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" placeholder="Locatienaam" @bind="_createLocationName" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Beschrijving <span class="text-muted">(optioneel)</span></label>
+                                <input type="text" class="form-control" placeholder="Beschrijving" @bind="_createLocationDesc" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CancelLocationCreation">Annuleren</button>
+                            <button type="button" class="btn btn-primary" @onclick="CreateLocation" disabled="@(_locationCreating || string.IsNullOrWhiteSpace(_createLocationName))">
+                                @(_locationCreating ? "Bezig..." : "Opslaan")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Move Location Dialog -->
+    @if (_showMoveDialog && _moveLocation != null)
+    {
+        <div class="modal show d-block" style="background-color: rgba(0,0,0,.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Verplaats "@_moveLocation.Name"</h5>
+                        <button type="button" class="btn-close" @onclick="() => _showMoveDialog = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">Naar welk gebied?</label>
+                        <select class="form-select" @bind="_moveTargetAreaIdString">
+                            <option value="">-- Kies een gebied --</option>
+                            @foreach (var area in _areas.Where(a => a.Id != _moveSourceAreaId))
+                            {
+                                <option value="@area.Id">@area.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="() => _showMoveDialog = false">Annuleren</button>
+                        <button type="button" class="btn btn-primary" @onclick="MoveLocation" disabled="@(string.IsNullOrEmpty(_moveTargetAreaIdString) || _locationCreating)">Verplaats</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private bool _loading = true;
+    private List<StorageAreaDto> _areas = [];
+    private List<StorageLocationDto> _locations = [];
+
+    private string _newAreaName = string.Empty;
+
+    // Location creation form state - tied to one selected area
+    private Guid? _createLocationAreaId;
+    private string _createLocationName = string.Empty;
+    private string _createLocationDesc = string.Empty;
+    private string _createLocationError = string.Empty;
+
+    private Guid _editingAreaId = Guid.Empty;
+    private string _editAreaName = string.Empty;
+
+    private Guid _editingLocationId = Guid.Empty;
+    private string _editLocationName = string.Empty;
+    private string _editLocationDesc = string.Empty;
+
+    private bool _areaCreating = false;
+    private bool _locationCreating = false;
+    private string _areaError = string.Empty;
+
+    // Error handling for existing location mutations (edit, delete, move)
+    private string _locationOperationError = string.Empty;
+
+    private bool _showMoveDialog = false;
+    private StorageLocationDto? _moveLocation;
+    private Guid _moveSourceAreaId;
+    private string _moveTargetAreaIdString = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _areas = (await StorageService.GetAllAreasAsync()).ToList();
+
+            var allLocations = new List<StorageLocationDto>();
+            foreach (var area in _areas)
+            {
+                allLocations.AddRange(await StorageService.GetLocationsByAreaAsync(area.Id));
+            }
+            _locations = allLocations;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateArea()
+    {
+        _areaError = string.Empty;
+        _areaCreating = true;
+        try
+        {
+            var result = await StorageService.CreateAreaAsync(_newAreaName);
+            if (result.Success)
+            {
+                _newAreaName = string.Empty;
+                await LoadData();
+            }
+            else
+            {
+                _areaError = result.ErrorMessage ?? "Onbekende fout.";
+            }
+        }
+        finally
+        {
+            _areaCreating = false;
+        }
+    }
+
+    private void EditArea(StorageAreaDto area)
+    {
+        _editingAreaId = area.Id;
+        _editAreaName = area.Name;
+    }
+
+    private async Task SaveAreaName(Guid areaId)
+    {
+        _areaError = string.Empty;
+        _areaCreating = true;
+        try
+        {
+            var result = await StorageService.RenameAreaAsync(areaId, _editAreaName);
+            if (result.Success)
+            {
+                _editingAreaId = Guid.Empty;
+                await LoadData();
+            }
+            else
+            {
+                _areaError = result.ErrorMessage ?? "Onbekende fout.";
+            }
+        }
+        finally
+        {
+            _areaCreating = false;
+        }
+    }
+
+    private async Task DeleteArea(Guid areaId)
+    {
+        if (!await ConfirmAction($"Weet je zeker dat je dit gebied wilt verwijderen?"))
+            return;
+
+        _areaError = string.Empty;
+        _areaCreating = true;
+        try
+        {
+            var result = await StorageService.DeleteAreaAsync(areaId);
+            if (result.Success)
+            {
+                await LoadData();
+            }
+            else
+            {
+                _areaError = result.ErrorMessage ?? "Onbekende fout.";
+            }
+        }
+        finally
+        {
+            _areaCreating = false;
+        }
+    }
+
+    private void SelectAreaForCreation(Guid areaId)
+    {
+        if (_createLocationAreaId == areaId)
+        {
+            // Already selected, close it
+            _createLocationAreaId = null;
+            _createLocationName = string.Empty;
+            _createLocationDesc = string.Empty;
+            _createLocationError = string.Empty;
+        }
+        else
+        {
+            // Switch to new area, clear form state
+            _createLocationAreaId = areaId;
+            _createLocationName = string.Empty;
+            _createLocationDesc = string.Empty;
+            _createLocationError = string.Empty;
+        }
+    }
+
+    private void CancelLocationCreation()
+    {
+        _createLocationAreaId = null;
+        _createLocationName = string.Empty;
+        _createLocationDesc = string.Empty;
+        _createLocationError = string.Empty;
+    }
+
+    private async Task CreateLocation()
+    {
+        if (!_createLocationAreaId.HasValue)
+            return;
+
+        _createLocationError = string.Empty;
+        _locationCreating = true;
+        try
+        {
+            var result = await StorageService.CreateLocationAsync(_createLocationAreaId.Value, _createLocationName, _createLocationDesc);
+            if (result.Success)
+            {
+                _createLocationAreaId = null;
+                _createLocationName = string.Empty;
+                _createLocationDesc = string.Empty;
+                _createLocationError = string.Empty;
+                await LoadData();
+            }
+            else
+            {
+                _createLocationError = result.ErrorMessage ?? "Onbekende fout.";
+            }
+        }
+        finally
+        {
+            _locationCreating = false;
+        }
+    }
+
+    private void EditLocation(StorageLocationDto location)
+    {
+        _editingLocationId = location.Id;
+        _editLocationName = location.Name;
+        _editLocationDesc = location.Description ?? string.Empty;
+    }
+
+    private async Task SaveLocation(Guid locationId)
+    {
+        _locationOperationError = string.Empty;
+        _locationCreating = true;
+        try
+        {
+            var result = await StorageService.UpdateLocationAsync(locationId, _editLocationName, _editLocationDesc);
+            if (result.Success)
+            {
+                _editingLocationId = Guid.Empty;
+                await LoadData();
+            }
+            else
+            {
+                _locationOperationError = result.ErrorMessage ?? "Onbekende fout.";
+            }
+        }
+        finally
+        {
+            _locationCreating = false;
+        }
+    }
+
+    private async Task DeleteLocation(Guid locationId)
+    {
+        if (!await ConfirmAction("Weet je zeker dat je deze locatie wilt verwijderen?"))
+            return;
+
+        _locationOperationError = string.Empty;
+        _locationCreating = true;
+        try
+        {
+            var result = await StorageService.DeleteLocationAsync(locationId);
+            if (result.Success)
+            {
+                await LoadData();
+            }
+            else
+            {
+                _locationOperationError = result.ErrorMessage ?? "Onbekende fout.";
+            }
+        }
+        finally
+        {
+            _locationCreating = false;
+        }
+    }
+
+    private void ShowMoveDialog(StorageLocationDto location, Guid sourceAreaId)
+    {
+        _moveLocation = location;
+        _moveSourceAreaId = sourceAreaId;
+        _moveTargetAreaIdString = string.Empty;
+        _showMoveDialog = true;
+    }
+
+    private async Task MoveLocation()
+    {
+        if (_moveLocation == null || string.IsNullOrEmpty(_moveTargetAreaIdString) || !Guid.TryParse(_moveTargetAreaIdString, out var targetAreaId))
+            return;
+
+        _locationOperationError = string.Empty;
+        _locationCreating = true;
+        try
+        {
+            var result = await StorageService.MoveLocationAsync(_moveLocation.Id, targetAreaId);
+            if (result.Success)
+            {
+                _showMoveDialog = false;
+                _moveLocation = null;
+                await LoadData();
+            }
+            else
+            {
+                _locationOperationError = result.ErrorMessage ?? "Onbekende fout.";
+            }
+        }
+        finally
+        {
+            _locationCreating = false;
+        }
+    }
+
+    private async Task<bool> ConfirmAction(string message)
+    {
+        return await JsRuntime.InvokeAsync<bool>("confirm", message);
+    }
+
+    @inject IJSRuntime JsRuntime
+}

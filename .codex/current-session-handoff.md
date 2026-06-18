@@ -10,7 +10,7 @@ Updated: 2026-06-18.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `master`.
+- Actieve branch: `feature/pilot-loc-01-storage-locations`.
 - `master` is bijgewerkt tot na de merge van `PILOT-AUTH-01`.
 - De worktree was schoon na de mergecontrole.
 
@@ -23,8 +23,9 @@ gebruik op Linde door Roelof en Carla:
 - `PILOT-SCAN-01` is Done en op de Raspberry Pi en beide Samsung-telefoons geaccepteerd;
 - `PILOT-AUTH-01` is op 2026-06-17 technisch gecontroleerd en handmatig
   geaccepteerd;
-- `PILOT-LOC-01` is op 2026-06-18 documentair uitgewerkt in het holidaybestand,
-  inclusief scope, acceptatiecriteria, handmatige acceptatietest en legacy-koppeling;
+- `PILOT-LOC-01` is op 2026-06-18 technisch gecontroleerd en handmatig geaccepteerd;
+  persistent gebieds- en locatiebeheer, Owner/Crew-detailtoegang en migratiebewijs zijn
+  gereed;
 - `PILOT-LOC-02`, `PILOT-LOC-03` en `PILOT-LOC-04` zijn op 2026-06-18 documentair
   uitgesplitst voor locatie-QR-token, QR-print/export en QR-tokenvervanging/tagoverzicht;
 - tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
@@ -36,27 +37,20 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Start de volgende sessie op `master` en controleer eerst `git status --short --branch`.
-De eerstvolgende uitvoeringsactie is een featurebranch en implementation packet voor
-`PILOT-LOC-01` — opslaggebieden en opslaglocaties.
+Commit en push de geaccepteerde `PILOT-LOC-01`-implementatie en documentatie op
+`feature/pilot-loc-01-storage-locations` en rond de PR af. Controleer na merge een
+schone actuele `master`; maak daarna een featurebranch en implementation packet voor
+`PILOT-LOC-02`.
 
-Aanpak voor de volgende sessie:
+Laatste verificatie op 2026-06-18:
 
-1. laad alleen deze handoff, `.codex/task-context-map.md` en
-   `.docs/releases/holiday-pilot-2026.md`;
-2. lees gericht de uitgewerkte `PILOT-LOC-01` story in het releasedocument;
-3. controleer branch en worktree;
-4. maak de featurebranch voor `PILOT-LOC-01`;
-5. stel daarna het compacte implementation packet op voor Claude Code.
-
-Laatste verificatie op 2026-06-17:
-
-- handmatige acceptatie met Owner en Carla geslaagd;
-- unit-tests: 210/211, alleen de bekende
+- handmatige acceptatie van opslagbeheer en Owner/Crew-detailtoegang geslaagd;
+- storage unit-tests: 40/40;
+- volledige unit-suite: 248/249, alleen de bekende
   `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` baseline rood;
-- integratietests: 12/12;
+- integratietests: 22/22;
 - `dotnet build BootManager.sln --no-restore`: geslaagd met 0 warnings en 0 errors;
-- `git diff --check`: geslaagd met alleen CRLF-waarschuwingen.
+- `git diff --check`: geslaagd.
 
 ## Documentatie
 

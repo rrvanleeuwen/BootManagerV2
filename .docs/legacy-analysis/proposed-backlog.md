@@ -104,6 +104,9 @@ Bronverfijning uit Epic 2 Word:
 
 ### US-INV2: Opslaglocaties Modelleren
 
+Status: functioneel afgedekt door `PILOT-LOC-01`; QR/tag- en voorraadkoppelingen
+volgen in afzonderlijke pilotstories.
+
 Als eigenaar wil ik opslaggebieden en opslaglocaties vastleggen, zodat voorraad later aan fysieke plekken gekoppeld kan worden.
 
 Voorbeelden:
