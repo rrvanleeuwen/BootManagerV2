@@ -10,9 +10,9 @@ Updated: 2026-06-18.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `feature/pilot-loc-01-storage-locations`.
-- `master` is bijgewerkt tot na de merge van `PILOT-AUTH-01`.
-- De worktree was schoon na de mergecontrole.
+- Actieve branch: `master`.
+- `master` is bijgewerkt tot en met mergecommit `b7b47d9` voor `PILOT-LOC-01`.
+- De worktree is schoon na de mergecontrole.
 
 ## Actieve release
 
@@ -37,10 +37,10 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Commit en push de geaccepteerde `PILOT-LOC-01`-implementatie en documentatie op
-`feature/pilot-loc-01-storage-locations` en rond de PR af. Controleer na merge een
-schone actuele `master`; maak daarna een featurebranch en implementation packet voor
-`PILOT-LOC-02`.
+Start vanaf de schone actuele `master`. Maak een featurebranch en compact
+implementation packet voor `PILOT-LOC-02` — QR-token genereren, koppelen en locatie
+openen. Geef Claude de opdracht pas nadat de branch is gecontroleerd en niet `master`
+is.
 
 Laatste verificatie op 2026-06-18:
 
