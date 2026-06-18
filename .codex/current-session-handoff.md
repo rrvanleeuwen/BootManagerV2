@@ -23,8 +23,9 @@ gebruik op Linde door Roelof en Carla:
 - `PILOT-SCAN-01` is Done en op de Raspberry Pi en beide Samsung-telefoons geaccepteerd;
 - `PILOT-AUTH-01` is op 2026-06-17 technisch gecontroleerd en handmatig
   geaccepteerd;
-- `PILOT-LOC-01` is op 2026-06-18 documentair uitgewerkt in het holidaybestand,
-  inclusief scope, acceptatiecriteria, handmatige acceptatietest en legacy-koppeling;
+- `PILOT-LOC-01` is op 2026-06-18 technisch gecontroleerd en handmatig geaccepteerd;
+  persistent gebieds- en locatiebeheer, Owner/Crew-detailtoegang en migratiebewijs zijn
+  gereed;
 - `PILOT-LOC-02`, `PILOT-LOC-03` en `PILOT-LOC-04` zijn op 2026-06-18 documentair
   uitgesplitst voor locatie-QR-token, QR-print/export en QR-tokenvervanging/tagoverzicht;
 - tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
@@ -36,20 +37,20 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Laat Claude Code `PILOT-LOC-01` implementeren op
-`feature/pilot-loc-01-storage-locations` vanuit
-`.codex/PILOT-LOC-01-implementation-packet.md`. Controleer daarna branch, status,
-gerichte diff, migratiebewijs, tests en build voordat de handmatige acceptatietest
-wordt gestart.
+Commit en push de geaccepteerde `PILOT-LOC-01`-implementatie en documentatie op
+`feature/pilot-loc-01-storage-locations` en rond de PR af. Controleer na merge een
+schone actuele `master`; maak daarna een featurebranch en implementation packet voor
+`PILOT-LOC-02`.
 
-Laatste verificatie op 2026-06-17:
+Laatste verificatie op 2026-06-18:
 
-- handmatige acceptatie met Owner en Carla geslaagd;
-- unit-tests: 210/211, alleen de bekende
+- handmatige acceptatie van opslagbeheer en Owner/Crew-detailtoegang geslaagd;
+- storage unit-tests: 40/40;
+- volledige unit-suite: 248/249, alleen de bekende
   `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` baseline rood;
-- integratietests: 12/12;
+- integratietests: 22/22;
 - `dotnet build BootManager.sln --no-restore`: geslaagd met 0 warnings en 0 errors;
-- `git diff --check`: geslaagd met alleen CRLF-waarschuwingen.
+- `git diff --check`: geslaagd.
 
 ## Documentatie
 

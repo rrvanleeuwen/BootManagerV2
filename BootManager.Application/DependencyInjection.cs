@@ -19,6 +19,7 @@ using BootManager.Application.HeadingMeasurements.Services;
 using BootManager.Application.SpeedThroughWaterMeasurements.Services;
 using BootManager.Application.WaterTemperatureMeasurements.Services;
 using BootManager.Application.FluidLevelMeasurements.Services;
+using BootManager.Application.Storage.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BootManager.Application;
@@ -123,6 +124,9 @@ public static class DependencyInjection
 
         // Registratie van operationele instellingen service
         services.AddScoped<IOperationalSettingsService, OperationalSettingsService>();
+
+        // Registratie van Storage service
+        services.AddScoped<IStorageService, StorageService>();
 
         return services;
     }

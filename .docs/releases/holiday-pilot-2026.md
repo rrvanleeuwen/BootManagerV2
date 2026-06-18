@@ -135,7 +135,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 
 1. **PILOT-SCAN-01** — **Done** — Camera-, QR- en barcode-proof-of-concept op de telefoons.
 2. **PILOT-AUTH-01** — **Done** — Owner/Crew-model en eigen login voor Carla.
-3. **PILOT-LOC-01** — **Gepland** — Opslaggebieden en opslaglocaties.
+3. **PILOT-LOC-01** — **Done** — Opslaggebieden en opslaglocaties.
 4. **PILOT-LOC-02** — **Gepland** — QR-token genereren, koppelen en locatie openen.
 5. **PILOT-LOC-03** — **Gepland** — QR-tag printen en PNG exporteren.
 6. **PILOT-LOC-04** — **Gepland** — QR-token vervangen en tagoverzicht.
@@ -156,14 +156,19 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-LOC-01` — opslaggebieden en opslaglocaties.
+**Eerstvolgende story:** `PILOT-LOC-02` — QR-token genereren, koppelen en locatie openen.
 
 ## Uitgewerkte stories
 
 ### PILOT-LOC-01 — Opslaggebieden en opslaglocaties
 
-**Status:** Gereed voor implementatie; featurebranch en implementation packet gemaakt
-op 2026-06-18.
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-18.
+
+**Resultaat:** persistent Owner-beheer van gebieden en locaties, stabiele locatie-id's,
+een door Owner en Crew leesbare detailpagina en een additieve SQLite-migratie zijn
+opgeleverd. De handmatige acceptatie omvatte CRUD, verplaatsen, restrict-delete,
+Crew-autorisatie, locatie-aanmaak via modal, navigatie in hetzelfde tabblad en correcte
+terugnavigatie via browsergeschiedenis.
 
 **Als** Owner<br>
 **wil ik** opslaggebieden en opslaglocaties vastleggen<br>
@@ -217,13 +222,13 @@ op 2026-06-18.
 
 **Legacy-impact**
 
-- `US1.9 Bootstructuurbeheer: gebieden en opslaglocaties` wordt met deze story
-  gepland voor gedeeltelijke dekking: BootManagerV2 krijgt persistent beheer van
-  gebieden en locaties, zonder QR/tag- en voorraadfunctionaliteit.
-- `US1.10 Opslaglocatie aanmaken binnen gebied` wordt met deze story gepland voor
-  functionele dekking van aanmaken met naam en korte omschrijving.
-- `US1.11 Opslaglocatie bewerken` wordt met deze story gepland voor functionele
-  dekking van naam, omschrijving en gebiedskoppeling.
+- `US1.9 Bootstructuurbeheer: gebieden en opslaglocaties` is gedeeltelijk afgedekt:
+  BootManagerV2 heeft persistent beheer van gebieden en locaties, zonder QR/tag- en
+  voorraadfunctionaliteit.
+- `US1.10 Opslaglocatie aanmaken binnen gebied` is functioneel afgedekt voor
+  aanmaken met naam en korte omschrijving.
+- `US1.11 Opslaglocatie bewerken` is functioneel afgedekt voor naam, omschrijving,
+  gebiedskoppeling en verwijderen.
 - `US1.12 Tag genereren voor opslaglocatie` blijft open voor `PILOT-LOC-02` en
   `PILOT-LOC-03`.
 - `US1.13 Locatie openen via QR-code` blijft open voor `PILOT-LOC-02`; deze story

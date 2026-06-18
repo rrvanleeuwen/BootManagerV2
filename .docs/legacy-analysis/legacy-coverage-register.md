@@ -46,9 +46,9 @@ Bij afronding van een story of PR:
 | US1.6 Boot selecteren bij opstart | Parked | Multi-boot geparkeerd. |
 | US1.7 Gebruikersrechten wijzigen | Parked | Algemene rolwijziging blijft buiten `PILOT-AUTH-01`; alleen de vaste rollen Owner en Crew worden gebruikt. |
 | US1.8 Gebruiker verwijderen | Parked | Definitief verwijderen blijft buiten `PILOT-AUTH-01`; uitschakelen wordt de pilotroute voor het intrekken van toegang. |
-| US1.9 Bootstructuurbeheer: gebieden en opslaglocaties | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-01`: persistent beheer van gebieden en opslaglocaties. QR/tag- en voorraadfunctionaliteit blijven buiten die story. |
-| US1.10 Opslaglocatie aanmaken binnen gebied | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-01`: locatie aanmaken onder precies één gebied met naam en korte omschrijving. |
-| US1.11 Opslaglocatie bewerken | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-01`: locatie hernoemen, beschrijving aanpassen en gebiedskoppeling wijzigen. |
+| US1.9 Bootstructuurbeheer: gebieden en opslaglocaties | Partial | `PILOT-LOC-01` levert persistent beheer van gebieden en opslaglocaties met stabiele locatie-id en gedeelde detailpagina. QR/tag- en voorraadfunctionaliteit blijven open. |
+| US1.10 Opslaglocatie aanmaken binnen gebied | Done | `PILOT-LOC-01` dekt locatie aanmaken onder precies één gebied met naam en korte omschrijving af. |
+| US1.11 Opslaglocatie bewerken | Done | `PILOT-LOC-01` dekt locatie hernoemen, beschrijving aanpassen, verplaatsen naar een ander gebied en verwijderen af. |
 | US1.12 Tag genereren voor opslaglocatie | Open | Gekoppeld aan geplande pilotstories `PILOT-LOC-02` en `PILOT-LOC-03`: token/QR-waarde eerst, printen en PNG-export daarna. |
 | US1.13 Locatie openen via QR-code | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-02`; `PILOT-LOC-01` levert alleen de detailpagina, producten en aantallen blijven later. |
 | US1.14 Tag opnieuw koppelen of vervangen | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-04`: token vervangen en oude QR ongeldig maken. |
