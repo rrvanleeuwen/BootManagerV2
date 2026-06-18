@@ -137,16 +137,18 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 2. **PILOT-AUTH-01** — **Done** — Owner/Crew-model en eigen login voor Carla.
 3. **PILOT-LOC-01** — **Gepland** — Opslaggebieden en opslaglocaties.
 4. **PILOT-LOC-02** — **Gepland** — QR-token genereren, koppelen en locatie openen.
-5. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
-6. **PILOT-INV-02** — **Gepland** — Voorraad per product en locatie, inclusief meerdere locaties per product.
-7. **PILOT-INV-03** — **Gepland** — Product aanmaken met gescande locatie-QR.
-8. **PILOT-INV-04** — **Gepland** — Product terugvinden via barcode.
-9. **PILOT-INV-05** — **Gepland** — Voorraadmutaties en eenvoudige historie.
-10. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
-11. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
-12. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
-13. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
-14. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
+5. **PILOT-LOC-03** — **Gepland** — QR-tag printen en PNG exporteren.
+6. **PILOT-LOC-04** — **Gepland** — QR-token vervangen en tagoverzicht.
+7. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
+8. **PILOT-INV-02** — **Gepland** — Voorraad per product en locatie, inclusief meerdere locaties per product.
+9. **PILOT-INV-03** — **Gepland** — Product aanmaken met gescande locatie-QR.
+10. **PILOT-INV-04** — **Gepland** — Product terugvinden via barcode.
+11. **PILOT-INV-05** — **Gepland** — Voorraadmutaties en eenvoudige historie.
+12. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
+13. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
+14. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
+15. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
+16. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
 
 Codex kiest geen story buiten deze volgorde, tenzij:
 
@@ -221,11 +223,12 @@ Codex kiest geen story buiten deze volgorde, tenzij:
   functionele dekking van aanmaken met naam en korte omschrijving.
 - `US1.11 Opslaglocatie bewerken` wordt met deze story gepland voor functionele
   dekking van naam, omschrijving en gebiedskoppeling.
-- `US1.12 Tag genereren voor opslaglocatie` blijft open voor `PILOT-LOC-02`.
+- `US1.12 Tag genereren voor opslaglocatie` blijft open voor `PILOT-LOC-02` en
+  `PILOT-LOC-03`.
 - `US1.13 Locatie openen via QR-code` blijft open voor `PILOT-LOC-02`; deze story
   levert alleen de detailpagina die later door QR-scans geopend kan worden.
-- `US1.14 Tag opnieuw koppelen of vervangen` blijft open voor een latere QR/tag-slice.
-- `US1.15 Overzicht van alle tags` blijft open voor een latere QR/tag-slice.
+- `US1.14 Tag opnieuw koppelen of vervangen` blijft open voor `PILOT-LOC-04`.
+- `US1.15 Overzicht van alle tags` blijft open voor `PILOT-LOC-04`.
 - `US2.8 Product koppelen aan opslaglocatie` en `US2.9 Voorraad bekijken per
   locatie` blijven open voor de latere inventory-stories; `PILOT-LOC-01` levert
   alleen de locatiebasis.
@@ -254,6 +257,191 @@ toegankelijk zijn, maar dat een bestaande locatie-detailpagina wel leesbaar open
   nodig een apart component om `Settings.razor` beheersbaar te houden.
 - Maak de locatie-detailpagina `Owner,Crew` toegankelijk zodat `PILOT-LOC-02` daar
   later bekende locatie-QR's naartoe kan routeren.
+
+### PILOT-LOC-02 — QR-token genereren, koppelen en locatie openen
+
+**Status:** Gepland; story uitgewerkt op 2026-06-18.
+
+**Als** Owner en Crew<br>
+**wil ik** een locatie via een BootManager QR-code kunnen openen<br>
+**zodat** een fysieke plek aan boord snel digitaal terug te vinden is.
+
+**Scope**
+
+- Owner kan voor een bestaande opslaglocatie een unieke BootManager QR-token aanmaken.
+- Owner kan een onbekende BootManager QR-token koppelen aan een bestaande locatie.
+- Owner kan na het scannen van een onbekende BootManager QR-token ook een nieuwe
+  locatie aanmaken en de token daaraan koppelen.
+- De QR-token is stabiel en niet gebaseerd op gebiedsnaam of locatienaam.
+- De QR-code blijft geldig wanneer de locatie later wordt hernoemd of verplaatst.
+- Scannen van een bekende locatie-QR opent direct de bestaande locatie-detailpagina.
+- Crew kan bekende locatie-QR's scannen en openen.
+- Crew kan onbekende QR's niet koppelen aan nieuwe of bestaande locaties.
+
+**Buiten scope**
+
+- QR-code printen of PNG exporteren; dat volgt in `PILOT-LOC-03`.
+- QR-token vervangen, tagstatus en tagoverzicht; dat volgt in `PILOT-LOC-04`.
+- Producten, productbarcodes, voorraadregels, hoeveelheden en voorraadmutaties.
+- Voorraad bekijken of aanpassen vanaf een locatiepagina.
+- Externe QR-diensten, cloud-sync of NFC.
+
+**Acceptatiecriteria**
+
+- Owner kan een unieke QR-token voor een locatie genereren.
+- Dezelfde token kan niet aan twee locaties gekoppeld zijn.
+- Een bekende locatie-QR opent voor Owner en Crew de juiste locatie-detailpagina.
+- Hernoemen of verplaatsen van de locatie verandert de token niet.
+- Een onbekende BootManager QR toont Owner een keuze om te koppelen aan een bestaande
+  locatie of aan een nieuwe locatie.
+- Een onbekende BootManager QR geeft Crew geen beheeractie.
+- Niet-BootManager QR-waarden worden niet automatisch gekoppeld aan locaties.
+- `dotnet build BootManager.sln` slaagt.
+
+**Legacy-impact**
+
+- `US1.12 Tag genereren voor opslaglocatie` wordt met deze story gedeeltelijk
+  gepland: unieke token en QR-waarde per locatie; printen/exporteren volgt in
+  `PILOT-LOC-03`.
+- `US1.13 Locatie openen via QR-code` wordt met deze story gedeeltelijk gepland:
+  QR opent de locatie-detailpagina; producten en aantallen blijven voor inventory.
+- `US2.14 QR-scanner-modus` wordt verder gedeeltelijk gepland: locatie-QR routing
+  komt in deze story; voorraad bekijken of wijzigen blijft voor latere inventory.
+
+**Handmatige acceptatietest**
+
+Log in als Owner, open een bestaande locatie en genereer een QR-token. Scan of voer de
+QR-waarde handmatig in en controleer dat de locatie-detailpagina opent. Hernoem of
+verplaats de locatie en controleer dat dezelfde QR nog steeds de locatie opent. Scan
+een onbekende BootManager QR en koppel deze eerst aan een bestaande locatie en daarna
+in een aparte test aan een nieuwe locatie. Log daarna in als Carla/Crew en controleer
+dat bekende locatie-QR's openen, maar onbekende QR's geen koppelactie toestaan.
+
+**Technische richting**
+
+- Gebruik een stabiel BootManager-specifiek QR-value format, zodat de scanflow eigen
+  locatie-QR's kan onderscheiden van productbarcodes en willekeurige QR-waarden.
+- Sla token los van locatienaam en gebied op.
+- Laat de bestaande generieke scanpagina de tokenwaarde herkennen en naar de juiste
+  locatieflow routeren.
+- Houd onbekende-token-koppeling Owner-only en laat Crew alleen lezen/openen.
+
+### PILOT-LOC-03 — QR-tag printen en PNG exporteren
+
+**Status:** Gepland; story uitgewerkt op 2026-06-18.
+
+**Als** Owner<br>
+**wil ik** de QR-code van een opslaglocatie kunnen printen en als PNG downloaden<br>
+**zodat** ik fysieke labels kan maken en in de boot kan aanbrengen.
+
+**Scope**
+
+- Owner kan de QR-code van een locatie openen op een printvriendelijke tagpagina.
+- Owner kan vanuit de browser een printactie starten voor de QR-tag.
+- Owner kan per locatie een PNG-bestand van de QR-code downloaden.
+- De tagpagina toont minimaal gebied, locatienaam en QR-code.
+- De QR-code gebruikt de stabiele BootManager QR-token uit `PILOT-LOC-02`.
+
+**Buiten scope**
+
+- Server-side PDF- of CSV-export.
+- Geavanceerde labelvellen, snijtekens, printerprofielen of labelprinterintegratie.
+- QR-token vervangen of ongeldig maken.
+- Tagoverzicht en tagstatus.
+- Producten, voorraad en voorraadmutaties.
+
+**Acceptatiecriteria**
+
+- Owner kan voor een locatie een printvriendelijke QR-tagpagina openen.
+- De QR-code op de tagpagina bevat de bestaande stabiele tokenwaarde.
+- Browserprint vanaf de tagpagina is beschikbaar.
+- Owner kan een PNG-bestand downloaden.
+- Het gedownloade of geprinte QR-label opent via de scanflow dezelfde locatie.
+- Crew kan QR-tags niet printen of exporteren.
+- `dotnet build BootManager.sln` slaagt.
+
+**Legacy-impact**
+
+- `US1.12 Tag genereren voor opslaglocatie` wordt met deze story verder gepland:
+  printen en exporteren als afbeelding worden afgedekt nadat `PILOT-LOC-02` de
+  token- en QR-waarde levert.
+- Vervangen van tags en tagoverzicht blijven voor `PILOT-LOC-04`.
+
+**Handmatige acceptatietest**
+
+Log in als Owner, open een locatie met bestaande QR-token en open de tagpagina. Start
+browserprint en download de PNG. Scan daarna de zichtbare QR-code of de gedownloade
+PNG vanaf een tweede scherm en controleer dat dezelfde locatiepagina opent. Controleer
+dat Crew deze print/exportactie niet kan uitvoeren.
+
+**Technische richting**
+
+- Gebruik de bestaande browserprintstijl als patroon; voeg geen server-side PDF-export
+  toe.
+- Gebruik browserdownload voor PNG-export, aansluitend op bestaande downloadpatronen
+  in de webapp.
+- Als een QR-generator nodig is, voeg alleen een kleine lokale dependency of
+  client-side module toe die offline werkt.
+
+### PILOT-LOC-04 — QR-token vervangen en tagoverzicht
+
+**Status:** Gepland; story uitgewerkt op 2026-06-18.
+
+**Als** Owner<br>
+**wil ik** locatie-QR's kunnen vervangen en de tagstatus per locatie kunnen zien<br>
+**zodat** beschadigde of verplaatste QR-labels aan boord beheersbaar blijven.
+
+**Scope**
+
+- Owner kan het QR-token van een locatie vervangen.
+- Het oude token wordt ongeldig en opent daarna geen locatie meer.
+- Owner ziet een tagoverzicht met gebied, locatie, huidig token en tagstatus.
+- Owner kan de tagstatus handmatig bijwerken naar `Niet geprint`, `Geprint`,
+  `Gekoppeld` of `Vervangen`.
+- Het tagoverzicht helpt bepalen welke fysieke labels nog gemaakt, aangebracht of
+  vervangen moeten worden.
+
+**Buiten scope**
+
+- Automatische detectie of een label fysiek geprint of aangebracht is.
+- Printerintegratie, labelprinterprofielen of automatische statuswijziging na print.
+- Auditlog van tokenvervangingen.
+- Producten, voorraad en voorraadmutaties.
+
+**Acceptatiecriteria**
+
+- Owner kan per locatie een nieuw token genereren waarmee de oude QR ongeldig wordt.
+- Een scan of handmatige invoer van het oude token opent de locatie niet meer.
+- Een scan of handmatige invoer van het nieuwe token opent de locatie wel.
+- Het tagoverzicht toont alle locaties met gebied, locatienaam en tagstatus.
+- Owner kan de tagstatus handmatig aanpassen en terugzien.
+- Crew kan het tagoverzicht en vervangactie niet beheren.
+- `dotnet build BootManager.sln` slaagt.
+
+**Legacy-impact**
+
+- `US1.14 Tag opnieuw koppelen of vervangen` wordt met deze story gepland voor
+  functionele dekking: oude token ongeldig, nieuw token actief.
+- `US1.15 Overzicht van alle tags` wordt met deze story gepland voor functionele
+  dekking van een overzicht met locaties, tokeninformatie en handmatige tagstatus.
+- Fysieke printerintegratie en auditlog blijven buiten scope.
+
+**Handmatige acceptatietest**
+
+Log in als Owner, open het tagoverzicht en kies een locatie met bestaande QR. Zet de
+status op `Geprint` en daarna op `Gekoppeld`. Vervang vervolgens het token. Controleer
+dat de status zichtbaar is, dat het oude token niet meer naar de locatie opent en dat
+het nieuwe token wel werkt. Log daarna in als Crew en controleer dat beheer van
+vervangen en tagstatus niet toegankelijk is.
+
+**Technische richting**
+
+- Bouw voort op het tokenmodel van `PILOT-LOC-02` en de print/exportweergave van
+  `PILOT-LOC-03`.
+- Gebruik een expliciet handmatig statusveld; leid status niet automatisch af uit
+  print- of downloadacties.
+- Houd tokenvervanging beperkt tot het actief maken van een nieuw token en het
+  ongeldig maken van het vorige token.
 
 ### PILOT-AUTH-01 — Lokale Owner- en Crew-accounts
 

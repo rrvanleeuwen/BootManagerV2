@@ -25,6 +25,8 @@ gebruik op Linde door Roelof en Carla:
   geaccepteerd;
 - `PILOT-LOC-01` is op 2026-06-18 documentair uitgewerkt in het holidaybestand,
   inclusief scope, acceptatiecriteria, handmatige acceptatietest en legacy-koppeling;
+- `PILOT-LOC-02`, `PILOT-LOC-03` en `PILOT-LOC-04` zijn op 2026-06-18 documentair
+  uitgesplitst voor locatie-QR-token, QR-print/export en QR-tokenvervanging/tagoverzicht;
 - tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
   toestaan in de Crew-PCR-gate en open Blazor-sessies periodiek valideren tegen
   `CredentialVersion`.

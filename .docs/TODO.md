@@ -41,6 +41,27 @@
   - **Legacy-koppeling:** raakt `US1.9`, `US1.10` en `US1.11`; QR/tag-stories `US1.12` t/m `US1.15` en inventory-stories `US2.8` en `US2.9` blijven open.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
+- [ ] **Holiday Pilot 2026 — PILOT-LOC-02 QR-token genereren, koppelen en locatie openen**
+  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand; wacht op `PILOT-LOC-01`.
+  - **Doel:** bekende locatie-QR's openen de locatiepagina; Owner kan onbekende BootManager-QR's koppelen.
+  - **Buiten scope:** print/export, token vervangen, tagoverzicht, producten en voorraad.
+  - **Legacy-koppeling:** raakt `US1.12`, `US1.13` en `US2.14`.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-LOC-03 QR-tag printen en PNG exporteren**
+  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand; wacht op `PILOT-LOC-02`.
+  - **Doel:** Owner kan een locatie-QR printvriendelijk openen en als PNG downloaden.
+  - **Buiten scope:** server-side PDF/CSV, labelprinterintegratie, token vervangen en tagoverzicht.
+  - **Legacy-koppeling:** vult `US1.12` aan met printen/exporteren.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-LOC-04 QR-token vervangen en tagoverzicht**
+  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand; wacht op `PILOT-LOC-03`.
+  - **Doel:** Owner kan tokens vervangen en handmatige tagstatus per locatie beheren.
+  - **Buiten scope:** fysieke printerintegratie, auditlog, producten en voorraad.
+  - **Legacy-koppeling:** raakt `US1.14` en `US1.15`.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**
   - **Aanleiding 2026-05-26:** Tijdens Raspberry Pi test vóór login/onboarding stond in het menu nog **Register Owner**. Klikken navigeert naar `/register-owner`. Dit is oude vrije registratie en hoort niet meer bij de huidige bootstrap owner + verplichte onboarding flow.
   - **Status:** afgerond via PR #64, merge commit `a441ca8`. User story `US7: Legacy Register Owner Route En Menu Verwijderen` staat als gereed in `.docs/epics/first-run-onboarding.md`.
