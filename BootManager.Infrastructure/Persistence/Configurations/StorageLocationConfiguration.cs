@@ -15,8 +15,10 @@ public class StorageLocationConfiguration : IEntityTypeConfiguration<StorageLoca
         b.Property(x => x.Name).IsRequired().HasMaxLength(100);
         b.Property(x => x.NormalizedName).IsRequired().HasMaxLength(100);
         b.Property(x => x.Description).HasMaxLength(500);
+        b.Property(x => x.QrToken).HasMaxLength(32);
 
         b.HasIndex(x => new { x.StorageAreaId, x.NormalizedName }).IsUnique();
+        b.HasIndex(x => x.QrToken).IsUnique().HasFilter("\"QrToken\" IS NOT NULL");
 
         b.HasOne(x => x.StorageArea)
             .WithMany(a => a.Locations)

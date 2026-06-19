@@ -193,9 +193,9 @@ function Get-HolidayPilotStatus {
 
     # De pilotstories hebben een vaste prioriteitsvolgorde in het releasedocument.
     # Houd deze tellers bij wanneer een pilotstory administratief van status wijzigt.
-    $done = 3
+    $done = 4
     $partial = 0
-    $open = 13
+    $open = 12
     $parked = 0
     $progress = Get-Progress -Done $done -Replaced 0 -Partial $partial -Open $open -Parked $parked -Obsolete 0
 
@@ -208,7 +208,7 @@ function Get-HolidayPilotStatus {
         Parked = $parked
         Active = $done + $partial + $open
         Progress = $progress
-        Next = "PILOT-LOC-02 - QR-token genereren, koppelen en locatie openen"
+        Next = "PILOT-LOC-03 - QR-tag printen en PNG exporteren"
     }
 }
 

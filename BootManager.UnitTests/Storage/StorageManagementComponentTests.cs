@@ -396,5 +396,9 @@ public class StorageManagementComponentTests : TestContext
         public Task<StorageOperationResult> DeleteAreaAsync(Guid areaId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<StorageOperationResult> DeleteLocationAsync(Guid locationId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<StorageOperationResult<BootManager.Application.Storage.DTOs.StorageLocationDetailDto>> GetLocationDetailAsync(Guid locationId, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<StorageOperationResult<string>> GenerateOrGetQrTokenAsync(Guid locationId, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<QrResolutionResult> ResolveQrValueAsync(string? qrValue, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<StorageOperationResult> LinkQrToExistingLocationAsync(string token, Guid locationId, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<StorageOperationResult<BootManager.Application.Storage.DTOs.StorageLocationDetailDto>> CreateLocationWithQrTokenAsync(Guid areaId, string name, string? description, string token, CancellationToken ct = default) => throw new NotImplementedException();
     }
 }

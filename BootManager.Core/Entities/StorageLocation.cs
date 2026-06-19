@@ -20,6 +20,9 @@ public class StorageLocation
     /// <summary>Optionele beschrijving (max 500 chars).</summary>
     public string? Description { get; private set; }
 
+    /// <summary>Optionele stabiele BootManager QR-token: 16 bytes als 32 lowercase hexadecimale tekens. Uniek per locatie.</summary>
+    public string? QrToken { get; private set; }
+
     public StorageArea StorageArea { get; private set; } = default!;
 
     private StorageLocation() { } // Voor EF
@@ -30,6 +33,7 @@ public class StorageLocation
         Name = name.Trim();
         NormalizedName = name.Trim().ToLowerInvariant();
         Description = string.IsNullOrEmpty(description?.Trim()) ? null : description.Trim();
+        QrToken = null;
     }
 
     public static StorageLocation Create(Guid storageAreaId, string name, string? description = null)
@@ -45,5 +49,15 @@ public class StorageLocation
     public void MoveToArea(Guid newStorageAreaId)
     {
         StorageAreaId = newStorageAreaId;
+    }
+
+    /// <summary>Stelt de QR-token in. Weigert te overschrijven als al een token bestaat.</summary>
+    public void SetQrToken(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+            throw new ArgumentException("Token mag niet leeg zijn.", nameof(token));
+        if (QrToken != null)
+            throw new InvalidOperationException("Een locatie kan geen bestaande token vervangen.");
+        QrToken = token;
     }
 }

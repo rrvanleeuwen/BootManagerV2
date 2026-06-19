@@ -2,8 +2,14 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @implements IAsyncDisposable
 @using Microsoft.JSInterop
+@using BootManager.Application.Storage.Services
+@using BootManager.Application.Storage.Results
+@using Microsoft.AspNetCore.Components.Authorization
 
 @inject IJSRuntime Js
+@inject IStorageService StorageService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Scannen</PageTitle>
 
@@ -142,6 +148,36 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         <div class="scan-result-value">@_resultValue</div>
         <div class="mt-2"><strong>Formaat</strong></div>
         <div>@_resultFormat</div>
+
+        @if (_qrResolution != null)
+        {
+            <div class="mt-3">
+                @if (_qrResolution.Status == QrStatus.Linked)
+                {
+                    <div class="alert alert-info">
+                        <strong>BootManager locatie-QR herkennen.</strong>
+                        <button class="btn btn-sm btn-primary ms-2" @onclick="NavigateToLocation">Locatie openen</button>
+                    </div>
+                }
+                else if (_qrResolution.Status == QrStatus.Unknown)
+                {
+                    @if (_isOwner)
+                    {
+                        <div class="alert alert-warning">
+                            <strong>Onbekende BootManager locatie-QR.</strong>
+                            <button class="btn btn-sm btn-primary ms-2" @onclick="NavigateToLinkPage">Koppelen…</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <strong>Onbekende BootManager locatie-QR.</strong>
+                            Deze QR kan door een beheerder worden gekoppeld.
+                        </div>
+                    }
+                }
+            </div>
+        }
     </div>
 }
 
@@ -219,6 +255,8 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     private string? _resultFormat;
     private string? _errorMessage;
     private string? _manualInput;
+    private QrResolutionResult? _qrResolution;
+    private bool _isOwner = false;
 
     // Geselecteerde camera-ID; null = automatische achtercameravoorkeur via facingMode.
     // Blijft behouden over scan-herstarts tijdens de levensduur van het component.
@@ -257,6 +295,12 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         ScanStatus.InsecureContext      => "Cameratoegang niet mogelijk via HTTP.",
         _                               => string.Empty
     };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isOwner = authState.User.IsInRole("Owner");
+    }
 
     /// <summary>
     /// Laadt de JavaScript-scanmodule bij de eerste render en bepaalt direct de beveiligde-contextstatus,
@@ -453,6 +497,7 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         _resultFormat = "Handmatig ingevoerd";
         _status       = ScanStatus.ManualEntry;
         _manualInput  = null;
+        await ProcessScannedValue(value);
         StateHasChanged();
     }
 
@@ -466,7 +511,7 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
 
     /// <summary>Ontvangt een succesvol scanresultaat vanuit JavaScript.</summary>
     [JSInvokable]
-    public void OnScanResult(int requestId, string value, string format)
+    public async void OnScanResult(int requestId, string value, string format)
     {
         // Negeer resultaten van vorige sessies.
         if (requestId != _requestId)
@@ -475,6 +520,7 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         _resultValue  = value;
         _resultFormat = format;
         _status       = ScanStatus.Result;
+        await ProcessScannedValue(value);
         StateHasChanged();
     }
 
@@ -550,6 +596,35 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         _lastSupportRevision = support.SupportRevision;
         _decoderSupport = support;
         StateHasChanged();
+    }
+
+    private async Task ProcessScannedValue(string value)
+    {
+        _qrResolution = await StorageService.ResolveQrValueAsync(value);
+        if (_qrResolution.Status == QrStatus.Linked && _qrResolution.LinkedLocationId.HasValue)
+        {
+            await NavigateToLocation();
+        }
+    }
+
+    private Task NavigateToLocation()
+    {
+        if (_qrResolution?.Status == QrStatus.Linked && _qrResolution.LinkedLocationId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/storage/locations/{_qrResolution.LinkedLocationId}");
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task NavigateToLinkPage()
+    {
+        if (_qrResolution?.Status == QrStatus.Unknown && !string.IsNullOrEmpty(_qrResolution.Token))
+        {
+            var qrValue = BootManager.Application.Storage.QrFormat.LocationQrValue.FormatQrValue(_qrResolution.Token);
+            var encodedQrValue = Uri.EscapeDataString(qrValue);
+            NavigationManager.NavigateTo($"/storage/link-location-qr?qrValue={encodedQrValue}");
+        }
+        return Task.CompletedTask;
     }
 
     /// <summary>

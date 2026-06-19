@@ -6,4 +6,5 @@ public class StorageLocationDetailDto
     public string AreaName { get; set; } = default!;
     public string LocationName { get; set; } = default!;
     public string? Description { get; set; }
+    public string? QrValue { get; set; }
 }

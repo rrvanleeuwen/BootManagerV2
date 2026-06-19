@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-18.
+Updated: 2026-06-19.
 
 ## Rollen
 
@@ -10,9 +10,9 @@ Updated: 2026-06-18.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `master`.
-- `master` is bijgewerkt tot en met mergecommit `b7b47d9` voor `PILOT-LOC-01`.
-- De worktree is schoon na de mergecontrole.
+- Actieve branch: `feature/pilot-loc-02-location-qr`.
+- Deze branch bevat de afgeronde `PILOT-LOC-02` implementatie en documentatie-update.
+- Commit/push/PR-flow voor `PILOT-LOC-02` is de actuele stap.
 
 ## Actieve release
 
@@ -26,8 +26,11 @@ gebruik op Linde door Roelof en Carla:
 - `PILOT-LOC-01` is op 2026-06-18 technisch gecontroleerd en handmatig geaccepteerd;
   persistent gebieds- en locatiebeheer, Owner/Crew-detailtoegang en migratiebewijs zijn
   gereed;
-- `PILOT-LOC-02`, `PILOT-LOC-03` en `PILOT-LOC-04` zijn op 2026-06-18 documentair
-  uitgesplitst voor locatie-QR-token, QR-print/export en QR-tokenvervanging/tagoverzicht;
+- `PILOT-LOC-02` is op 2026-06-19 technisch gecontroleerd en handmatig geaccepteerd;
+  stabiele locatie-QR-tokens, scanrouting en Owner-only koppelen van onbekende
+  BootManager-QR's zijn gereed;
+- `PILOT-LOC-03` en `PILOT-LOC-04` blijven documentair uitgesplitst voor QR-print/export
+  en QR-tokenvervanging/tagoverzicht;
 - tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
   toestaan in de Crew-PCR-gate en open Blazor-sessies periodiek valideren tegen
   `CredentialVersion`.
@@ -37,18 +40,19 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Start vanaf de schone actuele `master`. Maak een featurebranch en compact
-implementation packet voor `PILOT-LOC-02` — QR-token genereren, koppelen en locatie
-openen. Geef Claude de opdracht pas nadat de branch is gecontroleerd en niet `master`
-is.
+Na merge van `feature/pilot-loc-02-location-qr` is de eerstvolgende actie een
+featurebranch en compact implementation packet voor `PILOT-LOC-03` — QR-tag printen en
+PNG exporteren.
 
-Laatste verificatie op 2026-06-18:
+Laatste verificatie op 2026-06-19:
 
-- handmatige acceptatie van opslagbeheer en Owner/Crew-detailtoegang geslaagd;
-- storage unit-tests: 40/40;
-- volledige unit-suite: 248/249, alleen de bekende
+- handmatige acceptatie van `PILOT-LOC-02` geslaagd; een gemelde afwijking bleek een
+  controle op een verkeerde dubbel voorkomende locatienaam, niet een productdefect;
+- gerichte storage unit-tests: 96/96;
+- volledige unit-suite: 292/293, alleen de bekende
   `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` baseline rood;
-- integratietests: 22/22;
+- gerichte storage-integratietests: 24/24;
+- volledige integratiesuite: 36/36;
 - `dotnet build BootManager.sln --no-restore`: geslaagd met 0 warnings en 0 errors;
 - `git diff --check`: geslaagd.
 

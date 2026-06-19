@@ -1,0 +1,233 @@
+@page "/storage/link-location-qr"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Services
+@using BootManager.Application.Storage.QrFormat
+@inject IStorageService StorageService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<div class="mb-4">
+    <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="GoBackAsync">← Terug</button>
+</div>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else if (!_tokenValid)
+{
+    <div class="alert alert-danger">QR-token is ongeldig of ontbreekt.</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">QR-code koppelen</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-4">
+                <span class="text-muted small">QR-waarde</span>
+                <div class="font-monospace small">@_displayQrValue</div>
+            </div>
+
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(_activeTab == "existing" ? "active" : "")" id="existing-tab" type="button" role="tab" @onclick="SelectExistingTab">
+                        Aan bestaande locatie koppelen
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(_activeTab == "new" ? "active" : "")" id="new-tab" type="button" role="tab" @onclick="SelectNewTab">
+                        Nieuwe locatie aanmaken
+                    </button>
+                </li>
+            </ul>
+
+            @if (_activeTab == "existing")
+            {
+                <div class="mb-3">
+                    <label class="form-label">Opslaggebied</label>
+                    <select class="form-select" @bind="_selectedAreaId">
+                        <option value="">-- Kies een gebied --</option>
+                        @foreach (var area in _areas)
+                        {
+                            <option value="@area.Id">@area.Name</option>
+                        }
+                    </select>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_selectedAreaId) && Guid.TryParse(_selectedAreaId, out var selectedAreaGuid))
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Opslaglocatie</label>
+                        <select class="form-select" @bind="_selectedLocationId">
+                            <option value="">-- Kies een locatie --</option>
+                            @foreach (var location in _locationsByArea.Where(l => l.StorageAreaId == selectedAreaGuid))
+                            {
+                                <option value="@location.Id">@location.Name</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger">@_errorMessage</div>
+                }
+
+                <button class="btn btn-primary"
+                        @onclick="LinkToExisting"
+                        disabled="@(string.IsNullOrEmpty(_selectedLocationId))">
+                    Koppelen
+                </button>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <label class="form-label">Opslaggebied</label>
+                    <select class="form-select" @bind="_newLocationAreaId">
+                        <option value="">-- Kies een gebied --</option>
+                        @foreach (var area in _areas)
+                        {
+                            <option value="@area.Id">@area.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Locatienaam *</label>
+                    <input type="text" class="form-control" @bind="_newLocationName" placeholder="Bijv. Kast 1">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Beschrijving</label>
+                    <textarea class="form-control" @bind="_newLocationDescription" rows="3" placeholder="Optionele beschrijving…"></textarea>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger">@_errorMessage</div>
+                }
+
+                <button class="btn btn-primary"
+                        @onclick="CreateLocationWithQr"
+                        disabled="@(string.IsNullOrEmpty(_newLocationAreaId) || string.IsNullOrEmpty(_newLocationName))">
+                    Locatie aanmaken en koppelen
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? QrValue { get; set; }
+
+    private bool _loading = true;
+    private bool _tokenValid = false;
+    private string? _token;
+    private string? _displayQrValue;
+    private string _activeTab = "existing";
+    private IReadOnlyList<StorageAreaDto> _areas = new List<StorageAreaDto>();
+    private IReadOnlyList<StorageLocationDto> _locationsByArea = new List<StorageLocationDto>();
+    private string? _selectedAreaId;
+    private string? _selectedLocationId;
+    private string? _newLocationAreaId;
+    private string? _newLocationName;
+    private string? _newLocationDescription;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _token = LocationQrValue.TryParseQrValue(QrValue);
+        if (_token == null)
+        {
+            _tokenValid = false;
+            _loading = false;
+            return;
+        }
+
+        _tokenValid = true;
+        _displayQrValue = QrValue;
+
+        try
+        {
+            _areas = await StorageService.GetAllAreasAsync();
+            foreach (var area in _areas)
+            {
+                var locations = await StorageService.GetLocationsByAreaAsync(area.Id);
+                _locationsByArea = _locationsByArea.Concat(locations).ToList();
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LinkToExisting()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrEmpty(_selectedLocationId) || !Guid.TryParse(_selectedLocationId, out var locationId))
+        {
+            _errorMessage = "Kies een locatie.";
+            return;
+        }
+
+        var result = await StorageService.LinkQrToExistingLocationAsync(_token!, locationId);
+        if (result.Success)
+        {
+            NavigationManager.NavigateTo($"/storage/locations/{locationId}");
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage ?? "Fout bij koppelen.";
+        }
+    }
+
+    private async Task CreateLocationWithQr()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrEmpty(_newLocationAreaId) || !Guid.TryParse(_newLocationAreaId, out var areaId))
+        {
+            _errorMessage = "Kies een gebied.";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_newLocationName))
+        {
+            _errorMessage = "Voer een locatienaam in.";
+            return;
+        }
+
+        var result = await StorageService.CreateLocationWithQrTokenAsync(areaId, _newLocationName, _newLocationDescription, _token!);
+        if (result.Success && result.Data != null)
+        {
+            NavigationManager.NavigateTo($"/storage/locations/{result.Data.Id}");
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage ?? "Fout bij aanmaken van locatie.";
+        }
+    }
+
+    private void SelectExistingTab()
+    {
+        _activeTab = "existing";
+        _errorMessage = null;
+    }
+
+    private void SelectNewTab()
+    {
+        _activeTab = "new";
+        _errorMessage = null;
+    }
+
+    private async Task GoBackAsync()
+    {
+        await JsRuntime.InvokeVoidAsync("history.back");
+    }
+}
