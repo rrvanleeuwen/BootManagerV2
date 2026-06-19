@@ -1,0 +1,171 @@
+@page "/storage/tag-overview"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Services
+@using BootManager.Core.Enums
+@inject IStorageService StorageService
+
+<PageTitle>QR-tag overzicht</PageTitle>
+
+<div class="mb-3">
+    <h3>QR-tag overzicht</h3>
+    <p class="text-muted">Beheer QR-tags per locatie, inclusief status en vervangingen.</p>
+</div>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else if (_locations.Count == 0)
+{
+    <div class="alert alert-info">Geen opslaglocaties gevonden.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead class="table-light">
+                <tr>
+                    <th>Gebied</th>
+                    <th>Locatie</th>
+                    <th>QR-code</th>
+                    <th>Status</th>
+                    <th class="text-end">Acties</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var location in _locations)
+                {
+                    <tr>
+                        <td>@location.AreaName</td>
+                        <td>@location.LocationName</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(location.QrValue))
+                            {
+                                <code class="small">@location.QrValue</code>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">geen token</span>
+                            }
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm" @onchange="e => OnTagStatusChanged(location.Id, e)">
+                                @foreach (var status in (TagStatus[])Enum.GetValues(typeof(TagStatus)))
+                                {
+                                    var statusLabel = StatusLabel(status);
+                                    <option value="@status" selected="@(location.TagStatus == status)">@statusLabel</option>
+                                }
+                            </select>
+                        </td>
+                        <td class="text-end">
+                            @if (!string.IsNullOrEmpty(location.QrValue))
+                            {
+                                <button class="btn btn-sm btn-warning" @onclick="() => OnReplaceToken(location.Id)" disabled="@(_replacingLocationId == location.Id)">
+                                    @if (_replacingLocationId == location.Id)
+                                    {
+                                        <span>Vervangen…</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Vervangen</span>
+                                    }
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-@(_messageType) alert-dismissible fade show mt-3" role="alert">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = string.Empty"></button>
+    </div>
+}
+
+@code {
+    private List<StorageLocationOverviewDto> _locations = [];
+    private bool _loading = true;
+    private string _message = string.Empty;
+    private string _messageType = "info";
+    private Guid _replacingLocationId = Guid.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocations();
+    }
+
+    private async Task LoadLocations()
+    {
+        _loading = true;
+        try
+        {
+            _locations = (await StorageService.GetAllLocationsOverviewAsync()).OrderBy(l => l.AreaName).ThenBy(l => l.LocationName).ToList();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnTagStatusChanged(Guid locationId, ChangeEventArgs e)
+    {
+        if (Enum.TryParse<TagStatus>(e.Value?.ToString(), out var newStatus))
+        {
+            var result = await StorageService.UpdateTagStatusAsync(locationId, newStatus);
+            if (result.Success)
+            {
+                var location = _locations.FirstOrDefault(l => l.Id == locationId);
+                if (location != null)
+                {
+                    location.TagStatus = newStatus;
+                }
+                _message = "Status bijgewerkt.";
+                _messageType = "success";
+            }
+            else
+            {
+                _message = result.ErrorMessage ?? "Fout bij bijwerken van status.";
+                _messageType = "danger";
+            }
+        }
+    }
+
+    private async Task OnReplaceToken(Guid locationId)
+    {
+        _replacingLocationId = locationId;
+        try
+        {
+            var result = await StorageService.ReplaceQrTokenAsync(locationId);
+            if (result.Success)
+            {
+                await LoadLocations();
+                _message = "Token vervangen. Oude code werkt niet meer, nieuwe code is actief.";
+                _messageType = "success";
+            }
+            else
+            {
+                _message = result.ErrorMessage ?? "Fout bij vervangen van token.";
+                _messageType = "danger";
+            }
+        }
+        finally
+        {
+            _replacingLocationId = Guid.Empty;
+        }
+    }
+
+    private static string StatusLabel(TagStatus status) => status switch
+    {
+        TagStatus.NotPrinted => "Niet geprint",
+        TagStatus.Printed => "Geprint",
+        TagStatus.Applied => "Gekoppeld",
+        TagStatus.Replaced => "Vervangen",
+        _ => "Onbekend"
+    };
+}

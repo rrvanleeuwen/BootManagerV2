@@ -2,6 +2,7 @@ using BootManager.Application.Storage.DTOs;
 using BootManager.Application.Storage.QrFormat;
 using BootManager.Application.Storage.Results;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 
 namespace BootManager.Application.Storage.Services;
@@ -255,7 +256,8 @@ public class StorageService : IStorageService
             AreaName = area.Name,
             LocationName = location.Name,
             Description = location.Description,
-            QrValue = qrValue
+            QrValue = qrValue,
+            TagStatus = location.TagStatus
         });
     }
 
@@ -371,7 +373,70 @@ public class StorageService : IStorageService
             AreaName = area.Name,
             LocationName = newLocation.Name,
             Description = newLocation.Description,
-            QrValue = qrValue
+            QrValue = qrValue,
+            TagStatus = newLocation.TagStatus
         });
+    }
+
+    // --- Tag Overview ---
+
+    public async Task<IReadOnlyList<StorageLocationOverviewDto>> GetAllLocationsOverviewAsync(CancellationToken ct = default)
+    {
+        var locations = await _locationRepo.ListAsync(ct: ct);
+        var areas = await _areaRepo.ListAsync(ct: ct);
+        var areaDict = areas.ToDictionary(a => a.Id);
+
+        return locations
+            .Select(l =>
+            {
+                var areaName = areaDict.TryGetValue(l.StorageAreaId, out var area) ? area.Name : "Onbekend";
+                var qrValue = l.QrToken != null ? LocationQrValue.FormatQrValue(l.QrToken) : null;
+                return new StorageLocationOverviewDto
+                {
+                    Id = l.Id,
+                    AreaName = areaName,
+                    LocationName = l.Name,
+                    QrValue = qrValue,
+                    TagStatus = l.TagStatus
+                };
+            })
+            .ToList();
+    }
+
+    // --- Token Replacement & Tag Status ---
+
+    public async Task<StorageOperationResult<string>> ReplaceQrTokenAsync(Guid locationId, CancellationToken ct = default)
+    {
+        var location = await _locationRepo.GetByIdAsync(locationId, ct);
+        if (location == null)
+            return StorageOperationResult<string>.Error("Locatie niet gevonden.");
+
+        if (location.QrToken == null)
+            return StorageOperationResult<string>.Error("Deze locatie heeft nog geen QR-token en kan niet vervangen worden. Genereer eerst een token.");
+
+        var newToken = LocationQrValue.GenerateToken();
+
+        try
+        {
+            location.ReplaceQrToken(newToken);
+            await _locationRepo.UpdateAsync(location, ct);
+            return StorageOperationResult<string>.Ok(LocationQrValue.FormatQrValue(newToken));
+        }
+        catch (Exception ex)
+            when (ex.InnerException?.Message?.Contains("UNIQUE constraint failed", StringComparison.Ordinal) ?? false)
+        {
+            return StorageOperationResult<string>.Error("Dit token is inmiddels al gekoppeld aan een andere locatie.");
+        }
+    }
+
+    public async Task<StorageOperationResult> UpdateTagStatusAsync(Guid locationId, TagStatus newStatus, CancellationToken ct = default)
+    {
+        var location = await _locationRepo.GetByIdAsync(locationId, ct);
+        if (location == null)
+            return StorageOperationResult.Error("Locatie niet gevonden.");
+
+        location.UpdateTagStatus(newStatus);
+        await _locationRepo.UpdateAsync(location, ct);
+        return StorageOperationResult.Ok();
     }
 }

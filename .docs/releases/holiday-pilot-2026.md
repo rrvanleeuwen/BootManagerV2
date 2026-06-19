@@ -138,7 +138,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 3. **PILOT-LOC-01** — **Done** — Opslaggebieden en opslaglocaties.
 4. **PILOT-LOC-02** — **Done** — QR-token genereren, koppelen en locatie openen.
 5. **PILOT-LOC-03** — **Done** — QR-tag printen en PNG exporteren.
-6. **PILOT-LOC-04** — **Gepland** — QR-token vervangen en tagoverzicht.
+6. **PILOT-LOC-04** — **Done** — QR-token vervangen, tagoverzicht en opslagnavigatie.
 7. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
 8. **PILOT-INV-02** — **Gepland** — Voorraad per product en locatie, inclusief meerdere locaties per product.
 9. **PILOT-INV-03** — **Gepland** — Product aanmaken met gescande locatie-QR.
@@ -156,7 +156,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-LOC-04` — QR-token vervangen en tagoverzicht.
+**Eerstvolgende story:** `PILOT-INV-01` — Productcategorieën, producten en productbarcodes.
 
 ## Uitgewerkte stories
 
@@ -441,7 +441,14 @@ dat Crew deze print/exportactie niet kan uitvoeren.
 
 ### PILOT-LOC-04 — QR-token vervangen en tagoverzicht
 
-**Status:** Gepland; story uitgewerkt op 2026-06-18.
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-19.
+
+**Resultaat:** Owner kan bestaande locatie-QR-tokens vervangen waarbij het oude token
+ongeldig wordt, een Owner-only tagoverzicht toont gebied, locatie, QR-waarde en
+handmatige tagstatus, en de opslagfunctionaliteit is via een Owner-only hoofdmenu
+`Opslag` direct bereikbaar met `Locaties` en `Tagoverzicht`. Na acceptatie is de
+oude dubbele ingang via `Instellingen > Opslag` verwijderd, zodat opslagbeheer nog
+maar op één plek in de navigatie zit.
 
 **Als** Owner<br>
 **wil ik** locatie-QR's kunnen vervangen en de tagstatus per locatie kunnen zien<br>
@@ -476,10 +483,10 @@ dat Crew deze print/exportactie niet kan uitvoeren.
 
 **Legacy-impact**
 
-- `US1.14 Tag opnieuw koppelen of vervangen` wordt met deze story gepland voor
-  functionele dekking: oude token ongeldig, nieuw token actief.
-- `US1.15 Overzicht van alle tags` wordt met deze story gepland voor functionele
-  dekking van een overzicht met locaties, tokeninformatie en handmatige tagstatus.
+- `US1.14 Tag opnieuw koppelen of vervangen` is functioneel afgedekt: oude token
+  ongeldig, nieuw token actief.
+- `US1.15 Overzicht van alle tags` is functioneel afgedekt met een overzicht van
+  locaties, tokeninformatie en handmatige tagstatus.
 - Fysieke printerintegratie en auditlog blijven buiten scope.
 
 **Handmatige acceptatietest**
@@ -498,6 +505,27 @@ vervangen en tagstatus niet toegankelijk is.
   print- of downloadacties.
 - Houd tokenvervanging beperkt tot het actief maken van een nieuw token en het
   ongeldig maken van het vorige token.
+
+**Implementatiestatus 2026-06-19**
+
+- `StorageLocation` ondersteunt nu expliciete tokenvervanging, maar alleen voor
+  locaties die al een bestaand token hebben; een vervangactie kan dus geen eerste
+  token genereren.
+- Het oude token wordt na vervanging niet meer geresolved; het nieuwe token opent
+  direct dezelfde locatie.
+- Tagstatus wordt per locatie handmatig opgeslagen als `Niet geprint`, `Geprint`,
+  `Gekoppeld` of `Vervangen`.
+- `StorageLocationTagOverview` biedt een Owner-only overzicht en beheerflow voor
+  tokenvervanging en tagstatus.
+- De hoofdnavigatie bevat nu een Owner-only menu `Opslag` met `Locaties` en
+  `Tagoverzicht`; `Locaties` hergebruikt het bestaande opslagbeheerscherm op een
+  eigen route en de dubbele storage-sectie in `Settings` is verwijderd.
+- Migratie- en upgradepadtests bewijzen dat de bestaande QR-tokenmigratie correct
+  doorloopt naar tagstatusopslag met databehoud.
+- Eindchecks: gerichte storage/navigation unit-tests 138/138, gerichte storage
+  integration-tests groen, `dotnet build BootManager.sln --no-restore` groen,
+  `git diff --check` groen; de bekende owner-recoverybaseline buiten deze story
+  blijft bestaan in de volledige unit-suite.
 
 ### PILOT-AUTH-01 — Lokale Owner- en Crew-accounts
 

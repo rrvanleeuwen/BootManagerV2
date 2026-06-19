@@ -7,7 +7,6 @@
 @using BootManager.Application.VesselProfile.DTOs
 @using BootManager.Application.VesselProfile.Services
 @using BootManager.Web.Services
-@using BootManager.Web.Components.Settings
 @using BootManager.Core.Enums
 @inject HttpClient Http
 @inject NavigationManager Nav
@@ -332,20 +331,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Storage Group -->
-    <div class="accordion-item">
-        <h2 class="accordion-header">
-            <button class="@GetAccordionButtonClass(_storageOpen)" type="button" @onclick="@(() => ToggleAccordion("storage"))" aria-expanded="@GetAriaExpanded(_storageOpen)" aria-controls="storageCollapse">
-                Opslag
-            </button>
-        </h2>
-        <div id="storageCollapse" class="@GetAccordionContentClass(_storageOpen)">
-            <div class="accordion-body">
-                <StorageManagement />
-            </div>
-        </div>
-    </div>
 </div>
 
 @code {
@@ -353,7 +338,6 @@
     private bool _accountOpen = true;
     private bool _bootOpen = false;
     private bool _operationalOpen = false;
-    private bool _storageOpen = false;
 
     private string GetAccordionButtonClass(bool isOpen) => isOpen ? "accordion-button" : "accordion-button collapsed";
     private string GetAccordionContentClass(bool isOpen) => isOpen ? "accordion-collapse collapse show" : "accordion-collapse collapse";
@@ -366,14 +350,12 @@
             "account" => _accountOpen,
             "boot" => _bootOpen,
             "operational" => _operationalOpen,
-            "storage" => _storageOpen,
             _ => false
         };
 
         _accountOpen = false;
         _bootOpen = false;
         _operationalOpen = false;
-        _storageOpen = false;
 
         if (wasOpen)
         {
@@ -390,9 +372,6 @@
                 break;
             case "operational":
                 _operationalOpen = true;
-                break;
-            case "storage":
-                _storageOpen = true;
                 break;
         }
     }

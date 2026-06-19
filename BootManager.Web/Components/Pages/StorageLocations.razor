@@ -1,0 +1,7 @@
+@page "/storage/locations"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Web.Components.Settings
+
+<PageTitle>Opslagbeheer</PageTitle>
+
+<StorageManagement />

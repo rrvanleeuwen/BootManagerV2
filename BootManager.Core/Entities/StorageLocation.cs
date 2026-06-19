@@ -1,3 +1,5 @@
+using BootManager.Core.Enums;
+
 namespace BootManager.Core.Entities;
 
 /// <summary>
@@ -23,6 +25,9 @@ public class StorageLocation
     /// <summary>Optionele stabiele BootManager QR-token: 16 bytes als 32 lowercase hexadecimale tekens. Uniek per locatie.</summary>
     public string? QrToken { get; private set; }
 
+    /// <summary>Handmatige status van de QR-tag (niet geprint, geprint, gekoppeld, vervangen).</summary>
+    public TagStatus TagStatus { get; private set; } = TagStatus.NotPrinted;
+
     public StorageArea StorageArea { get; private set; } = default!;
 
     private StorageLocation() { } // Voor EF
@@ -34,6 +39,7 @@ public class StorageLocation
         NormalizedName = name.Trim().ToLowerInvariant();
         Description = string.IsNullOrEmpty(description?.Trim()) ? null : description.Trim();
         QrToken = null;
+        TagStatus = TagStatus.NotPrinted;
     }
 
     public static StorageLocation Create(Guid storageAreaId, string name, string? description = null)
@@ -59,5 +65,22 @@ public class StorageLocation
         if (QrToken != null)
             throw new InvalidOperationException("Een locatie kan geen bestaande token vervangen.");
         QrToken = token;
+    }
+
+    /// <summary>Vervangt een bestaande QR-token door een nieuw token en zet status op Replaced. Vereist dat al een token bestaat.</summary>
+    public void ReplaceQrToken(string newToken)
+    {
+        if (string.IsNullOrEmpty(newToken))
+            throw new ArgumentException("Token mag niet leeg zijn.", nameof(newToken));
+        if (QrToken == null)
+            throw new InvalidOperationException("Een locatie kan alleen een bestaand token vervangen; er is momenteel geen token.");
+        QrToken = newToken;
+        TagStatus = TagStatus.Replaced;
+    }
+
+    /// <summary>Werkt de handmatige tagstatus bij.</summary>
+    public void UpdateTagStatus(TagStatus newStatus)
+    {
+        TagStatus = newStatus;
     }
 }

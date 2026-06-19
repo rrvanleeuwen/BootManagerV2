@@ -36,7 +36,7 @@
 - [x] **Holiday Pilot 2026 — PILOT-LOC-01 opslaggebieden en opslaglocaties**
   - **Status 2026-06-18:** afgerond, technisch gecontroleerd en handmatig geaccepteerd met Owner- en Crew-toegang.
   - **Doel:** Owner kan opslaggebieden en opslaglocaties vastleggen als basis voor locatie-QR's en voorraad.
-  - **Scope:** beheer via `Instellingen > Opslag`; Owner beheert gebieden en locaties; Owner/Crew kunnen een locatie-detailpagina lezen.
+  - **Scope:** beheer via `Opslag > Locaties`; Owner beheert gebieden en locaties; Owner/Crew kunnen een locatie-detailpagina lezen.
   - **Buiten scope:** QR-token/tagbeheer, scan-navigatie, producten, voorraadregels, hoeveelheden en product-locatiekoppeling.
   - **Legacy-koppeling:** raakt `US1.9`, `US1.10` en `US1.11`; QR/tag-stories `US1.12` t/m `US1.15` en inventory-stories `US2.8` en `US2.9` blijven open.
   - **Verificatie:** storage unit-tests 40/40; volledige unit-suite 248/249 met alleen de bekende owner-recoverybaseline rood; integratietests 22/22; `dotnet build BootManager.sln --no-restore`; `git diff --check`; handmatige CRUD-, autorisatie- en navigatietest geslaagd.
@@ -56,9 +56,9 @@
   - **Legacy-koppeling:** rondt `US1.12` functioneel af voor printen/exporteren.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-LOC-04 QR-token vervangen en tagoverzicht**
-  - **Status 2026-06-19:** story uitgewerkt in het holidaybestand en is de eerstvolgende pilotstory.
-  - **Doel:** Owner kan tokens vervangen en handmatige tagstatus per locatie beheren.
+- [x] **Holiday Pilot 2026 — PILOT-LOC-04 QR-token vervangen en tagoverzicht**
+  - **Status 2026-06-19:** technisch gecontroleerd en handmatig geaccepteerd.
+  - **Resultaat:** Owner kan tokens vervangen, tagstatus per locatie beheren en via een hoofdmenu `Opslag` direct naar `Locaties` en `Tagoverzicht` navigeren; de oude dubbele ingang in `Settings` is verwijderd.
   - **Buiten scope:** fysieke printerintegratie, auditlog, producten en voorraad.
   - **Legacy-koppeling:** raakt `US1.14` en `US1.15`.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.

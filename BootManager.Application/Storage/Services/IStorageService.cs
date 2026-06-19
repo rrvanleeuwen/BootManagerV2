@@ -1,5 +1,6 @@
 using BootManager.Application.Storage.DTOs;
 using BootManager.Application.Storage.Results;
+using BootManager.Core.Enums;
 
 namespace BootManager.Application.Storage.Services;
 
@@ -27,6 +28,10 @@ public interface IStorageService
 
     Task<StorageOperationResult<StorageLocationDetailDto>> GetLocationDetailAsync(Guid locationId, CancellationToken ct = default);
 
+    // --- Tag Overview ---
+
+    Task<IReadOnlyList<StorageLocationOverviewDto>> GetAllLocationsOverviewAsync(CancellationToken ct = default);
+
     // --- QR Token operations ---
 
     Task<StorageOperationResult<string>> GenerateOrGetQrTokenAsync(Guid locationId, CancellationToken ct = default);
@@ -34,4 +39,9 @@ public interface IStorageService
     Task<StorageOperationResult> LinkQrToExistingLocationAsync(string token, Guid locationId, CancellationToken ct = default);
     Task<StorageOperationResult<StorageLocationDetailDto>> CreateLocationWithQrTokenAsync(
         Guid areaId, string name, string? description, string token, CancellationToken ct = default);
+    Task<StorageOperationResult<string>> ReplaceQrTokenAsync(Guid locationId, CancellationToken ct = default);
+
+    // --- Tag Status ---
+
+    Task<StorageOperationResult> UpdateTagStatusAsync(Guid locationId, TagStatus newStatus, CancellationToken ct = default);
 }
