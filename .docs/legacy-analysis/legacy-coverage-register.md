@@ -49,8 +49,8 @@ Bij afronding van een story of PR:
 | US1.9 Bootstructuurbeheer: gebieden en opslaglocaties | Partial | `PILOT-LOC-01` levert persistent beheer van gebieden en opslaglocaties met stabiele locatie-id en gedeelde detailpagina. QR/tag- en voorraadfunctionaliteit blijven open. |
 | US1.10 Opslaglocatie aanmaken binnen gebied | Done | `PILOT-LOC-01` dekt locatie aanmaken onder precies één gebied met naam en korte omschrijving af. |
 | US1.11 Opslaglocatie bewerken | Done | `PILOT-LOC-01` dekt locatie hernoemen, beschrijving aanpassen, verplaatsen naar een ander gebied en verwijderen af. |
-| US1.12 Tag genereren voor opslaglocatie | Open | Gekoppeld aan geplande pilotstories `PILOT-LOC-02` en `PILOT-LOC-03`: token/QR-waarde eerst, printen en PNG-export daarna. |
-| US1.13 Locatie openen via QR-code | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-02`; `PILOT-LOC-01` levert alleen de detailpagina, producten en aantallen blijven later. |
+| US1.12 Tag genereren voor opslaglocatie | Partial | `PILOT-LOC-02` levert stabiele unieke token- en QR-waarden per locatie, inclusief koppelen aan bestaande of nieuwe locaties; printen en PNG-export volgen in `PILOT-LOC-03`. |
+| US1.13 Locatie openen via QR-code | Partial | `PILOT-LOC-02` levert scanrouting van bekende locatie-QR's naar de locatie-detailpagina voor Owner en Crew; producten en aantallen blijven later voor inventory. |
 | US1.14 Tag opnieuw koppelen of vervangen | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-04`: token vervangen en oude QR ongeldig maken. |
 | US1.15 Overzicht van alle tags | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-04`: overzicht met locaties, tokeninformatie en handmatige tagstatus. |
 | US1.16 Bootgegevens exporteren/importeren | Open | Later bij backup/restore of systeemconfiguratie. |
@@ -73,7 +73,7 @@ Bij afronding van een story of PR:
 | US2.11 Minimumvoorraad en waarschuwing | Open | Afhankelijk van inventory en notificaties. |
 | US2.12 Zoeken en filteren | Open | Inventory-module ontbreekt. |
 | US2.13 Voorraadlogboek | Open | Voorraadmutaties ontbreken. |
-| US2.14 QR-scanner-modus | Partial | `PILOT-SCAN-01` levert een generieke QR-scanner; locatie-QR routing volgt in `PILOT-LOC-02`; voorraad bekijken of wijzigen blijft later voor inventory. |
+| US2.14 QR-scanner-modus | Partial | `PILOT-SCAN-01` levert een generieke QR-scanner en `PILOT-LOC-02` voegt BootManager locatie-QR routing en Owner-only onbekende-token-koppeling toe; voorraad bekijken of wijzigen blijft later voor inventory. |
 | US2.15 Bulkimport/export voorraad | Open | Later na datamodel. |
 | US2.16 Voorraadstatus in dashboard | Open | Afhankelijk van inventory en dashboard. |
 | US2.17 Integratie met passageplanning | Open | Afhankelijk van inventory en passageplanning. |

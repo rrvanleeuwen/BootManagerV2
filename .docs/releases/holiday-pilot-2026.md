@@ -136,7 +136,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 1. **PILOT-SCAN-01** — **Done** — Camera-, QR- en barcode-proof-of-concept op de telefoons.
 2. **PILOT-AUTH-01** — **Done** — Owner/Crew-model en eigen login voor Carla.
 3. **PILOT-LOC-01** — **Done** — Opslaggebieden en opslaglocaties.
-4. **PILOT-LOC-02** — **Gepland** — QR-token genereren, koppelen en locatie openen.
+4. **PILOT-LOC-02** — **Done** — QR-token genereren, koppelen en locatie openen.
 5. **PILOT-LOC-03** — **Gepland** — QR-tag printen en PNG exporteren.
 6. **PILOT-LOC-04** — **Gepland** — QR-token vervangen en tagoverzicht.
 7. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
@@ -156,7 +156,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-LOC-02` — QR-token genereren, koppelen en locatie openen.
+**Eerstvolgende story:** `PILOT-LOC-03` — QR-tag printen en PNG exporteren.
 
 ## Uitgewerkte stories
 
@@ -266,7 +266,15 @@ toegankelijk zijn, maar dat een bestaande locatie-detailpagina wel leesbaar open
 
 ### PILOT-LOC-02 — QR-token genereren, koppelen en locatie openen
 
-**Status:** Gepland; story uitgewerkt op 2026-06-18.
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-19.
+
+**Resultaat:** stabiele BootManager locatie-QR-tokens, Owner-only koppelen van
+onbekende BootManager-QR's aan bestaande of nieuwe locaties, scanrouting naar de
+bestaande locatie-detailpagina en SQLite-migratie-/constraintbewijs zijn opgeleverd.
+De handmatige acceptatie bevestigde QR-generatie, direct openen van bekende locatie-QR's,
+stabiel gedrag na hernoemen/verplaatsen, koppelen aan bestaande en nieuwe locaties en
+het ontbreken van Crew-koppelacties. Een tijdens acceptatie gemelde afwijking bleek een
+controle op een verkeerde dubbel voorkomende locatienaam en niet een productdefect.
 
 **Als** Owner en Crew<br>
 **wil ik** een locatie via een BootManager QR-code kunnen openen<br>
@@ -331,6 +339,26 @@ dat bekende locatie-QR's openen, maar onbekende QR's geen koppelactie toestaan.
 - Laat de bestaande generieke scanpagina de tokenwaarde herkennen en naar de juiste
   locatieflow routeren.
 - Houd onbekende-token-koppeling Owner-only en laat Crew alleen lezen/openen.
+
+**Implementatiestatus 2026-06-19**
+
+- `StorageLocation` heeft nu een persistente nullable `QrToken` met een unieke
+  gefilterde SQLite-index voor niet-null tokens.
+- Owner kan op de locatie-detailpagina een QR-token genereren; generatie is idempotent
+  en bestaande tokens worden in deze story niet vervangen.
+- De scanpagina herkent exact `bootmanager:location:<32-lowercase-hex-token>` en opent
+  bekende locatie-QR's direct of toont alleen voor Owner een koppelactie bij een
+  onbekende geldige locatie-QR.
+- Owner kan een onbekende geldige locatie-QR koppelen aan een bestaande locatie of een
+  nieuwe locatie met token aanmaken; Crew krijgt geen koppelactie en de route blijft
+  Owner-only.
+- Integratietests bewijzen migratie vanaf
+  `20260618175732_AddStorageAreasAndLocations`, databehoud, nullable tokenopslag,
+  uniqueness en de acceptatieketen koppelen -> verse detail-load.
+- Eindchecks: gerichte storage unit-tests 96/96; volledige unit-suite 292/293 met
+  alleen de bekende owner-recoverybaseline rood; gerichte storage-integratietests
+  24/24; volledige integratiesuite 36/36; `dotnet build BootManager.sln --no-restore`;
+  `git diff --check`.
 
 ### PILOT-LOC-03 — QR-tag printen en PNG exporteren
 

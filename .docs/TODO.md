@@ -42,15 +42,16 @@
   - **Verificatie:** storage unit-tests 40/40; volledige unit-suite 248/249 met alleen de bekende owner-recoverybaseline rood; integratietests 22/22; `dotnet build BootManager.sln --no-restore`; `git diff --check`; handmatige CRUD-, autorisatie- en navigatietest geslaagd.
   - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.codex/PILOT-LOC-01-implementation-packet.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-LOC-02 QR-token genereren, koppelen en locatie openen**
-  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand en is de eerstvolgende pilotstory.
+- [x] **Holiday Pilot 2026 — PILOT-LOC-02 QR-token genereren, koppelen en locatie openen**
+  - **Status 2026-06-19:** afgerond, technisch gecontroleerd en handmatig geaccepteerd voor Owner- en Crew-scanrouting.
   - **Doel:** bekende locatie-QR's openen de locatiepagina; Owner kan onbekende BootManager-QR's koppelen.
   - **Buiten scope:** print/export, token vervangen, tagoverzicht, producten en voorraad.
   - **Legacy-koppeling:** raakt `US1.12`, `US1.13` en `US2.14`.
-  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+  - **Verificatie:** gerichte storage unit-tests 96/96; volledige unit-suite 292/293 met alleen de bekende owner-recoverybaseline rood; gerichte storage-integratietests 24/24; volledige integratiesuite 36/36; `dotnet build BootManager.sln --no-restore`; `git diff --check`; handmatige Owner/Crew QR-test geslaagd.
+  - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.codex/PILOT-LOC-02-implementation-packet.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-LOC-03 QR-tag printen en PNG exporteren**
-  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand; wacht op `PILOT-LOC-02`.
+  - **Status 2026-06-19:** story uitgewerkt in het holidaybestand en is de eerstvolgende pilotstory.
   - **Doel:** Owner kan een locatie-QR printvriendelijk openen en als PNG downloaden.
   - **Buiten scope:** server-side PDF/CSV, labelprinterintegratie, token vervangen en tagoverzicht.
   - **Legacy-koppeling:** vult `US1.12` aan met printen/exporteren.

@@ -2,8 +2,10 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
 @using BootManager.Application.Storage.DTOs
 @using BootManager.Application.Storage.Services
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IStorageService StorageService
 @inject IJSRuntime JsRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <div class="mb-4">
     <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="GoBackAsync">← Terug</button>
@@ -39,6 +41,22 @@ else
                     <div>@_detail.Description</div>
                 </div>
             }
+            @if (_isOwner)
+            {
+                <div class="mb-3">
+                    <span class="text-muted small">BootManager QR-code</span>
+                    @if (string.IsNullOrEmpty(_detail.QrValue))
+                    {
+                        <div>
+                            <button class="btn btn-sm btn-primary" @onclick="GenerateQrToken">QR-token genereren</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="font-monospace small">@_detail.QrValue</div>
+                    }
+                </div>
+            }
         </div>
     </div>
 }
@@ -49,9 +67,12 @@ else
 
     private StorageLocationDetailDto? _detail;
     private bool _loading = true;
+    private bool _isOwner = false;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isOwner = authState.User.IsInRole("Owner");
         await LoadDetail();
     }
 
@@ -66,6 +87,16 @@ else
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task GenerateQrToken()
+    {
+        var result = await StorageService.GenerateOrGetQrTokenAsync(LocationId);
+        if (result.Success && _detail != null)
+        {
+            _detail.QrValue = result.Data;
+            StateHasChanged();
         }
     }
 

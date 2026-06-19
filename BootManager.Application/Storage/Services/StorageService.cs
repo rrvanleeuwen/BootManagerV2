@@ -1,4 +1,5 @@
 using BootManager.Application.Storage.DTOs;
+using BootManager.Application.Storage.QrFormat;
 using BootManager.Application.Storage.Results;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
@@ -246,12 +247,131 @@ public class StorageService : IStorageService
         if (area == null)
             return StorageOperationResult<StorageLocationDetailDto>.NotFound();
 
+        var qrValue = location.QrToken != null ? LocationQrValue.FormatQrValue(location.QrToken) : null;
+
         return StorageOperationResult<StorageLocationDetailDto>.Ok(new StorageLocationDetailDto
         {
             Id = location.Id,
             AreaName = area.Name,
             LocationName = location.Name,
-            Description = location.Description
+            Description = location.Description,
+            QrValue = qrValue
+        });
+    }
+
+    // --- QR Token operations ---
+
+    public async Task<StorageOperationResult<string>> GenerateOrGetQrTokenAsync(Guid locationId, CancellationToken ct = default)
+    {
+        var location = await _locationRepo.GetByIdAsync(locationId, ct);
+        if (location == null)
+            return StorageOperationResult<string>.Error("Locatie niet gevonden.");
+
+        if (location.QrToken != null)
+            return StorageOperationResult<string>.Ok(LocationQrValue.FormatQrValue(location.QrToken));
+
+        var newToken = LocationQrValue.GenerateToken();
+        location.SetQrToken(newToken);
+        await _locationRepo.UpdateAsync(location, ct);
+
+        return StorageOperationResult<string>.Ok(LocationQrValue.FormatQrValue(newToken));
+    }
+
+    public async Task<QrResolutionResult> ResolveQrValueAsync(string? qrValue, CancellationToken ct = default)
+    {
+        var token = LocationQrValue.TryParseQrValue(qrValue);
+        if (token == null)
+            return QrResolutionResult.Invalid();
+
+        var location = await _locationRepo.SingleOrDefaultAsync(l => l.QrToken == token, ct);
+        if (location == null)
+            return QrResolutionResult.Unknown(token);
+
+        return QrResolutionResult.Linked(location.Id);
+    }
+
+    public async Task<StorageOperationResult> LinkQrToExistingLocationAsync(string token, Guid locationId, CancellationToken ct = default)
+    {
+        if (!LocationQrValue.IsValidToken(token))
+            return StorageOperationResult.Error("Ongeldig token-formaat.");
+
+        var location = await _locationRepo.GetByIdAsync(locationId, ct);
+        if (location == null)
+            return StorageOperationResult.Error("Locatie niet gevonden.");
+
+        if (location.QrToken != null)
+            return StorageOperationResult.Error("Deze locatie heeft al een QR-token gekoppeld.");
+
+        var alreadyLinked = await _locationRepo.SingleOrDefaultAsync(l => l.QrToken == token, ct);
+        if (alreadyLinked != null)
+            return StorageOperationResult.Error("Deze QR-code is al gekoppeld aan een locatie.");
+
+        try
+        {
+            location.SetQrToken(token);
+            await _locationRepo.UpdateAsync(location, ct);
+            return StorageOperationResult.Ok();
+        }
+        catch (Exception ex)
+            when (ex.InnerException?.Message?.Contains("UNIQUE constraint failed", StringComparison.Ordinal) ?? false)
+        {
+            return StorageOperationResult.Error("Deze QR-code is inmiddels al gekoppeld aan een andere locatie.");
+        }
+    }
+
+    public async Task<StorageOperationResult<StorageLocationDetailDto>> CreateLocationWithQrTokenAsync(
+        Guid areaId, string name, string? description, string token, CancellationToken ct = default)
+    {
+        var area = await _areaRepo.GetByIdAsync(areaId, ct);
+        if (area == null)
+            return StorageOperationResult<StorageLocationDetailDto>.Error("Gebied niet gevonden.");
+
+        if (!LocationQrValue.IsValidToken(token))
+            return StorageOperationResult<StorageLocationDetailDto>.Error("Ongeldig token-formaat.");
+
+        var trimmedName = name?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrEmpty(trimmedName))
+            return StorageOperationResult<StorageLocationDetailDto>.Error("Locatienaam mag niet leeg zijn.");
+
+        if (trimmedName.Length > MaxNameLength)
+            return StorageOperationResult<StorageLocationDetailDto>.Error($"Locatienaam mag maximaal {MaxNameLength} tekens lang zijn.");
+
+        if (!string.IsNullOrEmpty(description) && description.Trim().Length > MaxDescriptionLength)
+            return StorageOperationResult<StorageLocationDetailDto>.Error($"Beschrijving mag maximaal {MaxDescriptionLength} tekens lang zijn.");
+
+        var normalizedName = trimmedName.ToLowerInvariant();
+        var duplicate = await _locationRepo.SingleOrDefaultAsync(
+            l => l.StorageAreaId == areaId && l.NormalizedName == normalizedName, ct);
+
+        if (duplicate != null)
+            return StorageOperationResult<StorageLocationDetailDto>.Error("Locatienaam bestaat al in dit gebied.");
+
+        var alreadyLinked = await _locationRepo.SingleOrDefaultAsync(l => l.QrToken == token, ct);
+        if (alreadyLinked != null)
+            return StorageOperationResult<StorageLocationDetailDto>.Error("Deze QR-code is al gekoppeld aan een andere locatie.");
+
+        var newLocation = StorageLocation.Create(areaId, trimmedName, description);
+        newLocation.SetQrToken(token);
+
+        try
+        {
+            await _locationRepo.AddAsync(newLocation, ct);
+        }
+        catch (Exception ex)
+            when (ex.InnerException?.Message?.Contains("UNIQUE constraint failed", StringComparison.Ordinal) ?? false)
+        {
+            return StorageOperationResult<StorageLocationDetailDto>.Error("Deze QR-code is inmiddels al gekoppeld aan een andere locatie.");
+        }
+
+        var qrValue = LocationQrValue.FormatQrValue(token);
+        return StorageOperationResult<StorageLocationDetailDto>.Ok(new StorageLocationDetailDto
+        {
+            Id = newLocation.Id,
+            AreaName = area.Name,
+            LocationName = newLocation.Name,
+            Description = newLocation.Description,
+            QrValue = qrValue
         });
     }
 }

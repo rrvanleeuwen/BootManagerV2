@@ -26,4 +26,12 @@ public interface IStorageService
     // --- Detail view ---
 
     Task<StorageOperationResult<StorageLocationDetailDto>> GetLocationDetailAsync(Guid locationId, CancellationToken ct = default);
+
+    // --- QR Token operations ---
+
+    Task<StorageOperationResult<string>> GenerateOrGetQrTokenAsync(Guid locationId, CancellationToken ct = default);
+    Task<QrResolutionResult> ResolveQrValueAsync(string? qrValue, CancellationToken ct = default);
+    Task<StorageOperationResult> LinkQrToExistingLocationAsync(string token, Guid locationId, CancellationToken ct = default);
+    Task<StorageOperationResult<StorageLocationDetailDto>> CreateLocationWithQrTokenAsync(
+        Guid areaId, string name, string? description, string token, CancellationToken ct = default);
 }
