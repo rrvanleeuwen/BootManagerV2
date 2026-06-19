@@ -34,6 +34,8 @@ Claude leest niet standaard de Codex-handoff, TODO, legacy-analyse, roadmap of o
 - Codex wijzigt geen applicatiecode tenzij de gebruiker dat expliciet vraagt.
 - Claude maakt alleen code en voert geen projectregie, storykeuze, documentatiebeheer, commits, pushes of PR-beheer uit tenzij dit expliciet in het packet staat.
 - Gebruik gerichte zoekopdrachten en kleine bestandssecties in plaats van volledige grote bestanden.
+- Werk bij git-, documentatie- en reviewflows zo minimaal mogelijk: voer alleen de kleinste noodzakelijke acties, checks en contextreads uit om de taak veilig af te ronden.
+- Codex meldt tijdens uitvoering alleen actief wanneer er een echte blocker, een concreet risico of een noodzakelijke gebruikersbeslissing is; routinematige tussenstappen hoeven niet uitgebreid gerapporteerd te worden.
 - `.docs` is de bron voor actuele stories, roadmap en functionele status.
 - Bij verschil tussen documentatie en code wordt eerst de feitelijke code-, build- en teststatus vastgesteld.
 - Historische context wordt niet standaard geladen; raadpleeg die alleen wanneer de actuele taak dat vereist.
