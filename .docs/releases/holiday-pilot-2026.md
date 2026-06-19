@@ -137,7 +137,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 2. **PILOT-AUTH-01** — **Done** — Owner/Crew-model en eigen login voor Carla.
 3. **PILOT-LOC-01** — **Done** — Opslaggebieden en opslaglocaties.
 4. **PILOT-LOC-02** — **Done** — QR-token genereren, koppelen en locatie openen.
-5. **PILOT-LOC-03** — **Gepland** — QR-tag printen en PNG exporteren.
+5. **PILOT-LOC-03** — **Done** — QR-tag printen en PNG exporteren.
 6. **PILOT-LOC-04** — **Gepland** — QR-token vervangen en tagoverzicht.
 7. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
 8. **PILOT-INV-02** — **Gepland** — Voorraad per product en locatie, inclusief meerdere locaties per product.
@@ -156,7 +156,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-LOC-03` — QR-tag printen en PNG exporteren.
+**Eerstvolgende story:** `PILOT-LOC-04` — QR-token vervangen en tagoverzicht.
 
 ## Uitgewerkte stories
 
@@ -362,7 +362,14 @@ dat bekende locatie-QR's openen, maar onbekende QR's geen koppelactie toestaan.
 
 ### PILOT-LOC-03 — QR-tag printen en PNG exporteren
 
-**Status:** Gepland; story uitgewerkt op 2026-06-18.
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-19.
+
+**Resultaat:** Owner-only tagpagina's voor locaties met bestaande QR-token, compacte
+printweergave rond 5x5 cm, QR-rendering via een vervangbare application-interface met
+concrete `QRCoder`-adapter en scanbare PNG-download via stream zijn opgeleverd. De
+handmatige acceptatie bevestigde dat browserprint werkt, PNG-download een bestand met
+de locatienaam oplevert en dat zowel de zichtbare QR als de gedownloade PNG dezelfde
+locatie via de bestaande scanflow openen.
 
 **Als** Owner<br>
 **wil ik** de QR-code van een opslaglocatie kunnen printen en als PNG downloaden<br>
@@ -396,9 +403,9 @@ dat bekende locatie-QR's openen, maar onbekende QR's geen koppelactie toestaan.
 
 **Legacy-impact**
 
-- `US1.12 Tag genereren voor opslaglocatie` wordt met deze story verder gepland:
-  printen en exporteren als afbeelding worden afgedekt nadat `PILOT-LOC-02` de
-  token- en QR-waarde levert.
+- `US1.12 Tag genereren voor opslaglocatie` wordt met deze story functioneel
+  afgerond: printen en exporteren als afbeelding worden afgedekt nadat
+  `PILOT-LOC-02` de token- en QR-waarde levert.
 - Vervangen van tags en tagoverzicht blijven voor `PILOT-LOC-04`.
 
 **Handmatige acceptatietest**
@@ -412,10 +419,25 @@ dat Crew deze print/exportactie niet kan uitvoeren.
 
 - Gebruik de bestaande browserprintstijl als patroon; voeg geen server-side PDF-export
   toe.
-- Gebruik browserdownload voor PNG-export, aansluitend op bestaande downloadpatronen
-  in de webapp.
-- Als een QR-generator nodig is, voeg alleen een kleine lokale dependency of
-  client-side module toe die offline werkt.
+- Houd QR-generatie achter een application-interface zodat de concrete library later
+  vervangbaar blijft.
+- Gebruik voor PNG-export een robuuste downloadroute via stream; vermijd kritieke
+  browserafhankelijkheid van client-side canvas/blob-conversies.
+
+**Implementatiestatus 2026-06-19**
+
+- `StorageLocationDetails` toont voor Owner bij bestaande `QrValue` een actie naar een
+  Owner-only tagpagina; Crew blijft de detailpagina lezen zonder print/exportactie.
+- QR-tag rendering loopt via `IStorageLocationQrTagRenderer` in
+  `BootManager.Application` met een concrete `QRCoder`-implementatie in
+  `BootManager.Infrastructure`, zodat de library later vervangbaar blijft.
+- De tagpagina toont gebied, locatienaam, compacte QR-tagweergave en de bestaande
+  `QrValue`, gebruikt `window.print` voor browserprint en downloadt PNG via
+  `DotNetStreamReference` en de bestaande `downloadFileFromStream` helper.
+- `QRCoder` levert zowel SVG voor scherm/print als PNG-bytes voor robuuste download;
+  browserafhankelijke canvas/blob-downloadlogica is uit de kritieke route verwijderd.
+- Gerichte component- en autorisatietests bewijzen de Owner/Crew-zichtbaarheid, de
+  renderer-abstraction, het stream-downloadpad en failure-paden zonder QR-rendering.
 
 ### PILOT-LOC-04 — QR-token vervangen en tagoverzicht
 

@@ -219,6 +219,94 @@ public class StorageLocationDetailsComponentTests : TestContext
         _storageMock.Verify(s => s.GenerateOrGetQrTokenAsync(locationId, default), Times.Never);
     }
 
+    [Fact]
+    public void OwnerWithToken_SeesPrintTagButton()
+    {
+        // Arrange
+        var locationId = Guid.NewGuid();
+        var token = "a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5";
+        var qrValue = $"bootmanager:location:{token}";
+
+        var detailDto = new StorageLocationDetailDto
+        {
+            Id = locationId,
+            AreaName = "TestArea",
+            LocationName = "TestLocation",
+            QrValue = qrValue
+        };
+
+        _storageMock.Setup(s => s.GetLocationDetailAsync(locationId, default))
+            .ReturnsAsync(StorageOperationResult<StorageLocationDetailDto>.Ok(detailDto));
+
+        SetupAuthState(owner: true);
+
+        var cut = RenderComponent<StorageLocationDetails>(
+            p => p.Add(c => c.LocationId, locationId));
+
+        var tagButton = cut.FindAll("a")
+            .FirstOrDefault(b => b.TextContent.Contains("Tag afdrukken"));
+
+        Assert.NotNull(tagButton);
+        Assert.Contains($"/storage/locations/{locationId}/tag", tagButton.GetAttribute("href") ?? "");
+    }
+
+    [Fact]
+    public void OwnerWithoutToken_DoesNotSeePrintTagButton()
+    {
+        // Arrange
+        var locationId = Guid.NewGuid();
+        var detailDto = new StorageLocationDetailDto
+        {
+            Id = locationId,
+            AreaName = "TestArea",
+            LocationName = "TestLocation",
+            QrValue = null
+        };
+
+        _storageMock.Setup(s => s.GetLocationDetailAsync(locationId, default))
+            .ReturnsAsync(StorageOperationResult<StorageLocationDetailDto>.Ok(detailDto));
+
+        SetupAuthState(owner: true);
+
+        var cut = RenderComponent<StorageLocationDetails>(
+            p => p.Add(c => c.LocationId, locationId));
+
+        var tagButton = cut.FindAll("a")
+            .FirstOrDefault(b => b.TextContent.Contains("Tag afdrukken"));
+
+        Assert.Null(tagButton);
+    }
+
+    [Fact]
+    public void CrewWithToken_DoesNotSeePrintTagButton()
+    {
+        // Arrange
+        var locationId = Guid.NewGuid();
+        var token = "a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5";
+        var qrValue = $"bootmanager:location:{token}";
+
+        var detailDto = new StorageLocationDetailDto
+        {
+            Id = locationId,
+            AreaName = "TestArea",
+            LocationName = "TestLocation",
+            QrValue = qrValue
+        };
+
+        _storageMock.Setup(s => s.GetLocationDetailAsync(locationId, default))
+            .ReturnsAsync(StorageOperationResult<StorageLocationDetailDto>.Ok(detailDto));
+
+        SetupAuthState(owner: false);
+
+        var cut = RenderComponent<StorageLocationDetails>(
+            p => p.Add(c => c.LocationId, locationId));
+
+        var tagButton = cut.FindAll("a")
+            .FirstOrDefault(b => b.TextContent.Contains("Tag afdrukken"));
+
+        Assert.Null(tagButton);
+    }
+
     private void SetupAuthState(bool owner)
     {
         var claims = owner

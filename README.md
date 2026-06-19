@@ -15,7 +15,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[#####---------------]` 25% | 16 |
+| Vakantiepilot 2026 | `[######--------------]` 31% | 16 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
 | Legacy scope | `[#####---------------]` 22.9% | 129 |
 
@@ -23,7 +23,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[#####---------------]` 25% | 4 | 0 | 12 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-LOC-03 - QR-tag printen en PNG exporteren |
+| `[######--------------]` 31% | 5 | 0 | 11 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-LOC-04 - QR-token vervangen en tagoverzicht |
 
 ### BootManagerV2 Epics
 

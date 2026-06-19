@@ -1,0 +1,205 @@
+@page "/storage/locations/{LocationId:guid}/tag"
+@layout BootManager.Web.Components.Layout.PrintLayout
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Storage.Contracts
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Services
+@using Microsoft.JSInterop
+@using System.IO
+@inject IStorageService StorageService
+@inject IStorageLocationQrTagRenderer QrRenderer
+@inject IJSRuntime JsRuntime
+
+<PageTitle>QR-tag – @_detail?.LocationName</PageTitle>
+
+<div class="mb-3 no-print">
+    <button class="btn btn-sm btn-outline-secondary me-2" @onclick="GoBackAsync">← Terug</button>
+    <button class="btn btn-sm btn-primary me-2" @onclick="PrintAsync">🖨 Afdrukken</button>
+    <button class="btn btn-sm btn-success" @onclick="DownloadPngAsync" disabled="@(_qrPngBytes.Length == 0)">⬇ PNG downloaden</button>
+</div>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else if (_detail == null)
+{
+    <div class="alert alert-warning">Opslaglocatie niet gevonden.</div>
+}
+else if (string.IsNullOrEmpty(_detail.QrValue))
+{
+    <div class="alert alert-warning">Deze opslaglocatie heeft nog geen QR-code.</div>
+}
+else
+{
+    <div class="tag-print-container">
+        <h4 class="tag-qr-area mb-2">@_detail.AreaName</h4>
+        <h5 class="tag-qr-location mb-3">@_detail.LocationName</h5>
+
+        <div class="tag-qr-wrapper">
+            @if (!string.IsNullOrEmpty(_qrSvg))
+            {
+                <div class="tag-qr-content">
+                    @((MarkupString)_qrSvg)
+                </div>
+            }
+            else if (_loading)
+            {
+                <p>QR-code laden…</p>
+            }
+        </div>
+
+        <p class="tag-qr-value">@_detail.QrValue</p>
+    </div>
+}
+
+<style>
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .tag-print-container {
+            page-break-inside: avoid;
+        }
+    }
+
+    .tag-print-container {
+        text-align: center;
+        padding: 0.5cm;
+        max-width: 8cm;
+        margin: 0 auto;
+    }
+
+    .tag-qr-area {
+        font-size: 0.9rem;
+        margin-bottom: 0.2cm;
+        font-weight: 600;
+    }
+
+    .tag-qr-location {
+        font-size: 0.85rem;
+        margin-bottom: 0.3cm;
+        font-weight: 500;
+    }
+
+    .tag-qr-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 5cm;
+        height: 5cm;
+        margin: 0 auto 0.3cm;
+        border: 1px solid #ddd;
+    }
+
+    .tag-qr-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .tag-qr-content svg {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+    }
+
+    .tag-qr-value {
+        font-size: 0.7rem;
+        color: #666;
+        margin: 0.2cm 0 0;
+        word-break: break-all;
+        line-height: 1.2;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public Guid LocationId { get; set; }
+
+    private StorageLocationDetailDto? _detail;
+    private bool _loading = true;
+    private string _qrSvg = string.Empty;
+    private byte[] _qrPngBytes = [];
+    private string _qrPngFileName = "qr-tag.png";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDetail();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _detail != null && !string.IsNullOrEmpty(_detail.QrValue))
+        {
+            await GenerateQrCodeAsync();
+        }
+    }
+
+    private async Task LoadDetail()
+    {
+        _loading = true;
+        try
+        {
+            var result = await StorageService.GetLocationDetailAsync(LocationId);
+            _detail = result.Success ? result.Data : null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task GenerateQrCodeAsync()
+    {
+        if (_detail == null || string.IsNullOrEmpty(_detail.QrValue))
+            return;
+
+        try
+        {
+            // Use the application renderer abstraction to generate QR code as SVG
+            var result = await QrRenderer.RenderQrTagAsync(_detail.QrValue);
+            _qrSvg = result.SvgContent;
+            _qrPngBytes = result.PngBytes;
+            _qrPngFileName = $"{_detail.LocationName?.Replace(" ", "_") ?? "qr-tag"}.png";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            // QR rendering failed - leave _qrSvg empty
+            System.Diagnostics.Debug.WriteLine($"QR generation error: {ex.Message}");
+            StateHasChanged();
+        }
+    }
+
+    private async Task PrintAsync()
+    {
+        await JsRuntime.InvokeVoidAsync("window.print");
+    }
+
+    private async Task DownloadPngAsync()
+    {
+        try
+        {
+            if (_qrPngBytes.Length == 0)
+                return;
+
+            using var stream = new MemoryStream(_qrPngBytes, writable: false);
+            using var streamReference = new DotNetStreamReference(stream);
+            await JsRuntime.InvokeVoidAsync("downloadFileFromStream", _qrPngFileName, streamReference);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"PNG download error: {ex.Message}");
+        }
+    }
+
+    private async Task GoBackAsync()
+    {
+        await JsRuntime.InvokeVoidAsync("history.back");
+    }
+}
