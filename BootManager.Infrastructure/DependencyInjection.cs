@@ -1,11 +1,13 @@
 using BootManager.Core.Interfaces;
 using BootManager.Application.Dashboard.Services;
 using BootManager.Application.Logbook.Services;
+using BootManager.Application.Storage.Contracts;
 using BootManager.Infrastructure.Dashboard;
 using BootManager.Infrastructure.Logbook;
 using BootManager.Infrastructure.Persistence;
 using BootManager.Infrastructure.Repositories;
 using BootManager.Infrastructure.Security;
+using BootManager.Infrastructure.Storage.QrCoder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,9 @@ public static class DependencyInjection
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<ILogbookEntryDeletionService, LogbookEntryDeletionService>();
         services.AddScoped<IDashboardMeasurementService, DashboardMeasurementService>();
+
+        // QR rendering voor opslaglocatietags
+        services.AddScoped<IStorageLocationQrTagRenderer, QrCoderStorageLocationQrTagRenderer>();
 
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IEncryptionService>(_ =>

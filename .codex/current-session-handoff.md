@@ -10,9 +10,10 @@ Updated: 2026-06-19.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `master`.
+- Actieve branch: `feature/pilot-loc-03-qr-tag-print-png`.
 - `master` is bijgewerkt tot en met mergecommit `fd18442` voor `PILOT-LOC-02`.
-- De worktree is schoon na de mergecontrole.
+- De worktree bevat de gecontroleerde en handmatig geaccepteerde wijzigingen voor
+  `PILOT-LOC-03`; commit/push/PR staan als eerstvolgende administratieve stap open.
 
 ## Actieve release
 
@@ -29,8 +30,10 @@ gebruik op Linde door Roelof en Carla:
 - `PILOT-LOC-02` is op 2026-06-19 technisch gecontroleerd en handmatig geaccepteerd;
   stabiele locatie-QR-tokens, scanrouting en Owner-only koppelen van onbekende
   BootManager-QR's zijn gereed;
-- `PILOT-LOC-03` en `PILOT-LOC-04` blijven documentair uitgesplitst voor QR-print/export
-  en QR-tokenvervanging/tagoverzicht;
+- `PILOT-LOC-03` is op 2026-06-19 technisch gecontroleerd en handmatig geaccepteerd;
+  Owner-only QR-tagpagina's, compacte 5x5 cm printweergave, QRCoder-rendering via een
+  vervangbare abstraction en scanbare PNG-download met locatienaam zijn gereed;
+- `PILOT-LOC-04` blijft documentair uitgesplitst voor QR-tokenvervanging/tagoverzicht;
 - tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
   toestaan in de Crew-PCR-gate en open Blazor-sessies periodiek valideren tegen
   `CredentialVersion`.
@@ -40,20 +43,18 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Start vanaf de schone actuele `master`. Maak een featurebranch en compact
-implementation packet voor `PILOT-LOC-03` — QR-tag printen en PNG exporteren. Geef
-Claude de opdracht pas nadat de branch is gecontroleerd en niet `master` is.
+Controleer status en diff, werk de pilotdocumentatie af, commit en push
+`feature/pilot-loc-03-qr-tag-print-png`, maak de PR aan en pak daarna
+`PILOT-LOC-04` op vanaf een schone actuele `master`.
 
 Laatste verificatie op 2026-06-19:
 
-- handmatige acceptatie van `PILOT-LOC-02` geslaagd; een gemelde afwijking bleek een
-  controle op een verkeerde dubbel voorkomende locatienaam, niet een productdefect;
-- gerichte storage unit-tests: 96/96;
-- volledige unit-suite: 292/293, alleen de bekende
-  `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` baseline rood;
-- gerichte storage-integratietests: 24/24;
-- volledige integratiesuite: 36/36;
-- `dotnet build BootManager.sln --no-restore`: geslaagd met 0 warnings en 0 errors;
+- handmatige acceptatie van `PILOT-LOC-03` geslaagd: browserprint werkt, compacte
+  5x5 cm tagweergave is bruikbaar, PNG-download levert een bestand met locatienaam op
+  en zowel zichtbare QR als gedownloade PNG openen dezelfde locatie;
+- gerichte storage/tag unit-tests: 36/36;
+- `dotnet build BootManager.sln --no-restore`: geslaagd; bestaande repositorybrede
+  baseline warnings buiten deze story blijven aanwezig;
 - `git diff --check`: geslaagd.
 
 ## Documentatie

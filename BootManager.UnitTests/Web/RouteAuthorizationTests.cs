@@ -52,6 +52,7 @@ public class RouteAuthorizationTests
     [InlineData("BootManager.Web.Components.Pages.Analysis")]
     [InlineData("BootManager.Web.Components.Pages.Onboarding")]
     [InlineData("BootManager.Web.Components.Pages.LinkLocationQr")]
+    [InlineData("BootManager.Web.Components.Pages.StorageLocationTag")]
     public void Page_RequiresOwnerOnlyRole(string typeName)
     {
         var pageType = WebAssembly.GetType(typeName);

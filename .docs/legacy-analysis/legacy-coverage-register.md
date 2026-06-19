@@ -49,7 +49,7 @@ Bij afronding van een story of PR:
 | US1.9 Bootstructuurbeheer: gebieden en opslaglocaties | Partial | `PILOT-LOC-01` levert persistent beheer van gebieden en opslaglocaties met stabiele locatie-id en gedeelde detailpagina. QR/tag- en voorraadfunctionaliteit blijven open. |
 | US1.10 Opslaglocatie aanmaken binnen gebied | Done | `PILOT-LOC-01` dekt locatie aanmaken onder precies één gebied met naam en korte omschrijving af. |
 | US1.11 Opslaglocatie bewerken | Done | `PILOT-LOC-01` dekt locatie hernoemen, beschrijving aanpassen, verplaatsen naar een ander gebied en verwijderen af. |
-| US1.12 Tag genereren voor opslaglocatie | Partial | `PILOT-LOC-02` levert stabiele unieke token- en QR-waarden per locatie, inclusief koppelen aan bestaande of nieuwe locaties; printen en PNG-export volgen in `PILOT-LOC-03`. |
+| US1.12 Tag genereren voor opslaglocatie | Done | `PILOT-LOC-02` levert stabiele unieke token- en QR-waarden per locatie; `PILOT-LOC-03` voegt Owner-only printvriendelijke QR-tags en scanbare PNG-export per locatie toe. |
 | US1.13 Locatie openen via QR-code | Partial | `PILOT-LOC-02` levert scanrouting van bekende locatie-QR's naar de locatie-detailpagina voor Owner en Crew; producten en aantallen blijven later voor inventory. |
 | US1.14 Tag opnieuw koppelen of vervangen | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-04`: token vervangen en oude QR ongeldig maken. |
 | US1.15 Overzicht van alle tags | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-04`: overzicht met locaties, tokeninformatie en handmatige tagstatus. |

@@ -50,15 +50,14 @@
   - **Verificatie:** gerichte storage unit-tests 96/96; volledige unit-suite 292/293 met alleen de bekende owner-recoverybaseline rood; gerichte storage-integratietests 24/24; volledige integratiesuite 36/36; `dotnet build BootManager.sln --no-restore`; `git diff --check`; handmatige Owner/Crew QR-test geslaagd.
   - **Referenties:** `.docs/releases/holiday-pilot-2026.md` en `.codex/PILOT-LOC-02-implementation-packet.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-LOC-03 QR-tag printen en PNG exporteren**
-  - **Status 2026-06-19:** story uitgewerkt in het holidaybestand en is de eerstvolgende pilotstory.
-  - **Doel:** Owner kan een locatie-QR printvriendelijk openen en als PNG downloaden.
-  - **Buiten scope:** server-side PDF/CSV, labelprinterintegratie, token vervangen en tagoverzicht.
-  - **Legacy-koppeling:** vult `US1.12` aan met printen/exporteren.
+- [x] **Holiday Pilot 2026 — PILOT-LOC-03 QR-tag printen en PNG exporteren**
+  - **Status 2026-06-19:** technisch gecontroleerd en handmatig geaccepteerd.
+  - **Resultaat:** Owner-only tagpagina, compacte 5x5 cm printweergave, QRCoder-rendering via vervangbare abstraction en scanbare PNG-download met locatienaam zijn opgeleverd.
+  - **Legacy-koppeling:** rondt `US1.12` functioneel af voor printen/exporteren.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-LOC-04 QR-token vervangen en tagoverzicht**
-  - **Status 2026-06-18:** story uitgewerkt in het holidaybestand; wacht op `PILOT-LOC-03`.
+  - **Status 2026-06-19:** story uitgewerkt in het holidaybestand en is de eerstvolgende pilotstory.
   - **Doel:** Owner kan tokens vervangen en handmatige tagstatus per locatie beheren.
   - **Buiten scope:** fysieke printerintegratie, auditlog, producten en voorraad.
   - **Legacy-koppeling:** raakt `US1.14` en `US1.15`.
