@@ -10,9 +10,9 @@ Updated: 2026-06-19.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `feature/pilot-loc-02-location-qr`.
-- Deze branch bevat de afgeronde `PILOT-LOC-02` implementatie en documentatie-update.
-- Commit/push/PR-flow voor `PILOT-LOC-02` is de actuele stap.
+- Actieve branch: `master`.
+- `master` is bijgewerkt tot en met mergecommit `fd18442` voor `PILOT-LOC-02`.
+- De worktree is schoon na de mergecontrole.
 
 ## Actieve release
 
@@ -40,9 +40,9 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Na merge van `feature/pilot-loc-02-location-qr` is de eerstvolgende actie een
-featurebranch en compact implementation packet voor `PILOT-LOC-03` — QR-tag printen en
-PNG exporteren.
+Start vanaf de schone actuele `master`. Maak een featurebranch en compact
+implementation packet voor `PILOT-LOC-03` — QR-tag printen en PNG exporteren. Geef
+Claude de opdracht pas nadat de branch is gecontroleerd en niet `master` is.
 
 Laatste verificatie op 2026-06-19:
 
