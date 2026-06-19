@@ -10,11 +10,9 @@ Updated: 2026-06-19.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `feature/pilot-loc-04-token-replacement-tag-overview`.
-- `master` en `origin/master` staan op mergecommit `9e77812` voor `PILOT-LOC-03`.
-- De worktree bevat de gecontroleerde en handmatig geaccepteerde wijzigingen voor
-  `PILOT-LOC-04`, inclusief de kleine navigatievervolgstap voor het Owner-only
-  menu `Opslag`; commit/push/PR staan als eerstvolgende administratieve stap open.
+- Actieve branch: `master`.
+- `master` en `origin/master` staan op mergecommit `4a610da` voor `PILOT-LOC-04`.
+- De worktree is schoon na merge van PR #93.
 
 ## Actieve release
 
@@ -46,9 +44,9 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Controleer status en diff, werk de pilotdocumentatie af, commit en push
-`feature/pilot-loc-04-token-replacement-tag-overview`, maak de PR aan en pak daarna
-`PILOT-INV-01` op vanaf een schone actuele `master`.
+Pak `PILOT-INV-01` op vanaf deze schone actuele `master`. Maak daarvoor eerst een
+nieuwe featurebranch en laad alleen de minimale pilotcontext voor producten,
+productcategorieën en productbarcodes.
 
 Laatste verificatie op 2026-06-19:
 
@@ -61,6 +59,8 @@ Laatste verificatie op 2026-06-19:
 - `dotnet build BootManager.sln --no-restore`: geslaagd; bestaande repositorybrede
   baseline warnings buiten deze story blijven aanwezig;
 - `git diff --check`: geslaagd.
+- PR #93 is op 2026-06-19 gemerged; lokale `master` is fast-forward bijgewerkt tot
+  mergecommit `4a610da`.
 
 ## Documentatie
 
