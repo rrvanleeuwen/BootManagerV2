@@ -51,8 +51,8 @@ Bij afronding van een story of PR:
 | US1.11 Opslaglocatie bewerken | Done | `PILOT-LOC-01` dekt locatie hernoemen, beschrijving aanpassen, verplaatsen naar een ander gebied en verwijderen af. |
 | US1.12 Tag genereren voor opslaglocatie | Done | `PILOT-LOC-02` levert stabiele unieke token- en QR-waarden per locatie; `PILOT-LOC-03` voegt Owner-only printvriendelijke QR-tags en scanbare PNG-export per locatie toe. |
 | US1.13 Locatie openen via QR-code | Partial | `PILOT-LOC-02` levert scanrouting van bekende locatie-QR's naar de locatie-detailpagina voor Owner en Crew; producten en aantallen blijven later voor inventory. |
-| US1.14 Tag opnieuw koppelen of vervangen | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-04`: token vervangen en oude QR ongeldig maken. |
-| US1.15 Overzicht van alle tags | Open | Gekoppeld aan geplande pilotstory `PILOT-LOC-04`: overzicht met locaties, tokeninformatie en handmatige tagstatus. |
+| US1.14 Tag opnieuw koppelen of vervangen | Done | `PILOT-LOC-04` dekt Owner-only tokenvervanging af: oude QR ongeldig, nieuwe QR direct actief voor dezelfde locatie. |
+| US1.15 Overzicht van alle tags | Done | `PILOT-LOC-04` levert een Owner-only tagoverzicht met gebied, locatie, QR-waarde en handmatige tagstatus, plus directe navigatie via hoofdmenu `Opslag`. |
 | US1.16 Bootgegevens exporteren/importeren | Open | Later bij backup/restore of systeemconfiguratie. |
 | US1.17 Toekomstige cloud-bootselectie | Parked | Cloud/multi-boot geparkeerd. |
 

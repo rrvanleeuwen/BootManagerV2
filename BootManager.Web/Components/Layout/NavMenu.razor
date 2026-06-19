@@ -42,6 +42,24 @@
                                 <span class="ml-2">Beheerder</span>
                             </NavLink>
                         </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="storageDropdown" role="button" @onclick="ToggleStorageDropdown" @onclick:preventDefault>
+                                <i class="fas fa-cube"></i>
+                                <span class="ml-2">Opslag</span>
+                            </a>
+                            <ul class="dropdown-menu" id="storageMenu" style="display: @(_storageDropdownOpen ? "block" : "none");">
+                                <li>
+                                    <NavLink class="dropdown-item" href="storage/locations" @onclick="CloseStorageDropdown">
+                                        Locaties
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink class="dropdown-item" href="storage/tag-overview" @onclick="CloseStorageDropdown">
+                                        Tagoverzicht
+                                    </NavLink>
+                                </li>
+                            </ul>
+                        </li>
                         <li class="nav-item">
                             <NavLink class="nav-link" href="settings">
                                 <i class="fas fa-cogs"></i>
@@ -57,3 +75,17 @@
         </AuthorizeView>
     </ul>
 </div>
+
+@code {
+    private bool _storageDropdownOpen = false;
+
+    private void ToggleStorageDropdown()
+    {
+        _storageDropdownOpen = !_storageDropdownOpen;
+    }
+
+    private void CloseStorageDropdown()
+    {
+        _storageDropdownOpen = false;
+    }
+}

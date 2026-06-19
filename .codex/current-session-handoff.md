@@ -10,10 +10,11 @@ Updated: 2026-06-19.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `feature/pilot-loc-03-qr-tag-print-png`.
-- `master` is bijgewerkt tot en met mergecommit `fd18442` voor `PILOT-LOC-02`.
+- Actieve branch: `feature/pilot-loc-04-token-replacement-tag-overview`.
+- `master` en `origin/master` staan op mergecommit `9e77812` voor `PILOT-LOC-03`.
 - De worktree bevat de gecontroleerde en handmatig geaccepteerde wijzigingen voor
-  `PILOT-LOC-03`; commit/push/PR staan als eerstvolgende administratieve stap open.
+  `PILOT-LOC-04`, inclusief de kleine navigatievervolgstap voor het Owner-only
+  menu `Opslag`; commit/push/PR staan als eerstvolgende administratieve stap open.
 
 ## Actieve release
 
@@ -33,7 +34,9 @@ gebruik op Linde door Roelof en Carla:
 - `PILOT-LOC-03` is op 2026-06-19 technisch gecontroleerd en handmatig geaccepteerd;
   Owner-only QR-tagpagina's, compacte 5x5 cm printweergave, QRCoder-rendering via een
   vervangbare abstraction en scanbare PNG-download met locatienaam zijn gereed;
-- `PILOT-LOC-04` blijft documentair uitgesplitst voor QR-tokenvervanging/tagoverzicht;
+- `PILOT-LOC-04` is op 2026-06-19 technisch gecontroleerd en handmatig geaccepteerd;
+  Owner-only tokenvervanging, tagstatusbeheer, tagoverzicht en directe navigatie via
+  hoofdmenu `Opslag` met `Locaties` en `Tagoverzicht` zijn gereed;
 - tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
   toestaan in de Crew-PCR-gate en open Blazor-sessies periodiek valideren tegen
   `CredentialVersion`.
@@ -44,15 +47,17 @@ of expliciete andere prioriteit van de gebruiker.
 ## Eerstvolgende actie
 
 Controleer status en diff, werk de pilotdocumentatie af, commit en push
-`feature/pilot-loc-03-qr-tag-print-png`, maak de PR aan en pak daarna
-`PILOT-LOC-04` op vanaf een schone actuele `master`.
+`feature/pilot-loc-04-token-replacement-tag-overview`, maak de PR aan en pak daarna
+`PILOT-INV-01` op vanaf een schone actuele `master`.
 
 Laatste verificatie op 2026-06-19:
 
-- handmatige acceptatie van `PILOT-LOC-03` geslaagd: browserprint werkt, compacte
-  5x5 cm tagweergave is bruikbaar, PNG-download levert een bestand met locatienaam op
-  en zowel zichtbare QR als gedownloade PNG openen dezelfde locatie;
-- gerichte storage/tag unit-tests: 36/36;
+- handmatige acceptatie van `PILOT-LOC-04` geslaagd: tagoverzicht en tokenvervanging
+  werken, oude tokens worden ongeldig, nieuwe tokens openen de locatie, en de
+  opslagnavigatie loopt nu uitsluitend via het Owner-only hoofdmenu `Opslag`;
+- gerichte storage/navigation unit-tests: 20/20 voor de laatste navigatiecheck en
+  eerder 138/138 voor de bredere storage/tag suite;
+- gerichte storage-integratietests voor tokenvervanging/migratie: geslaagd;
 - `dotnet build BootManager.sln --no-restore`: geslaagd; bestaande repositorybrede
   baseline warnings buiten deze story blijven aanwezig;
 - `git diff --check`: geslaagd.

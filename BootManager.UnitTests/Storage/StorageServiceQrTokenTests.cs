@@ -262,4 +262,134 @@ public class StorageServiceQrTokenTests
         Assert.False(result.Success);
         Assert.Contains("gekoppeld", result.ErrorMessage ?? "");
     }
+
+    [Fact]
+    public async Task ReplaceQrToken_GeneratesNewTokenAndInvalidatesOld()
+    {
+        var oldToken = LocationQrValue.GenerateToken();
+        var locationId = Guid.NewGuid();
+        var location = StorageLocation.Create(Guid.NewGuid(), "TestLocation");
+        location.SetQrToken(oldToken);
+        var oldQrValue = LocationQrValue.FormatQrValue(oldToken);
+
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(location);
+
+        var result = await _service.ReplaceQrTokenAsync(locationId);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        var newToken = LocationQrValue.TryParseQrValue(result.Data);
+        Assert.NotEqual(oldToken, newToken);
+        Assert.Equal(newToken, location.QrToken);
+        _locationRepoMock.Verify(r => r.UpdateAsync(location, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReplaceQrToken_OldTokenNoLongerResolves()
+    {
+        var oldToken = LocationQrValue.GenerateToken();
+        var oldQrValue = LocationQrValue.FormatQrValue(oldToken);
+        var locationId = Guid.NewGuid();
+        var location = StorageLocation.Create(Guid.NewGuid(), "TestLocation");
+        location.SetQrToken(oldToken);
+
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(location);
+
+        var replaceResult = await _service.ReplaceQrTokenAsync(locationId);
+        Assert.True(replaceResult.Success);
+
+        _locationRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StorageLocation, bool>>>(), default))
+            .ReturnsAsync((StorageLocation?)null);
+
+        var resolveOldResult = await _service.ResolveQrValueAsync(oldQrValue);
+
+        Assert.Equal(QrStatus.Unknown, resolveOldResult.Status);
+        Assert.Equal(oldToken, resolveOldResult.Token);
+    }
+
+    [Fact]
+    public async Task ReplaceQrToken_NewTokenResolves()
+    {
+        var oldToken = LocationQrValue.GenerateToken();
+        var locationId = Guid.NewGuid();
+        var location = StorageLocation.Create(Guid.NewGuid(), "TestLocation");
+        location.SetQrToken(oldToken);
+
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(location);
+
+        var replaceResult = await _service.ReplaceQrTokenAsync(locationId);
+        Assert.True(replaceResult.Success);
+        var newToken = LocationQrValue.TryParseQrValue(replaceResult.Data);
+        var newQrValue = LocationQrValue.FormatQrValue(newToken);
+
+        _locationRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StorageLocation, bool>>>(), default))
+            .ReturnsAsync(location);
+
+        var resolveNewResult = await _service.ResolveQrValueAsync(newQrValue);
+
+        Assert.Equal(QrStatus.Linked, resolveNewResult.Status);
+        Assert.Equal(location.Id, resolveNewResult.LinkedLocationId);
+    }
+
+    [Fact]
+    public async Task ReplaceQrToken_ReturnsErrorForMissingLocation()
+    {
+        var locationId = Guid.NewGuid();
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync((StorageLocation?)null);
+
+        var result = await _service.ReplaceQrTokenAsync(locationId);
+
+        Assert.False(result.Success);
+        Assert.Contains("niet gevonden", result.ErrorMessage ?? "");
+    }
+
+    [Fact]
+    public async Task ReplaceQrToken_SetsStatusToReplaced()
+    {
+        var oldToken = LocationQrValue.GenerateToken();
+        var locationId = Guid.NewGuid();
+        var location = StorageLocation.Create(Guid.NewGuid(), "TestLocation");
+        location.SetQrToken(oldToken);
+        var originalStatus = location.TagStatus;
+
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(location);
+
+        var result = await _service.ReplaceQrTokenAsync(locationId);
+
+        Assert.True(result.Success);
+        Assert.Equal(BootManager.Core.Enums.TagStatus.Replaced, location.TagStatus);
+    }
+
+    [Fact]
+    public async Task ReplaceQrToken_RefusesLocationWithoutToken()
+    {
+        var locationId = Guid.NewGuid();
+        var location = StorageLocation.Create(Guid.NewGuid(), "TestLocation");
+        Assert.Null(location.QrToken);
+
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(location);
+
+        var result = await _service.ReplaceQrTokenAsync(locationId);
+
+        Assert.False(result.Success);
+        Assert.Contains("nog geen QR-token", result.ErrorMessage ?? "");
+        _locationRepoMock.Verify(r => r.UpdateAsync(It.IsAny<StorageLocation>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public void DomainModel_ReplaceQrToken_RequiresExistingToken()
+    {
+        var location = StorageLocation.Create(Guid.NewGuid(), "TestLocation");
+        Assert.Null(location.QrToken);
+
+        var newToken = LocationQrValue.GenerateToken();
+        var ex = Assert.Throws<InvalidOperationException>(() => location.ReplaceQrToken(newToken));
+        Assert.Contains("bestaand token", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

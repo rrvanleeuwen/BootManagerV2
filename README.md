@@ -1,4 +1,4 @@
-﻿# BootManagerV2
+# BootManagerV2
 
 BootManagerV2 is een lokale, Raspberry Pi-vriendelijke bootmanagementapplicatie met digitaal logboek, NMEA/YDEN-ingest, live dashboard en systeembeheer voor gebruik aan boord.
 
@@ -15,15 +15,15 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[######--------------]` 31% | 16 |
+| Vakantiepilot 2026 | `[########------------]` 37.5% | 16 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
-| Legacy scope | `[#####---------------]` 22.9% | 129 |
+| Legacy scope | `[#####---------------]` 24.8% | 129 |
 
 ### Vakantiepilot 2026
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[######--------------]` 31% | 5 | 0 | 11 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-LOC-04 - QR-token vervangen en tagoverzicht |
+| `[########------------]` 37.5% | 6 | 0 | 10 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-01 - Productcategorieën, producten en productbarcodes |
 
 ### BootManagerV2 Epics
 
@@ -42,7 +42,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 | Legacy epic | Voortgang | Done | Replaced | Partial | Open | Parked |
 |---|---:|---:|---:|---:|---:|---:|
 | Epic 0: Installatie & Authenticatie | `[####################]` 100% | 4 | 2 | 0 | 0 | 0 |
-| Epic 1: Bootbeheer & Gebruikersbeheer | `[###########---------]` 54.2% | 4 | 0 | 5 | 3 | 5 |
+| Epic 1: Bootbeheer & Gebruikersbeheer | `[###############-----]` 75% | 7 | 0 | 4 | 1 | 5 |
 | Epic 2: Inventarisbeheer | `[#-------------------]` 5.3% | 0 | 0 | 2 | 17 | 2 |
 | Epic 3: Passageplanning | `[--------------------]` 0% | 0 | 0 | 0 | 13 | 1 |
 | Epic 4: Documentbeheer | `[--------------------]` 0% | 0 | 0 | 0 | 12 | 1 |
