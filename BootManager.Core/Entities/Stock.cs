@@ -17,6 +17,9 @@ public class Stock
     /// <summary>Numerieke hoeveelheid in standaardeenheid van het product.</summary>
     public decimal Quantity { get; private set; }
 
+    /// <summary>Timestamp van laatste toevoeging of update.</summary>
+    public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
+
     public Product Product { get; private set; } = default!;
     public StorageLocation StorageLocation { get; private set; } = default!;
 
@@ -27,6 +30,7 @@ public class Stock
         ProductId = productId;
         StorageLocationId = locationId;
         Quantity = quantity;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public static Stock Create(Guid productId, Guid locationId, decimal quantity)
@@ -35,10 +39,12 @@ public class Stock
     public void SetQuantity(decimal newQuantity)
     {
         Quantity = newQuantity;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void AddQuantity(decimal amount)
     {
         Quantity += amount;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

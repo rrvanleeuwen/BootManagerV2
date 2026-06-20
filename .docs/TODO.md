@@ -81,12 +81,13 @@
   - **Verificatie:** gerichte `StockService`, `StorageLocationDetailsWithStock`, `NavMenu`, `RouteAuthorization` en `StorageManagement` tests groen; handmatige acceptatie door gebruiker geslaagd.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-INV-03 scan-gestuurde inruimflow**
-  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
-  - **Doel:** vanuit `Scannen` een product snel inruimen met voorgestelde locatie en doorlopende scansessie.
-  - **Kern:** productcode start de inruimflow; laatst gebruikte locatie wordt voorgesteld; alternatieve locaties zijn zichtbaar; na opslaan vraagt het systeem direct of nog een product gescand moet worden.
-  - **Belangrijk:** onbekende productcode kan in dezelfde flow leiden tot nieuw product of code koppelen aan bestaand product; de modal blijft een bewuste werkhypothese.
+- [x] **Holiday Pilot 2026 — PILOT-INV-03 scan-gestuurde inruimflow**
+  - **Status 2026-06-20:** technisch gecontroleerd en handmatig geaccepteerd.
+  - **Doel:** vanuit `Scannen` een product snel inruimen met voorgestelde locatie, onbekende-code-afhandeling en doorlopende scansessie.
+  - **Kern:** productcode start de inruimflow; laatst gebruikte locatie wordt voorgesteld; alternatieve locaties en handmatige fallback blijven beschikbaar; onbekende productcode kan in dezelfde flow leiden tot nieuw product of code koppelen; na opslaan vraagt het systeem direct of nog een product gescand moet worden.
+  - **Belangrijk:** nieuw product aanmaken binnen deze scanflow vereist nu expliciete keuze van standaardeenheid; onbekende BootManager locatie-QR blijft role-based via het bestaande scanresultaatscherm.
   - **Buiten scope:** verbruik/correcties, historie en extra dashboardingang buiten het bestaande menu `Scannen`.
+  - **Verificatie:** gerichte `ScanComponentTests` groen, solution build groen en handmatige acceptatie door gebruiker geslaagd.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-INV-04 product terugvinden via scan of zoeken**

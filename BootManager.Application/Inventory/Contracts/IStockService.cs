@@ -37,4 +37,16 @@ public interface IStockService
     /// Verwijdert een voorraadregel.
     /// </summary>
     Task<InventoryOperationResult> DeleteStockAsync(Guid stockId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Haalt de meest recente voorraadregel voor een product op (voor locatievoorstel).
+    /// </summary>
+    Task<InventoryOperationResult<StockDto>> GetMostRecentStockForProductAsync(
+        Guid productId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Haalt alternatieve locaties voor een product op (zonder duplicaten, zonder meest recente).
+    /// </summary>
+    Task<InventoryOperationResult<IReadOnlyList<StockDto>>> GetAlternativeLocationsForProductAsync(
+        Guid productId, CancellationToken ct = default);
 }

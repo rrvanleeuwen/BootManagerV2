@@ -340,4 +340,141 @@ public class StockServiceTests
         Assert.Equal("Stuk", result.Data.DefaultUnitName);
         _stockRepoMock.Verify(r => r.AddAsync(It.IsAny<Stock>(), default), Times.Once);
     }
+
+    [Fact]
+    public async Task GetMostRecentStockForProductAsync_ReturnsMostRecentlyUpdatedStock()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var locationId1 = Guid.NewGuid();
+        var locationId2 = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location1 = StorageLocation.Create(areaId, "Location1", null);
+        var location2 = StorageLocation.Create(areaId, "Location2", null);
+
+        var olderStock = Stock.Create(productId, locationId1, 5);
+        var newerStock = Stock.Create(productId, locationId2, 10);
+
+        // Simulate newer update time
+        System.Threading.Thread.Sleep(10);
+        newerStock.AddQuantity(0);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, default))
+            .ReturnsAsync(unit);
+        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(new List<Stock> { olderStock, newerStock });
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId2, default))
+            .ReturnsAsync(location2);
+        _areaRepoMock.Setup(r => r.GetByIdAsync(areaId, default))
+            .ReturnsAsync(area);
+
+        var result = await _service.GetMostRecentStockForProductAsync(productId);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Equal(locationId2, result.Data.StorageLocationId);
+        Assert.Equal("Location2", result.Data.StorageLocationName);
+    }
+
+    [Fact]
+    public async Task GetMostRecentStockForProductAsync_ReturnsNotFound_WhenNoStocks()
+    {
+        var productId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, default))
+            .ReturnsAsync(unit);
+        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(new List<Stock>());
+
+        var result = await _service.GetMostRecentStockForProductAsync(productId);
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task GetAlternativeLocationsForProductAsync_ReturnsOtherLocations_ExcludingMostRecent()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var locationId1 = Guid.NewGuid();
+        var locationId2 = Guid.NewGuid();
+        var locationId3 = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location1 = StorageLocation.Create(areaId, "Location1", null);
+        var location2 = StorageLocation.Create(areaId, "Location2", null);
+        var location3 = StorageLocation.Create(areaId, "Location3", null);
+
+        var stock1 = Stock.Create(productId, locationId1, 5);
+        var stock2 = Stock.Create(productId, locationId2, 10);
+        var stock3 = Stock.Create(productId, locationId3, 15);
+
+        System.Threading.Thread.Sleep(20);
+        stock2.AddQuantity(0);
+        System.Threading.Thread.Sleep(20);
+        stock3.AddQuantity(0);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, default))
+            .ReturnsAsync(unit);
+        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(new List<Stock> { stock1, stock2, stock3 });
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId1, default))
+            .ReturnsAsync(location1);
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId2, default))
+            .ReturnsAsync(location2);
+        _areaRepoMock.Setup(r => r.GetByIdAsync(areaId, default))
+            .ReturnsAsync(area);
+
+        var result = await _service.GetAlternativeLocationsForProductAsync(productId);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Equal(2, result.Data.Count);
+        Assert.All(result.Data, s => Assert.NotEqual(locationId3, s.StorageLocationId));
+    }
+
+    [Fact]
+    public async Task GetAlternativeLocationsForProductAsync_ReturnsEmpty_WhenOnlyOneLocation()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location = StorageLocation.Create(areaId, "Location1", null);
+        var stock = Stock.Create(productId, locationId, 5);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, default))
+            .ReturnsAsync(unit);
+        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(new List<Stock> { stock });
+
+        var result = await _service.GetAlternativeLocationsForProductAsync(productId);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Empty(result.Data);
+    }
 }
