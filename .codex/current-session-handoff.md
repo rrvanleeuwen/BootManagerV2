@@ -10,9 +10,9 @@ Updated: 2026-06-20.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `feature/pilot-inv-01-product-catalog`.
+- Actieve branch: `feature/pilot-inv-02-location-stock-basics`.
 - `master` en `origin/master` staan op mergecommit `4a610da` voor `PILOT-LOC-04`.
-- `PILOT-INV-01` is lokaal geïmplementeerd, getest en handmatig geaccepteerd; documentatie-, commit-, push- en PR-afronding lopen op de featurebranch.
+- `PILOT-INV-02` is lokaal geïmplementeerd, gericht getest en handmatig geaccepteerd; documentatie-, commit-, push- en PR-afronding lopen op de featurebranch.
 
 ## Actieve release
 
@@ -21,25 +21,27 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
 - bron: `.docs/releases/holiday-pilot-2026.md`;
 - status: actief en leidend voor de eerstvolgende ontwikkelperiode;
 - afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
-  `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`;
-- actuele focus: administratieve afronding van `PILOT-INV-01`, daarna inventory-vervolg vanaf `PILOT-INV-02`.
+  `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`;
+- actuele focus: administratieve afronding van `PILOT-INV-02`, daarna inventory-vervolg vanaf `PILOT-INV-03`.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-`PILOT-INV-01` is technisch gerealiseerd en door de gebruiker handmatig geaccepteerd.
+`PILOT-INV-02` is technisch gerealiseerd en door de gebruiker handmatig geaccepteerd.
 De documentatie wordt nu bijgewerkt, waarna commit, push en een draft PR volgen.
 
-Eerstvolgende inhoudelijke story na merge is `PILOT-INV-02` vanaf een schone actuele
+Eerstvolgende inhoudelijke story na merge is `PILOT-INV-03` vanaf een schone actuele
 `master`.
 
-Let op bij vervolg op productcodes:
+Let op bij vervolg op inventory:
 
 - handmatige gekoppelde code-invoer in `Voorraadbeheer > Producten` is aanwezig;
-- direct barcode scannen binnen dat handmatige productformulier is nog geen afgeronde
-  gebruikersflow en moet expliciet terugkomen in een latere scan-gerichte inventory-slice.
+- taakgerichte voorraadbasis per locatie is aanwezig, inclusief additief aanvullen op
+  dezelfde locatie en productdetail met gekoppelde locaties;
+- direct barcode scannen binnen die hoofdroutes is nog geen afgeronde gebruikersflow en
+  moet expliciet terugkomen in een latere scan-gerichte inventory-slice.
 
 ## Niet-standaard context
 

@@ -1,6 +1,8 @@
+using BootManager.Application.Inventory.Contracts;
 using BootManager.Application.Storage.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Interfaces;
+using Moq;
 using System.Linq.Expressions;
 
 namespace BootManager.UnitTests.Storage;
@@ -17,6 +19,11 @@ public class StorageServiceTests
         return new FakeStorageLocationRepository(locations ?? new List<StorageLocation>());
     }
 
+    private static IStockService CreateMockStockService()
+    {
+        return new Mock<IStockService>().Object;
+    }
+
     // --- StorageArea Tests ---
 
     [Fact]
@@ -24,7 +31,7 @@ public class StorageServiceTests
     {
         var areaRepo = CreateAreaRepository();
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateAreaAsync("Kombuis");
 
@@ -38,7 +45,7 @@ public class StorageServiceTests
     {
         var areaRepo = CreateAreaRepository();
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateAreaAsync("  Kombuis  ");
 
@@ -51,7 +58,7 @@ public class StorageServiceTests
     {
         var areaRepo = CreateAreaRepository();
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateAreaAsync("");
 
@@ -64,7 +71,7 @@ public class StorageServiceTests
     {
         var areaRepo = CreateAreaRepository();
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var longName = new string('A', 101);
         var result = await service.CreateAreaAsync(longName);
@@ -79,7 +86,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateAreaAsync("kombuis");
 
@@ -93,7 +100,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.RenameAreaAsync(area.Id, "Salon");
 
@@ -105,7 +112,7 @@ public class StorageServiceTests
     {
         var areaRepo = CreateAreaRepository();
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.RenameAreaAsync(Guid.NewGuid(), "Salon");
 
@@ -120,7 +127,7 @@ public class StorageServiceTests
         var area2 = StorageArea.Create("Salon");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area1, area2 });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.RenameAreaAsync(area2.Id, "kombuis");
 
@@ -134,7 +141,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.DeleteAreaAsync(area.Id);
 
@@ -148,7 +155,7 @@ public class StorageServiceTests
         var location = StorageLocation.Create(area.Id, "Kast 1");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.DeleteAreaAsync(area.Id);
 
@@ -164,7 +171,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateLocationAsync(area.Id, "Kast 1", "Keukenkast");
 
@@ -180,7 +187,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateLocationAsync(area.Id, "Kast 1", null);
 
@@ -194,7 +201,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateLocationAsync(area.Id, "  Kast 1  ", "  Beschrijving  ");
 
@@ -208,7 +215,7 @@ public class StorageServiceTests
     {
         var areaRepo = CreateAreaRepository();
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateLocationAsync(Guid.NewGuid(), "Kast 1", null);
 
@@ -222,7 +229,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateLocationAsync(area.Id, "", null);
 
@@ -236,7 +243,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var longName = new string('A', 101);
         var result = await service.CreateLocationAsync(area.Id, longName, null);
@@ -251,7 +258,7 @@ public class StorageServiceTests
         var area = StorageArea.Create("Kombuis");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var longDesc = new string('A', 501);
         var result = await service.CreateLocationAsync(area.Id, "Kast 1", longDesc);
@@ -267,7 +274,7 @@ public class StorageServiceTests
         var location = StorageLocation.Create(area.Id, "Kast 1");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateLocationAsync(area.Id, "kast 1", null);
 
@@ -283,7 +290,7 @@ public class StorageServiceTests
         var location1 = StorageLocation.Create(area1.Id, "Kast 1");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area1, area2 });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location1 });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.CreateLocationAsync(area2.Id, "Kast 1", null);
 
@@ -297,7 +304,7 @@ public class StorageServiceTests
         var location = StorageLocation.Create(area.Id, "Kast 1", "Oude beschrijving");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.UpdateLocationAsync(location.Id, "Kast 2", "Nieuwe beschrijving");
 
@@ -314,7 +321,7 @@ public class StorageServiceTests
         var originalId = location.Id;
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.UpdateLocationAsync(originalId, "Kast 2", "Beschrijving");
 
@@ -329,7 +336,7 @@ public class StorageServiceTests
         var location = StorageLocation.Create(area1.Id, "Kast 1", null);
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area1, area2 });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.MoveLocationAsync(location.Id, area2.Id);
 
@@ -346,7 +353,7 @@ public class StorageServiceTests
         var originalId = location.Id;
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area1, area2 });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.MoveLocationAsync(originalId, area2.Id);
 
@@ -362,7 +369,7 @@ public class StorageServiceTests
         var location2 = StorageLocation.Create(area2.Id, "Kast 1");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area1, area2 });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location1, location2 });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.MoveLocationAsync(location1.Id, area2.Id);
 
@@ -377,7 +384,7 @@ public class StorageServiceTests
         var location = StorageLocation.Create(area.Id, "Kast 1");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.DeleteLocationAsync(location.Id);
 
@@ -391,7 +398,7 @@ public class StorageServiceTests
         var location = StorageLocation.Create(area.Id, "Kast 1", "Beschrijving");
         var areaRepo = CreateAreaRepository(new List<StorageArea> { area });
         var locRepo = CreateLocationRepository(new List<StorageLocation> { location });
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.GetLocationDetailAsync(location.Id);
 
@@ -407,7 +414,7 @@ public class StorageServiceTests
     {
         var areaRepo = CreateAreaRepository();
         var locRepo = CreateLocationRepository();
-        var service = new StorageService(areaRepo, locRepo);
+        var service = new StorageService(areaRepo, locRepo, CreateMockStockService());
 
         var result = await service.GetLocationDetailAsync(Guid.NewGuid());
 

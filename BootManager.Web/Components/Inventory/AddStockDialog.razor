@@ -1,0 +1,266 @@
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Application.Inventory.Services
+@inject IStockService StockService
+@inject IProductService ProductService
+@inject IUnitService UnitService
+
+<div class="modal d-block" style="display: block; background-color: rgba(0, 0, 0, 0.5);">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Voorraad toevoegen</h5>
+                <button type="button" class="btn-close" @onclick="OnClose"></button>
+            </div>
+            <div class="modal-body">
+                @if (_errorMessage != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                @if (_showCreateProductForm)
+                {
+                    <div class="card p-3">
+                        <h6>Nieuw product aanmaken</h6>
+                        @if (_createProductError != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                @_createProductError
+                                <button type="button" class="btn-close" @onclick="() => _createProductError = null"></button>
+                            </div>
+                        }
+                        <div class="mb-3">
+                            <label class="form-label">Productnaam *</label>
+                            <input type="text" class="form-control" @bind="_newProductName" placeholder="Productnaam" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Omschrijving</label>
+                            <input type="text" class="form-control" @bind="_newProductDescription" placeholder="Optionele omschrijving" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Standaardeenheid *</label>
+                            <select class="form-select" @bind="_newProductDefaultUnitId">
+                                <option value="">-- Selecteer eenheid --</option>
+                                @foreach (var unit in _activeUnits)
+                                {
+                                    <option value="@unit.Id">@unit.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" @onclick="SaveNewProductAsync">Opslaan</button>
+                        <button type="button" class="btn btn-secondary btn-sm" @onclick="CloseCreateProductForm">Annuleren</button>
+                    </div>
+                }
+                else if (_selectedProduct == null)
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Product zoeken</label>
+                        <input type="text" class="form-control" placeholder="Zoeken op naam of code..."
+                               @oninput="OnSearchChanged" />
+                    </div>
+
+                    @if (_searchResults != null)
+                    {
+                        @if (_searchResults.Count > 0)
+                        {
+                            <div class="list-group">
+                                @foreach (var product in _searchResults)
+                                {
+                                    <button type="button" class="list-group-item list-group-item-action"
+                                            @onclick="() => SelectProduct(product)">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>@product.Name</strong>
+                                            @if (!string.IsNullOrEmpty(product.Code?.Value))
+                                            {
+                                                <span class="badge bg-secondary">@product.Code.Value</span>
+                                            }
+                                        </div>
+                                        <small class="text-muted">Eenheid: @product.DefaultUnitName</small>
+                                    </button>
+                                }
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(_searchTerm))
+                        {
+                            <div class="alert alert-info">Geen producten gevonden. <button class="btn btn-sm btn-link" @onclick="OpenCreateProductForm">Nieuw product aanmaken</button></div>
+                        }
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <strong>Geselecteerd product:</strong> @_selectedProduct.Name
+                        @if (!string.IsNullOrEmpty(_selectedProduct.Code?.Value))
+                        {
+                            <span class="badge bg-secondary">@_selectedProduct.Code.Value</span>
+                        }
+                        <button type="button" class="btn btn-sm btn-link" @onclick="DeselectProduct">Wijzigen</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Hoeveelheid</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" step="0.01"
+                                   @bind="_quantity" placeholder="0" />
+                            <span class="input-group-text">@_selectedProduct.DefaultUnitName</span>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="OnClose">Sluiten</button>
+                @if (_selectedProduct != null)
+                {
+                    <button type="button" class="btn btn-primary" @onclick="AddStock">Voorraad toevoegen</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid LocationId { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnStockAdded { get; set; }
+
+    private string? _searchTerm = null;
+    private List<ProductDto>? _searchResults = null;
+    private ProductDto? _selectedProduct = null;
+    private decimal _quantity = 0;
+    private string? _errorMessage = null;
+    private bool _showCreateProductForm = false;
+    private string _newProductName = "";
+    private string _newProductDescription = "";
+    private Guid _newProductDefaultUnitId = Guid.Empty;
+    private List<UnitDto> _activeUnits = new();
+    private string? _createProductError = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var units = await UnitService.GetActiveAsync();
+        if (units != null && units.Count > 0)
+        {
+            _activeUnits = units.ToList();
+        }
+    }
+
+    private async Task OnSearchChanged(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value as string;
+        _searchResults = null;
+
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _searchResults = new();
+            return;
+        }
+
+        var result = await StockService.SearchProductsInLocationAsync(LocationId, _searchTerm);
+        if (result.Success)
+        {
+            _searchResults = result.Data?.ToList() ?? new();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+
+    private void SelectProduct(ProductDto product)
+    {
+        _selectedProduct = product;
+        _quantity = 0;
+        _errorMessage = null;
+        _showCreateProductForm = false;
+    }
+
+    private void DeselectProduct()
+    {
+        _selectedProduct = null;
+        _quantity = 0;
+    }
+
+    private void OpenCreateProductForm()
+    {
+        _showCreateProductForm = true;
+        _newProductName = "";
+        _newProductDescription = "";
+        _newProductDefaultUnitId = Guid.Empty;
+        _createProductError = null;
+    }
+
+    private void CloseCreateProductForm()
+    {
+        _showCreateProductForm = false;
+        _createProductError = null;
+    }
+
+    private async Task SaveNewProductAsync()
+    {
+        _createProductError = null;
+
+        if (string.IsNullOrWhiteSpace(_newProductName))
+        {
+            _createProductError = "Productnaam is verplicht.";
+            return;
+        }
+
+        if (_newProductDefaultUnitId == Guid.Empty)
+        {
+            _createProductError = "Standaardeenheid is verplicht.";
+            return;
+        }
+
+        var result = await ProductService.CreateAsync(
+            _newProductName,
+            string.IsNullOrWhiteSpace(_newProductDescription) ? null : _newProductDescription,
+            _newProductDefaultUnitId,
+            null);
+
+        if (!result.Success)
+        {
+            _createProductError = result.ErrorMessage;
+            return;
+        }
+
+        _selectedProduct = result.Data;
+        _quantity = 0;
+        _showCreateProductForm = false;
+        _errorMessage = null;
+    }
+
+    private async Task AddStock()
+    {
+        if (_selectedProduct == null)
+        {
+            _errorMessage = "Geen product geselecteerd.";
+            return;
+        }
+
+        if (_quantity <= 0)
+        {
+            _errorMessage = "Hoeveelheid moet groter dan 0 zijn.";
+            return;
+        }
+
+        var result = await StockService.AddOrIncrementStockAsync(
+            _selectedProduct.Id, LocationId, _quantity);
+
+        if (result.Success)
+        {
+            await OnStockAdded.InvokeAsync();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+}

@@ -134,6 +134,7 @@ public static class DependencyInjection
         services.AddScoped<IProductCategoryService, ProductCategoryService>();
         services.AddScoped<IUnitService, UnitService>();
         services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<IStockService, StockService>();
 
         return services;
     }

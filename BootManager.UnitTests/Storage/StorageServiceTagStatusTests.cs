@@ -1,3 +1,4 @@
+using BootManager.Application.Inventory.Contracts;
 using BootManager.Application.Storage.Services;
 using BootManager.Core.Entities;
 using BootManager.Core.Enums;
@@ -14,6 +15,7 @@ public class StorageServiceTagStatusTests
 {
     private readonly Mock<IRepository<StorageArea>> _areaRepoMock = new();
     private readonly Mock<IRepository<StorageLocation>> _locationRepoMock = new();
+    private readonly Mock<IStockService> _stockServiceMock = new();
     private StorageService _service = null!;
 
     public StorageServiceTagStatusTests()
@@ -23,7 +25,7 @@ public class StorageServiceTagStatusTests
 
     private void ResetService()
     {
-        _service = new StorageService(_areaRepoMock.Object, _locationRepoMock.Object);
+        _service = new StorageService(_areaRepoMock.Object, _locationRepoMock.Object, _stockServiceMock.Object);
     }
 
     [Fact]

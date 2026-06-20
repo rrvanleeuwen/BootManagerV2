@@ -67,8 +67,8 @@ Bij afronding van een story of PR:
 | US2.5 Barcodes en QR-codes koppelen aan producten | Partial | `PILOT-INV-01` levert één unieke gekoppelde productcode per product via handmatige invoer binnen de catalogus; scan-ondersteunde code-invoer en bredere scanflows volgen later. |
 | US2.6 Barcode scannen bij zoeken | Partial | `PILOT-SCAN-01` levert een op de Pi en beide telefoons geaccepteerde generieke scanner met ZXing voor QR en native `BarcodeDetector` voor EAN-13; de productzoekactie en inventorykoppeling volgen in `PILOT-INV-04`. |
 | US2.7 Barcodeherkenning via foto en AI | Parked | AI-herkenning lage prioriteit. |
-| US2.8 Product koppelen aan opslaglocatie | Open | Blijft open voor latere inventory-stories; `PILOT-LOC-01` levert alleen de opslaglocatiebasis. |
-| US2.9 Voorraad bekijken per locatie | Open | Blijft open voor latere inventory-stories; `PILOT-LOC-01` levert alleen een locatie-detailpagina zonder voorraadregels. |
+| US2.8 Product koppelen aan opslaglocatie | Done | `PILOT-INV-02` dekt voorraadregels per product-locatiecombinatie af via `Voorraad toevoegen` vanaf de locatiepagina, inclusief direct nieuw product aanmaken binnen dezelfde locatiecontext. |
+| US2.9 Voorraad bekijken per locatie | Done | `PILOT-INV-02` toont actuele locatie-inhoud per opslaglocatie en laat op productniveau zien op welke locaties voorraad ligt met hoeveelheid en eenheid. |
 | US2.10 Voorraad aanpassen | Open | Voorraadmutaties ontbreken. |
 | US2.11 Minimumvoorraad en waarschuwing | Open | Afhankelijk van inventory en notificaties. |
 | US2.12 Zoeken en filteren | Open | Inventory-module ontbreekt. |
@@ -78,7 +78,7 @@ Bij afronding van een story of PR:
 | US2.16 Voorraadstatus in dashboard | Open | Afhankelijk van inventory en dashboard. |
 | US2.17 Integratie met passageplanning | Open | Afhankelijk van inventory en passageplanning. |
 | US2.18 Productfoto of label | Open | Later na productcatalogus. |
-| US2.19 Voorraad automatisch ophogen bij aankoop | Open | Afhankelijk van voorraadmutaties. |
+| US2.19 Voorraad automatisch ophogen bij aankoop | Partial | `PILOT-INV-02` vult een bestaande product-locatieregel additief aan wanneer op dezelfde locatie opnieuw voorraad wordt toegevoegd. Een expliciete aankoopflow, mutatietypes en historie ontbreken nog. |
 | US2.20 Voorraad verminderen bij verbruik via barcode | Open | Afhankelijk van voorraadmutaties en scanning. |
 | US2.21 Cloud-synchronisatie | Parked | Cloud-sync geparkeerd. |
 

@@ -119,6 +119,11 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<ProductCode> ProductCodes => Set<ProductCode>();
 
+    /// <summary>
+    /// DbSet voor voorraadregels per product-locatie-combinatie.
+    /// </summary>
+    public DbSet<Stock> Stocks => Set<Stock>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.LocalUserConfiguration());
@@ -144,5 +149,6 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ProductConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ProductCategoryMappingConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ProductCodeConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.StockConfiguration());
     }
 }

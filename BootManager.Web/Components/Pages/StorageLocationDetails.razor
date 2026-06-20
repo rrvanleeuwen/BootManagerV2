@@ -2,8 +2,11 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
 @using BootManager.Application.Storage.DTOs
 @using BootManager.Application.Storage.Services
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IStorageService StorageService
+@inject IStockService StockService
 @inject IJSRuntime JsRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -60,8 +63,71 @@ else
                     }
                 </div>
             }
+            <div class="mb-3">
+                <span class="text-muted small">Voorraad</span>
+                <div class="mb-3">
+                    <button class="btn btn-sm btn-success" @onclick="OpenAddStockDialog">+ Voorraad toevoegen</button>
+                </div>
+                @if (_detail.Stocks.Count > 0)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Productnaam</th>
+                                    <th class="text-end">Hoeveelheid</th>
+                                    <th class="text-end">Acties</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var stock in _detail.Stocks)
+                                {
+                                    <tr>
+                                        <td>@stock.ProductName</td>
+                                        <td class="text-end">@stock.Quantity @stock.DefaultUnitName</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => OpenDeleteConfirmation(stock.Id)" title="Verwijderen">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">Geen voorraad op deze locatie.</p>
+                }
+            </div>
         </div>
     </div>
+
+    @if (_showAddStockDialog)
+    {
+        <AddStockDialog LocationId="LocationId" OnClose="CloseAddStockDialog" OnStockAdded="OnStockAdded" />
+    }
+
+    @if (_showDeleteConfirmation)
+    {
+        <div class="modal d-block" style="display: block; background-color: rgba(0, 0, 0, 0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Voorraadregel verwijderen</h5>
+                    </div>
+                    <div class="modal-body">
+                        Weet u zeker dat u deze voorraadregel wilt verwijderen?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseDeleteConfirmation">Annuleren</button>
+                        <button type="button" class="btn btn-danger" @onclick="ConfirmDelete">Verwijderen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -71,6 +137,9 @@ else
     private StorageLocationDetailDto? _detail;
     private bool _loading = true;
     private bool _isOwner = false;
+    private bool _showAddStockDialog = false;
+    private bool _showDeleteConfirmation = false;
+    private Guid _stockToDeleteId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -100,6 +169,43 @@ else
         {
             _detail.QrValue = result.Data;
             StateHasChanged();
+        }
+    }
+
+    private void OpenAddStockDialog()
+    {
+        _showAddStockDialog = true;
+    }
+
+    private void CloseAddStockDialog()
+    {
+        _showAddStockDialog = false;
+    }
+
+    private async Task OnStockAdded()
+    {
+        CloseAddStockDialog();
+        await LoadDetail();
+    }
+
+    private void OpenDeleteConfirmation(Guid stockId)
+    {
+        _stockToDeleteId = stockId;
+        _showDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        _showDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        CloseDeleteConfirmation();
+        var result = await StockService.DeleteStockAsync(_stockToDeleteId);
+        if (result.Success)
+        {
+            await LoadDetail();
         }
     }
 

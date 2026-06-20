@@ -34,6 +34,7 @@ public class RouteAuthorizationTests
     [InlineData("BootManager.Web.Components.Pages.Logbook")]
     [InlineData("BootManager.Web.Components.Pages.LogbookPrint")]
     [InlineData("BootManager.Web.Components.Pages.LogbookEntryDetails")]
+    [InlineData("BootManager.Web.Components.Pages.StorageLocations")]
     public void Page_RequiresOwnerOrCrewRole(string typeName)
     {
         var pageType = WebAssembly.GetType(typeName);
@@ -54,7 +55,6 @@ public class RouteAuthorizationTests
     [InlineData("BootManager.Web.Components.Pages.LinkLocationQr")]
     [InlineData("BootManager.Web.Components.Pages.StorageLocationTag")]
     [InlineData("BootManager.Web.Components.Pages.StorageLocationTagOverview")]
-    [InlineData("BootManager.Web.Components.Pages.StorageLocations")]
     public void Page_RequiresOwnerOnlyRole(string typeName)
     {
         var pageType = WebAssembly.GetType(typeName);

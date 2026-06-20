@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 namespace BootManager.UnitTests.Web;
 
 /// <summary>
-/// Real bUnit tests for owner-only storage navigation in NavMenu.
+/// Real bUnit tests for storage navigation in NavMenu.
 /// </summary>
 public class NavMenuComponentTests : TestContext
 {
@@ -32,7 +32,7 @@ public class NavMenuComponentTests : TestContext
     }
 
     [Fact]
-    public void NavMenu_CrewDoesNotSeeStorageMenu()
+    public void NavMenu_CrewSeesStorageMenu_WithLocationsOnly()
     {
         var authContext = this.AddTestAuthorization();
         authContext.SetAuthorized("crew");
@@ -40,9 +40,12 @@ public class NavMenuComponentTests : TestContext
 
         var cut = Render(RenderNavMenu);
 
-        Assert.DoesNotContain("Opslag", cut.Markup);
-        Assert.Empty(cut.FindAll("#storageDropdown"));
-        Assert.Empty(cut.FindAll("a[href='storage/locations']"));
+        Assert.Contains("Opslag", cut.Markup);
+
+        cut.Find("#storageDropdown").Click();
+
+        var locationsLink = cut.Find("a[href='storage/locations']");
+        Assert.Equal("Locaties", locationsLink.TextContent.Trim());
         Assert.Empty(cut.FindAll("a[href='storage/tag-overview']"));
     }
 
