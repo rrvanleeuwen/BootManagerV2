@@ -29,9 +29,11 @@ of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Pak `PILOT-INV-01` op vanaf deze schone actuele `master`. Maak daarvoor eerst een
-nieuwe featurebranch en laad alleen de minimale pilotcontext voor producten,
-productcategorieën en productbarcodes.
+De inventory-stories `PILOT-INV-01` tot en met `PILOT-INV-05` zijn nu functioneel
+uitgewerkt in de holiday-release. Pak als eerstvolgende implementatiestap
+`PILOT-INV-01` op vanaf deze schone actuele `master`: maak eerst een nieuwe
+featurebranch en laad alleen de minimale pilotcontext voor producten,
+productcategorieën, eenheden en gekoppelde codes.
 
 Laatste verificatie op 2026-06-19:
 

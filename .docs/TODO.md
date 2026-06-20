@@ -63,6 +63,46 @@
   - **Legacy-koppeling:** raakt `US1.14` en `US1.15`.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
+- [ ] **Holiday Pilot 2026 — PILOT-INV-01 productcatalogus en gekoppelde codes**
+  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+  - **Doel:** taskgerichte inventory-basis voor producten, categorieën, eenheden en maximaal één gekoppelde code per product.
+  - **Kern:** `Voorraadbeheer` krijgt `Producten`, `Categorieën` en `Eenheden`; productbeheer gebruikt een apart formulier, categorieën en eenheden eenvoudige lijsten met modals.
+  - **Belangrijk:** gekoppelde code is een aparte entiteit, uniek binnen de volledige catalogus; Owner en Crew mogen catalogusbeheer uitvoeren.
+  - **Buiten scope:** voorraad per locatie, scan-inruimflow, terugvinden, mutaties en historie.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-INV-02 taakgerichte voorraadbasis per locatie**
+  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+  - **Doel:** vanaf een locatiepagina voorraad taakgericht toevoegen en aanvullen zonder CRUD-omweg.
+  - **Kern:** actie `Voorraad toevoegen` op locatiepagina; product kiezen of nieuw product maken; voorraadregel is `product + locatie + hoeveelheid`; meerdere locaties per product zijn toegestaan.
+  - **Belangrijk:** bestaande regel op dezelfde locatie wordt aangevuld; `0` of lager wordt geblokkeerd; verwijderen van een actuele voorraadregel mag na bevestiging.
+  - **Buiten scope:** scan-gestuurde start, verbruik/correcties, historie en verplaatsen tussen locaties.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-INV-03 scan-gestuurde inruimflow**
+  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+  - **Doel:** vanuit `Scannen` een product snel inruimen met voorgestelde locatie en doorlopende scansessie.
+  - **Kern:** productcode start de inruimflow; laatst gebruikte locatie wordt voorgesteld; alternatieve locaties zijn zichtbaar; na opslaan vraagt het systeem direct of nog een product gescand moet worden.
+  - **Belangrijk:** onbekende productcode kan in dezelfde flow leiden tot nieuw product of code koppelen aan bestaand product; de modal blijft een bewuste werkhypothese.
+  - **Buiten scope:** verbruik/correcties, historie en extra dashboardingang buiten het bestaande menu `Scannen`.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-INV-04 product terugvinden via scan of zoeken**
+  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+  - **Doel:** product snel terugvinden via scannen of handmatig zoeken en direct de relevante locatie(s) tonen.
+  - **Kern:** scan start vanuit `Scannen`; fallback via `Voorraadbeheer > Producten`; zoeken werkt op naam en omschrijving, hoofdletterongevoelig en met deelmatches.
+  - **Belangrijk:** bij één actieve locatie opent direct de locatiepagina; bij meerdere locaties verschijnt een lijst met gebied, locatienaam, hoeveelheid en eenheid; zonder actieve voorraad kan een verwachte locatie nog getoond worden.
+  - **Buiten scope:** dashboard-zoekbalk, voorraadmutaties vanuit de zoekflow en geavanceerde fuzzy matching.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-INV-05 voorraad muteren en eenvoudige historie**
+  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+  - **Doel:** verbruik, tellingen en correcties registreren en later terugzien in een eenvoudig mutatielogboek.
+  - **Kern:** drie mutatietypes `Verbruik`, `Correctie` en `Telling`; fysieke scanflow op locatie plus administratieve fallback zonder scannen; aparte historiepagina.
+  - **Belangrijk:** verbruik boekt altijd af op een expliciete locatie; oververbruik wordt geblokkeerd; bij `0` verdwijnt de actieve voorraadregel maar blijft de laatst gebruikte locatie als verwachte plek bewaard.
+  - **Buiten scope:** negatieve voorraad, inline historie op product- of locatiepagina’s en geavanceerde rapportage.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**
   - **Aanleiding 2026-05-26:** Tijdens Raspberry Pi test vóór login/onboarding stond in het menu nog **Register Owner**. Klikken navigeert naar `/register-owner`. Dit is oude vrije registratie en hoort niet meer bij de huidige bootstrap owner + verplichte onboarding flow.
   - **Status:** afgerond via PR #64, merge commit `a441ca8`. User story `US7: Legacy Register Owner Route En Menu Verwijderen` staat als gereed in `.docs/epics/first-run-onboarding.md`.
