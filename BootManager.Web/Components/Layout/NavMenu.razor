@@ -33,6 +33,35 @@
                     </NavLink>
                 </li>
 
+                <!-- Owner and Crew features -->
+                <AuthorizeView Roles="Owner,Crew" Context="inventoryContext">
+                    <Authorized>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="inventoryDropdown" role="button" @onclick="ToggleInventoryDropdown" @onclick:preventDefault>
+                                <i class="fas fa-warehouse"></i>
+                                <span class="ml-2">Voorraadbeheer</span>
+                            </a>
+                            <ul class="dropdown-menu" id="inventoryMenu" style="display: @(_inventoryDropdownOpen ? "block" : "none");">
+                                <li>
+                                    <NavLink class="dropdown-item" href="inventory/products" @onclick="CloseInventoryDropdown">
+                                        Producten
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink class="dropdown-item" href="inventory/categories" @onclick="CloseInventoryDropdown">
+                                        Categorieen
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink class="dropdown-item" href="inventory/units" @onclick="CloseInventoryDropdown">
+                                        Eenheden
+                                    </NavLink>
+                                </li>
+                            </ul>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+
                 <!-- Owner-only features -->
                 <AuthorizeView Roles="Owner" Context="ownerContext">
                     <Authorized>
@@ -78,6 +107,7 @@
 
 @code {
     private bool _storageDropdownOpen = false;
+    private bool _inventoryDropdownOpen = false;
 
     private void ToggleStorageDropdown()
     {
@@ -87,5 +117,15 @@
     private void CloseStorageDropdown()
     {
         _storageDropdownOpen = false;
+    }
+
+    private void ToggleInventoryDropdown()
+    {
+        _inventoryDropdownOpen = !_inventoryDropdownOpen;
+    }
+
+    private void CloseInventoryDropdown()
+    {
+        _inventoryDropdownOpen = false;
     }
 }

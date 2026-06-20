@@ -94,6 +94,31 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
 
+    /// <summary>
+    /// DbSet voor productcategorieën.
+    /// </summary>
+    public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
+
+    /// <summary>
+    /// DbSet voor eenheden.
+    /// </summary>
+    public DbSet<Unit> Units => Set<Unit>();
+
+    /// <summary>
+    /// DbSet voor producten.
+    /// </summary>
+    public DbSet<Product> Products => Set<Product>();
+
+    /// <summary>
+    /// DbSet voor product-categorie-koppelingen.
+    /// </summary>
+    public DbSet<ProductCategoryMapping> ProductCategoryMappings => Set<ProductCategoryMapping>();
+
+    /// <summary>
+    /// DbSet voor gekoppelde productcodes.
+    /// </summary>
+    public DbSet<ProductCode> ProductCodes => Set<ProductCode>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.LocalUserConfiguration());
@@ -114,5 +139,10 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.OperationalSettingsConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.StorageAreaConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.StorageLocationConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ProductCategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.UnitConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ProductConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ProductCategoryMappingConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ProductCodeConfiguration());
     }
 }

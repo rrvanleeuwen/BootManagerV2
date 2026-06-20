@@ -20,6 +20,8 @@ using BootManager.Application.SpeedThroughWaterMeasurements.Services;
 using BootManager.Application.WaterTemperatureMeasurements.Services;
 using BootManager.Application.FluidLevelMeasurements.Services;
 using BootManager.Application.Storage.Services;
+using BootManager.Application.Inventory.Contracts;
+using BootManager.Application.Inventory.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BootManager.Application;
@@ -127,6 +129,11 @@ public static class DependencyInjection
 
         // Registratie van Storage service
         services.AddScoped<IStorageService, StorageService>();
+
+        // Registratie van Inventory services
+        services.AddScoped<IProductCategoryService, ProductCategoryService>();
+        services.AddScoped<IUnitService, UnitService>();
+        services.AddScoped<IProductService, ProductService>();
 
         return services;
     }

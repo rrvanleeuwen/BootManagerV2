@@ -1,0 +1,667 @@
+@page "/inventory/products"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@inject IProductService ProductService
+@inject IProductCategoryService CategoryService
+@inject IUnitService UnitService
+@inject ILogger<Products> Logger
+
+<PageTitle>Producten</PageTitle>
+
+<h3>Producten</h3>
+
+@if (!_editMode)
+{
+    @* List view *@
+    @if (_showArchived)
+    {
+        <button class="btn btn-secondary btn-sm mb-3" @onclick="() => _showArchived = false">
+            <i class="fas fa-eye-slash"></i> Actieve weergeven
+        </button>
+    }
+    else
+    {
+        <button class="btn btn-secondary btn-sm mb-3" @onclick="() => _showArchived = true">
+            <i class="fas fa-archive"></i> Gearchiveerde weergeven
+        </button>
+    }
+
+    <button class="btn btn-primary mb-3" @onclick="OpenCreateForm">
+        <i class="fas fa-plus"></i> Nieuw product
+    </button>
+
+    @if (_errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+        </div>
+    }
+
+    @if (_products == null)
+    {
+        <p>Bezig met laden...</p>
+    }
+    else if (_products.Count == 0)
+    {
+        <p class="text-muted">Geen producten beschikbaar.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Naam</th>
+                        <th>Categorie</th>
+                        <th>Eenheid</th>
+                        <th>Code</th>
+                        <th class="text-end">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in _displayedProducts)
+                    {
+                        <tr>
+                            <td>@product.Name</td>
+                            <td>@(product.ActiveCategoryName ?? "-")</td>
+                            <td>@(product.DefaultUnitName ?? "-")</td>
+                            <td>@(product.Code?.Value ?? "-")</td>
+                            <td class="text-end">
+                                @if (product.IsArchived)
+                                {
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ReactivateAsync(product.Id)" title="Reactiveren">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenEditForm(product)" title="Bewerken">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ArchiveAsync(product.Id)" title="Archiveren">
+                                        <i class="fas fa-archive"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+else
+{
+    @* Edit/Create form view *@
+    @if (_formError != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @_formError
+            <button type="button" class="btn-close" @onclick="() => _formError = null"></button>
+        </div>
+    }
+
+    <form @onsubmit="SaveAsync" class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Naam *</label>
+            <input type="text" class="form-control" @bind="_editingProduct.Name" placeholder="Productnaam">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Omschrijving</label>
+            <input type="text" class="form-control" @bind="_editingProduct.Description" placeholder="Optionele omschrijving">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Categorie</label>
+            <div class="input-group">
+                <select class="form-select" @bind="_editingProduct.ActiveCategoryId">
+                    <option value="">-- Geen categorie --</option>
+                    @foreach (var category in _activeCategories)
+                    {
+                        <option value="@category.Id.ToString()">@category.Name</option>
+                    }
+                </select>
+                <button type="button" class="btn btn-outline-secondary" @onclick="OpenAddCategoryModal" title="Nieuwe categorie">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Standaardeenheid *</label>
+            <div class="input-group">
+                <select class="form-select" @bind="_editingProduct.DefaultUnitId">
+                    <option value="">-- Selecteer eenheid --</option>
+                    @foreach (var unit in _activeUnits)
+                    {
+                        <option value="@unit.Id.ToString()">@unit.Name</option>
+                    }
+                </select>
+                <button type="button" class="btn btn-outline-secondary" @onclick="OpenAddUnitModal" title="Nieuwe eenheid">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <h5>Gekoppelde code</h5>
+            @if (_editingProduct.Code == null)
+            {
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => _showAddCodeForm = true">
+                    <i class="fas fa-barcode"></i> Code toevoegen
+                </button>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <p class="mb-2"><strong>Waarde:</strong> @_editingProduct.Code.Value</p>
+                        <p class="mb-2"><strong>Formaat:</strong> @_editingProduct.Code.Format</p>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _showAddCodeForm = true">
+                            <i class="fas fa-edit"></i> Vervangen
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="RemoveCodeAsync">
+                            <i class="fas fa-trash"></i> Verwijderen
+                        </button>
+                    </div>
+                </div>
+            }
+
+            @if (_showAddCodeForm)
+            {
+                <div class="mt-3 p-3 border rounded">
+                    <div class="mb-3">
+                        <label class="form-label">Code-waarde *</label>
+                        <input type="text" class="form-control" @bind="_newCodeValue" placeholder="Voer code in of scan">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Formaat *</label>
+                        <select class="form-select" @bind="_newCodeFormat">
+                            <option value="">-- Selecteer --</option>
+                            <option value="barcode">Barcode</option>
+                            <option value="qr">QR-code</option>
+                            <option value="text">Vrije tekst</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" @onclick="SaveCodeAsync">Opslaan</button>
+                    <button type="button" class="btn btn-sm btn-secondary" @onclick="() => _showAddCodeForm = false">Annuleren</button>
+                </div>
+            }
+        </div>
+
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Opslaan</button>
+            <button type="button" class="btn btn-secondary" @onclick="CancelForm">Annuleren</button>
+        </div>
+    </form>
+}
+
+@* Add Category Modal *@
+<div class="modal fade @(_addCategoryModalOpen ? "show" : "")" style="display: @(_addCategoryModalOpen ? "block" : "none");" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nieuwe categorie</h5>
+                <button type="button" class="btn-close" @onclick="() => _addCategoryModalOpen = false"></button>
+            </div>
+            <div class="modal-body">
+                @if (_addCategoryError != null)
+                {
+                    <div class="alert alert-danger alert-sm mb-3">
+                        @_addCategoryError
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Naam *</label>
+                    <input type="text" class="form-control" @bind="_newCategoryName" placeholder="Categorienaam">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Omschrijving</label>
+                    <textarea class="form-control" @bind="_newCategoryDescription" rows="3" placeholder="Optionele omschrijving"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Icoon *</label>
+                    <select class="form-select" @bind="_newCategoryIconKey">
+                        <option value="">-- Selecteer icoon --</option>
+                        @foreach (var iconKey in _validIconKeys)
+                        {
+                            <option value="@iconKey">@iconKey <i class="fas fa-@GetIconClass(iconKey)"></i></option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="() => _addCategoryModalOpen = false">Annuleren</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveNewCategoryAsync">Opslaan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Add Unit Modal *@
+<div class="modal fade @(_addUnitModalOpen ? "show" : "")" style="display: @(_addUnitModalOpen ? "block" : "none");" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nieuwe eenheid</h5>
+                <button type="button" class="btn-close" @onclick="() => _addUnitModalOpen = false"></button>
+            </div>
+            <div class="modal-body">
+                @if (_addUnitError != null)
+                {
+                    <div class="alert alert-danger alert-sm mb-3">
+                        @_addUnitError
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Naam *</label>
+                    <input type="text" class="form-control" @bind="_newUnitName" placeholder="Eenheidsnaam">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="() => _addUnitModalOpen = false">Annuleren</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveNewUnitAsync">Opslaan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_addCategoryModalOpen || _addUnitModalOpen)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<ProductDto> _products = new();
+    private List<ProductDto> _displayedProducts = new();
+    private List<ProductCategoryDto> _activeCategories = new();
+    private List<UnitDto> _activeUnits = new();
+    private bool _showArchived = false;
+    private bool _editMode = false;
+    private ProductDto _editingProduct = new();
+    private string? _errorMessage;
+    private string? _formError;
+    private IReadOnlyList<string> _validIconKeys = new List<string>();
+
+    private bool _addCategoryModalOpen = false;
+    private string _newCategoryName = "";
+    private string? _newCategoryDescription;
+    private string _newCategoryIconKey = "";
+    private string? _addCategoryError;
+
+    private bool _addUnitModalOpen = false;
+    private string _newUnitName = "";
+    private string? _addUnitError;
+
+    private bool _showAddCodeForm = false;
+    private string _newCodeValue = "";
+    private string _newCodeFormat = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UnitService.InitializeDefaultUnitsAsync();
+        await LoadDataAsync();
+        _validIconKeys = CategoryService.GetValidIconKeys();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            _products = (await ProductService.GetAllAsync()).ToList();
+            _activeCategories = (await CategoryService.GetActiveAsync()).ToList();
+            _activeUnits = (await UnitService.GetActiveAsync()).ToList();
+            UpdateDisplayedProducts();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij laden van data");
+            _errorMessage = "Fout bij laden van data.";
+        }
+    }
+
+    private void UpdateDisplayedProducts()
+    {
+        _displayedProducts = _showArchived
+            ? _products.Where(p => p.IsArchived).ToList()
+            : _products.Where(p => !p.IsArchived).ToList();
+    }
+
+    private void OpenCreateForm()
+    {
+        _editingProduct = new ProductDto { Id = Guid.Empty };
+        _showAddCodeForm = false;
+        _newCodeValue = "";
+        _newCodeFormat = "";
+        _formError = null;
+        _editMode = true;
+    }
+
+    private void OpenEditForm(ProductDto product)
+    {
+        _editingProduct = new ProductDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            DefaultUnitId = product.DefaultUnitId,
+            DefaultUnitName = product.DefaultUnitName,
+            ActiveCategoryId = product.ActiveCategoryId,
+            ActiveCategoryName = product.ActiveCategoryName,
+            Code = product.Code != null ? new ProductCodeDto { Id = product.Code.Id, Value = product.Code.Value, Format = product.Code.Format } : null,
+            IsArchived = product.IsArchived
+        };
+        _showAddCodeForm = false;
+        _newCodeValue = "";
+        _newCodeFormat = "";
+        _formError = null;
+        _editMode = true;
+    }
+
+    private void CancelForm()
+    {
+        _editMode = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_editingProduct.Name))
+        {
+            _formError = "Naam is verplicht.";
+            return;
+        }
+
+        if (_editingProduct.DefaultUnitId == Guid.Empty)
+        {
+            _formError = "Standaardeenheid is verplicht.";
+            return;
+        }
+
+        try
+        {
+            if (_editingProduct.Id == Guid.Empty)
+            {
+                var pendingCode = _editingProduct.Code;
+                var result = await ProductService.CreateAsync(
+                    _editingProduct.Name,
+                    _editingProduct.Description,
+                    _editingProduct.DefaultUnitId,
+                    _editingProduct.ActiveCategoryId == Guid.Empty ? null : _editingProduct.ActiveCategoryId);
+
+                if (!result.Success)
+                {
+                    _formError = result.ErrorMessage;
+                    return;
+                }
+
+                _editingProduct = result.Data!;
+
+                if (pendingCode != null)
+                {
+                    var codeResult = await ProductService.AddCodeAsync(
+                        _editingProduct.Id,
+                        pendingCode.Value,
+                        pendingCode.Format);
+
+                    if (!codeResult.Success)
+                    {
+                        _editingProduct.Code = pendingCode;
+                        _formError = $"Product opgeslagen, maar code opslaan mislukte: {codeResult.ErrorMessage}";
+                        return;
+                    }
+
+                    _editingProduct.Code = codeResult.Data;
+                }
+            }
+            else
+            {
+                var result = await ProductService.UpdateAsync(
+                    _editingProduct.Id,
+                    _editingProduct.Name,
+                    _editingProduct.Description,
+                    _editingProduct.DefaultUnitId,
+                    _editingProduct.ActiveCategoryId == Guid.Empty ? null : _editingProduct.ActiveCategoryId);
+
+                if (!result.Success)
+                {
+                    _formError = result.ErrorMessage;
+                    return;
+                }
+            }
+
+            _editMode = false;
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij opslaan van product");
+            _formError = "Fout bij opslaan.";
+        }
+    }
+
+    private void OpenAddCategoryModal()
+    {
+        _newCategoryName = "";
+        _newCategoryDescription = null;
+        _newCategoryIconKey = "";
+        _addCategoryError = null;
+        _addCategoryModalOpen = true;
+    }
+
+    private async Task SaveNewCategoryAsync()
+    {
+        _addCategoryError = null;
+
+        if (string.IsNullOrWhiteSpace(_newCategoryName))
+        {
+            _addCategoryError = "Naam is verplicht.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_newCategoryIconKey))
+        {
+            _addCategoryError = "Icoon is verplicht.";
+            return;
+        }
+
+        try
+        {
+            var result = await CategoryService.CreateAsync(_newCategoryName, _newCategoryDescription, _newCategoryIconKey);
+            if (!result.Success)
+            {
+                _addCategoryError = result.ErrorMessage;
+                return;
+            }
+
+            _addCategoryModalOpen = false;
+            await LoadDataAsync();
+            _editingProduct.ActiveCategoryId = result.Data!.Id;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij opslaan van categorie");
+            _addCategoryError = "Fout bij opslaan.";
+        }
+    }
+
+    private void OpenAddUnitModal()
+    {
+        _newUnitName = "";
+        _addUnitError = null;
+        _addUnitModalOpen = true;
+    }
+
+    private async Task SaveNewUnitAsync()
+    {
+        _addUnitError = null;
+
+        if (string.IsNullOrWhiteSpace(_newUnitName))
+        {
+            _addUnitError = "Naam is verplicht.";
+            return;
+        }
+
+        try
+        {
+            var result = await UnitService.CreateAsync(_newUnitName);
+            if (!result.Success)
+            {
+                _addUnitError = result.ErrorMessage;
+                return;
+            }
+
+            _addUnitModalOpen = false;
+            await LoadDataAsync();
+            _editingProduct.DefaultUnitId = result.Data!.Id;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij opslaan van eenheid");
+            _addUnitError = "Fout bij opslaan.";
+        }
+    }
+
+    private async Task SaveCodeAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newCodeValue) || string.IsNullOrWhiteSpace(_newCodeFormat))
+        {
+            _formError = "Code-waarde en formaat zijn verplicht.";
+            return;
+        }
+
+        try
+        {
+            if (_editingProduct.Id == Guid.Empty)
+            {
+                _editingProduct.Code = new ProductCodeDto
+                {
+                    Id = Guid.Empty,
+                    Value = _newCodeValue.Trim(),
+                    Format = _newCodeFormat
+                };
+            }
+            else if (_editingProduct.Code == null)
+            {
+                var result = await ProductService.AddCodeAsync(_editingProduct.Id, _newCodeValue, _newCodeFormat);
+                if (!result.Success)
+                {
+                    _formError = result.ErrorMessage;
+                    return;
+                }
+                _editingProduct.Code = result.Data;
+            }
+            else
+            {
+                var result = await ProductService.ReplaceCodeAsync(_editingProduct.Id, _newCodeValue, _newCodeFormat);
+                if (!result.Success)
+                {
+                    _formError = result.ErrorMessage;
+                    return;
+                }
+                _editingProduct.Code = result.Data;
+            }
+
+            _showAddCodeForm = false;
+            _newCodeValue = "";
+            _newCodeFormat = "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij opslaan van code");
+            _formError = "Fout bij opslaan van code.";
+        }
+    }
+
+    private async Task RemoveCodeAsync()
+    {
+        try
+        {
+            if (_editingProduct.Id == Guid.Empty)
+            {
+                _editingProduct.Code = null;
+                _showAddCodeForm = false;
+                _newCodeValue = "";
+                _newCodeFormat = "";
+                return;
+            }
+
+            var result = await ProductService.RemoveCodeAsync(_editingProduct.Id);
+            if (!result.Success)
+            {
+                _formError = result.ErrorMessage;
+            }
+            else
+            {
+                _editingProduct.Code = null;
+                _showAddCodeForm = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij verwijderen van code");
+            _formError = "Fout bij verwijderen van code.";
+        }
+    }
+
+    private async Task ArchiveAsync(Guid productId)
+    {
+        try
+        {
+            var result = await ProductService.ArchiveAsync(productId);
+            if (!result.Success)
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+            else
+            {
+                await LoadDataAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij archiveren van product");
+            _errorMessage = "Fout bij archiveren.";
+        }
+    }
+
+    private async Task ReactivateAsync(Guid productId)
+    {
+        try
+        {
+            var result = await ProductService.ReactivateAsync(productId);
+            if (!result.Success)
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+            else
+            {
+                await LoadDataAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij reactiveren van product");
+            _errorMessage = "Fout bij reactiveren.";
+        }
+    }
+
+    private string GetIconClass(string iconKey) => iconKey switch
+    {
+        "drank" => "bottle-wine",
+        "onderdeel" => "gears",
+        "gereedschap" => "screwdriver",
+        "voeding" => "apple-alt",
+        "elektronics" => "microchip",
+        "veiligheid" => "shield-alt",
+        _ => "tag"
+    };
+}

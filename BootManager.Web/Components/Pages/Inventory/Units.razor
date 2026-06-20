@@ -1,0 +1,270 @@
+@page "/inventory/units"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@inject IUnitService UnitService
+@inject ILogger<Units> Logger
+
+<PageTitle>Eenheden</PageTitle>
+
+<h3>Eenheden</h3>
+
+@if (_showArchived)
+{
+    <button class="btn btn-secondary btn-sm mb-3" @onclick="() => SetShowArchived(false)">
+        <i class="fas fa-eye-slash"></i> Actieve weergeven
+    </button>
+}
+else
+{
+    <button class="btn btn-secondary btn-sm mb-3" @onclick="() => SetShowArchived(true)">
+        <i class="fas fa-archive"></i> Gearchiveerde weergeven
+    </button>
+}
+
+<button class="btn btn-primary mb-3" @onclick="OpenCreateModal">
+    <i class="fas fa-plus"></i> Nieuwe eenheid
+</button>
+
+@if (_errorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @_errorMessage
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+    </div>
+}
+
+@if (_units == null)
+{
+    <p>Bezig met laden...</p>
+}
+else if (_units.Count == 0)
+{
+    <p class="text-muted">Geen eenheden beschikbaar.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Naam</th>
+                    <th class="text-end">Acties</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var unit in _displayedUnits)
+                {
+                    <tr>
+                        <td>@unit.Name</td>
+                        <td class="text-end">
+                            @if (unit.IsArchived)
+                            {
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ReactivateAsync(unit.Id)" title="Reactiveren">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenEditModal(unit)" title="Bewerken">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ArchiveAsync(unit.Id)" title="Archiveren">
+                                    <i class="fas fa-archive"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (_modalOpen)
+{
+    @* Create/Edit Modal *@
+    <div class="modal fade show" style="display: block;" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingUnit.Id == Guid.Empty ? "Nieuwe eenheid" : "Eenheid bewerken")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (_modalError != null)
+                    {
+                        <div class="alert alert-danger alert-sm mb-3">
+                            @_modalError
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Naam *</label>
+                        <input type="text" class="form-control" @bind="_editingUnit.Name" placeholder="Eenheidsnaam">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveAsync">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<UnitDto> _units = new();
+    private List<UnitDto> _displayedUnits = new();
+    private bool _showArchived = false;
+    private bool _modalOpen = false;
+    private UnitDto _editingUnit = new();
+    private string? _errorMessage;
+    private string? _modalError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UnitService.InitializeDefaultUnitsAsync();
+        await LoadUnitsAsync();
+    }
+
+    private async Task LoadUnitsAsync()
+    {
+        try
+        {
+            _units = (await UnitService.GetAllAsync()).ToList();
+            UpdateDisplayedUnits();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij laden van eenheden");
+            _errorMessage = "Fout bij laden van eenheden.";
+        }
+    }
+
+    private void UpdateDisplayedUnits()
+    {
+        _displayedUnits = _showArchived
+            ? _units.Where(u => u.IsArchived).ToList()
+            : _units.Where(u => !u.IsArchived).ToList();
+    }
+
+    private void SetShowArchived(bool showArchived)
+    {
+        _showArchived = showArchived;
+        if (_units != null)
+        {
+            UpdateDisplayedUnits();
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        _editingUnit = new UnitDto { Id = Guid.Empty };
+        _modalError = null;
+        _modalOpen = true;
+    }
+
+    private void OpenEditModal(UnitDto unit)
+    {
+        _editingUnit = new UnitDto
+        {
+            Id = unit.Id,
+            Name = unit.Name,
+            IsArchived = unit.IsArchived
+        };
+        _modalError = null;
+        _modalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        _modalOpen = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _modalError = null;
+
+        if (string.IsNullOrWhiteSpace(_editingUnit.Name))
+        {
+            _modalError = "Naam is verplicht.";
+            return;
+        }
+
+        try
+        {
+            if (_editingUnit.Id == Guid.Empty)
+            {
+                var result = await UnitService.CreateAsync(_editingUnit.Name);
+
+                if (!result.Success)
+                {
+                    _modalError = result.ErrorMessage;
+                    return;
+                }
+            }
+            else
+            {
+                var result = await UnitService.UpdateAsync(_editingUnit.Id, _editingUnit.Name);
+
+                if (!result.Success)
+                {
+                    _modalError = result.ErrorMessage;
+                    return;
+                }
+            }
+
+            CloseModal();
+            await LoadUnitsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij opslaan van eenheid");
+            _modalError = "Fout bij opslaan.";
+        }
+    }
+
+    private async Task ArchiveAsync(Guid unitId)
+    {
+        try
+        {
+            var result = await UnitService.ArchiveAsync(unitId);
+            if (!result.Success)
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+            else
+            {
+                await LoadUnitsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij archiveren van eenheid");
+            _errorMessage = "Fout bij archiveren.";
+        }
+    }
+
+    private async Task ReactivateAsync(Guid unitId)
+    {
+        try
+        {
+            var result = await UnitService.ReactivateAsync(unitId);
+            if (!result.Success)
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+            else
+            {
+                await LoadUnitsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij reactiveren van eenheid");
+            _errorMessage = "Fout bij reactiveren.";
+        }
+    }
+}

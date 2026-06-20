@@ -5,7 +5,7 @@ BootManagerV2 is een lokale, Raspberry Pi-vriendelijke bootmanagementapplicatie 
 <!-- PROJECT-STATUS:START -->
 ## Projectstatus
 
-_Laatst bijgewerkt: 2026-06-19. Gegenereerd met `scripts/update-readme-status.ps1`._
+_Laatst bijgewerkt: 2026-06-20. Gegenereerd met `scripts/update-readme-status.ps1`._
 
 De percentages zijn voortgangsindicatoren, geen harde planning. Berekening: `Done` en `Replaced` tellen als 100%, `Partial` telt als 50%, `Open` telt als 0%. `Parked` en `Obsolete` tellen niet mee in de actieve scope.
 
@@ -15,15 +15,15 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[########------------]` 37.5% | 16 |
+| Vakantiepilot 2026 | `[#########-----------]` 43.8% | 16 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
-| Legacy scope | `[#####---------------]` 24.8% | 129 |
+| Legacy scope | `[######--------------]` 27.9% | 129 |
 
 ### Vakantiepilot 2026
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[########------------]` 37.5% | 6 | 0 | 10 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-01 - Productcategorieën, producten en productbarcodes |
+| `[#########-----------]` 43.8% | 7 | 0 | 9 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-02 - Taakgerichte voorraadbasis per locatie |
 
 ### BootManagerV2 Epics
 
@@ -43,7 +43,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 |---|---:|---:|---:|---:|---:|---:|
 | Epic 0: Installatie & Authenticatie | `[####################]` 100% | 4 | 2 | 0 | 0 | 0 |
 | Epic 1: Bootbeheer & Gebruikersbeheer | `[###############-----]` 75% | 7 | 0 | 4 | 1 | 5 |
-| Epic 2: Inventarisbeheer | `[#-------------------]` 5.3% | 0 | 0 | 2 | 17 | 2 |
+| Epic 2: Inventarisbeheer | `[#####---------------]` 26.3% | 3 | 0 | 4 | 12 | 2 |
 | Epic 3: Passageplanning | `[--------------------]` 0% | 0 | 0 | 0 | 13 | 1 |
 | Epic 4: Documentbeheer | `[--------------------]` 0% | 0 | 0 | 0 | 12 | 1 |
 | Epic 5: Logboek | `[############--------]` 61.5% | 4 | 0 | 8 | 1 | 1 |
