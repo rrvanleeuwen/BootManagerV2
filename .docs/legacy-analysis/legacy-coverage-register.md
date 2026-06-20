@@ -64,8 +64,8 @@ Bij afronding van een story of PR:
 | US2.2 Categorie-icoontjes beheren | Partial | `PILOT-INV-01` levert een vaste ingebouwde icoonset voor categorieën; upload of een vrije iconbibliotheek blijft later open. |
 | US2.3 Product aanmaken | Done | `PILOT-INV-01` levert lokale productaanmaak met naam, categorie, standaardeenheid, optionele omschrijving en optionele gekoppelde code. |
 | US2.4 Product bewerken of verwijderen | Done | `PILOT-INV-01` levert productbewerking plus soft delete via archiveren en heractiveren; harde delete is niet nodig voor deze pilotdekking. |
-| US2.5 Barcodes en QR-codes koppelen aan producten | Partial | `PILOT-INV-01` levert één unieke gekoppelde productcode per product via handmatige invoer binnen de catalogus; scan-ondersteunde code-invoer en bredere scanflows volgen later. |
-| US2.6 Barcode scannen bij zoeken | Partial | `PILOT-SCAN-01` levert een op de Pi en beide telefoons geaccepteerde generieke scanner met ZXing voor QR en native `BarcodeDetector` voor EAN-13; de productzoekactie en inventorykoppeling volgen in `PILOT-INV-04`. |
+| US2.5 Barcodes en QR-codes koppelen aan producten | Done | `PILOT-INV-01` levert één unieke gekoppelde productcode per product via handmatige invoer in de catalogus; `PILOT-INV-03` voegt scan-gestuurde onbekende-code-afhandeling toe waarmee een gescande code direct aan een bestaand product kan worden gekoppeld of via nieuw product kan worden vastgelegd. |
+| US2.6 Barcode scannen bij zoeken | Partial | `PILOT-SCAN-01` levert de generieke scanner, en `PILOT-INV-03` gebruikt die nu praktisch voor scan-gestuurd inruimen en productherkenning in inventory; het aparte terugvind-/zoekpad volgt nog in `PILOT-INV-04`. |
 | US2.7 Barcodeherkenning via foto en AI | Parked | AI-herkenning lage prioriteit. |
 | US2.8 Product koppelen aan opslaglocatie | Done | `PILOT-INV-02` dekt voorraadregels per product-locatiecombinatie af via `Voorraad toevoegen` vanaf de locatiepagina, inclusief direct nieuw product aanmaken binnen dezelfde locatiecontext. |
 | US2.9 Voorraad bekijken per locatie | Done | `PILOT-INV-02` toont actuele locatie-inhoud per opslaglocatie en laat op productniveau zien op welke locaties voorraad ligt met hoeveelheid en eenheid. |
@@ -73,7 +73,7 @@ Bij afronding van een story of PR:
 | US2.11 Minimumvoorraad en waarschuwing | Open | Afhankelijk van inventory en notificaties. |
 | US2.12 Zoeken en filteren | Open | Inventory-module ontbreekt. |
 | US2.13 Voorraadlogboek | Open | Voorraadmutaties ontbreken. |
-| US2.14 QR-scanner-modus | Partial | `PILOT-SCAN-01` levert een generieke QR-scanner en `PILOT-LOC-02` voegt BootManager locatie-QR routing en Owner-only onbekende-token-koppeling toe; voorraad bekijken of wijzigen blijft later voor inventory. |
+| US2.14 QR-scanner-modus | Partial | `PILOT-SCAN-01` levert een generieke QR-scanner, `PILOT-LOC-02` voegt BootManager locatie-QR routing toe en `PILOT-INV-03` maakt het scanmenu praktisch bruikbaar voor inventory-inruimen met productcodes, locatiekeuze en doorlopende scansessie; bredere scan-gebaseerde terugvind- en mutatieflows blijven later open. |
 | US2.15 Bulkimport/export voorraad | Open | Later na datamodel. |
 | US2.16 Voorraadstatus in dashboard | Open | Afhankelijk van inventory en dashboard. |
 | US2.17 Integratie met passageplanning | Open | Afhankelijk van inventory en passageplanning. |

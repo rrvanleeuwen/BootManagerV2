@@ -3,11 +3,17 @@
 @implements IAsyncDisposable
 @using Microsoft.JSInterop
 @using BootManager.Application.Storage.Services
+@using BootManager.Application.Storage.DTOs
 @using BootManager.Application.Storage.Results
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
 @using Microsoft.AspNetCore.Components.Authorization
 
 @inject IJSRuntime Js
 @inject IStorageService StorageService
+@inject IProductService ProductService
+@inject IStockService StockService
+@inject IUnitService UnitService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -143,42 +149,231 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
 
 @if (_status is ScanStatus.Result or ScanStatus.ManualEntry)
 {
-    <div class="scan-result">
-        <div><strong>Waarde</strong></div>
-        <div class="scan-result-value">@_resultValue</div>
-        <div class="mt-2"><strong>Formaat</strong></div>
-        <div>@_resultFormat</div>
-
-        @if (_qrResolution != null)
-        {
-            <div class="mt-3">
-                @if (_qrResolution.Status == QrStatus.Linked)
-                {
-                    <div class="alert alert-info">
-                        <strong>BootManager locatie-QR herkennen.</strong>
-                        <button class="btn btn-sm btn-primary ms-2" @onclick="NavigateToLocation">Locatie openen</button>
+    @if (_inventoryFlowActive)
+    {
+        <div class="scan-inventory-flow">
+            @if (_inventoryFlowState == InventoryFlowState.UnknownProductCode)
+            {
+                <div class="card p-3 alert-warning">
+                    <h6>Onbekende productcode</h6>
+                    <p class="text-muted mb-3">Code: <code>@_unknownScannedCode</code></p>
+                    <p>Wat wilt u doen?</p>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" @onclick="async () => await SetInventoryFlowState(InventoryFlowState.CreatingNewProduct)">Nieuw product</button>
+                        <button class="btn btn-sm btn-info" @onclick="() => StartLinkingCode()">Code koppelen</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="CancelInventoryFlow">Annuleren</button>
                     </div>
-                }
-                else if (_qrResolution.Status == QrStatus.Unknown)
-                {
-                    @if (_isOwner)
+                </div>
+            }
+            else if (_inventoryFlowState == InventoryFlowState.CreatingNewProduct)
+            {
+                <div class="card p-3">
+                    <h6>Nieuw product aanmaken</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Productnaam *</label>
+                        <input type="text" class="form-control" @bind="_newProductName" placeholder="Voer productnaam in" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Omschrijving</label>
+                        <textarea class="form-control" @bind="_newProductDescription" rows="2" placeholder="Optionele omschrijving"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Productcode *</label>
+                        <input type="text" class="form-control" @bind="_newProductCode" placeholder="Productcode" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Standaardeenheid *</label>
+                        @if (_availableUnits?.Count > 0)
+                        {
+                            <select class="form-select" @bind="_newProductUnitId">
+                                <option value="">-- Selecteer eenheid --</option>
+                                @foreach (var unit in _availableUnits)
+                                {
+                                    <option value="@unit.Id">@unit.Name</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <div class="alert alert-danger">Geen eenheden beschikbaar.</div>
+                        }
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary"
+                                @onclick="CreateNewProductWithCode"
+                                disabled="@(string.IsNullOrWhiteSpace(_newProductName) || string.IsNullOrWhiteSpace(_newProductCode) || !_newProductUnitId.HasValue)">
+                            Aanmaken en doorgaan
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="async () => await SetInventoryFlowState(InventoryFlowState.UnknownProductCode)">Terug</button>
+                    </div>
+                </div>
+            }
+            else if (_inventoryFlowState == InventoryFlowState.LinkingCodeToProduct)
+            {
+                <div class="card p-3">
+                    <h6>Selecteer product voor code</h6>
+                    <div class="alert alert-info mb-3">
+                        <small>Koppel code <code>@_unknownScannedCode</code> aan een bestaand product.</small>
+                    </div>
+                    @if (_productsForCodeLinking?.Count > 0)
                     {
-                        <div class="alert alert-warning">
-                            <strong>Onbekende BootManager locatie-QR.</strong>
-                            <button class="btn btn-sm btn-primary ms-2" @onclick="NavigateToLinkPage">Koppelen…</button>
+                        <div class="list-group mb-3">
+                            @foreach (var product in _productsForCodeLinking)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="() => LinkCodeToProduct(product)">
+                                    @product.Name
+                                </button>
+                            }
                         </div>
                     }
                     else
                     {
-                        <div class="alert alert-info">
-                            <strong>Onbekende BootManager locatie-QR.</strong>
-                            Deze QR kan door een beheerder worden gekoppeld.
+                        <div class="alert alert-info">Geen producten beschikbaar.</div>
+                    }
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="async () => await SetInventoryFlowState(InventoryFlowState.UnknownProductCode)">Terug</button>
+                </div>
+            }
+            else if (_inventoryFlowState == InventoryFlowState.ChoosingLocation)
+            {
+                <div class="card p-3">
+                    <h6>Product inruimen: @_currentProduct?.Name</h6>
+                    @if (_currentProduct?.Code?.Value != null)
+                    {
+                        <small class="text-muted d-block mb-2">Code: @_currentProduct.Code.Value</small>
+                    }
+
+                    @if (_suggestedLocation != null)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <strong>Voorgestelde locatie:</strong><br/>
+                            @_suggestedLocation.StorageAreaName - @_suggestedLocation.StorageLocationName
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-primary" @onclick="() => SelectSuggestedLocation()">Bevestigen</button>
+                            </div>
                         </div>
                     }
-                }
-            </div>
-        }
-    </div>
+                    else
+                    {
+                        <div class="alert alert-warning mb-3">
+                            <strong>Geen vorige locatie gevonden.</strong> Selecteer een locatie.
+                        </div>
+                    }
+
+                    @if (_alternativeLocations?.Count > 0)
+                    {
+                        <div class="mb-3">
+                            <strong>Alternatieve locaties:</strong>
+                            <div class="list-group list-group-sm">
+                                @foreach (var loc in _alternativeLocations)
+                                {
+                                    <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectAlternativeLocation(loc)">
+                                        @loc.StorageAreaName - @loc.StorageLocationName
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="SelectManualLocationHandler">Handmatig selecteren</button>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="StartLocationScan">Of scan locatie-QR</button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-danger" @onclick="CancelInventoryFlow">Annuleren</button>
+                </div>
+            }
+            else if (_inventoryFlowState == InventoryFlowState.ChoosingLocationManually)
+            {
+                <div class="card p-3">
+                    <h6>Selecteer locatie voor @_currentProduct?.Name</h6>
+                    @if (_allLocationsForSelection?.Count > 0)
+                    {
+                        <div class="list-group">
+                            @foreach (var loc in _allLocationsForSelection)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectLocationManually(loc)">
+                                    @loc.StorageAreaName - @loc.Name
+                                </button>
+                            }
+                        </div>
+                    }
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="StartLocationScan">Of scan locatie-QR</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="async () => await SetInventoryFlowState(InventoryFlowState.ChoosingLocation)">Terug</button>
+                    </div>
+                </div>
+            }
+            else if (_inventoryFlowState == InventoryFlowState.EnteringQuantity)
+            {
+                <div class="card p-3">
+                    <h6>Hoeveelheid voor @_currentProduct?.Name</h6>
+                    <div class="alert alert-info mb-3">
+                        <strong>Locatie:</strong> @_selectedLocation?.StorageAreaName - @_selectedLocation?.StorageLocationName
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hoeveelheid</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" step="0.01"
+                                   @bind="_quantityInput" placeholder="0" />
+                            <span class="input-group-text">@_currentProduct?.DefaultUnitName</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" @onclick="SaveStockAndContinue" disabled="@(_quantityInput <= 0)">Opslaan</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => SetInventoryFlowState(InventoryFlowState.ChoosingLocation)">Terug</button>
+                </div>
+            }
+            else if (_inventoryFlowState == InventoryFlowState.ContinuePrompt)
+            {
+                <div class="card p-3 alert-success">
+                    <h6>Voorraad opgeslagen!</h6>
+                    <p>Wil je nog een product scannen?</p>
+                    <button class="btn btn-sm btn-primary" @onclick="ContinueScanning">Ja, nog een</button>
+                    <button class="btn btn-sm btn-secondary" @onclick="NavigateToLocationAfterSave">Nee, naar locatie</button>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="scan-result">
+            <div><strong>Waarde</strong></div>
+            <div class="scan-result-value">@_resultValue</div>
+            <div class="mt-2"><strong>Formaat</strong></div>
+            <div>@_resultFormat</div>
+
+            @if (_qrResolution != null)
+            {
+                <div class="mt-3">
+                    @if (_qrResolution.Status == QrStatus.Linked)
+                    {
+                        <div class="alert alert-info">
+                            <strong>BootManager locatie-QR herkennen.</strong>
+                            <button class="btn btn-sm btn-primary ms-2" @onclick="NavigateToLocation">Locatie openen</button>
+                        </div>
+                    }
+                    else if (_qrResolution.Status == QrStatus.Unknown)
+                    {
+                        @if (_isOwner)
+                        {
+                            <div class="alert alert-warning">
+                                <strong>Onbekende BootManager locatie-QR.</strong>
+                                <button class="btn btn-sm btn-primary ms-2" @onclick="NavigateToLinkPage">Koppelen…</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">
+                                <strong>Onbekende BootManager locatie-QR.</strong>
+                                Deze QR kan door een beheerder worden gekoppeld.
+                            </div>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
 }
 
 <div class="scan-manual">
@@ -209,6 +404,17 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         Stopped,
         Error,
         InsecureContext
+    }
+
+    private enum InventoryFlowState
+    {
+        ChoosingLocation,
+        ChoosingLocationManually,
+        EnteringQuantity,
+        ContinuePrompt,
+        UnknownProductCode,
+        CreatingNewProduct,
+        LinkingCodeToProduct
     }
 
     /// <summary>Eenvoudige DTO voor een beschikbare video-input, gevuld via JS-interop.</summary>
@@ -257,6 +463,28 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     private string? _manualInput;
     private QrResolutionResult? _qrResolution;
     private bool _isOwner = false;
+
+    // Inventory flow state
+    private bool _inventoryFlowActive = false;
+    private InventoryFlowState _inventoryFlowState = InventoryFlowState.ChoosingLocation;
+    private ProductDto? _currentProduct;
+    private StockDto? _suggestedLocation;
+    private List<StockDto>? _alternativeLocations;
+    private List<StorageLocationDto>? _allLocationsForSelection;
+    private StockDto? _selectedLocation;
+    private decimal _quantityInput = 0;
+
+    // Unknown product code flow state
+    private string? _unknownScannedCode;
+    private IReadOnlyList<ProductDto>? _productsForCodeLinking;
+    private string? _newProductName;
+    private string? _newProductDescription;
+    private string? _newProductCode;
+    private IReadOnlyList<UnitDto>? _availableUnits;
+    private Guid? _newProductUnitId;
+
+    // Location scanning context: true when we're in inventory flow selecting a location via scan
+    private bool _isLocationScanningForInventory = false;
 
     // Geselecteerde camera-ID; null = automatische achtercameravoorkeur via facingMode.
     // Blijft behouden over scan-herstarts tijdens de levensduur van het component.
@@ -601,10 +829,293 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     private async Task ProcessScannedValue(string value)
     {
         _qrResolution = await StorageService.ResolveQrValueAsync(value);
+
+        // Handle BootManager location QRs (both linked and unknown)
         if (_qrResolution.Status == QrStatus.Linked && _qrResolution.LinkedLocationId.HasValue)
         {
+            // Als we in inventory flow zijn en locatie selecteren, gebruik deze locatie
+            if (_inventoryFlowActive && (_inventoryFlowState == InventoryFlowState.ChoosingLocationManually || _isLocationScanningForInventory))
+            {
+                var location = await StorageService.GetLocationDetailAsync(_qrResolution.LinkedLocationId.Value);
+                if (location.Success && location.Data != null)
+                {
+                    _selectedLocation = new StockDto
+                    {
+                        StorageLocationId = location.Data.Id,
+                        StorageAreaName = location.Data.AreaName,
+                        StorageLocationName = location.Data.LocationName
+                    };
+                    _isLocationScanningForInventory = false;
+                    _inventoryFlowState = InventoryFlowState.EnteringQuantity;
+                }
+                return;
+            }
+
             await NavigateToLocation();
+            return;
         }
+
+        // Handle unknown BootManager location QR (not linked yet)
+        // Do NOT navigate automatically. Show result screen with role-based button instead.
+        if (_qrResolution.Status == QrStatus.Unknown)
+        {
+            return;
+        }
+
+        // Not a BootManager location QR - try as product code
+        var productResult = await ProductService.GetByCodeValueAsync(value);
+        if (productResult.Success && productResult.Data != null)
+        {
+            await StartInventoryFlow(productResult.Data);
+            return;
+        }
+
+        // Unknown product code - show choices within the same scan flow
+        _unknownScannedCode = value;
+        _inventoryFlowActive = true;
+        _inventoryFlowState = InventoryFlowState.UnknownProductCode;
+    }
+
+    private async Task StartInventoryFlow(ProductDto product)
+    {
+        _currentProduct = product;
+        _inventoryFlowActive = true;
+        _inventoryFlowState = InventoryFlowState.ChoosingLocation;
+        _quantityInput = 0;
+        _selectedLocation = null;
+        _errorMessage = null;
+
+        // Laad voorstel en alternatieven
+        var suggestedResult = await StockService.GetMostRecentStockForProductAsync(product.Id);
+        _suggestedLocation = suggestedResult.Success ? suggestedResult.Data : null;
+
+        var alternativesResult = await StockService.GetAlternativeLocationsForProductAsync(product.Id);
+        _alternativeLocations = alternativesResult.Success ? alternativesResult.Data?.ToList() : new();
+
+        if (_suggestedLocation == null && _alternativeLocations?.Count == 0)
+        {
+            // Geen eerdere locatie - laad alle beschikbare locaties
+            _allLocationsForSelection = await LoadAllLocations();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<List<StorageLocationDto>> LoadAllLocations()
+    {
+        var areas = await StorageService.GetAllAreasAsync();
+        var locations = new List<StorageLocationDto>();
+
+        foreach (var area in areas)
+        {
+            var areaLocations = await StorageService.GetLocationsByAreaAsync(area.Id);
+            if (areaLocations != null && areaLocations.Count > 0)
+            {
+                foreach (var loc in areaLocations)
+                {
+                    loc.StorageAreaName = area.Name;
+                }
+                locations.AddRange(areaLocations);
+            }
+        }
+
+        return locations;
+    }
+
+    private async Task SetInventoryFlowState(InventoryFlowState newState)
+    {
+        _inventoryFlowState = newState;
+
+        if (newState == InventoryFlowState.CreatingNewProduct)
+        {
+            _newProductCode = _unknownScannedCode;
+            _newProductUnitId = null;
+            _availableUnits = await UnitService.GetAllAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectSuggestedLocation()
+    {
+        if (_suggestedLocation == null)
+            return;
+
+        _selectedLocation = _suggestedLocation;
+        _inventoryFlowState = InventoryFlowState.EnteringQuantity;
+    }
+
+    private async Task SelectAlternativeLocation(StockDto location)
+    {
+        _selectedLocation = location;
+        _inventoryFlowState = InventoryFlowState.EnteringQuantity;
+    }
+
+    private async Task SelectLocationManually(StorageLocationDto location)
+    {
+        _selectedLocation = new StockDto
+        {
+            StorageLocationId = location.Id,
+            StorageAreaName = location.StorageAreaName ?? "Onbekend",
+            StorageLocationName = location.Name
+        };
+        _inventoryFlowState = InventoryFlowState.EnteringQuantity;
+    }
+
+    private async Task SelectManualLocationHandler()
+    {
+        _allLocationsForSelection = await LoadAllLocations();
+        _inventoryFlowState = InventoryFlowState.ChoosingLocationManually;
+        StateHasChanged();
+    }
+
+    private async Task StartLocationScan()
+    {
+        _resultValue = null;
+        _resultFormat = null;
+        _errorMessage = null;
+        _isLocationScanningForInventory = true;
+        _status = ScanStatus.RequestingPermission;
+        _requestId++;
+
+        var localRequestId = _requestId;
+        var localSelectedDeviceId = _selectedDeviceId;
+
+        StateHasChanged();
+        await _internalStartScan(localRequestId, localSelectedDeviceId);
+    }
+
+    private async Task SaveStockAndContinue()
+    {
+        if (_currentProduct == null || _selectedLocation == null || _quantityInput <= 0)
+        {
+            _errorMessage = "Onvolledig formulier.";
+            return;
+        }
+
+        var result = await StockService.AddOrIncrementStockAsync(
+            _currentProduct.Id, _selectedLocation.StorageLocationId, _quantityInput);
+
+        if (!result.Success)
+        {
+            _errorMessage = result.ErrorMessage;
+            return;
+        }
+
+        _inventoryFlowState = InventoryFlowState.ContinuePrompt;
+        _quantityInput = 0;
+    }
+
+    private async Task ContinueScanning()
+    {
+        _inventoryFlowActive = false;
+        _currentProduct = null;
+        _suggestedLocation = null;
+        _alternativeLocations = null;
+        _selectedLocation = null;
+        _quantityInput = 0;
+        _resultValue = null;
+        _resultFormat = null;
+        _qrResolution = null;
+        _isLocationScanningForInventory = false;
+        _unknownScannedCode = null;
+        _status = ScanStatus.RequestingPermission;
+        _requestId++;
+
+        var localRequestId = _requestId;
+        var localSelectedDeviceId = _selectedDeviceId;
+
+        StateHasChanged();
+        await _internalStartScan(localRequestId, localSelectedDeviceId);
+    }
+
+    private void NavigateToLocationAfterSave()
+    {
+        if (_selectedLocation != null)
+        {
+            NavigationManager.NavigateTo($"/storage/locations/{_selectedLocation.StorageLocationId}");
+        }
+    }
+
+    private void CancelInventoryFlow()
+    {
+        _inventoryFlowActive = false;
+        _currentProduct = null;
+        _suggestedLocation = null;
+        _alternativeLocations = null;
+        _selectedLocation = null;
+        _errorMessage = null;
+        _quantityInput = 0;
+        _unknownScannedCode = null;
+        _productsForCodeLinking = null;
+        _newProductName = null;
+        _newProductDescription = null;
+        _newProductCode = null;
+        _newProductUnitId = null;
+        _availableUnits = null;
+        StateHasChanged();
+    }
+
+    private async Task StartLinkingCode()
+    {
+        _productsForCodeLinking = await ProductService.GetActiveAsync();
+        _inventoryFlowState = InventoryFlowState.LinkingCodeToProduct;
+    }
+
+    private async Task LinkCodeToProduct(ProductDto product)
+    {
+        if (string.IsNullOrEmpty(_unknownScannedCode))
+            return;
+
+        var codeResult = await ProductService.AddCodeAsync(
+            product.Id, _unknownScannedCode, "EAN13");
+
+        if (!codeResult.Success)
+        {
+            _errorMessage = codeResult.ErrorMessage ?? "Fout bij koppelen van code.";
+            return;
+        }
+
+        product.Code = codeResult.Data;
+        await StartInventoryFlow(product);
+    }
+
+    private async Task CreateNewProductWithCode()
+    {
+        if (string.IsNullOrWhiteSpace(_newProductName) || string.IsNullOrWhiteSpace(_newProductCode) || !_newProductUnitId.HasValue)
+            return;
+
+        var productResult = await ProductService.CreateAsync(
+            _newProductName.Trim(),
+            _newProductDescription?.Trim(),
+            _newProductUnitId.Value);
+
+        if (!productResult.Success)
+        {
+            _errorMessage = productResult.ErrorMessage ?? "Fout bij aanmaken van product.";
+            return;
+        }
+
+        var newProduct = productResult.Data;
+        if (newProduct == null)
+        {
+            _errorMessage = "Fout bij aanmaken van product.";
+            return;
+        }
+
+        var codeResult = await ProductService.AddCodeAsync(
+            newProduct.Id, _newProductCode.Trim(), "EAN13");
+
+        if (!codeResult.Success)
+        {
+            _errorMessage = codeResult.ErrorMessage ?? "Fout bij koppelen van code.";
+            return;
+        }
+
+        if (codeResult.Data != null)
+        {
+            newProduct.Code = codeResult.Data;
+        }
+        await StartInventoryFlow(newProduct);
     }
 
     private Task NavigateToLocation()

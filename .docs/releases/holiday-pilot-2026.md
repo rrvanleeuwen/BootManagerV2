@@ -142,7 +142,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 6. **PILOT-LOC-04** — **Done** — QR-token vervangen, tagoverzicht en opslagnavigatie.
 7. **PILOT-INV-01** — **Done** — Productcategorieën, producten en productbarcodes.
 8. **PILOT-INV-02** — **Done** — Taakgerichte voorraadbasis: product en locatie koppelen, hoeveelheid vastleggen en voorraad handmatig tonen/beheren.
-9. **PILOT-INV-03** — **Gepland** — Scan-gestuurde inruimflow met locatievoorstel en handmatige fallback.
+9. **PILOT-INV-03** — **Done** — Scan-gestuurde inruimflow met locatievoorstel, onbekende-code-afhandeling en doorlopende scansessie.
 10. **PILOT-INV-04** — **Gepland** — Product terugvinden via scan of zoeken en locaties tonen.
 11. **PILOT-INV-05** — **Gepland** — Verbruik, correcties en eenvoudige historie.
 12. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
@@ -157,7 +157,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-INV-03` — Scan-gestuurde inruimflow met locatievoorstel.
+**Eerstvolgende story:** `PILOT-INV-04` — Product terugvinden via scan of zoeken en locaties tonen.
 
 ## Story-uitwerking en archief
 
@@ -166,7 +166,7 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve inventory-uitwerkingen nu `PILOT-INV-03`, `PILOT-INV-04` en
+- Houd als actieve inventory-uitwerkingen nu `PILOT-INV-04` en
   `PILOT-INV-05` aan; voeg daarna alleen de eerstvolgende geplande stories toe
   wanneer ze werkelijk aan de beurt zijn.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
@@ -541,6 +541,7 @@ administratieve fallback toe, plus een eenvoudige historie voor controle achtera
 - `PILOT-LOC-04` — tokenvervanging, tagoverzicht en opslagnavigatie, geaccepteerd op 2026-06-19.
 - `PILOT-INV-01` — productcategorieën, producten en gekoppelde codes, geaccepteerd op 2026-06-20.
 - `PILOT-INV-02` — taakgerichte voorraadbasis per locatie, geaccepteerd op 2026-06-20.
+- `PILOT-INV-03` — scan-gestuurde inruimflow met locatievoorstel, geaccepteerd op 2026-06-20.
 
 ## Niet-doelen voor deze pilot
 
