@@ -35,6 +35,12 @@ uitgewerkt in de holiday-release. Pak als eerstvolgende implementatiestap
 featurebranch en laad alleen de minimale pilotcontext voor producten,
 productcategorieën, eenheden en gekoppelde codes.
 
+Voor Claude-gerichte startsessies zijn losse storybronbestanden vastgelegd onder
+`.codex/claude-sources/inventory/`: `PILOT-INV-01.md`, `PILOT-INV-02.md`,
+`PILOT-INV-03.md`, `PILOT-INV-04.md` en `PILOT-INV-05.md`.
+Gebruik in de eerstvolgende sessie direct `PILOT-INV-01.md` als expliciete storybron;
+de gebruiker start daarna met nul-één.
+
 Laatste verificatie op 2026-06-19:
 
 - handmatige acceptatie van `PILOT-LOC-04`: geslaagd;
