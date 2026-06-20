@@ -60,11 +60,11 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US2.1 Categorieen beheren | Open | Eerste inventory-slice kandidaat. |
-| US2.2 Categorie-icoontjes beheren | Open | Kan starten met vaste iconenset; upload later. |
-| US2.3 Product aanmaken | Open | Inventory-module ontbreekt. |
-| US2.4 Product bewerken of verwijderen | Open | Inventory-module ontbreekt. |
-| US2.5 Barcodes en QR-codes koppelen aan producten | Open | Latere scanning-slice. |
+| US2.1 Categorieen beheren | Done | `PILOT-INV-01` levert lokaal beheer van categorieën met unieke naam, optionele omschrijving, vaste icoonset, archiveren en heractiveren voor Owner en Crew. |
+| US2.2 Categorie-icoontjes beheren | Partial | `PILOT-INV-01` levert een vaste ingebouwde icoonset voor categorieën; upload of een vrije iconbibliotheek blijft later open. |
+| US2.3 Product aanmaken | Done | `PILOT-INV-01` levert lokale productaanmaak met naam, categorie, standaardeenheid, optionele omschrijving en optionele gekoppelde code. |
+| US2.4 Product bewerken of verwijderen | Done | `PILOT-INV-01` levert productbewerking plus soft delete via archiveren en heractiveren; harde delete is niet nodig voor deze pilotdekking. |
+| US2.5 Barcodes en QR-codes koppelen aan producten | Partial | `PILOT-INV-01` levert één unieke gekoppelde productcode per product via handmatige invoer binnen de catalogus; scan-ondersteunde code-invoer en bredere scanflows volgen later. |
 | US2.6 Barcode scannen bij zoeken | Partial | `PILOT-SCAN-01` levert een op de Pi en beide telefoons geaccepteerde generieke scanner met ZXing voor QR en native `BarcodeDetector` voor EAN-13; de productzoekactie en inventorykoppeling volgen in `PILOT-INV-04`. |
 | US2.7 Barcodeherkenning via foto en AI | Parked | AI-herkenning lage prioriteit. |
 | US2.8 Product koppelen aan opslaglocatie | Open | Blijft open voor latere inventory-stories; `PILOT-LOC-01` levert alleen de opslaglocatiebasis. |

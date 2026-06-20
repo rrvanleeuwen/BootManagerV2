@@ -1,0 +1,317 @@
+@page "/inventory/categories"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@inject IProductCategoryService CategoryService
+@inject ILogger<Categories> Logger
+
+<PageTitle>Categorieen</PageTitle>
+
+<h3>Productcategorieen</h3>
+
+@if (_showArchived)
+{
+    <button class="btn btn-secondary btn-sm mb-3" @onclick="() => SetShowArchived(false)">
+        <i class="fas fa-eye-slash"></i> Actieve weergeven
+    </button>
+}
+else
+{
+    <button class="btn btn-secondary btn-sm mb-3" @onclick="() => SetShowArchived(true)">
+        <i class="fas fa-archive"></i> Gearchiveerde weergeven
+    </button>
+}
+
+<button class="btn btn-primary mb-3" @onclick="OpenCreateModal">
+    <i class="fas fa-plus"></i> Nieuwe categorie
+</button>
+
+@if (_errorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @_errorMessage
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+    </div>
+}
+
+@if (_categories == null)
+{
+    <p>Bezig met laden...</p>
+}
+else if (_categories.Count == 0)
+{
+    <p class="text-muted">Geen categorieen beschikbaar.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Naam</th>
+                    <th>Omschrijving</th>
+                    <th>Icoon</th>
+                    <th class="text-end">Acties</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in _displayedCategories)
+                {
+                    <tr>
+                        <td>@category.Name</td>
+                        <td>@(category.Description ?? "-")</td>
+                        <td><i class="fas fa-@GetIconClass(category.IconKey)"></i></td>
+                        <td class="text-end">
+                            @if (category.IsArchived)
+                            {
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ReactivateAsync(category.Id)" title="Reactiveren">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenEditModal(category)" title="Bewerken">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ArchiveAsync(category.Id)" title="Archiveren">
+                                    <i class="fas fa-archive"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (_modalOpen)
+{
+    @* Create/Edit Modal *@
+    <div class="modal fade show" style="display: block;" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingCategory.Id == Guid.Empty ? "Nieuwe categorie" : "Categorie bewerken")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (_modalError != null)
+                    {
+                        <div class="alert alert-danger alert-sm mb-3">
+                            @_modalError
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Naam *</label>
+                        <input type="text" class="form-control" @bind="_editingCategory.Name" placeholder="Categorienaam">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Omschrijving</label>
+                        <textarea class="form-control" @bind="_editingCategory.Description" rows="3" placeholder="Optionele omschrijving"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Icoon *</label>
+                        <select class="form-select" @bind="_editingCategory.IconKey">
+                            <option value="">-- Selecteer icoon --</option>
+                            @foreach (var iconKey in _validIconKeys)
+                            {
+                                <option value="@iconKey">@iconKey</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuleren</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveAsync">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<ProductCategoryDto> _categories = new();
+    private List<ProductCategoryDto> _displayedCategories = new();
+    private bool _showArchived = false;
+    private bool _modalOpen = false;
+    private ProductCategoryDto _editingCategory = new();
+    private string? _errorMessage;
+    private string? _modalError;
+    private IReadOnlyList<string> _validIconKeys = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoriesAsync();
+        _validIconKeys = CategoryService.GetValidIconKeys();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        try
+        {
+            _categories = (await CategoryService.GetAllAsync()).ToList();
+            UpdateDisplayedCategories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij laden van categorieen");
+            _errorMessage = "Fout bij laden van categorieen.";
+        }
+    }
+
+    private void UpdateDisplayedCategories()
+    {
+        _displayedCategories = _showArchived
+            ? _categories.Where(c => c.IsArchived).ToList()
+            : _categories.Where(c => !c.IsArchived).ToList();
+    }
+
+    private void SetShowArchived(bool showArchived)
+    {
+        _showArchived = showArchived;
+        if (_categories != null)
+        {
+            UpdateDisplayedCategories();
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        _editingCategory = new ProductCategoryDto { Id = Guid.Empty };
+        _modalError = null;
+        _modalOpen = true;
+    }
+
+    private void OpenEditModal(ProductCategoryDto category)
+    {
+        _editingCategory = new ProductCategoryDto
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Description = category.Description,
+            IconKey = category.IconKey,
+            IsArchived = category.IsArchived
+        };
+        _modalError = null;
+        _modalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        _modalOpen = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _modalError = null;
+
+        if (string.IsNullOrWhiteSpace(_editingCategory.Name))
+        {
+            _modalError = "Naam is verplicht.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_editingCategory.IconKey))
+        {
+            _modalError = "Icoon is verplicht.";
+            return;
+        }
+
+        try
+        {
+            if (_editingCategory.Id == Guid.Empty)
+            {
+                var result = await CategoryService.CreateAsync(
+                    _editingCategory.Name,
+                    _editingCategory.Description,
+                    _editingCategory.IconKey);
+
+                if (!result.Success)
+                {
+                    _modalError = result.ErrorMessage;
+                    return;
+                }
+            }
+            else
+            {
+                var result = await CategoryService.UpdateAsync(
+                    _editingCategory.Id,
+                    _editingCategory.Name,
+                    _editingCategory.Description,
+                    _editingCategory.IconKey);
+
+                if (!result.Success)
+                {
+                    _modalError = result.ErrorMessage;
+                    return;
+                }
+            }
+
+            CloseModal();
+            await LoadCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij opslaan van categorie");
+            _modalError = "Fout bij opslaan.";
+        }
+    }
+
+    private async Task ArchiveAsync(Guid categoryId)
+    {
+        try
+        {
+            var result = await CategoryService.ArchiveAsync(categoryId);
+            if (!result.Success)
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+            else
+            {
+                await LoadCategoriesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij archiveren van categorie");
+            _errorMessage = "Fout bij archiveren.";
+        }
+    }
+
+    private async Task ReactivateAsync(Guid categoryId)
+    {
+        try
+        {
+            var result = await CategoryService.ReactivateAsync(categoryId);
+            if (!result.Success)
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+            else
+            {
+                await LoadCategoriesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij reactiveren van categorie");
+            _errorMessage = "Fout bij reactiveren.";
+        }
+    }
+
+    private string GetIconClass(string iconKey) => iconKey switch
+    {
+        "drank" => "bottle-wine",
+        "onderdeel" => "gears",
+        "gereedschap" => "screwdriver",
+        "voeding" => "apple-alt",
+        "elektronics" => "microchip",
+        "veiligheid" => "shield-alt",
+        _ => "tag"
+    };
+}

@@ -63,11 +63,12 @@
   - **Legacy-koppeling:** raakt `US1.14` en `US1.15`.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-INV-01 productcatalogus en gekoppelde codes**
-  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+- [x] **Holiday Pilot 2026 — PILOT-INV-01 productcatalogus en gekoppelde codes**
+  - **Status 2026-06-20:** geïmplementeerd, getest en handmatig geaccepteerd.
   - **Doel:** taskgerichte inventory-basis voor producten, categorieën, eenheden en maximaal één gekoppelde code per product.
   - **Kern:** `Voorraadbeheer` krijgt `Producten`, `Categorieën` en `Eenheden`; productbeheer gebruikt een apart formulier, categorieën en eenheden eenvoudige lijsten met modals.
   - **Belangrijk:** gekoppelde code is een aparte entiteit, uniek binnen de volledige catalogus; Owner en Crew mogen catalogusbeheer uitvoeren.
+  - **Open vervolgpunt:** direct barcode scannen binnen het handmatige productformulier op `Voorraadbeheer > Producten` is nog niet aanwezig; neem dit expliciet mee in een latere scan-gerichte inventory-slice.
   - **Buiten scope:** voorraad per locatie, scan-inruimflow, terugvinden, mutaties en historie.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 

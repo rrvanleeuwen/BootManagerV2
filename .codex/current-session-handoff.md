@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-19.
+Updated: 2026-06-20.
 
 ## Rollen
 
@@ -10,9 +10,9 @@ Updated: 2026-06-19.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `master`.
+- Actieve branch: `feature/pilot-inv-01-product-catalog`.
 - `master` en `origin/master` staan op mergecommit `4a610da` voor `PILOT-LOC-04`.
-- De worktree is schoon na merge van PR #93.
+- `PILOT-INV-01` is lokaal geïmplementeerd, getest en handmatig geaccepteerd; documentatie-, commit-, push- en PR-afronding lopen op de featurebranch.
 
 ## Actieve release
 
@@ -21,33 +21,25 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
 - bron: `.docs/releases/holiday-pilot-2026.md`;
 - status: actief en leidend voor de eerstvolgende ontwikkelperiode;
 - afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
-  `PILOT-LOC-03`, `PILOT-LOC-04`;
-- actuele focus: inventory-vervolg vanaf `PILOT-INV-01`.
+  `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`;
+- actuele focus: administratieve afronding van `PILOT-INV-01`, daarna inventory-vervolg vanaf `PILOT-INV-02`.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-De inventory-stories `PILOT-INV-01` tot en met `PILOT-INV-05` zijn nu functioneel
-uitgewerkt in de holiday-release. Pak als eerstvolgende implementatiestap
-`PILOT-INV-01` op vanaf deze schone actuele `master`: maak eerst een nieuwe
-featurebranch en laad alleen de minimale pilotcontext voor producten,
-productcategorieën, eenheden en gekoppelde codes.
+`PILOT-INV-01` is technisch gerealiseerd en door de gebruiker handmatig geaccepteerd.
+De documentatie wordt nu bijgewerkt, waarna commit, push en een draft PR volgen.
 
-Voor Claude-gerichte startsessies zijn losse storybronbestanden vastgelegd onder
-`.codex/claude-sources/inventory/`: `PILOT-INV-01.md`, `PILOT-INV-02.md`,
-`PILOT-INV-03.md`, `PILOT-INV-04.md` en `PILOT-INV-05.md`.
-Gebruik in de eerstvolgende sessie direct `PILOT-INV-01.md` als expliciete storybron;
-de gebruiker start daarna met nul-één.
+Eerstvolgende inhoudelijke story na merge is `PILOT-INV-02` vanaf een schone actuele
+`master`.
 
-Laatste verificatie op 2026-06-19:
+Let op bij vervolg op productcodes:
 
-- handmatige acceptatie van `PILOT-LOC-04`: geslaagd;
-- gerichte storychecks, build en diffcheck: geslaagd;
-- `git diff --check`: geslaagd.
-- PR #93 is op 2026-06-19 gemerged; lokale `master` is fast-forward bijgewerkt tot
-  mergecommit `4a610da`.
+- handmatige gekoppelde code-invoer in `Voorraadbeheer > Producten` is aanwezig;
+- direct barcode scannen binnen dat handmatige productformulier is nog geen afgeronde
+  gebruikersflow en moet expliciet terugkomen in een latere scan-gerichte inventory-slice.
 
 ## Niet-standaard context
 
