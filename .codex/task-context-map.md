@@ -13,6 +13,10 @@ Als de handoff naar een actieve release of pilot verwijst, lees dan ook dat ene 
 
 Lees `.codex/working-agreement.md` alleen als proces, storyflow, review, documentatie of git/PR aan de orde is.
 
+Lees `.codex/current-session-deferred-context.md` niet standaard. Gebruik dat bestand
+alleen wanneer historische pilotdetails, scan-/QR-grondslagen, baseline-teststatus,
+Raspberry Pi-/runtimecontext of post-vakantie vervolgvragen concreet relevant zijn.
+
 Gebruik `rg`, `Select-String`, gerichte diffs en kleine bestandssecties. Lees grote bestanden niet volledig tenzij dat aantoonbaar nodig is.
 
 ## Taaktypen
@@ -122,6 +126,7 @@ Claude leest niet standaard:
 
 ## Niet standaard laden
 
+- `.codex/current-session-deferred-context.md`;
 - `.docs/legacy-input/`;
 - `.docs/extraInfo/`;
 - `veldtests/`;

@@ -98,7 +98,8 @@ Bestaande Raspberry Pi-, NMEA-, dashboard- en logboekfunctionaliteit blijft het 
 - Bij productaanmaak vult de gebruiker de productgegevens zelf in.
 - Bij productaanmaak kan de productbarcode worden gescand en lokaal aan het product worden gekoppeld.
 - Er wordt geen externe EAN-database of automatische productherkenning gebruikt.
-- Later scannen van dezelfde barcode opent het bekende product.
+- Later scannen van dezelfde productcode helpt het bekende product direct terug te
+  vinden of opnieuw in te ruimen.
 - Onbekende barcode biedt:
   - nieuw product aanmaken;
   - aan bestaand product koppelen;
@@ -140,10 +141,10 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 5. **PILOT-LOC-03** — **Done** — QR-tag printen en PNG exporteren.
 6. **PILOT-LOC-04** — **Done** — QR-token vervangen, tagoverzicht en opslagnavigatie.
 7. **PILOT-INV-01** — **Gepland** — Productcategorieën, producten en productbarcodes.
-8. **PILOT-INV-02** — **Gepland** — Voorraad per product en locatie, inclusief meerdere locaties per product.
-9. **PILOT-INV-03** — **Gepland** — Product aanmaken met gescande locatie-QR.
-10. **PILOT-INV-04** — **Gepland** — Product terugvinden via barcode.
-11. **PILOT-INV-05** — **Gepland** — Voorraadmutaties en eenvoudige historie.
+8. **PILOT-INV-02** — **Gepland** — Taakgerichte voorraadbasis: product en locatie koppelen, hoeveelheid vastleggen en voorraad handmatig tonen/beheren.
+9. **PILOT-INV-03** — **Gepland** — Scan-gestuurde inruimflow met locatievoorstel en handmatige fallback.
+10. **PILOT-INV-04** — **Gepland** — Product terugvinden via scan of zoeken en locaties tonen.
+11. **PILOT-INV-05** — **Gepland** — Verbruik, correcties en eenvoudige historie.
 12. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
 13. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
 14. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
@@ -158,552 +159,619 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 
 **Eerstvolgende story:** `PILOT-INV-01` — Productcategorieën, producten en productbarcodes.
 
-## Uitgewerkte stories
+## Story-uitwerking en archief
 
-### PILOT-LOC-01 — Opslaggebieden en opslaglocaties
+Dit release-document blijft compact voor actuele pilotsturing. Volledig uitgewerkte
+afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-stories.md`.
 
-**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-18.
+### Actieve werkset
 
-**Resultaat:** persistent Owner-beheer van gebieden en locaties, stabiele locatie-id's,
-een door Owner en Crew leesbare detailpagina en een additieve SQLite-migratie zijn
-opgeleverd. De handmatige acceptatie omvatte CRUD, verplaatsen, restrict-delete,
-Crew-autorisatie, locatie-aanmaak via modal, navigatie in hetzelfde tabblad en correcte
-terugnavigatie via browsergeschiedenis.
+- Werk nieuwe volledige story-uitwerkingen eerst uit voor `PILOT-INV-01`,
+  `PILOT-INV-02` en `PILOT-INV-03`; voeg daarna alleen de eerstvolgende geplande
+  stories toe wanneer ze werkelijk aan de beurt zijn.
+- Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
+  eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
+- Verplaats een story na afronding en administratieve controle naar het archief,
+  zodat de dagelijkse context klein blijft maar de historie beschikbaar blijft.
+- Raadpleeg het archief alleen wanneer historische scope, acceptatie,
+  implementatiestatus of legacy-impact opnieuw relevant is.
 
-**Als** Owner<br>
-**wil ik** opslaggebieden en opslaglocaties vastleggen<br>
-**zodat** voorraad later aan fysieke plekken aan boord gekoppeld kan worden.
+### PILOT-INV-01 — Productcategorieen, producten en productbarcodes
+
+**Storyzin**  
+Als Owner of Crew wil ik productcategorieen, eenheden en producten met basisgegevens en
+een gekoppelde code kunnen vastleggen en beheren, zodat een lokale productcatalogus
+ontstaat die klaar is voor latere voorraad- en scanflows.
+
+**Waarom deze slice nu**  
+Deze story levert de minimale catalogusbasis voor inventory zonder al voorraadregels,
+locatiekoppelingen of scanrouting te introduceren. Daarmee wordt eerst productidentiteit
+stabiel gemaakt; `PILOT-INV-02` kan daarna de taakgerichte voorraadbasis per product en
+locatie toevoegen, en `PILOT-INV-03` kan vervolgens de scan-gestuurde inruimflow
+uitwerken.
 
 **Scope**
 
-- Owner beheert opslaggebieden en opslaglocaties via `Instellingen > Opslag`.
-- Owner kan opslaggebieden aanmaken, hernoemen en verwijderen.
-- Owner kan opslaglocaties onder precies één gebied aanmaken, bewerken, verplaatsen
-  naar een ander gebied en verwijderen.
-- Een opslaglocatie heeft minimaal een naam en optioneel een korte beschrijving.
-- De locatie-id blijft stabiel wanneer een locatie wordt hernoemd of naar een ander
-  gebied wordt verplaatst.
-- Owner en Crew kunnen een locatie-detailpagina openen waarop gebied, locatienaam
-  en beschrijving zichtbaar zijn.
-- Handmatige locatiekeuze via de beheer- en detailpagina vormt de basis voor latere
-  QR- en voorraadflows.
+- Owner en Crew kunnen via inventory-beheerflows productcategorieen, eenheden en
+  producten aanmaken, bewerken, archiveren en heractiveren.
+- Een categorie heeft minimaal een unieke naam, een optionele korte omschrijving en een
+  verplichte icoonkeuze uit een beperkte ingebouwde set.
+- Een eenheid is een aparte herbruikbare referentie-entiteit met een unieke naam; de
+  applicatie start met een kleine seed/defaultset.
+- Een product heeft minimaal naam, standaard eenheid en optionele omschrijving.
+- Een product krijgt in de UI exact een categorie, maar de modellering wordt voorbereid
+  als product-categorie-koppeling; in deze story blijft maximaal een actieve
+  categoriekoppeling per product toegestaan.
+- Productaanmaak kan inline een nieuwe categorie of nieuwe eenheid opslaan en daarna de
+  productflow vervolgen.
+- Per product kan nul of een gekoppelde code worden vastgelegd als aparte entiteit.
+- Een gekoppelde code heeft minimaal een waarde en een formaat/type, mag via scan of
+  handmatige invoer worden toegevoegd, en mag zowel een standaardbarcode als een vrije
+  tekstcode zijn.
+- De hoofdnavigatie krijgt een inventory-/voorraadbeheermenu met submenu-items
+  `Producten`, `Categorieen` en `Eenheden`.
+- `Producten` gebruikt een apart formulier of scherm voor aanmaken en bewerken.
+- `Categorieen` en `Eenheden` gebruiken eenvoudige beheerlijsten met simpele modals voor
+  aanmaken en bewerken.
+- Vanuit het productformulier kan de gebruiker in een kleine modal direct een nieuwe
+  categorie of eenheid toevoegen; na opslaan keert de flow terug naar het
+  productformulier met de nieuwe keuze beschikbaar.
+- De gekoppelde code wordt beheerd als onderdeel van het productformulier en niet via
+  een apart submenu of apart detailscherm.
+- Product-, categorie- en eenheidslijsten zijn leesbaar genoeg om de vastgelegde
+  catalogus te controleren; gearchiveerde records zijn standaard verborgen maar via een
+  archiefweergave of filter terug te vinden.
 
 **Buiten scope**
 
-- QR-token genereren, koppelen, vervangen of ongeldig maken.
-- Tagstatus, tagoverzicht, printen of exporteren van QR-codes.
-- Scan-navigatie vanaf een QR-code naar een locatie.
-- Producten, productbarcodes, voorraadregels, hoeveelheden en voorraadmutaties.
-- Producten koppelen aan opslaglocaties.
-- Voorraad bekijken per locatie, export/import en voorraadlogboek.
-- Crew-beheerrechten voor opslaggebieden of opslaglocaties; Crew mag in deze story
-  alleen de locatie-detailpagina lezen.
+- Voorraadregels, hoeveelheden, mutaties en historie.
+- Product aan opslaglocatie koppelen.
+- Product op meerdere locaties tonen of beheren.
+- Product aanmaken vanuit een reeds gescande locatie of verplichte locatie-scan in de
+  flow.
+- Barcode scannen om een product terug te vinden.
+- Onbekende barcode-afhandeling tijdens scannen.
+- Meerdere actieve categorieen per product in de UI.
+- Meerdere gekoppelde codes per product, product-QR-codes, foto/label, minimumvoorraad,
+  filteren en dashboardintegratie.
+- Vrij uploadbare categorie-iconen; deze story gebruikt alleen een kleine vaste set.
+- Eenheidsclassificaties, merk/fabrikant en interne SKU's.
 
 **Acceptatiecriteria**
 
-- Owner ziet in `Instellingen` een sectie voor opslagbeheer.
-- Owner kan een gebied aanmaken met een verplichte naam.
-- Owner kan een gebied hernoemen.
-- Owner kan een leeg gebied verwijderen.
-- Een gebied met locaties kan niet per ongeluk worden verwijderd zonder eerst de
-  locaties te verwijderen of te verplaatsen.
-- Owner kan een locatie aanmaken onder een bestaand gebied met naam en optionele
-  beschrijving.
-- Owner kan de naam en beschrijving van een locatie aanpassen.
-- Owner kan een locatie naar een ander gebied verplaatsen zonder dat de locatie-id
-  verandert.
-- Owner kan een locatie verwijderen.
-- Locatienamen zijn binnen hetzelfde gebied niet dubbel; dezelfde locatienaam mag in
-  een ander gebied opnieuw voorkomen.
-- Owner en Crew kunnen de detailpagina van een bestaande locatie openen.
-- Crew krijgt geen toegang tot `Instellingen > Opslag` of andere Owner-only
-  beheerschermen.
-- `dotnet build BootManager.sln` slaagt.
+1. Owner en Crew kunnen categorieen beheren met unieke naam, optionele omschrijving en
+   verplicht icoon uit een vaste set.
+2. Owner en Crew kunnen eenheden beheren vanuit een aparte beheerflow; namen zijn uniek
+   en de applicatie levert een kleine defaultset.
+3. Owner en Crew kunnen tijdens productaanmaak inline een nieuwe categorie of eenheid
+   toevoegen zonder eerst naar een aparte beheerpagina terug te hoeven.
+4. Owner en Crew kunnen een product opslaan met naam, exact een gekozen categorie in de
+   UI, exact een verplichte standaard eenheid en optionele omschrijving.
+5. Een product kan zonder gekoppelde code worden opgeslagen; een gekoppelde code kan bij
+   aanmaak of later via scan of handmatige invoer worden toegevoegd, vervangen of
+   ontkoppeld.
+6. Een gekoppelde code wordt als aparte entiteit opgeslagen, bewaart waarde en
+   formaat/type, wordt genormaliseerd en case-onafhankelijk gevalideerd, en blijft uniek
+   binnen de volledige catalogus, ook wanneer het gekoppelde product gearchiveerd is.
+7. Producten, categorieen en eenheden ondersteunen soft delete met heractiveren;
+   gearchiveerde records zijn standaard verborgen uit normale lijsten en keuzelijsten.
+8. Een categorie of eenheid kan niet worden gearchiveerd zolang er nog actieve
+   producten naar verwijzen.
+9. Een gekoppelde code van een gearchiveerd product blijft aan dat product gekoppeld en
+   behoudt zijn unieke claim ook zolang het product gearchiveerd is.
+10. De gebruiker bereikt deze catalogusfuncties via een inventory-/voorraadbeheermenu
+    met submenu-items `Producten`, `Categorieen` en `Eenheden`; productbeheer gebruikt
+    een apart formulier/scherm en categorie-/eenheidbeheer gebruikt eenvoudige lijsten
+    met simpele modals.
+11. De catalogus werkt volledig lokaal/offline-first binnen de bestaande BootManager
+    database.
 
 **Legacy-impact**
 
-- `US1.9 Bootstructuurbeheer: gebieden en opslaglocaties` is gedeeltelijk afgedekt:
-  BootManagerV2 heeft persistent beheer van gebieden en locaties, zonder QR/tag- en
-  voorraadfunctionaliteit.
-- `US1.10 Opslaglocatie aanmaken binnen gebied` is functioneel afgedekt voor
-  aanmaken met naam en korte omschrijving.
-- `US1.11 Opslaglocatie bewerken` is functioneel afgedekt voor naam, omschrijving,
-  gebiedskoppeling en verwijderen.
-- `US1.12 Tag genereren voor opslaglocatie` blijft open voor `PILOT-LOC-02` en
-  `PILOT-LOC-03`.
-- `US1.13 Locatie openen via QR-code` blijft open voor `PILOT-LOC-02`; deze story
-  levert alleen de detailpagina die later door QR-scans geopend kan worden.
-- `US1.14 Tag opnieuw koppelen of vervangen` blijft open voor `PILOT-LOC-04`.
-- `US1.15 Overzicht van alle tags` blijft open voor `PILOT-LOC-04`.
-- `US2.8 Product koppelen aan opslaglocatie` en `US2.9 Voorraad bekijken per
-  locatie` blijven open voor de latere inventory-stories; `PILOT-LOC-01` levert
-  alleen de locatiebasis.
+- Dekt primair `US2.1` categorieen beheren, `US2.3` product aanmaken, `US2.4` product
+  bewerken of verwijderen en het niet-scanende deel van `US2.5` barcodes koppelen aan
+  producten.
+- Levert een eerste invulling voor `US2.2` met een beperkte vaste iconenset, maar niet
+  voor upload of een aparte iconbibliotheek.
+- Levert voor `US2.3` bewust alleen de catalogusbasis: naam, categorie, eenheid,
+  optionele omschrijving en een optionele gekoppelde code; minimumvoorraad,
+  locatiekoppeling, merk/fabrikant, foto/label en voorraadgedrag blijven latere scope.
+- Modelleert gekoppelde codes als aparte entiteit, maar beperkt de functionele UI-scope
+  van deze story bewust tot maximaal een code per product.
+- Laat `US2.6`, `US2.8`, `US2.9`, `US2.10`, `US2.11`, `US2.12`, `US2.13`, `US2.14`,
+  `US2.19` en `US2.20` bewust open voor latere inventory-slices.
 
 **Handmatige acceptatietest**
 
-Log in als Owner en open `Instellingen > Opslag`. Maak de gebieden `Kombuis`,
-`Salon`, `Voorhut`, `Bakskist` en `Techniek` aan. Maak onder minimaal twee gebieden
-een locatie met beschrijving aan. Hernoem een gebied, bewerk een locatiebeschrijving
-en verplaats een locatie naar een ander gebied. Open de detailpagina van die locatie
-en controleer dat de naam, beschrijving en het nieuwe gebied kloppen. Probeer een
-gebied met locaties te verwijderen en controleer dat dit niet ongemerkt kan.
+1. Log in als Owner of Crew.
+2. Open de inventory-beheerpagina en controleer dat categorie-, eenheid- en
+   productbeheer beschikbaar zijn.
+3. Maak twee categorieen aan met verschillende iconen, bijvoorbeeld `Drinken` en
+   `Onderdelen`, en bewerk daarna de omschrijving van een categorie.
+4. Controleer dat een categorie met een dubbele naam wordt geblokkeerd.
+5. Controleer dat de standaardset met eenheden zichtbaar is en voeg indien nodig een
+   extra eenheid toe.
+6. Start productaanmaak en maak desgewenst inline een nieuwe categorie of een nieuwe
+   eenheid aan; rond daarna de productaanmaak af met naam, categorie, eenheid en
+   optionele omschrijving.
+7. Voeg tijdens of na productaanmaak een gekoppelde code toe via handmatige invoer of
+   bestaande scanflow en controleer dat opslaan lukt.
+8. Probeer dezelfde gekoppelde code aan een tweede product te koppelen; verwacht een
+   duidelijke validatiefout of blokkade.
+9. Ontkoppel de code weer en controleer dat het product zonder code kan blijven bestaan.
+10. Archiveer een product en controleer dat het in de standaardlijst verdwijnt maar via
+    archiefweergave terug te vinden en te heractiveren is.
+11. Probeer een categorie of eenheid te archiveren terwijl er nog een actief product aan
+    hangt; verwacht een blokkade.
+12. Controleer dat `Producten`, `Categorieen` en `Eenheden` bereikbaar zijn via het
+    inventory-/voorraadbeheermenu en dat categorie-/eenheidaanmaak vanuit het
+    productformulier in een modal terugkeert naar dezelfde productflow.
 
-Log daarna in als Carla/Crew. Controleer dat `Instellingen` en opslagbeheer niet
-toegankelijk zijn, maar dat een bestaande locatie-detailpagina wel leesbaar opent.
+### PILOT-INV-02 — Taakgerichte voorraadbasis per locatie
 
-**Technische richting**
+**Storyzin**  
+Als Owner of Crew wil ik vanaf een locatiepagina voorraad aan die locatie kunnen
+toevoegen en aanvullen, zodat BootManager bruikbaar vastlegt wat waar ligt zonder mij
+door administratieve CRUD-schermen te dwingen.
 
-- Voeg een kleine opslagmodule toe binnen de bestaande Core/Application/Infrastructure
-  en Web-laag; introduceer geen brede inventory-module in deze story.
-- Gebruik persistente entiteiten voor `StorageArea` en `StorageLocation` met een
-  verplichte relatie van locatie naar gebied.
-- Houd validatie in de application-service: trim namen, blokkeer lege namen, blokkeer
-  dubbele gebiedsnamen en blokkeer dubbele locatienamen binnen hetzelfde gebied.
-- Plaats de beheer-UI onder de bestaande Owner-only `Settings`-route en gebruik waar
-  nodig een apart component om `Settings.razor` beheersbaar te houden.
-- Maak de locatie-detailpagina `Owner,Crew` toegankelijk zodat `PILOT-LOC-02` daar
-  later bekende locatie-QR's naartoe kan routeren.
-
-### PILOT-LOC-02 — QR-token genereren, koppelen en locatie openen
-
-**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-19.
-
-**Resultaat:** stabiele BootManager locatie-QR-tokens, Owner-only koppelen van
-onbekende BootManager-QR's aan bestaande of nieuwe locaties, scanrouting naar de
-bestaande locatie-detailpagina en SQLite-migratie-/constraintbewijs zijn opgeleverd.
-De handmatige acceptatie bevestigde QR-generatie, direct openen van bekende locatie-QR's,
-stabiel gedrag na hernoemen/verplaatsen, koppelen aan bestaande en nieuwe locaties en
-het ontbreken van Crew-koppelacties. Een tijdens acceptatie gemelde afwijking bleek een
-controle op een verkeerde dubbel voorkomende locatienaam en niet een productdefect.
-
-**Als** Owner en Crew<br>
-**wil ik** een locatie via een BootManager QR-code kunnen openen<br>
-**zodat** een fysieke plek aan boord snel digitaal terug te vinden is.
+**Waarom deze slice nu**  
+Deze story maakt inventory voor het eerst praktisch bruikbaar door de catalogus uit
+`PILOT-INV-01` te verbinden aan echte opslaglocaties en hoeveelheden. De focus ligt op
+taakgericht vastleggen en tonen van actuele voorraad per locatie. Scan-gestuurde
+hoofdroutes, product-terugvinden via barcode en mutatiehistorie blijven bewust voor
+latere stories.
 
 **Scope**
 
-- Owner kan voor een bestaande opslaglocatie een unieke BootManager QR-token aanmaken.
-- Owner kan een onbekende BootManager QR-token koppelen aan een bestaande locatie.
-- Owner kan na het scannen van een onbekende BootManager QR-token ook een nieuwe
-  locatie aanmaken en de token daaraan koppelen.
-- De QR-token is stabiel en niet gebaseerd op gebiedsnaam of locatienaam.
-- De QR-code blijft geldig wanneer de locatie later wordt hernoemd of verplaatst.
-- Scannen van een bekende locatie-QR opent direct de bestaande locatie-detailpagina.
-- Crew kan bekende locatie-QR's scannen en openen.
-- Crew kan onbekende QR's niet koppelen aan nieuwe of bestaande locaties.
+- Owner en Crew kunnen vanaf een locatiepagina de actie `Voorraad toevoegen` starten.
+- De primaire route start vanaf een locatiepagina; dezelfde locatie moet ook zonder scan
+  handmatig bereikbaar zijn via bestaande locatienavigatie.
+- Binnen een flow `Voorraad toevoegen` kiest de gebruiker een bestaand product of maakt
+  direct een nieuw product aan vanuit die locatiecontext.
+- Als tijdens deze flow een nieuw product wordt aangemaakt, keert de gebruiker daarna
+  automatisch terug naar dezelfde locatieflow met dat product geselecteerd.
+- Een voorraadregel legt functioneel alleen `product`, `locatie` en `hoeveelheid` vast.
+- Hoeveelheid is een vrij numerieke waarde in de standaard eenheid van het product.
+- Hetzelfde product kan op meerdere locaties tegelijk voorraad hebben.
+- Per locatie bestaat voor een product maximaal een actuele voorraadregel.
+- Als een product op die locatie al bestaat, wordt dezelfde voorraadregel hergebruikt en
+  wordt de hoeveelheid aangevuld.
+- De locatiepagina toont de actuele inhoud van die locatie met minimaal productnaam,
+  hoeveelheid en eenheid.
+- De productpagina toont op welke locaties het product ligt, met minimaal gebied,
+  locatienaam en hoeveelheid.
+- Een voorraadregel kan vanaf de locatiepagina eenvoudig worden verwijderd na
+  bevestiging wanneer het product daar niet meer ligt.
 
 **Buiten scope**
 
-- QR-code printen of PNG exporteren; dat volgt in `PILOT-LOC-03`.
-- QR-token vervangen, tagstatus en tagoverzicht; dat volgt in `PILOT-LOC-04`.
-- Producten, productbarcodes, voorraadregels, hoeveelheden en voorraadmutaties.
-- Voorraad bekijken of aanpassen vanaf een locatiepagina.
-- Externe QR-diensten, cloud-sync of NFC.
+- Scan-gestuurde dashboardstart of automatische keuze van de juiste voorraadactie.
+- Verplichte locatie-QR als hoofdroute voor productaanmaak of inruimen.
+- Barcode scannen om een product terug te vinden.
+- Verbruik, correcties, overschrijven van hoeveelheden, negatieve hoeveelheden en
+  mutatiehistorie.
+- Voorraad verplaatsen tussen twee locaties als samengestelde actie.
+- Slimme recente lijsten, voorkeursproducten per locatie of automatische suggesties.
+- Categorie-filters in de handmatige productzoekflow.
+- Meerdere aparte voorraadregels voor hetzelfde product op dezelfde locatie.
 
 **Acceptatiecriteria**
 
-- Owner kan een unieke QR-token voor een locatie genereren.
-- Dezelfde token kan niet aan twee locaties gekoppeld zijn.
-- Een bekende locatie-QR opent voor Owner en Crew de juiste locatie-detailpagina.
-- Hernoemen of verplaatsen van de locatie verandert de token niet.
-- Een onbekende BootManager QR toont Owner een keuze om te koppelen aan een bestaande
-  locatie of aan een nieuwe locatie.
-- Een onbekende BootManager QR geeft Crew geen beheeractie.
-- Niet-BootManager QR-waarden worden niet automatisch gekoppeld aan locaties.
-- `dotnet build BootManager.sln` slaagt.
+1. Owner en Crew kunnen een locatiepagina handmatig openen zonder scan en daar de actie
+   `Voorraad toevoegen` starten.
+2. In `Voorraad toevoegen` kan de gebruiker een bestaand product zoeken op productnaam of
+   gekoppelde code.
+3. In dezelfde flow kan de gebruiker ook direct een nieuw product aanmaken; na opslaan
+   keert de flow terug naar dezelfde locatie met dat product geselecteerd.
+4. De gebruiker kan vervolgens een vrij numerieke hoeveelheid invoeren en opslaan voor
+   die locatie.
+5. Als het gekozen product nog niet op die locatie ligt, ontstaat een nieuwe
+   voorraadregel voor die product-locatie-combinatie.
+6. Als het gekozen product al op die locatie ligt, wordt geen tweede regel aangemaakt
+   maar wordt de bestaande hoeveelheid aangevuld.
+7. Een actieve voorraadregel met hoeveelheid `0` of lager is niet toegestaan in deze
+   story; zulke invoer wordt geblokkeerd.
+8. De locatiepagina toont na opslaan de actuele producten op die locatie met minimaal
+   naam, hoeveelheid en eenheid.
+9. De productpagina toont voor een product alle gekoppelde locaties met minimaal gebied,
+   locatienaam en hoeveelheid.
+10. Een voorraadregel kan vanaf de locatiepagina na bevestiging direct verwijderd worden
+    als het product daar niet meer ligt.
 
 **Legacy-impact**
 
-- `US1.12 Tag genereren voor opslaglocatie` wordt met deze story gedeeltelijk
-  gepland: unieke token en QR-waarde per locatie; printen/exporteren volgt in
-  `PILOT-LOC-03`.
-- `US1.13 Locatie openen via QR-code` wordt met deze story gedeeltelijk gepland:
-  QR opent de locatie-detailpagina; producten en aantallen blijven voor inventory.
-- `US2.14 QR-scanner-modus` wordt verder gedeeltelijk gepland: locatie-QR routing
-  komt in deze story; voorraad bekijken of wijzigen blijft voor latere inventory.
+- Dekt primair `US2.8` product koppelen aan opslaglocatie en `US2.9` voorraad bekijken
+  per locatie.
+- Levert een eerste, bewust beperkte invulling van `US2.19` automatisch ophogen bij
+  nieuwe voorraad op dezelfde locatie, maar zonder brede mutatielogica of
+  aankoophistorie.
+- Laat `US2.10` voorraad aanpassen, `US2.13` voorraadlogboek, `US2.14`
+  QR-scanner-modus en `US2.20` verbruik via barcode bewust open voor latere
+  inventory-slices.
 
 **Handmatige acceptatietest**
 
-Log in als Owner, open een bestaande locatie en genereer een QR-token. Scan of voer de
-QR-waarde handmatig in en controleer dat de locatie-detailpagina opent. Hernoem of
-verplaats de locatie en controleer dat dezelfde QR nog steeds de locatie opent. Scan
-een onbekende BootManager QR en koppel deze eerst aan een bestaande locatie en daarna
-in een aparte test aan een nieuwe locatie. Log daarna in als Carla/Crew en controleer
-dat bekende locatie-QR's openen, maar onbekende QR's geen koppelactie toestaan.
+1. Log in als Owner of Crew.
+2. Open handmatig een bestaande locatiepagina via de locatienavigatie.
+3. Controleer dat de actie `Voorraad toevoegen` beschikbaar is.
+4. Start `Voorraad toevoegen`, zoek een bestaand product op naam of gekoppelde code, vul
+   een hoeveelheid in en sla op.
+5. Controleer dat de locatiepagina daarna het product toont met hoeveelheid en eenheid.
+6. Start `Voorraad toevoegen` opnieuw voor hetzelfde product op dezelfde locatie, voer een
+   extra hoeveelheid in en controleer dat de bestaande regel wordt aangevuld in plaats
+   van gedupliceerd.
+7. Start `Voorraad toevoegen` nogmaals en maak vanuit die flow een nieuw product aan;
+   controleer dat je automatisch terugkeert naar dezelfde locatieflow en daarna een
+   hoeveelheid voor dat nieuwe product kunt opslaan.
+8. Open de productpagina van een opgeslagen product en controleer dat alle gekoppelde
+   locaties zichtbaar zijn met gebied, locatienaam en hoeveelheid.
+9. Probeer een hoeveelheid `0` of lager op te slaan; verwacht een duidelijke blokkade.
+10. Verwijder een voorraadregel vanaf de locatiepagina en controleer dat deze na
+    bevestiging uit de actuele locatie-inhoud verdwijnt.
 
-**Technische richting**
+### PILOT-INV-03 — Scan-gestuurde inruimflow met locatievoorstel
 
-- Gebruik een stabiel BootManager-specifiek QR-value format, zodat de scanflow eigen
-  locatie-QR's kan onderscheiden van productbarcodes en willekeurige QR-waarden.
-- Sla token los van locatienaam en gebied op.
-- Laat de bestaande generieke scanpagina de tokenwaarde herkennen en naar de juiste
-  locatieflow routeren.
-- Houd onbekende-token-koppeling Owner-only en laat Crew alleen lezen/openen.
+**Storyzin**  
+Als Owner of Crew wil ik vanuit het bestaande menu `Scannen` een productcode kunnen
+scannen en daarna snel de juiste locatie en hoeveelheid kunnen bevestigen, zodat ik
+meerdere producten achter elkaar praktisch kan inruimen zonder steeds opnieuw door
+beheerflows te lopen.
 
-**Implementatiestatus 2026-06-19**
-
-- `StorageLocation` heeft nu een persistente nullable `QrToken` met een unieke
-  gefilterde SQLite-index voor niet-null tokens.
-- Owner kan op de locatie-detailpagina een QR-token genereren; generatie is idempotent
-  en bestaande tokens worden in deze story niet vervangen.
-- De scanpagina herkent exact `bootmanager:location:<32-lowercase-hex-token>` en opent
-  bekende locatie-QR's direct of toont alleen voor Owner een koppelactie bij een
-  onbekende geldige locatie-QR.
-- Owner kan een onbekende geldige locatie-QR koppelen aan een bestaande locatie of een
-  nieuwe locatie met token aanmaken; Crew krijgt geen koppelactie en de route blijft
-  Owner-only.
-- Integratietests bewijzen migratie vanaf
-  `20260618175732_AddStorageAreasAndLocations`, databehoud, nullable tokenopslag,
-  uniqueness en de acceptatieketen koppelen -> verse detail-load.
-- Eindchecks: gerichte storage unit-tests 96/96; volledige unit-suite 292/293 met
-  alleen de bekende owner-recoverybaseline rood; gerichte storage-integratietests
-  24/24; volledige integratiesuite 36/36; `dotnet build BootManager.sln --no-restore`;
-  `git diff --check`.
-
-### PILOT-LOC-03 — QR-tag printen en PNG exporteren
-
-**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-19.
-
-**Resultaat:** Owner-only tagpagina's voor locaties met bestaande QR-token, compacte
-printweergave rond 5x5 cm, QR-rendering via een vervangbare application-interface met
-concrete `QRCoder`-adapter en scanbare PNG-download via stream zijn opgeleverd. De
-handmatige acceptatie bevestigde dat browserprint werkt, PNG-download een bestand met
-de locatienaam oplevert en dat zowel de zichtbare QR als de gedownloade PNG dezelfde
-locatie via de bestaande scanflow openen.
-
-**Als** Owner<br>
-**wil ik** de QR-code van een opslaglocatie kunnen printen en als PNG downloaden<br>
-**zodat** ik fysieke labels kan maken en in de boot kan aanbrengen.
+**Waarom deze slice nu**  
+`PILOT-INV-02` levert de handmatige voorraadbasis per locatie. Deze story bouwt daarop
+voort door de voorkeursroute voor echt gebruik aan boord scan-gestuurd te maken. De
+focus ligt op snel product inruimen met locatievoorstel, alternatieve locaties en een
+doorlopende scansessie. Verbruik, correcties en historie blijven later.
 
 **Scope**
 
-- Owner kan de QR-code van een locatie openen op een printvriendelijke tagpagina.
-- Owner kan vanuit de browser een printactie starten voor de QR-tag.
-- Owner kan per locatie een PNG-bestand van de QR-code downloaden.
-- De tagpagina toont minimaal gebied, locatienaam en QR-code.
-- De QR-code gebruikt de stabiele BootManager QR-token uit `PILOT-LOC-02`.
+- De primaire start voor deze story is het bestaande menu `Scannen`.
+- De scanner herkent productcodes en locatie-QR's en kiest op basis daarvan de juiste
+  vervolgstap.
+- Als een locatie-QR wordt gescand, opent BootManager direct de bestaande locatiepagina.
+- Als een productcode wordt gescand, start BootManager de inruimflow voor dat product.
+- Voor een bekend product stelt BootManager de laatst gebruikte locatie voor; dit is de
+  echte locatieverwijzing naar de locatie waar voor dat product de meest recente
+  voorraadtoevoeging of aanvulling is opgeslagen.
+- De UI toont die voorgestelde of verwachte locatie altijd als leesbare gebied- en
+  locatienaam, niet als interne code of identifier.
+- Als het product ook op andere locaties bekend is, toont BootManager daarnaast een
+  kleine lijst met alternatieve locaties.
+- De gebruiker kan de voorgestelde locatie alleen bevestigen of een andere locatie
+  kiezen of scannen.
+- Als een product nog geen eerdere locatie heeft, vraagt BootManager direct om een
+  locatie te kiezen of te scannen.
+- Handmatige fallback blijft beschikbaar: de gebruiker kan naast locatie scannen ook
+  handmatig een andere locatie kiezen.
+- Na locatiekeuze vult de gebruiker alleen een hoeveelheid in; de standaard eenheid van
+  het product is wel zichtbaar maar niet wijzigbaar in deze flow.
+- Na opslaan wordt de voorraad op die locatie toegevoegd of aangevuld volgens de regels
+  van `PILOT-INV-02`.
+- Na succesvol opslaan vraagt BootManager direct of de gebruiker nog een product wil
+  scannen.
+- Bij bevestiging van die vraag keert de flow terug naar de scanner binnen dezelfde
+  scansessie.
+- Bij stoppen van die vraag eindigt de flow op de locatiepagina waar het product is
+  weggelegd.
+- Als een gescande productcode onbekend is, kan de gebruiker in deze flow direct:
+  - een nieuw product aanmaken;
+  - de gescande code koppelen aan een bestaand product;
+  - annuleren.
+- Nieuw product aanmaken gebeurt in een modaal venster binnen de scanflow; de gescande
+  code is vooraf ingevuld maar bewerkbaar.
+- Na nieuw product aanmaken of code koppelen aan bestaand product gaat de inruimflow
+  direct verder met locatie en hoeveelheid.
 
 **Buiten scope**
 
-- Server-side PDF- of CSV-export.
-- Geavanceerde labelvellen, snijtekens, printerprofielen of labelprinterintegratie.
-- QR-token vervangen of ongeldig maken.
-- Tagoverzicht en tagstatus.
-- Producten, voorraad en voorraadmutaties.
+- Een aparte dashboardstart buiten het bestaande menu `Scannen`.
+- Detailnavigatie naar product- of locatieoverzichten midden in de primaire
+  inruimstappen.
+- Verbruik, correcties, overschrijven van hoeveelheden en mutatiehistorie.
+- Automatische productherkenning via externe EAN-database, fotoherkenning of AI.
+- Volledige productbeheerflow buiten de minimale modal die nodig is voor onbekende
+  codes in deze scansessie.
+- Batchverplaatsingen tussen locaties of andere samengestelde voorraadacties.
 
 **Acceptatiecriteria**
 
-- Owner kan voor een locatie een printvriendelijke QR-tagpagina openen.
-- De QR-code op de tagpagina bevat de bestaande stabiele tokenwaarde.
-- Browserprint vanaf de tagpagina is beschikbaar.
-- Owner kan een PNG-bestand downloaden.
-- Het gedownloade of geprinte QR-label opent via de scanflow dezelfde locatie.
-- Crew kan QR-tags niet printen of exporteren.
-- `dotnet build BootManager.sln` slaagt.
+1. De gebruiker kan vanuit het bestaande menu `Scannen` een code scannen en BootManager
+   bepaalt op basis van het type code welke flow moet starten.
+2. Een gescande locatie-QR opent direct de bestaande locatiepagina.
+3. Een gescande bekende productcode start direct de inruimflow voor dat product.
+4. Voor een bekend product met eerdere voorraadlocaties stelt BootManager de laatst
+   gebruikte locatie voor en toont het daarnaast eventuele alternatieve locaties in een
+   kleine lijst.
+5. De gebruiker kan de voorgestelde locatie bevestigen of een andere locatie kiezen of
+   scannen.
+6. Als het product nog geen eerdere locatie heeft, vraagt de flow direct om een locatie
+   te kiezen of te scannen.
+7. De gebruiker vult daarna alleen een hoeveelheid in; de eenheid van het product is
+   zichtbaar maar niet wijzigbaar.
+8. Na opslaan wordt de voorraad op de gekozen locatie volgens `PILOT-INV-02` toegevoegd
+   of aangevuld.
+9. Na succesvol opslaan vraagt BootManager direct of nog een product gescand moet
+   worden; bij `ja` keert de flow terug naar de scanner binnen dezelfde sessie en bij
+   `nee` eindigt de flow op de gebruikte locatiepagina.
+10. Als een gescande productcode onbekend is, kan de gebruiker in dezelfde scanflow een
+    nieuw product aanmaken of de code aan een bestaand product koppelen.
+11. Nieuw product aanmaken voor een onbekende code gebeurt in een modaal venster met de
+    gescande code vooraf ingevuld maar bewerkbaar.
+12. Na nieuw product aanmaken of code koppelen aan een bestaand product gaat de
+    inruimflow direct verder met locatie en hoeveelheid.
 
 **Legacy-impact**
 
-- `US1.12 Tag genereren voor opslaglocatie` wordt met deze story functioneel
-  afgerond: printen en exporteren als afbeelding worden afgedekt nadat
-  `PILOT-LOC-02` de token- en QR-waarde levert.
-- Vervangen van tags en tagoverzicht blijven voor `PILOT-LOC-04`.
+- Dekt de scan- en productidentificatiekant van `US2.5` barcodes koppelen aan producten
+  en `US2.6` barcode scannen bij zoeken/inventorygebruik, maar nu specifiek gericht op
+  de inruimflow.
+- Levert een eerste praktische invulling voor `US2.14` QR-scanner-modus doordat het
+  bestaande scanmenu nu voorraadgerichte vervolgstappen kan starten op basis van product-
+  of locatiecodes.
+- Laat `US2.10` voorraad aanpassen, `US2.13` voorraadlogboek en `US2.20` verbruik via
+  barcode bewust open voor latere inventory-slices.
 
 **Handmatige acceptatietest**
 
-Log in als Owner, open een locatie met bestaande QR-token en open de tagpagina. Start
-browserprint en download de PNG. Scan daarna de zichtbare QR-code of de gedownloade
-PNG vanaf een tweede scherm en controleer dat dezelfde locatiepagina opent. Controleer
-dat Crew deze print/exportactie niet kan uitvoeren.
+1. Open het bestaande menu `Scannen`.
+2. Scan een bekende locatie-QR en controleer dat direct de juiste locatiepagina opent.
+3. Ga terug naar `Scannen`, scan een bekende productcode en controleer dat de
+   inruimflow start.
+4. Controleer dat de laatst gebruikte locatie wordt voorgesteld en dat eventuele andere
+   bekende locaties zichtbaar zijn in een kleine lijst.
+5. Bevestig de voorgestelde locatie of kies handmatig een andere locatie, vul een
+   hoeveelheid in en sla op.
+6. Controleer dat direct na opslaan de vraag verschijnt of nog een product gescand moet
+   worden.
+7. Kies `Ja` en controleer dat de scanner in dezelfde sessie opnieuw actief wordt.
+8. Scan een onbekende productcode en controleer dat je kunt kiezen voor nieuw product
+   aanmaken, code koppelen aan bestaand product of annuleren.
+9. Kies `Nieuw product`, controleer dat een modaal productformulier opent met de
+   gescande code vooraf ingevuld maar bewerkbaar, rond dit af en controleer dat de
+   inruimflow daarna direct verdergaat.
+10. Herhaal met `Code koppelen aan bestaand product` en controleer dat de inruimflow
+    daarna ook direct verdergaat.
+11. Rond een inruimactie af en kies daarna `Nee`; controleer dat de flow eindigt op de
+    locatiepagina waar het product is weggelegd.
 
-**Technische richting**
+### PILOT-INV-04 — Product terugvinden via scan of zoeken
 
-- Gebruik de bestaande browserprintstijl als patroon; voeg geen server-side PDF-export
-  toe.
-- Houd QR-generatie achter een application-interface zodat de concrete library later
-  vervangbaar blijft.
-- Gebruik voor PNG-export een robuuste downloadroute via stream; vermijd kritieke
-  browserafhankelijkheid van client-side canvas/blob-conversies.
+**Storyzin**  
+Als Owner of Crew wil ik een product snel kunnen terugvinden via scannen of handmatig
+zoeken, zodat ik direct zie op welke locatie of locaties het product ligt en daar
+desgewenst naartoe kan navigeren.
 
-**Implementatiestatus 2026-06-19**
-
-- `StorageLocationDetails` toont voor Owner bij bestaande `QrValue` een actie naar een
-  Owner-only tagpagina; Crew blijft de detailpagina lezen zonder print/exportactie.
-- QR-tag rendering loopt via `IStorageLocationQrTagRenderer` in
-  `BootManager.Application` met een concrete `QRCoder`-implementatie in
-  `BootManager.Infrastructure`, zodat de library later vervangbaar blijft.
-- De tagpagina toont gebied, locatienaam, compacte QR-tagweergave en de bestaande
-  `QrValue`, gebruikt `window.print` voor browserprint en downloadt PNG via
-  `DotNetStreamReference` en de bestaande `downloadFileFromStream` helper.
-- `QRCoder` levert zowel SVG voor scherm/print als PNG-bytes voor robuuste download;
-  browserafhankelijke canvas/blob-downloadlogica is uit de kritieke route verwijderd.
-- Gerichte component- en autorisatietests bewijzen de Owner/Crew-zichtbaarheid, de
-  renderer-abstraction, het stream-downloadpad en failure-paden zonder QR-rendering.
-
-### PILOT-LOC-04 — QR-token vervangen en tagoverzicht
-
-**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-19.
-
-**Resultaat:** Owner kan bestaande locatie-QR-tokens vervangen waarbij het oude token
-ongeldig wordt, een Owner-only tagoverzicht toont gebied, locatie, QR-waarde en
-handmatige tagstatus, en de opslagfunctionaliteit is via een Owner-only hoofdmenu
-`Opslag` direct bereikbaar met `Locaties` en `Tagoverzicht`. Na acceptatie is de
-oude dubbele ingang via `Instellingen > Opslag` verwijderd, zodat opslagbeheer nog
-maar op één plek in de navigatie zit.
-
-**Als** Owner<br>
-**wil ik** locatie-QR's kunnen vervangen en de tagstatus per locatie kunnen zien<br>
-**zodat** beschadigde of verplaatste QR-labels aan boord beheersbaar blijven.
+**Waarom deze slice nu**  
+Na de catalogusbasis van `PILOT-INV-01`, de locatiegebonden voorraadbasis van
+`PILOT-INV-02` en de scan-gestuurde inruimflow van `PILOT-INV-03` is de volgende
+praktische vraag: waar ligt iets? Deze story maakt het terugvinden van producten snel via
+de voorkeursroute scannen en via een handmatige zoekfallback, zonder al voorraadmutaties
+of dashboardzoekingangen te introduceren.
 
 **Scope**
 
-- Owner kan het QR-token van een locatie vervangen.
-- Het oude token wordt ongeldig en opent daarna geen locatie meer.
-- Owner ziet een tagoverzicht met gebied, locatie, huidig token en tagstatus.
-- Owner kan de tagstatus handmatig bijwerken naar `Niet geprint`, `Geprint`,
-  `Gekoppeld` of `Vervangen`.
-- Het tagoverzicht helpt bepalen welke fysieke labels nog gemaakt, aangebracht of
-  vervangen moeten worden.
+- De primaire route start vanuit het bestaande menu `Scannen`.
+- Als in `Scannen` een bekende productcode wordt gescand, start direct de
+  terugvindflow.
+- Handmatige fallback is beschikbaar via `Voorraadbeheer > Producten`.
+- Handmatig zoeken werkt op productnaam en productomschrijving.
+- Handmatig zoeken is hoofdletterongevoelig en ondersteunt deelmatches.
+- Als handmatig zoeken meerdere producten vindt, toont BootManager een korte
+  productresultatenlijst waaruit de gebruiker een product kiest.
+- Die resultatenlijst toont per product minimaal:
+  - productnaam;
+  - de eerste tekens van de omschrijving als die bestaat;
+  - de bekende locaties van dat product als komma-gescheiden samenvatting.
+- Hoeveelheden worden nog niet in die eerste resultatenlijst getoond.
+- Als een gescand of gekozen product precies een actieve voorraadlocatie heeft, opent
+  BootManager direct de locatiepagina van die locatie.
+- Als een gescand of gekozen product meerdere actieve voorraadlocaties heeft, toont
+  BootManager direct een lijst met die locaties.
+- Die lijst toont minimaal gebied, locatienaam, hoeveelheid en eenheid per locatie.
+- Vanuit die lijst kan de gebruiker doorklikken naar de locatiepagina van een gekozen
+  locatie.
+- Als een product bekend is maar momenteel geen actieve voorraadlocaties heeft, meldt
+  BootManager dat duidelijk.
+- Als voor dat product nog een laatst gebruikte locatie bekend is, toont BootManager
+  die echte locatieverwijzing als verwachte plek waar het product normaal hoort te
+  liggen, weergegeven als leesbare gebied- en locatienaam.
+- In beide gevallen biedt BootManager een vervolgstap `Voorraad toevoegen`.
 
 **Buiten scope**
 
-- Automatische detectie of een label fysiek geprint of aangebracht is.
-- Printerintegratie, labelprinterprofielen of automatische statuswijziging na print.
-- Auditlog van tokenvervangingen.
-- Producten, voorraad en voorraadmutaties.
+- Dashboard-zoekbalk of andere nieuwe dashboardingangen.
+- Verbruik, correcties, voorraadhistorie of andere voorraadmutaties vanuit de
+  terugvindflow.
+- Uitgebreide filters op categorie, gebied of andere velden.
+- Echte typo-correctie, fuzzy matching of synoniembeheer.
+- Hoeveelheden tonen in de eerste productresultatenlijst van handmatig zoeken.
 
 **Acceptatiecriteria**
 
-- Owner kan per locatie een nieuw token genereren waarmee de oude QR ongeldig wordt.
-- Een scan of handmatige invoer van het oude token opent de locatie niet meer.
-- Een scan of handmatige invoer van het nieuwe token opent de locatie wel.
-- Het tagoverzicht toont alle locaties met gebied, locatienaam en tagstatus.
-- Owner kan de tagstatus handmatig aanpassen en terugzien.
-- Crew kan het tagoverzicht en vervangactie niet beheren.
-- `dotnet build BootManager.sln` slaagt.
+1. De gebruiker kan vanuit `Scannen` een bekende productcode scannen en direct de
+   terugvindflow starten.
+2. De gebruiker kan ook handmatig zoeken via `Voorraadbeheer > Producten`.
+3. Handmatig zoeken doorzoekt productnaam en omschrijving, is hoofdletterongevoelig en
+   ondersteunt deelmatches.
+4. Als handmatig zoeken meerdere producten vindt, toont BootManager een korte lijst met
+   productnaam, eerste omschrijvingstekens en locatiesamenvatting, waarna de gebruiker
+   een product kiest.
+5. Als een gescand of gekozen product precies een actieve voorraadlocatie heeft, opent
+   direct de locatiepagina van die locatie.
+6. Als een gescand of gekozen product meerdere actieve voorraadlocaties heeft, toont
+   BootManager direct een lijst met gebied, locatienaam, hoeveelheid en eenheid per
+   locatie.
+7. Vanuit die locatielijst kan de gebruiker doorklikken naar een locatiepagina.
+8. Als een product bekend is maar geen actieve voorraadlocaties heeft, meldt
+   BootManager dat duidelijk.
+9. Als voor dat product nog een laatst gebruikte locatie bekend is, toont BootManager
+   die locatie als verwachte plek waar het product normaal hoort te liggen.
+10. In beide gevallen biedt BootManager een actie `Voorraad toevoegen`.
 
 **Legacy-impact**
 
-- `US1.14 Tag opnieuw koppelen of vervangen` is functioneel afgedekt: oude token
-  ongeldig, nieuw token actief.
-- `US1.15 Overzicht van alle tags` is functioneel afgedekt met een overzicht van
-  locaties, tokeninformatie en handmatige tagstatus.
-- Fysieke printerintegratie en auditlog blijven buiten scope.
+- Dekt primair `US2.6` barcode scannen bij zoeken en de product-terugvindkant van
+  `US2.9` voorraad bekijken per locatie.
+- Bouwt voort op de gekoppelde codes uit `PILOT-INV-01` en de voorraadregels per
+  locatie uit `PILOT-INV-02`.
+- Laat `US2.10` voorraad aanpassen, `US2.12` breder zoeken en filteren, `US2.13`
+  voorraadlogboek en `US2.20` verbruik via barcode bewust open voor latere
+  inventory-slices.
 
 **Handmatige acceptatietest**
 
-Log in als Owner, open het tagoverzicht en kies een locatie met bestaande QR. Zet de
-status op `Geprint` en daarna op `Gekoppeld`. Vervang vervolgens het token. Controleer
-dat de status zichtbaar is, dat het oude token niet meer naar de locatie opent en dat
-het nieuwe token wel werkt. Log daarna in als Crew en controleer dat beheer van
-vervangen en tagstatus niet toegankelijk is.
+1. Open `Scannen` en scan een bekende productcode van een product dat op precies een
+   locatie ligt; controleer dat direct de juiste locatiepagina opent.
+2. Scan een bekende productcode van een product dat op meerdere locaties ligt;
+   controleer dat direct een locatielijst opent met gebied, locatienaam, hoeveelheid en
+   eenheid.
+3. Klik vanuit die lijst door naar een locatiepagina en controleer dat de juiste
+   locatie wordt geopend.
+4. Open `Voorraadbeheer > Producten` en zoek handmatig op een productnaam met
+   hoofdletterverschil, bijvoorbeeld `rijst` versus `Rijst`; controleer dat het product
+   gevonden wordt.
+5. Zoek handmatig op tekst die alleen in de omschrijving voorkomt; controleer dat het
+   product gevonden wordt.
+6. Controleer dat meerdere zoekresultaten eerst een korte productlijst tonen met
+   productnaam, omschrijvingstekst en locatiesamenvatting, zonder hoeveelheden.
+7. Kies een product uit die lijst en controleer dat het vervolggedrag gelijk is aan de
+   scanroute: direct locatiepagina bij een locatie, of locatielijst bij meerdere
+   locaties.
+8. Open een bekend product zonder actieve voorraadlocaties en controleer dat
+   BootManager meldt dat het momenteel niet op voorraad is.
+9. Controleer dat, als voor dit product nog een laatst gebruikte locatie bekend is,
+   BootManager die als verwachte plek toont.
+10. Controleer dat in beide gevallen een actie `Voorraad toevoegen` beschikbaar is.
 
-**Technische richting**
+### PILOT-INV-05 — Voorraad muteren en eenvoudige historie
 
-- Bouw voort op het tokenmodel van `PILOT-LOC-02` en de print/exportweergave van
-  `PILOT-LOC-03`.
-- Gebruik een expliciet handmatig statusveld; leid status niet automatisch af uit
-  print- of downloadacties.
-- Houd tokenvervanging beperkt tot het actief maken van een nieuw token en het
-  ongeldig maken van het vorige token.
+**Storyzin**  
+Als Owner of Crew wil ik voorraadverbruik, tellingen en correcties kunnen verwerken en
+later in een eenvoudig logboek kunnen terugzien, zodat de werkelijke voorraad actueel
+blijft zonder de context van product en locatie te verliezen.
 
-**Implementatiestatus 2026-06-19**
-
-- `StorageLocation` ondersteunt nu expliciete tokenvervanging, maar alleen voor
-  locaties die al een bestaand token hebben; een vervangactie kan dus geen eerste
-  token genereren.
-- Het oude token wordt na vervanging niet meer geresolved; het nieuwe token opent
-  direct dezelfde locatie.
-- Tagstatus wordt per locatie handmatig opgeslagen als `Niet geprint`, `Geprint`,
-  `Gekoppeld` of `Vervangen`.
-- `StorageLocationTagOverview` biedt een Owner-only overzicht en beheerflow voor
-  tokenvervanging en tagstatus.
-- De hoofdnavigatie bevat nu een Owner-only menu `Opslag` met `Locaties` en
-  `Tagoverzicht`; `Locaties` hergebruikt het bestaande opslagbeheerscherm op een
-  eigen route en de dubbele storage-sectie in `Settings` is verwijderd.
-- Migratie- en upgradepadtests bewijzen dat de bestaande QR-tokenmigratie correct
-  doorloopt naar tagstatusopslag met databehoud.
-- Eindchecks: gerichte storage/navigation unit-tests 138/138, gerichte storage
-  integration-tests groen, `dotnet build BootManager.sln --no-restore` groen,
-  `git diff --check` groen; de bekende owner-recoverybaseline buiten deze story
-  blijft bestaan in de volledige unit-suite.
-
-### PILOT-AUTH-01 — Lokale Owner- en Crew-accounts
-
-**Status:** Done op 2026-06-17; technisch gecontroleerd en handmatig geaccepteerd.
-
-**Als** Owner<br>
-**wil ik** Carla een eigen lokaal Crew-account geven<br>
-**zodat** zij zelfstandig kan inloggen en BootManager kan gebruiken zonder toegang tot systeembeheer.
+**Waarom deze slice nu**  
+Na catalogus, voorraadbasis, inruimen en terugvinden ontbreekt nog het dagelijks
+bijhouden van voorraad wanneer producten gebruikt worden of aantallen niet meer kloppen.
+Deze story voegt daarom zowel een fysieke verbruikflow op locatie als een
+administratieve fallback toe, plus een eenvoudige historie voor controle achteraf.
 
 **Scope**
 
-- De bestaande Owner wordt zonder gegevensverlies opgenomen in één uniform lokaal gebruikersmodel.
-- Het model ondersteunt de rollen `Owner` en `Crew` en technisch meerdere Crew-accounts; de pilot maakt alleen Carla aan.
-- De loginpagina toont actieve lokale accounts als naamkeuze, gevolgd door het eigen wachtwoord en `Ingelogd blijven`.
-- De zichtbare accountnaam is hoofdletterongevoelig uniek en is tevens de lokale loginidentiteit.
-- Owner kan in `Instellingen > Account > Lokale gebruikers`:
-  - een Crew-account met tijdelijk wachtwoord aanmaken;
-  - het wachtwoord van Crew resetten naar een tijdelijk wachtwoord;
-  - een Crew-account uitschakelen en opnieuw activeren.
-- Een nieuw of gereset Crew-account moet bij de eerstvolgende login via een gedeelde pagina `Mijn account` een eigen wachtwoord kiezen.
-- Owner en Crew kunnen via `Mijn account` hun eigen wachtwoord wijzigen.
-- Crew kan dashboard, scannen en het volledige huidige logboek gebruiken.
-- Alleen Owner kan Instellingen, Beheerder, shutdown, systeeminstellingen en lokale gebruikers beheren.
-- Navigatie toont alleen functies die bij de ingelogde rol horen.
-- Uitschakelen of wachtwoordreset maakt bestaande cookies en tokens van die gebruiker direct ongeldig.
-- De bestaande bootstrap-Owner en verplichte Owner-onboarding blijven werken.
+- Deze story ondersteunt drie expliciete mutatietypes:
+  - `Verbruik`
+  - `Correctie`
+  - `Telling`
+- `Verbruik` verlaagt voorraad altijd op een expliciete product-locatieregel.
+- De fysieke hoofdflow is:
+  - product terugvinden;
+  - naar de locatie gaan;
+  - locatie scannen;
+  - product scannen;
+  - verbruikte hoeveelheid invoeren;
+  - opslaan;
+  - terugkeren naar het begin van de terugvind/verbruikflow.
+- De administratieve fallback werkt zonder scannen.
+- In die fallback kiest de gebruiker eerst een product en daarna een locatie.
+- Als dat product maar op een actieve locatie ligt, kiest BootManager die locatie
+  automatisch.
+- Bij `Verbruik` voert de gebruiker de afname in.
+- Bij `Telling` voert de gebruiker de feitelijk aanwezige nieuwe hoeveelheid in.
+- Bij `Correctie` voert de gebruiker ook de feitelijk nieuwe hoeveelheid in.
+- De gebruiker kan bij iedere mutatie een hele vrije optionele notitie toevoegen.
+- Verbruik dat meer afneemt dan de actuele voorraad op die locatie wordt geblokkeerd.
+- Als een mutatie de actieve voorraad van een product op een locatie op `0` brengt,
+  verdwijnt de actieve voorraadregel van die locatie.
+- De laatst gebruikte locatie van het product blijft daarbij als echte
+  locatieverwijzing bewaard als verwachte locatie, zodat BootManager later nog kan tonen
+  waar het product normaal hoort te liggen.
+- Een aparte historiepagina toont alle voorraadmutaties.
+- Die historiepagina toont standaard alle mutaties, nieuwste eerst.
+- Een historieregel toont minimaal:
+  - datum/tijd;
+  - mutatietype;
+  - productnaam;
+  - gebied en locatienaam;
+  - oude hoeveelheid;
+  - nieuwe hoeveelheid;
+  - gebruiker;
+  - optionele notitie.
 
 **Buiten scope**
 
-- Uitnodigingen, e-mailverificatie of een externe identity provider.
-- Meer rollen dan `Owner` en `Crew`, een uitgebreide rechtenmatrix of rolwijziging.
-- Een tweede Owner aanmaken.
-- Lokale gebruikers definitief verwijderen.
-- Meerdere boten of accountselectie per boot.
-- Pincode-, recovery- of master-keyfunctionaliteit terugbrengen in de normale gebruikersflow.
-- In deze story uitvoerende gebruikers vastleggen op bestaande logboekentiteiten.
-- Voorraad- of logboekmutatiehistorie; latere `PILOT-INV-*`- en `PILOT-LOG-*`-stories gebruiken daarvoor de stabiele lokale gebruikers-id.
+- Negatieve voorraad.
+- Mutaties zonder expliciete locatie.
+- Inline historie op product- of locatiepagina's.
+- Geavanceerde filters, export of rapportage op de historiepagina.
+- Dashboardintegratie voor voorraadmutaties.
+- Automatische verbruiksafleiding zonder expliciete gebruikersactie.
 
 **Acceptatiecriteria**
 
-- Een bestaande database migreert zonder verlies van Owner-id, wachtwoord, profielgegevens en onboardingstatus.
-- Roelof kan na migratie met zijn bestaande wachtwoord als Owner inloggen.
-- Een lege database maakt nog steeds één bootstrap-Owner en dwingt de bestaande Owner-onboarding af.
-- De loginselector toont alleen actieve lokale accounts en toont geen wachtwoord- of profielgegevens.
-- Accountnamen zijn hoofdletterongevoelig uniek.
-- Owner kan Carla als Crew aanmaken met een tijdelijk wachtwoord.
-- Carla wordt na de eerste login verplicht naar `Mijn account` geleid en kan pas na een geslaagde wachtwoordwijziging de overige Crew-routes gebruiken.
-- Na de verplichte wijziging werkt alleen Carla's nieuwe wachtwoord.
-- Carla kan dashboard, scanpagina en het huidige logboek gebruiken.
-- Carla ziet geen links naar Instellingen of Beheerder en krijgt bij directe toegang tot Owner-routes geen toegang.
-- Owner kan Carla's wachtwoord resetten; alle bestaande Carla-sessies en tokens worden dan ongeldig en een nieuwe wachtwoordwijziging wordt verplicht.
-- Owner kan Carla uitschakelen; bestaande sessies en tokens worden ongeldig en nieuwe login wordt geweigerd.
-- Opnieuw activeren herstelt login met het laatst geldige wachtwoord en de bestaande wachtwoordwijzigingsstatus.
-- Owner kan zichzelf niet uitschakelen en kan geen tweede Owner of andere rol aanmaken.
-- Cookie- en JWT-claims bevatten de werkelijke gebruikers-id, zichtbare naam en rol en zijn niet langer hardcoded als Owner.
-- `dotnet build BootManager.sln` slaagt.
+1. Owner en Crew kunnen voorraadmutaties uitvoeren als `Verbruik`, `Correctie` of
+   `Telling`.
+2. De fysieke verbruikflow ondersteunt: product terugvinden, naar de locatie gaan,
+   locatie scannen, product scannen, afname invoeren en opslaan.
+3. Na afronding van die fysieke verbruikflow keert de gebruiker terug naar het begin van
+   die terugvind/verbruikroute.
+4. De administratieve fallback ondersteunt muteren zonder scannen door eerst een product
+   en daarna een locatie te kiezen.
+5. Als een product in die fallback maar op een actieve locatie ligt, kiest BootManager
+   die locatie automatisch.
+6. `Verbruik` vraagt om een afnamehoeveelheid; `Telling` en `Correctie` vragen om de
+   nieuwe feitelijke hoeveelheid.
+7. Een optionele vrije notitie kan bij iedere mutatie worden opgeslagen.
+8. Verbruik boven de actuele voorraad op die locatie wordt duidelijk geblokkeerd.
+9. Als een mutatie de actieve voorraad op `0` brengt, verdwijnt de actieve voorraadregel
+   maar blijft de laatst gebruikte locatie van het product als verwachte locatie
+   bewaard.
+10. De aparte historiepagina toont alle mutaties standaard nieuwste eerst met minimaal
+    datum/tijd, type, product, gebied + locatie, oude hoeveelheid, nieuwe hoeveelheid,
+    gebruiker en optionele notitie.
 
 **Legacy-impact**
 
-- `US1.3 Gebruikers aanmaken en rollen toewijzen` is gedeeltelijk afgedekt: Owner kan Crew aanmaken met een vaste rol.
-- `US1.4 Inloggen als bestaande gebruiker` is afgedekt voor lokale Owner- en Crew-accounts.
-- `US1.7` en `US8.4` blijven grotendeels geparkeerd: er komt geen algemene rolwijziging.
-- `US1.8` blijft geparkeerd: uitschakelen vervangt voor de pilot definitief verwijderen.
-- `US8.7` is gedeeltelijk afgedekt: toevoegen, wachtwoord resetten, uitschakelen en reactiveren, zonder verwijderen.
-
-**Implementatiestatus 2026-06-17**
-
-- Bestaande Owner-gegevens migreren naar het uniforme lokale gebruikersmodel met behoud van wachtwoord, profielgegevens en onboardingstatus.
-- Owner kan lokale Crew aanmaken, wachtwoorden resetten, Crew uitschakelen en opnieuw activeren.
-- Crew moet bij tijdelijk of gereset wachtwoord eerst via `Mijn account` een nieuw wachtwoord kiezen.
-- Crew heeft toegang tot Dashboard, Scannen en Logboek; Instellingen en beheer blijven Owner-only.
-- Wachtwoordreset en uitschakelen trekken bestaande cookies, tokens en open Blazor-sessies in via credentialversiecontrole.
-- Handmatige acceptatie is lokaal uitgevoerd met Owner en Carla: onboarding, Crew-aanmaak, wachtwoordwijziging, autorisatie, reset, uitschakelen, reactiveren en Owner-eindcontrole zijn geslaagd.
-- Eindchecks: unit-tests 210/211 met alleen de bekende owner-recoverybaseline rood; integratietests 12/12; `dotnet build BootManager.sln --no-restore`; `git diff --check`.
+- Dekt primair `US2.10` voorraad aanpassen en `US2.13` voorraadlogboek.
+- Dekt ook de verbruikskant van `US2.20` voorraad verminderen via barcode, maar binnen
+  de pilot nog in combinatie met expliciete locatiecontext en zonder bredere
+  automatisering.
+- Bouwt voort op `PILOT-INV-02` voor product-locatieregels en op `PILOT-INV-04` voor
+  het terugvinden van producten voordat verbruik wordt geboekt.
+- Laat geavanceerde filters, analyses en dashboardsignalering bewust open voor latere
+  inventory-slices.
 
 **Handmatige acceptatietest**
 
-Upgrade eerst een kopie van de actuele Raspberry Pi-database. Controleer dat Roelof met
-zijn bestaande wachtwoord als Owner kan inloggen en dat de bestaande onboardingstatus
-behouden is. Maak daarna in Instellingen een Crew-account voor Carla met een tijdelijk
-wachtwoord. Log uit, kies Carla op de loginpagina en controleer dat zij verplicht via
-`Mijn account` een ander wachtwoord moet instellen. Controleer daarna dashboard, scan en
-logboek en probeer de directe URL's van Instellingen en Beheerder.
+1. Zoek een product via de terugvindflow, ga naar de juiste locatie, scan daar de
+   locatiecode en daarna de productcode.
+2. Kies `Verbruik`, voer een afname in en sla op.
+3. Controleer dat de voorraad op die locatie is verlaagd en dat de flow terugkeert naar
+   het begin van de terugvind/verbruikroute.
+4. Herhaal via de administratieve fallback zonder scannen: kies eerst een product en
+   daarna een locatie, of laat de locatie automatisch kiezen als er maar een actief is.
+5. Voer een `Telling` uit en controleer dat de nieuwe feitelijke hoeveelheid direct wordt
+   opgeslagen.
+6. Voer een `Correctie` uit met een andere nieuwe hoeveelheid en controleer dat ook deze
+   wordt opgeslagen.
+7. Voeg bij minstens een mutatie een vrije notitie toe en controleer dat die later in de
+   historie zichtbaar is.
+8. Probeer meer te verbruiken dan op de gekozen locatie aanwezig is; verwacht een
+   duidelijke blokkade.
+9. Verbruik een voorraadregel precies naar `0` en controleer dat de actieve regel
+   verdwijnt, maar dat het product later nog zijn laatst gebruikte locatie als
+   verwachte plek behoudt voor terugvinden of opnieuw inruimen.
+10. Open de aparte historiepagina en controleer dat alle mutaties nieuwste eerst worden
+    getoond met datum/tijd, type, product, gebied + locatie, oude hoeveelheid, nieuwe
+    hoeveelheid, gebruiker en eventuele notitie.
 
-Log Carla vervolgens gelijktijdig in twee browsers in. Reset als Owner haar wachtwoord
-en controleer dat beide bestaande sessies vervallen, het tijdelijke wachtwoord werkt en
-opnieuw een wijziging wordt verplicht. Herhaal de sessiecontrole met uitschakelen,
-controleer dat nieuwe login wordt geweigerd en activeer het account opnieuw. Sluit af
-met een controle dat Roelofs Owner-routes, bootstrapflow en onboarding intact zijn.
+### Afgeronde stories in archief
 
-**Technische richting**
-
-- Gebruik één lokale gebruiker-entiteit met stabiele `Guid`-id, zichtbare en genormaliseerde accountnaam, rol, wachtwoordhash, actieve status, setupstatus en credentialversie.
-- Migreer het bestaande Owner-record naar dit uniforme model; kopieer geen Owner naar een los Crew- of accountmodel.
-- Gebruik de credentialversie samen met actieve status bij cookie- en JWT-validatie, zodat reset en uitschakelen direct alle oude authenticatiebewijzen intrekken.
-- Houd `Ingelogd blijven` en de bestaande niet-persistente sessieopslag intact.
-- Laat de verplichte Owner-onboarding en de verplichte Crew-wachtwoordwijziging als afzonderlijke gates werken.
-- Laat een geslaagde eigen wachtwoordwijziging de huidige browser opnieuw aanmelden met de nieuwe credentialversie; andere sessies blijven ingetrokken.
-- Sla de accountnaam leesbaar op omdat deze bewust op de anonieme lokale loginselector wordt getoond. Bestaande versleutelde Owner-profielgegevens blijven behouden.
-
-### PILOT-SCAN-01 — Camera-, QR- en barcode-proof-of-concept
-
-**Status:** Done
-
-**Als** gebruiker  
-**wil ik** in de lokaal gehoste Blazor-app op mijn telefoon een QR-code en productbarcode kunnen scannen  
-**zodat** vroeg duidelijk is of de beoogde scanflows technisch en praktisch uitvoerbaar zijn.
-
-**Scope**
-
-- Proof-of-concept binnen de bestaande .NET 8/Blazor-oplossing.
-- Test op de Samsung-telefoons van Roelof en Carla; het oudste toestel draait Android 16.
-- Validatie in zowel Microsoft Edge als Google Chrome op Android.
-- Achtercamera als voorkeurscamera.
-- QR Code en de lineaire formaten EAN-13, EAN-8, UPC-A en Code 128 herkennen.
-- Herkende ruwe codewaarde en het herkende formaat zichtbaar tonen.
-- Na een herkenning stoppen met doorlopend detecteren, zodat dezelfde code niet herhaald wordt verwerkt.
-- Duidelijke statussen voor niet gestart, toestemming aanvragen, actief scannen, herkend, handmatig ingevoerd en gestopt.
-- Begrijpelijke fouten voor ontbrekende HTTPS/secure context, geweigerde toestemming, ontbrekende camera en decoder- of camerafouten.
-- Scannen expliciet kunnen starten, stoppen en opnieuw starten.
-- Handmatige code-invoer als fallback via hetzelfde zichtbare resultaatgebied.
-- De bestaande route `http://bootmanager-pi:5000/` blijft beschikbaar voor gebruik zonder camera.
-- Een aanvullende HTTPS-route voor cameragebruik vaststellen en de lokale certificaat-, browser- en netwerkvoorwaarden documenteren.
-
-**Buiten scope**
-
-- Nog geen opslaglocatie-entiteiten.
-- Nog geen productentiteiten.
-- Nog geen databaseopslag.
-- Nog geen QR-generatie.
-- Nog geen voorraadmutaties.
-- Nog geen definitieve styling.
-- Geen externe EAN-productdatabase of interpretatie van de gescande waarde.
-- Geen automatische navigatie of functionele actie op basis van de gescande waarde.
-- Geen brede wijziging van de bestaande Docker- of netwerkarchitectuur buiten wat voor de secure context aantoonbaar nodig is.
-
-**Acceptatiecriteria**
-
-- De beveiligde scanpagina opent op beide telefoons in Edge en Chrome.
-- De scanpagina meldt op de bestaande HTTP-route begrijpelijk dat cameragebruik HTTPS vereist.
-- Cameratoestemming kan via de HTTPS-route worden verleend of geeft een begrijpelijke fout.
-- De achtercamera wordt bij voorkeur gebruikt.
-- Een BootManager-test-QR wordt op beide telefoons herkend.
-- Minimaal één echte EAN-13-productbarcode wordt op beide telefoons herkend.
-- De gedecodeerde ruwe waarde en het herkende formaat worden zichtbaar getoond.
-- Scannen kan worden gestopt en opnieuw gestart.
-- Handmatige invoer werkt als fallback.
-- Stoppen of verlaten van de pagina beëindigt de actieve camerastream.
-- De noodzakelijke HTTPS-, certificaat-, hostname-, browser- en netwerkvoorwaarden zijn gedocumenteerd.
-- `dotnet build BootManager.sln` slaagt.
-
-**Handmatige acceptatietest**
-
-Test eerst via `http://bootmanager-pi:5000/` dat de scanpagina de secure-contextbeperking begrijpelijk meldt. Open daarna dezelfde pagina via de aanvullende HTTPS-route op beide telefoons, in Edge en Chrome. Verleen cameratoestemming, controleer dat bij voorkeur de achtercamera actief is en scan achtereenvolgens een BootManager-test-QR en een echte EAN-13-productbarcode. Controleer ruwe waarde en formaat, stop en herstart de camera, verlaat de pagina en controleer dat de camera stopt. Weiger daarnaast eenmaal cameratoestemming en controleer de foutmelding. Sluit af met handmatige invoer via de fallback.
-
-**Technische richting**
-
-- Gebruik een lokaal meegeleverde browserdecoder met ondersteuning voor QR en meerdere lineaire formaten; de pilot mag niet afhankelijk zijn van internet of een CDN.
-- Beheer camerastream en decoder in een afzonderlijke JavaScriptmodule die via bestaande Blazor-JavaScript-interop wordt aangeroepen.
-- Gebruik de native `BarcodeDetector` API niet als enige decoder, omdat de pilot in zowel Edge als Chrome en op beide toestellen moet werken.
-- Vraag video aan met voorkeur voor `facingMode: environment`, maar geef een begrijpelijke fout of bruikbare fallback wanneer het toestel die voorkeur niet exact kan leveren.
-- Houd de bestaande interne webcontainer en HTTP-poort `5000` intact. HTTPS-terminatie is een aanvullende operationele ingang en geen wijziging van interne servicecommunicatie.
-
-**Implementatiestatus 2026-06-09**
-
-- De beveiligde `/scan`-pagina, camerastatussen, start/stop/herstart, resultaatweergave en handmatige fallback zijn via PR #88 gemerged naar `master`.
-- De productiepagina gebruikt één gedeelde camerastream: lokale ZXing uitsluitend voor QR en native `BarcodeDetector` uitsluitend voor EAN-13. Browsers zonder native EAN-13-ondersteuning behouden QR en handmatige invoer.
-- Laptopacceptatie is geslaagd via `http://localhost:5046/scan` en `https://localhost:7299/scan`, inclusief QR-code, productbarcode, stoppen/herstarten, handmatige invoer tijdens actief scannen en cameravrijgave bij navigatie.
-- De bestaande ZXing-proef leest QR op de Samsung-telefoon, maar de geteste EAN-13-productbarcodes niet betrouwbaar. Daarom is een geïsoleerde, beveiligde `/scan-quagga-test`-pagina toegevoegd met lokaal meegeleverde Quagga2 1.12.1, uitsluitend voor EAN-13.
-- De Quagga2-proef gebruikt een ideale camerastream van 1920×1080 en maakt de Quagga2-verwerkingsgrootte op de geïsoleerde testpagina vergelijkbaar met 800, 1280 (standaard) en 1600 px. `patchSize: large`, `halfSample: false`, locator en alleen `ean_reader` blijven actief. Geldige resultaten worden aanvullend gecontroleerd op 13 cijfers en een correct EAN-13-controlecijfer.
-- Omdat Quagga2 de kleine EAN-13 niet betrouwbaar decodeerde, is daarnaast een geïsoleerde `/scan-native-barcode-test` toegevoegd. Native `BarcodeDetector` herkende EAN-13 `9789059965607` op de Samsung-telefoon direct vanaf circa 15 cm; die bewezen route is vervolgens in `/scan` geïntegreerd.
-- Start, stop, herstart, camerawissel, resultaatstop en component-disposal zijn beschermd tegen achterhaalde callbacks, oude streams en overlappende sessies.
-- De deterministische moduleharness laadt de echte productie-exportfuncties en bewijst zes scenario's: fallback zonder native support, geldige EAN-13-detectie, vroege QR-callback, sessie-isolatie, oplopende supportrevisions en idempotente cleanup bij pending native detecties.
-- JavaScript-syntaxcontrole, de moduleharness (6/6), `dotnet build BootManager.sln --no-restore` en `git diff --check` slagen.
-- Publishcontrole slaagt met bestaande waarschuwingen buiten deze story. De simulator-tests slagen 5/5; van de unit-tests slagen 147/148. Alleen de bestaande, ongerelateerde `OwnerRecoveryServiceTests.RestoreWithBackupCode_Succeeds_WhenCorrect` blijft rood.
-- `master` is op de Raspberry Pi uitgerold. Op de Samsung-telefoons van Roelof en Carla is de geïntegreerde scanflow via HTTPS in Edge en Chrome geslaagd, inclusief QR-codes en verschillende productbarcodes.
-- De webapp en login zijn via HTTP gecontroleerd. Op Roelofs telefoon moest eenmaal een oude browsercookie worden gewist. Op Carla's telefoon is de Caddy-root-CA geïnstalleerd en werkte de HTTPS-route zonder afwijkingen.
-- Alle acceptatiecriteria van `PILOT-SCAN-01` zijn op 2026-06-09 behaald; de story is afgerond.
+- `PILOT-SCAN-01` — scan proof-of-concept, handmatig geaccepteerd op 2026-06-09.
+- `PILOT-AUTH-01` — lokale Owner/Crew-accounts, handmatig geaccepteerd op 2026-06-17.
+- `PILOT-LOC-01` — opslaggebieden en opslaglocaties, geaccepteerd op 2026-06-18.
+- `PILOT-LOC-02` — locatie-QR genereren, koppelen en openen, geaccepteerd op 2026-06-19.
+- `PILOT-LOC-03` — QR-tag printen en PNG exporteren, geaccepteerd op 2026-06-19.
+- `PILOT-LOC-04` — tokenvervanging, tagoverzicht en opslagnavigatie, geaccepteerd op 2026-06-19.
 
 ## Niet-doelen voor deze pilot
 

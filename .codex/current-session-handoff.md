@@ -16,28 +16,13 @@ Updated: 2026-06-19.
 
 ## Actieve release
 
-De leidende release is de **BootManager Holiday Pilot 2026** voor drie weken praktisch
-gebruik op Linde door Roelof en Carla:
+De leidende release is de **BootManager Holiday Pilot 2026**.
 
 - bron: `.docs/releases/holiday-pilot-2026.md`;
-- `PILOT-SCAN-01` is Done en op de Raspberry Pi en beide Samsung-telefoons geaccepteerd;
-- `PILOT-AUTH-01` is op 2026-06-17 technisch gecontroleerd en handmatig
-  geaccepteerd;
-- `PILOT-LOC-01` is op 2026-06-18 technisch gecontroleerd en handmatig geaccepteerd;
-  persistent gebieds- en locatiebeheer, Owner/Crew-detailtoegang en migratiebewijs zijn
-  gereed;
-- `PILOT-LOC-02` is op 2026-06-19 technisch gecontroleerd en handmatig geaccepteerd;
-  stabiele locatie-QR-tokens, scanrouting en Owner-only koppelen van onbekende
-  BootManager-QR's zijn gereed;
-- `PILOT-LOC-03` is op 2026-06-19 technisch gecontroleerd en handmatig geaccepteerd;
-  Owner-only QR-tagpagina's, compacte 5x5 cm printweergave, QRCoder-rendering via een
-  vervangbare abstraction en scanbare PNG-download met locatienaam zijn gereed;
-- `PILOT-LOC-04` is op 2026-06-19 technisch gecontroleerd en handmatig geaccepteerd;
-  Owner-only tokenvervanging, tagstatusbeheer, tagoverzicht en directe navigatie via
-  hoofdmenu `Opslag` met `Locaties` en `Tagoverzicht` zijn gereed;
-- tijdens acceptatie zijn twee smalle fixes door Codex toegevoegd: `/_framework`
-  toestaan in de Crew-PCR-gate en open Blazor-sessies periodiek valideren tegen
-  `CredentialVersion`.
+- status: actief en leidend voor de eerstvolgende ontwikkelperiode;
+- afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
+  `PILOT-LOC-03`, `PILOT-LOC-04`;
+- actuele focus: inventory-vervolg vanaf `PILOT-INV-01`.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
@@ -50,17 +35,17 @@ productcategorieën en productbarcodes.
 
 Laatste verificatie op 2026-06-19:
 
-- handmatige acceptatie van `PILOT-LOC-04` geslaagd: tagoverzicht en tokenvervanging
-  werken, oude tokens worden ongeldig, nieuwe tokens openen de locatie, en de
-  opslagnavigatie loopt nu uitsluitend via het Owner-only hoofdmenu `Opslag`;
-- gerichte storage/navigation unit-tests: 20/20 voor de laatste navigatiecheck en
-  eerder 138/138 voor de bredere storage/tag suite;
-- gerichte storage-integratietests voor tokenvervanging/migratie: geslaagd;
-- `dotnet build BootManager.sln --no-restore`: geslaagd; bestaande repositorybrede
-  baseline warnings buiten deze story blijven aanwezig;
+- handmatige acceptatie van `PILOT-LOC-04`: geslaagd;
+- gerichte storychecks, build en diffcheck: geslaagd;
 - `git diff --check`: geslaagd.
 - PR #93 is op 2026-06-19 gemerged; lokale `master` is fast-forward bijgewerkt tot
   mergecommit `4a610da`.
+
+## Niet-standaard context
+
+Lees `.codex/current-session-deferred-context.md` alleen wanneer historische
+pilotdetails, scan-/QR-grondslagen, auth-/storage-samenvattingen, baseline-teststatus,
+Raspberry Pi-/runtimecontext of post-vakantie vervolgvragen concreet relevant zijn.
 
 ## Documentatie
 
@@ -80,4 +65,5 @@ remote branch gepusht, tenzij de gebruiker expliciet anders vraagt of dit onveil
 
 Houd dit bestand als actuele momentopname. Bewaar alleen branchstatus, actieve release,
 blockers, relevante productstatus en eerstvolgende actie. Historische implementatie-,
-test-, PR- en acceptatiedetails horen in git en de release- of epicdocumentatie.
+test-, PR- en acceptatiedetails horen in git, de release- of epicdocumentatie of
+`.codex/current-session-deferred-context.md`.
