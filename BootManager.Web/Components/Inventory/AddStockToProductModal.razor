@@ -1,0 +1,168 @@
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Services
+@inject IStockService StockService
+@inject IStorageService StorageService
+@inject NavigationManager NavigationManager
+
+<div class="modal d-block" style="display: block; background-color: rgba(0, 0, 0, 0.5);">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Voorraad toevoegen</h5>
+                <button type="button" class="btn-close" @onclick="OnClose"></button>
+            </div>
+            <div class="modal-body">
+                @if (_errorMessage != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                <div class="alert alert-info mb-3">
+                    <strong>Product:</strong> @_product?.Name
+                    @if (!string.IsNullOrEmpty(_product?.Code?.Value))
+                    {
+                        <span class="badge bg-secondary ms-2">@_product.Code.Value</span>
+                    }
+                </div>
+
+                @if (_showExpectedLocation && _expectedLocation != null)
+                {
+                    <div class="alert alert-info mb-3">
+                        <strong>Verwachte locatie:</strong><br />
+                        @_expectedLocation.StorageAreaName - @_expectedLocation.StorageLocationName
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Opslaglocatie *</label>
+                    <select class="form-select" @bind="_selectedLocationId">
+                        <option value="">-- Selecteer locatie --</option>
+                        @if (_availableLocations != null)
+                        {
+                            @foreach (var location in _availableLocations)
+                            {
+                                <option value="@location.Id">
+                                    @location.AreaName - @location.LocationName
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Hoeveelheid *</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" step="0.01"
+                               @bind="_quantity" placeholder="0" />
+                        <span class="input-group-text">@_product?.DefaultUnitName</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="OnClose">Sluiten</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveStock"
+                        disabled="@(string.IsNullOrEmpty(_selectedLocationId) || _quantity <= 0)">
+                    Voorraad toevoegen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ProductDto? Product { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnStockAdded { get; set; }
+
+    private ProductDto? _product;
+    private string? _selectedLocationId;
+    private decimal _quantity = 0;
+    private string? _errorMessage = null;
+    private List<StorageLocationOverviewDto>? _availableLocations;
+    private StockDto? _expectedLocation;
+    private bool _showExpectedLocation = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _product = Product;
+        await LoadLocationsAsync();
+        await LoadExpectedLocationAsync();
+    }
+
+    private async Task LoadLocationsAsync()
+    {
+        try
+        {
+            _availableLocations = (await StorageService.GetAllLocationsOverviewAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout bij laden van locaties: " + ex.Message;
+        }
+    }
+
+    private async Task LoadExpectedLocationAsync()
+    {
+        if (_product == null)
+            return;
+
+        try
+        {
+            var result = await StockService.GetExpectedLocationForProductAsync(_product.Id);
+            if (result.Success && result.Data != null)
+            {
+                _expectedLocation = result.Data;
+                _showExpectedLocation = true;
+                _selectedLocationId = result.Data.StorageLocationId.ToString();
+            }
+        }
+        catch
+        {
+            // If expected location loading fails, continue without it
+        }
+    }
+
+    private async Task SaveStock()
+    {
+        if (_product == null || string.IsNullOrEmpty(_selectedLocationId) || _quantity <= 0)
+        {
+            _errorMessage = "Onvolledig formulier.";
+            return;
+        }
+
+        if (!Guid.TryParse(_selectedLocationId, out var locationId))
+        {
+            _errorMessage = "Ongeldig locatie-id.";
+            return;
+        }
+
+        try
+        {
+            var result = await StockService.AddOrIncrementStockAsync(
+                _product.Id, locationId, _quantity);
+
+            if (result.Success)
+            {
+                await OnStockAdded.InvokeAsync(locationId);
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Fout bij opslaan van voorraad.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout bij opslaan: " + ex.Message;
+        }
+    }
+}

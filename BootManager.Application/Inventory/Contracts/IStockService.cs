@@ -49,4 +49,16 @@ public interface IStockService
     /// </summary>
     Task<InventoryOperationResult<IReadOnlyList<StockDto>>> GetAlternativeLocationsForProductAsync(
         Guid productId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Haalt alle actieve voorraadregels voor een product op (waarbij Quantity > 0).
+    /// </summary>
+    Task<InventoryOperationResult<IReadOnlyList<StockDto>>> GetActiveStocksByProductAsync(
+        Guid productId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Haalt de verwachte (laatst gebruikte) locatie voor een product op, zelfs als daar geen actieve voorraad meer is.
+    /// </summary>
+    Task<InventoryOperationResult<StockDto>> GetExpectedLocationForProductAsync(
+        Guid productId, CancellationToken ct = default);
 }

@@ -90,12 +90,13 @@
   - **Verificatie:** gerichte `ScanComponentTests` groen, solution build groen en handmatige acceptatie door gebruiker geslaagd.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-INV-04 product terugvinden via scan of zoeken**
-  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+- [x] **Holiday Pilot 2026 — PILOT-INV-04 product terugvinden via scan of zoeken**
+  - **Status 2026-06-20:** geïmplementeerd, technisch gecontroleerd en handmatig geaccepteerd.
   - **Doel:** product snel terugvinden via scannen of handmatig zoeken en direct de relevante locatie(s) tonen.
   - **Kern:** scan start vanuit `Scannen`; fallback via `Voorraadbeheer > Producten`; zoeken werkt op naam en omschrijving, hoofdletterongevoelig en met deelmatches.
-  - **Belangrijk:** bij één actieve locatie opent direct de locatiepagina; bij meerdere locaties verschijnt een lijst met gebied, locatienaam, hoeveelheid en eenheid; zonder actieve voorraad kan een verwachte locatie nog getoond worden.
+  - **Belangrijk:** bij één actieve locatie opent direct de locatiepagina; bij meerdere locaties verschijnt een lijst met gebied, locatienaam, hoeveelheid en eenheid; zonder actieve voorraad kan een verwachte locatie nog getoond worden en opent `Voorraad toevoegen` nu direct een compacte modal voor locatiekeuze en hoeveelheid.
   - **Buiten scope:** dashboard-zoekbalk, voorraadmutaties vanuit de zoekflow en geavanceerde fuzzy matching.
+  - **Verificatie:** gerichte `ScanComponentTests`, `ProductsComponentTests`, `AddStockToProductModalTests` en regressiechecks voor `StorageLocationDetailsWithStock` groen; build en diffcheck groen; handmatige acceptatie door gebruiker geslaagd.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-INV-05 voorraad muteren en eenvoudige historie**

@@ -2,35 +2,162 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
 @using BootManager.Application.Inventory.Contracts
 @using BootManager.Application.Inventory.DTOs
+@using BootManager.Web.Components.Inventory
 @inject IProductService ProductService
 @inject IProductCategoryService CategoryService
 @inject IUnitService UnitService
 @inject IStockService StockService
+@inject NavigationManager NavigationManager
 @inject ILogger<Products> Logger
 
 <PageTitle>Producten</PageTitle>
 
 <h3>Producten</h3>
 
+@if (_showAddStockModal && _selectedSearchProduct != null)
+{
+    <AddStockToProductModal
+        Product="_selectedSearchProduct"
+        OnClose="CloseAddStockModal"
+        OnStockAdded="HandleAddStockSuccess">
+    </AddStockToProductModal>
+}
+
 @if (!_editMode)
 {
     @* List view *@
-    @if (_showArchived)
-    {
-        <button class="btn btn-secondary btn-sm mb-3" @onclick="() => _showArchived = false">
-            <i class="fas fa-eye-slash"></i> Actieve weergeven
-        </button>
-    }
-    else
-    {
-        <button class="btn btn-secondary btn-sm mb-3" @onclick="() => _showArchived = true">
-            <i class="fas fa-archive"></i> Gearchiveerde weergeven
-        </button>
-    }
+    <div class="mb-3">
+        @if (!_searchMode)
+        {
+            <div class="d-flex gap-2 mb-3">
+                @if (_showArchived)
+                {
+                    <button class="btn btn-secondary btn-sm" @onclick="() => _showArchived = false">
+                        <i class="fas fa-eye-slash"></i> Actieve weergeven
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-secondary btn-sm" @onclick="() => _showArchived = true">
+                        <i class="fas fa-archive"></i> Gearchiveerde weergeven
+                    </button>
+                }
 
-    <button class="btn btn-primary mb-3" @onclick="OpenCreateForm">
-        <i class="fas fa-plus"></i> Nieuw product
-    </button>
+                <button class="btn btn-primary btn-sm" @onclick="OpenCreateForm">
+                    <i class="fas fa-plus"></i> Nieuw product
+                </button>
+
+                <button class="btn btn-outline-secondary btn-sm" @onclick="OpenSearchMode">
+                    <i class="fas fa-search"></i> Zoeken
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="Zoeken op naam of omschrijving…"
+                       @bind="_searchTerm"
+                       @bind:event="oninput"
+                       @onkeydown="HandleSearchKeyDown" />
+                <button class="btn btn-outline-secondary" @onclick="PerformSearch">Zoeken</button>
+                <button class="btn btn-outline-secondary" @onclick="CloseSearchMode">Sluiten</button>
+            </div>
+
+            @if (_searchResults != null)
+            {
+                @if (_searchResults.Count > 0)
+                {
+                    <div class="list-group">
+                        @foreach (var product in _searchResults)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectProductFromSearch(product)">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>@product.Name</strong>
+                                        @if (!string.IsNullOrEmpty(product.Description))
+                                        {
+                                            <br />
+                                            <small class="text-muted">@(product.Description.Length > 80 ? product.Description.Substring(0, 80) + "…" : product.Description)</small>
+                                        }
+                                        <br />
+                                        @if (_productSearchLocations.TryGetValue(product.Id, out var locations) && locations != null && locations.Count > 0)
+                                        {
+                                            <small class="text-muted">Locaties: @string.Join(", ", locations.Select(l => $"{l.StorageAreaName} - {l.StorageLocationName}"))</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">Geen actieve voorraad</small>
+                                        }
+                                    </div>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(_searchTerm))
+                {
+                    <div class="alert alert-info">Geen producten gevonden.</div>
+                }
+            }
+
+            @if (_showSearchFindingFlow && _selectedSearchProduct != null)
+            {
+                <div class="card mt-3 p-3">
+                    @if (_searchFoundLocations != null && _searchFoundLocations.Count > 0)
+                    {
+                        @if (_searchFoundLocations.Count == 1)
+                        {
+                            <div class="alert alert-info">
+                                <h6>Product gevonden op één locatie</h6>
+                                <strong>@_selectedSearchProduct.Name</strong><br/>
+                                Locatie: @_searchFoundLocations[0].StorageAreaName - @_searchFoundLocations[0].StorageLocationName<br/>
+                                <small class="text-muted">Hoeveelheid: @_searchFoundLocations[0].Quantity @_searchFoundLocations[0].DefaultUnitName</small>
+                                <br/>
+                                <button class="btn btn-sm btn-primary mt-2" @onclick="() => NavigateToSearchFoundLocation(0)">Naar locatie</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div>
+                                <h6>Product gevonden op meerdere locaties</h6>
+                                <strong>@_selectedSearchProduct.Name</strong>
+                                <div class="list-group mt-2">
+                                    @foreach (var location in _searchFoundLocations)
+                                    {
+                                        <button type="button" class="list-group-item list-group-item-action"
+                                                @onclick="() => NavigateToLocation(location.StorageLocationId)">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>@location.StorageAreaName - @location.StorageLocationName</strong>
+                                                <span class="badge bg-primary">@location.Quantity @location.DefaultUnitName</span>
+                                            </div>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <h6>Geen actieve voorraad</h6>
+                            <strong>@_selectedSearchProduct.Name</strong> is bekend maar momenteel niet op voorraad.
+                            @if (_searchExpectedLocation != null)
+                            {
+                                <div class="alert alert-info mt-2">
+                                    <strong>Verwachte locatie:</strong><br/>
+                                    @_searchExpectedLocation.StorageAreaName - @_searchExpectedLocation.StorageLocationName
+                                </div>
+                            }
+                            <button class="btn btn-sm btn-primary" @onclick="NavigateToAddStock">
+                                Voorraad toevoegen
+                            </button>
+                        </div>
+                    }
+                    <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="CloseSearchFindingFlow">Sluiten</button>
+                </div>
+            }
+        }
+    </div>
 
     @if (_errorMessage != null)
     {
@@ -340,6 +467,14 @@ else
     private List<UnitDto> _activeUnits = new();
     private bool _showArchived = false;
     private bool _editMode = false;
+    private bool _searchMode = false;
+    private string _searchTerm = "";
+    private List<ProductDto>? _searchResults;
+    private Dictionary<Guid, List<StockDto>?> _productSearchLocations = new();
+    private bool _showSearchFindingFlow = false;
+    private ProductDto? _selectedSearchProduct;
+    private List<StockDto>? _searchFoundLocations;
+    private StockDto? _searchExpectedLocation;
     private ProductDto _editingProduct = new();
     private string? _errorMessage;
     private string? _formError;
@@ -361,6 +496,7 @@ else
 
     private HashSet<Guid> _expandedProductIds = new();
     private Dictionary<Guid, List<BootManager.Application.Inventory.DTOs.StockDto>?> _productStocks = new();
+    private bool _showAddStockModal = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -727,6 +863,133 @@ else
                 _productStocks[productId] = result.Success ? result.Data?.ToList() : null;
             }
         }
+    }
+
+    private void OpenSearchMode()
+    {
+        _searchMode = true;
+        _searchTerm = "";
+        _searchResults = null;
+        _productSearchLocations.Clear();
+        StateHasChanged();
+    }
+
+    private void CloseSearchMode()
+    {
+        _searchMode = false;
+        _searchTerm = "";
+        _searchResults = null;
+        _productSearchLocations.Clear();
+        StateHasChanged();
+    }
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _searchResults = new();
+            return;
+        }
+
+        try
+        {
+            _searchResults = (await ProductService.SearchByNameOrDescriptionAsync(_searchTerm)).ToList();
+
+            foreach (var product in _searchResults)
+            {
+                if (!_productSearchLocations.ContainsKey(product.Id))
+                {
+                    var activeStocksResult = await StockService.GetActiveStocksByProductAsync(product.Id);
+                    _productSearchLocations[product.Id] = activeStocksResult.Success ? activeStocksResult.Data?.ToList() : null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij zoeken");
+            _errorMessage = "Fout bij zoeken.";
+        }
+    }
+
+    private async Task SelectProductFromSearch(ProductDto product)
+    {
+        // Load finding flow data for the product
+        _selectedSearchProduct = product;
+        _searchFoundLocations = null;
+        _searchExpectedLocation = null;
+
+        var activeStocksResult = await StockService.GetActiveStocksByProductAsync(product.Id);
+        _searchFoundLocations = activeStocksResult.Success && activeStocksResult.Data != null
+            ? activeStocksResult.Data.ToList()
+            : new();
+
+        if (_searchFoundLocations.Count == 1)
+        {
+            NavigationManager.NavigateTo($"/storage/locations/{_searchFoundLocations[0].StorageLocationId}");
+            return;
+        }
+
+        if (_searchFoundLocations.Count == 0)
+        {
+            var expectedResult = await StockService.GetExpectedLocationForProductAsync(product.Id);
+            _searchExpectedLocation = expectedResult.Success ? expectedResult.Data : null;
+        }
+
+        _showSearchFindingFlow = true;
+        StateHasChanged();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await PerformSearch();
+        }
+    }
+
+    private void CloseSearchFindingFlow()
+    {
+        _showSearchFindingFlow = false;
+        _selectedSearchProduct = null;
+        _searchFoundLocations = null;
+        _searchExpectedLocation = null;
+        StateHasChanged();
+    }
+
+    private void NavigateToSearchFoundLocation(int index)
+    {
+        if (_searchFoundLocations != null && index >= 0 && index < _searchFoundLocations.Count)
+        {
+            NavigationManager.NavigateTo($"/storage/locations/{_searchFoundLocations[index].StorageLocationId}");
+        }
+    }
+
+    private void NavigateToLocation(Guid locationId)
+    {
+        NavigationManager.NavigateTo($"/storage/locations/{locationId}");
+    }
+
+    private void NavigateToAddStock()
+    {
+        _showAddStockModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseAddStockModal()
+    {
+        _showAddStockModal = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleAddStockSuccess(Guid locationId)
+    {
+        _showAddStockModal = false;
+        _showSearchFindingFlow = false;
+        _selectedSearchProduct = null;
+        _searchFoundLocations = null;
+        _searchExpectedLocation = null;
+        StateHasChanged();
+        NavigationManager.NavigateTo($"/storage/locations/{locationId}");
     }
 
     private string GetIconClass(string iconKey) => iconKey switch

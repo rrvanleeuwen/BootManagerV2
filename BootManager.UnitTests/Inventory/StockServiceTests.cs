@@ -477,4 +477,90 @@ public class StockServiceTests
         Assert.NotNull(result.Data);
         Assert.Empty(result.Data);
     }
+
+    [Fact]
+    public async Task GetActiveStocksByProductAsync_ReturnsOnlyPositiveQuantity_Stocks()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var locationId1 = Guid.NewGuid();
+        var locationId2 = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location1 = StorageLocation.Create(areaId, "Location1", null);
+        var location2 = StorageLocation.Create(areaId, "Location2", null);
+
+        var activeStock = Stock.Create(productId, locationId1, 10);
+        var zeroStock = Stock.Create(productId, locationId2, 0);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, default))
+            .ReturnsAsync(unit);
+        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(new List<Stock> { activeStock, zeroStock });
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId1, default))
+            .ReturnsAsync(location1);
+        _areaRepoMock.Setup(r => r.GetByIdAsync(areaId, default))
+            .ReturnsAsync(area);
+
+        var result = await _service.GetActiveStocksByProductAsync(productId);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Single(result.Data);
+        Assert.Equal(10, result.Data.First().Quantity);
+    }
+
+    [Fact]
+    public async Task GetExpectedLocationForProductAsync_ReturnsMostRecentStock_EvenIfZeroQuantity()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location = StorageLocation.Create(areaId, "TestLocation", null);
+
+        var stock = Stock.Create(productId, locationId, 0);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, default))
+            .ReturnsAsync(unit);
+        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(new List<Stock> { stock });
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(location);
+        _areaRepoMock.Setup(r => r.GetByIdAsync(areaId, default))
+            .ReturnsAsync(area);
+
+        var result = await _service.GetExpectedLocationForProductAsync(productId);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Equal(locationId, result.Data.StorageLocationId);
+        Assert.Equal("TestLocation", result.Data.StorageLocationName);
+    }
+
+    [Fact]
+    public async Task GetExpectedLocationForProductAsync_ReturnsNotFound_WhenProductHasNoStockHistory()
+    {
+        var productId = Guid.NewGuid();
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(Product.Create("TestProduct", null, Guid.NewGuid()));
+        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(new List<Stock>());
+
+        var result = await _service.GetExpectedLocationForProductAsync(productId);
+
+        Assert.False(result.Success);
+    }
 }

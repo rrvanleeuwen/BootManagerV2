@@ -26,4 +26,10 @@ internal class NullStockService : IStockService
 
     public Task<InventoryOperationResult<IReadOnlyList<StockDto>>> GetAlternativeLocationsForProductAsync(Guid productId, CancellationToken ct = default)
         => Task.FromResult(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+    public Task<InventoryOperationResult<IReadOnlyList<StockDto>>> GetActiveStocksByProductAsync(Guid productId, CancellationToken ct = default)
+        => Task.FromResult(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+    public Task<InventoryOperationResult<StockDto>> GetExpectedLocationForProductAsync(Guid productId, CancellationToken ct = default)
+        => Task.FromResult(InventoryOperationResult<StockDto>.NotFound());
 }

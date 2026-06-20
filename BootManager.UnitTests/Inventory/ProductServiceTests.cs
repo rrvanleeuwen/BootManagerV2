@@ -221,4 +221,108 @@ public class ProductServiceTests
         Assert.Equal("4335619174771", result.Data.Code.Value);
         Assert.Equal("barcode", result.Data.Code.Format);
     }
+
+    [Fact]
+    public async Task SearchByNameOrDescriptionAsync_FindsProductByName_CaseInsensitive()
+    {
+        // Arrange
+        var unitId = Guid.NewGuid();
+        var product1 = Product.Create("Appel", "Rode appels", unitId);
+        var product2 = Product.Create("Banaan", "Gele fruit", unitId);
+        var unit = Unit.Create("stuks");
+
+        _productRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Product, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Product> { product1, product2 });
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(unit);
+        _mappingRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<ProductCategoryMapping, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductCategoryMapping?)null);
+        _codeRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<ProductCode, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductCode?)null);
+
+        // Act
+        var result = await _service.SearchByNameOrDescriptionAsync("appel");
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Appel", result.First().Name);
+    }
+
+    [Fact]
+    public async Task SearchByNameOrDescriptionAsync_FindsProductByDescription_CaseInsensitive()
+    {
+        // Arrange
+        var unitId = Guid.NewGuid();
+        var product1 = Product.Create("Appel", "Rode appels", unitId);
+        var product2 = Product.Create("Banaan", "Gele fruit", unitId);
+        var unit = Unit.Create("stuks");
+
+        _productRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Product, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Product> { product1, product2 });
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(unit);
+        _mappingRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<ProductCategoryMapping, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductCategoryMapping?)null);
+        _codeRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<ProductCode, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductCode?)null);
+
+        // Act
+        var result = await _service.SearchByNameOrDescriptionAsync("RODE");
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Appel", result.First().Name);
+    }
+
+    [Fact]
+    public async Task SearchByNameOrDescriptionAsync_ReturnMultipleMatches_WhenMultipleProductsMatch()
+    {
+        // Arrange
+        var unitId = Guid.NewGuid();
+        var product1 = Product.Create("Appel", "Rode appels", unitId);
+        var product2 = Product.Create("Appelsin", "Oranje fruit", unitId);
+        var product3 = Product.Create("Banaan", "Gele fruit", unitId);
+        var unit = Unit.Create("stuks");
+
+        _productRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Product, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Product> { product1, product2, product3 });
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(unit);
+        _mappingRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<ProductCategoryMapping, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductCategoryMapping?)null);
+        _codeRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<ProductCode, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductCode?)null);
+
+        // Act
+        var result = await _service.SearchByNameOrDescriptionAsync("appel");
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, p => p.Name == "Appel");
+        Assert.Contains(result, p => p.Name == "Appelsin");
+    }
+
+    [Fact]
+    public async Task SearchByNameOrDescriptionAsync_ReturnsEmpty_WhenNoMatches()
+    {
+        // Arrange
+        var unitId = Guid.NewGuid();
+        var product1 = Product.Create("Appel", "Rode appels", unitId);
+        var unit = Unit.Create("stuks");
+
+        _productRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Product, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Product> { product1 });
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(unit);
+        _mappingRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<ProductCategoryMapping, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductCategoryMapping?)null);
+        _codeRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<ProductCode, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductCode?)null);
+
+        // Act
+        var result = await _service.SearchByNameOrDescriptionAsync("banaan");
+
+        // Assert
+        Assert.Empty(result);
+    }
 }
