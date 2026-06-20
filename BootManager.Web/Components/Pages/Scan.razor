@@ -8,6 +8,7 @@
 @using BootManager.Application.Inventory.Contracts
 @using BootManager.Application.Inventory.DTOs
 @using Microsoft.AspNetCore.Components.Authorization
+@using BootManager.Web.Components.Inventory
 
 @inject IJSRuntime Js
 @inject IStorageService StorageService
@@ -147,9 +148,79 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     </div>
 }
 
+@if (_showAddStockModal && _currentProduct != null)
+{
+    <AddStockToProductModal
+        Product="_currentProduct"
+        OnClose="CloseAddStockModal"
+        OnStockAdded="HandleAddStockSuccess">
+    </AddStockToProductModal>
+}
+
 @if (_status is ScanStatus.Result or ScanStatus.ManualEntry)
 {
-    @if (_inventoryFlowActive)
+    @if (_productFindingFlowActive)
+    {
+        <div class="scan-finding-flow">
+            @if (_productFindingFlowState == ProductFindingFlowState.ShowingLocationOptions)
+            {
+                @if (_foundLocations != null && _foundLocations.Count > 0)
+                {
+                    @if (_foundLocations.Count == 1)
+                    {
+                        <div class="card p-3 alert-info">
+                            <h6>Product gevonden op één locatie</h6>
+                            <p class="text-muted mb-3">@_currentProduct?.Name</p>
+                            <div class="mb-3">
+                                <strong>Locatie:</strong><br/>
+                                @_foundLocations[0].StorageAreaName - @_foundLocations[0].StorageLocationName<br/>
+                                <small class="text-muted">Hoeveelheid: @_foundLocations[0].Quantity @_foundLocations[0].DefaultUnitName</small>
+                            </div>
+                            <button class="btn btn-sm btn-primary me-2" @onclick="NavigateToFoundLocation">Naar locatie</button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="CancelProductFinding">Sluiten</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card p-3">
+                            <h6>Product gevonden op meerdere locaties</h6>
+                            <p class="text-muted mb-3">@_currentProduct?.Name</p>
+                            <div class="list-group mb-3">
+                                @foreach (var location in _foundLocations)
+                                {
+                                    <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectLocationFromFinding(location)">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>@location.StorageAreaName - @location.StorageLocationName</strong>
+                                            <span class="badge bg-primary">@location.Quantity @location.DefaultUnitName</span>
+                                        </div>
+                                    </button>
+                                }
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="CancelProductFinding">Sluiten</button>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="card p-3 alert-warning">
+                        <h6>Geen actieve voorraad gevonden</h6>
+                        <p class="text-muted mb-3">@_currentProduct?.Name</p>
+                        <p>Dit product is bekend maar momenteel niet op voorraad.</p>
+                        @if (_expectedLocation != null)
+                        {
+                            <div class="alert alert-info mt-3">
+                                <strong>Verwachte locatie:</strong><br/>
+                                @_expectedLocation.StorageAreaName - @_expectedLocation.StorageLocationName
+                            </div>
+                        }
+                        <button class="btn btn-sm btn-primary" @onclick="RequestAddStock">Voorraad toevoegen</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="CancelProductFinding">Sluiten</button>
+                    </div>
+                }
+            }
+        </div>
+    }
+    else if (_inventoryFlowActive)
     {
         <div class="scan-inventory-flow">
             @if (_inventoryFlowState == InventoryFlowState.UnknownProductCode)
@@ -417,6 +488,13 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         LinkingCodeToProduct
     }
 
+    private enum ProductFindingFlowState
+    {
+        ShowingLocationOptions,
+        ShowingNoActiveStock,
+        RequestingAddStock
+    }
+
     /// <summary>Eenvoudige DTO voor een beschikbare video-input, gevuld via JS-interop.</summary>
     public sealed class CameraInfo
     {
@@ -485,6 +563,15 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
 
     // Location scanning context: true when we're in inventory flow selecting a location via scan
     private bool _isLocationScanningForInventory = false;
+
+    // Product finding flow state
+    private bool _productFindingFlowActive = false;
+    private ProductFindingFlowState _productFindingFlowState = ProductFindingFlowState.ShowingLocationOptions;
+    private List<StockDto>? _foundLocations;
+    private StockDto? _expectedLocation;
+
+    // Add stock modal state
+    private bool _showAddStockModal = false;
 
     // Geselecteerde camera-ID; null = automatische achtercameravoorkeur via facingMode.
     // Blijft behouden over scan-herstarts tijdens de levensduur van het component.
@@ -866,7 +953,7 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         var productResult = await ProductService.GetByCodeValueAsync(value);
         if (productResult.Success && productResult.Data != null)
         {
-            await StartInventoryFlow(productResult.Data);
+            await StartProductFindingFlow(productResult.Data);
             return;
         }
 
@@ -1116,6 +1203,82 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
             newProduct.Code = codeResult.Data;
         }
         await StartInventoryFlow(newProduct);
+    }
+
+    private async Task StartProductFindingFlow(ProductDto product)
+    {
+        _currentProduct = product;
+        _productFindingFlowState = ProductFindingFlowState.ShowingLocationOptions;
+        _foundLocations = null;
+        _expectedLocation = null;
+        _errorMessage = null;
+
+        var activeStocksResult = await StockService.GetActiveStocksByProductAsync(product.Id);
+        _foundLocations = activeStocksResult.Success && activeStocksResult.Data != null
+            ? activeStocksResult.Data.ToList()
+            : new();
+
+        if (_foundLocations.Count == 1)
+        {
+            NavigationManager.NavigateTo($"/storage/locations/{_foundLocations[0].StorageLocationId}");
+            return;
+        }
+
+        if (_foundLocations.Count == 0)
+        {
+            var expectedResult = await StockService.GetExpectedLocationForProductAsync(product.Id);
+            _expectedLocation = expectedResult.Success ? expectedResult.Data : null;
+        }
+
+        _productFindingFlowActive = true;
+        StateHasChanged();
+    }
+
+    private void SelectLocationFromFinding(StockDto location)
+    {
+        NavigationManager.NavigateTo($"/storage/locations/{location.StorageLocationId}");
+    }
+
+    private void NavigateToFoundLocation()
+    {
+        if (_foundLocations?.Count == 1)
+        {
+            NavigationManager.NavigateTo($"/storage/locations/{_foundLocations[0].StorageLocationId}");
+        }
+    }
+
+    private void RequestAddStock()
+    {
+        _showAddStockModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseAddStockModal()
+    {
+        _showAddStockModal = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleAddStockSuccess(Guid locationId)
+    {
+        _showAddStockModal = false;
+        _productFindingFlowActive = false;
+        _currentProduct = null;
+        _foundLocations = null;
+        _expectedLocation = null;
+        _errorMessage = null;
+        StateHasChanged();
+        NavigationManager.NavigateTo($"/storage/locations/{locationId}");
+    }
+
+    private void CancelProductFinding()
+    {
+        _productFindingFlowActive = false;
+        _currentProduct = null;
+        _foundLocations = null;
+        _expectedLocation = null;
+        _errorMessage = null;
+        StateHasChanged();
     }
 
     private Task NavigateToLocation()

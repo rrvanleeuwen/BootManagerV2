@@ -300,6 +300,32 @@ public class ProductService : IProductService
         return !exists;
     }
 
+    public async Task<IReadOnlyList<ProductDto>> SearchByNameOrDescriptionAsync(string searchTerm, CancellationToken ct = default)
+    {
+        var trimmedSearch = searchTerm?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(trimmedSearch))
+            return new List<ProductDto>().AsReadOnly();
+
+        var normalizedSearch = trimmedSearch.ToLowerInvariant();
+
+        var allActiveProducts = await _productRepo.ListAsync(p => p.ArchivedAt == null, ct);
+
+        var matchedProducts = new List<ProductDto>();
+        foreach (var product in allActiveProducts)
+        {
+            var nameLower = product.Name.ToLowerInvariant();
+            var descriptionLower = (product.Description ?? string.Empty).ToLowerInvariant();
+
+            if (nameLower.Contains(normalizedSearch) || descriptionLower.Contains(normalizedSearch))
+            {
+                var dto = await MapToDtoAsync(product, ct);
+                matchedProducts.Add(dto);
+            }
+        }
+
+        return matchedProducts.AsReadOnly();
+    }
+
     public async Task<InventoryOperationResult<ProductDto>> GetByCodeValueAsync(string codeValue, CancellationToken ct = default)
     {
         var trimmedValue = codeValue?.Trim() ?? string.Empty;

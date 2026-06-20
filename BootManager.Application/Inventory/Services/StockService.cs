@@ -347,4 +347,72 @@ public class StockService : IStockService
 
         return InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(dtos.AsReadOnly());
     }
+
+    public async Task<InventoryOperationResult<IReadOnlyList<StockDto>>> GetActiveStocksByProductAsync(
+        Guid productId, CancellationToken ct = default)
+    {
+        var product = await _productRepo.GetByIdAsync(productId, ct);
+        if (product == null)
+            return InventoryOperationResult<IReadOnlyList<StockDto>>.Error("Product niet gevonden.");
+
+        var unit = await _unitRepo.GetByIdAsync(product.DefaultUnitId, ct);
+        if (unit == null)
+            return InventoryOperationResult<IReadOnlyList<StockDto>>.Error("Standaardeenheid niet gevonden.");
+
+        var stocks = await _stockRepo.ListAsync(
+            s => s.ProductId == productId && s.Quantity > 0, ct);
+
+        if (stocks.Count == 0)
+            return InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
+                new List<StockDto>().AsReadOnly());
+
+        var dtos = new List<StockDto>();
+        foreach (var stock in stocks)
+        {
+            var location = await _locationRepo.GetByIdAsync(stock.StorageLocationId, ct);
+            if (location != null)
+            {
+                var area = await _areaRepo.GetByIdAsync(location.StorageAreaId, ct);
+                if (area != null)
+                {
+                    dtos.Add(MapToDto(stock, product, location, area, unit));
+                }
+            }
+        }
+
+        return InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(dtos.AsReadOnly());
+    }
+
+    public async Task<InventoryOperationResult<StockDto>> GetExpectedLocationForProductAsync(
+        Guid productId, CancellationToken ct = default)
+    {
+        var product = await _productRepo.GetByIdAsync(productId, ct);
+        if (product == null)
+            return InventoryOperationResult<StockDto>.Error("Product niet gevonden.");
+
+        var unit = await _unitRepo.GetByIdAsync(product.DefaultUnitId, ct);
+        if (unit == null)
+            return InventoryOperationResult<StockDto>.Error("Standaardeenheid niet gevonden.");
+
+        var stocks = await _stockRepo.ListAsync(
+            s => s.ProductId == productId, ct);
+
+        if (stocks.Count == 0)
+            return InventoryOperationResult<StockDto>.NotFound();
+
+        var mostRecent = stocks.OrderByDescending(s => s.UpdatedAt).FirstOrDefault();
+        if (mostRecent == null)
+            return InventoryOperationResult<StockDto>.NotFound();
+
+        var location = await _locationRepo.GetByIdAsync(mostRecent.StorageLocationId, ct);
+        if (location == null)
+            return InventoryOperationResult<StockDto>.Error("Opslaglocatie niet gevonden.");
+
+        var area = await _areaRepo.GetByIdAsync(location.StorageAreaId, ct);
+        if (area == null)
+            return InventoryOperationResult<StockDto>.Error("Opslaggebied niet gevonden.");
+
+        return InventoryOperationResult<StockDto>.Ok(
+            MapToDto(mostRecent, product, location, area, unit));
+    }
 }

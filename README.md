@@ -15,15 +15,15 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[###########---------]` 56.3% | 16 |
+| Vakantiepilot 2026 | `[############--------]` 62.5% | 16 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
-| Legacy scope | `[######--------------]` 30.2% | 129 |
+| Legacy scope | `[######--------------]` 31% | 129 |
 
 ### Vakantiepilot 2026
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[###########---------]` 56.3% | 9 | 0 | 7 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-04 - Product terugvinden via scan of zoeken en locaties tonen |
+| `[############--------]` 62.5% | 10 | 0 | 6 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-05 - Voorraad muteren en eenvoudige historie |
 
 ### BootManagerV2 Epics
 
@@ -43,7 +43,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 |---|---:|---:|---:|---:|---:|---:|
 | Epic 0: Installatie & Authenticatie | `[####################]` 100% | 4 | 2 | 0 | 0 | 0 |
 | Epic 1: Bootbeheer & Gebruikersbeheer | `[###############-----]` 75% | 7 | 0 | 4 | 1 | 5 |
-| Epic 2: Inventarisbeheer | `[########------------]` 42.1% | 6 | 0 | 4 | 9 | 2 |
+| Epic 2: Inventarisbeheer | `[#########-----------]` 47.4% | 7 | 0 | 4 | 8 | 2 |
 | Epic 3: Passageplanning | `[--------------------]` 0% | 0 | 0 | 0 | 13 | 1 |
 | Epic 4: Documentbeheer | `[--------------------]` 0% | 0 | 0 | 0 | 12 | 1 |
 | Epic 5: Logboek | `[############--------]` 61.5% | 4 | 0 | 8 | 1 | 1 |

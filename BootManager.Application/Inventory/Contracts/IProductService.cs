@@ -53,4 +53,7 @@ public interface IProductService
 
     /// <summary>Haalt product op via code-waarde.</summary>
     Task<InventoryOperationResult<ProductDto>> GetByCodeValueAsync(string codeValue, CancellationToken ct = default);
+
+    /// <summary>Zoekt producten op catalogusniveau op naam en omschrijving, hoofdletterongevoelig.</summary>
+    Task<IReadOnlyList<ProductDto>> SearchByNameOrDescriptionAsync(string searchTerm, CancellationToken ct = default);
 }

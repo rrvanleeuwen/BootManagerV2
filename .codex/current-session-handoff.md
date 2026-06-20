@@ -10,9 +10,9 @@ Updated: 2026-06-20.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-inv-03-scan-inruimflow`.
-- `master` en `origin/master` staan nog op mergecommit `4a610da` voor `PILOT-LOC-04`.
-- `PILOT-INV-03` is lokaal geïmplementeerd, gericht getest en handmatig geaccepteerd; documentatie-, commit-, push- en PR-afronding lopen nu op de featurebranch.
+- Actieve branch: `codex/pilot-inv-04-product-terugvinden`.
+- `master` en `origin/master` lopen nog achter op de lokaal afgeronde inventory-vervolgstappen.
+- `PILOT-INV-04` is lokaal geïmplementeerd, gericht getest en handmatig geaccepteerd; documentatie-, commit-, push- en PR-afronding lopen nu op de featurebranch.
 
 ## Actieve release
 
@@ -21,18 +21,19 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
 - bron: `.docs/releases/holiday-pilot-2026.md`;
 - status: actief en leidend voor de eerstvolgende ontwikkelperiode;
 - afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
-  `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`;
-- actuele focus: administratieve afronding van `PILOT-INV-03`, daarna inventory-vervolg vanaf `PILOT-INV-04`.
+  `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
+  `PILOT-INV-04`;
+- actuele focus: administratieve afronding van `PILOT-INV-04`, daarna inventory-vervolg vanaf `PILOT-INV-05`.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-`PILOT-INV-03` is technisch gerealiseerd en door de gebruiker handmatig geaccepteerd.
+`PILOT-INV-04` is technisch gerealiseerd en door de gebruiker handmatig geaccepteerd.
 De documentatie wordt nu bijgewerkt, waarna commit, push en een draft PR volgen.
 
-Eerstvolgende inhoudelijke story na merge is `PILOT-INV-04` vanaf een schone actuele
+Eerstvolgende inhoudelijke story na merge is `PILOT-INV-05` vanaf een schone actuele
 `master`.
 
 Let op bij vervolg op inventory:
@@ -43,7 +44,9 @@ Let op bij vervolg op inventory:
 - scan-gestuurd inruimen via `Scannen` is aanwezig, inclusief locatievoorstel,
   onbekende-code-afhandeling, expliciete eenheidskeuze bij nieuw product en
   doorlopende scansessie;
-- apart terugvinden van producten via scan of zoeken blijft de eerstvolgende inventory-slice.
+- apart terugvinden van producten via scan of zoeken is aanwezig, inclusief directe
+  locatienavigatie, meervoudige locatielijst en een compacte modal voor
+  `Voorraad toevoegen` vanuit de geen-voorraad-situatie.
 
 ## Niet-standaard context
 
