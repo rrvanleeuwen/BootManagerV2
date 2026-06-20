@@ -141,7 +141,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 5. **PILOT-LOC-03** — **Done** — QR-tag printen en PNG exporteren.
 6. **PILOT-LOC-04** — **Done** — QR-token vervangen, tagoverzicht en opslagnavigatie.
 7. **PILOT-INV-01** — **Done** — Productcategorieën, producten en productbarcodes.
-8. **PILOT-INV-02** — **Gepland** — Taakgerichte voorraadbasis: product en locatie koppelen, hoeveelheid vastleggen en voorraad handmatig tonen/beheren.
+8. **PILOT-INV-02** — **Done** — Taakgerichte voorraadbasis: product en locatie koppelen, hoeveelheid vastleggen en voorraad handmatig tonen/beheren.
 9. **PILOT-INV-03** — **Gepland** — Scan-gestuurde inruimflow met locatievoorstel en handmatige fallback.
 10. **PILOT-INV-04** — **Gepland** — Product terugvinden via scan of zoeken en locaties tonen.
 11. **PILOT-INV-05** — **Gepland** — Verbruik, correcties en eenvoudige historie.
@@ -157,7 +157,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-INV-02` — Taakgerichte voorraadbasis per locatie.
+**Eerstvolgende story:** `PILOT-INV-03` — Scan-gestuurde inruimflow met locatievoorstel.
 
 ## Story-uitwerking en archief
 
@@ -166,117 +166,15 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Werk nieuwe volledige story-uitwerkingen eerst uit voor `PILOT-INV-02`,
-  `PILOT-INV-03` en `PILOT-INV-04`; voeg daarna alleen de eerstvolgende geplande
-  stories toe wanneer ze werkelijk aan de beurt zijn.
+- Houd als actieve inventory-uitwerkingen nu `PILOT-INV-03`, `PILOT-INV-04` en
+  `PILOT-INV-05` aan; voeg daarna alleen de eerstvolgende geplande stories toe
+  wanneer ze werkelijk aan de beurt zijn.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
 - Verplaats een story na afronding en administratieve controle naar het archief,
   zodat de dagelijkse context klein blijft maar de historie beschikbaar blijft.
 - Raadpleeg het archief alleen wanneer historische scope, acceptatie,
   implementatiestatus of legacy-impact opnieuw relevant is.
-
-### PILOT-INV-02 — Taakgerichte voorraadbasis per locatie
-
-**Storyzin**  
-Als Owner of Crew wil ik vanaf een locatiepagina voorraad aan die locatie kunnen
-toevoegen en aanvullen, zodat BootManager bruikbaar vastlegt wat waar ligt zonder mij
-door administratieve CRUD-schermen te dwingen.
-
-**Waarom deze slice nu**  
-Deze story maakt inventory voor het eerst praktisch bruikbaar door de catalogus uit
-`PILOT-INV-01` te verbinden aan echte opslaglocaties en hoeveelheden. De focus ligt op
-taakgericht vastleggen en tonen van actuele voorraad per locatie. Scan-gestuurde
-hoofdroutes, product-terugvinden via barcode en mutatiehistorie blijven bewust voor
-latere stories.
-
-**Scope**
-
-- Owner en Crew kunnen vanaf een locatiepagina de actie `Voorraad toevoegen` starten.
-- De primaire route start vanaf een locatiepagina; dezelfde locatie moet ook zonder scan
-  handmatig bereikbaar zijn via bestaande locatienavigatie.
-- Binnen een flow `Voorraad toevoegen` kiest de gebruiker een bestaand product of maakt
-  direct een nieuw product aan vanuit die locatiecontext.
-- Als tijdens deze flow een nieuw product wordt aangemaakt, keert de gebruiker daarna
-  automatisch terug naar dezelfde locatieflow met dat product geselecteerd.
-- Een voorraadregel legt functioneel alleen `product`, `locatie` en `hoeveelheid` vast.
-- Hoeveelheid is een vrij numerieke waarde in de standaard eenheid van het product.
-- Hetzelfde product kan op meerdere locaties tegelijk voorraad hebben.
-- Per locatie bestaat voor een product maximaal een actuele voorraadregel.
-- Als een product op die locatie al bestaat, wordt dezelfde voorraadregel hergebruikt en
-  wordt de hoeveelheid aangevuld.
-- De locatiepagina toont de actuele inhoud van die locatie met minimaal productnaam,
-  hoeveelheid en eenheid.
-- De productpagina toont op welke locaties het product ligt, met minimaal gebied,
-  locatienaam en hoeveelheid.
-- Een voorraadregel kan vanaf de locatiepagina eenvoudig worden verwijderd na
-  bevestiging wanneer het product daar niet meer ligt.
-
-**Buiten scope**
-
-- Scan-gestuurde dashboardstart of automatische keuze van de juiste voorraadactie.
-- Verplichte locatie-QR als hoofdroute voor productaanmaak of inruimen.
-- Barcode scannen om een product terug te vinden.
-- Verbruik, correcties, overschrijven van hoeveelheden, negatieve hoeveelheden en
-  mutatiehistorie.
-- Voorraad verplaatsen tussen twee locaties als samengestelde actie.
-- Slimme recente lijsten, voorkeursproducten per locatie of automatische suggesties.
-- Categorie-filters in de handmatige productzoekflow.
-- Meerdere aparte voorraadregels voor hetzelfde product op dezelfde locatie.
-
-**Acceptatiecriteria**
-
-1. Owner en Crew kunnen een locatiepagina handmatig openen zonder scan en daar de actie
-   `Voorraad toevoegen` starten.
-2. In `Voorraad toevoegen` kan de gebruiker een bestaand product zoeken op productnaam of
-   gekoppelde code.
-3. In dezelfde flow kan de gebruiker ook direct een nieuw product aanmaken; na opslaan
-   keert de flow terug naar dezelfde locatie met dat product geselecteerd.
-4. De gebruiker kan vervolgens een vrij numerieke hoeveelheid invoeren en opslaan voor
-   die locatie.
-5. Als het gekozen product nog niet op die locatie ligt, ontstaat een nieuwe
-   voorraadregel voor die product-locatie-combinatie.
-6. Als het gekozen product al op die locatie ligt, wordt geen tweede regel aangemaakt
-   maar wordt de bestaande hoeveelheid aangevuld.
-7. Een actieve voorraadregel met hoeveelheid `0` of lager is niet toegestaan in deze
-   story; zulke invoer wordt geblokkeerd.
-8. De locatiepagina toont na opslaan de actuele producten op die locatie met minimaal
-   naam, hoeveelheid en eenheid.
-9. De productpagina toont voor een product alle gekoppelde locaties met minimaal gebied,
-   locatienaam en hoeveelheid.
-10. Een voorraadregel kan vanaf de locatiepagina na bevestiging direct verwijderd worden
-    als het product daar niet meer ligt.
-
-**Legacy-impact**
-
-- Dekt primair `US2.8` product koppelen aan opslaglocatie en `US2.9` voorraad bekijken
-  per locatie.
-- Levert een eerste, bewust beperkte invulling van `US2.19` automatisch ophogen bij
-  nieuwe voorraad op dezelfde locatie, maar zonder brede mutatielogica of
-  aankoophistorie.
-- Laat `US2.10` voorraad aanpassen, `US2.13` voorraadlogboek, `US2.14`
-  QR-scanner-modus en `US2.20` verbruik via barcode bewust open voor latere
-  inventory-slices.
-
-**Handmatige acceptatietest**
-
-1. Log in als Owner of Crew.
-2. Open handmatig een bestaande locatiepagina via de locatienavigatie.
-3. Controleer dat de actie `Voorraad toevoegen` beschikbaar is.
-4. Start `Voorraad toevoegen`, zoek een bestaand product op naam of gekoppelde code, vul
-   een hoeveelheid in en sla op.
-5. Controleer dat de locatiepagina daarna het product toont met hoeveelheid en eenheid.
-6. Start `Voorraad toevoegen` opnieuw voor hetzelfde product op dezelfde locatie, voer een
-   extra hoeveelheid in en controleer dat de bestaande regel wordt aangevuld in plaats
-   van gedupliceerd.
-7. Start `Voorraad toevoegen` nogmaals en maak vanuit die flow een nieuw product aan;
-   controleer dat je automatisch terugkeert naar dezelfde locatieflow en daarna een
-   hoeveelheid voor dat nieuwe product kunt opslaan.
-8. Open de productpagina van een opgeslagen product en controleer dat alle gekoppelde
-   locaties zichtbaar zijn met gebied, locatienaam en hoeveelheid.
-9. Probeer een hoeveelheid `0` of lager op te slaan; verwacht een duidelijke blokkade.
-10. Verwijder een voorraadregel vanaf de locatiepagina en controleer dat deze na
-    bevestiging uit de actuele locatie-inhoud verdwijnt.
 
 ### PILOT-INV-03 — Scan-gestuurde inruimflow met locatievoorstel
 
@@ -642,6 +540,7 @@ administratieve fallback toe, plus een eenvoudige historie voor controle achtera
 - `PILOT-LOC-03` — QR-tag printen en PNG exporteren, geaccepteerd op 2026-06-19.
 - `PILOT-LOC-04` — tokenvervanging, tagoverzicht en opslagnavigatie, geaccepteerd op 2026-06-19.
 - `PILOT-INV-01` — productcategorieën, producten en gekoppelde codes, geaccepteerd op 2026-06-20.
+- `PILOT-INV-02` — taakgerichte voorraadbasis per locatie, geaccepteerd op 2026-06-20.
 
 ## Niet-doelen voor deze pilot
 

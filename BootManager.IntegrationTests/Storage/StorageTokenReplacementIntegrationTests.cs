@@ -1,3 +1,6 @@
+using BootManager.Application.Inventory.Contracts;
+using BootManager.Application.Inventory.DTOs;
+using BootManager.Application.Inventory.Results;
 using BootManager.Application.Storage.QrFormat;
 using BootManager.Application.Storage.Services;
 using BootManager.Core.Entities;
@@ -32,7 +35,8 @@ public class StorageTokenReplacementIntegrationTests : IAsyncLifetime
 
         var areaRepo = new EfRepository<StorageArea>(_context);
         var locationRepo = new EfRepository<StorageLocation>(_context);
-        _service = new StorageService(areaRepo, locationRepo);
+        var stockService = new NullStockService();
+        _service = new StorageService(areaRepo, locationRepo, stockService);
     }
 
     public async Task DisposeAsync()

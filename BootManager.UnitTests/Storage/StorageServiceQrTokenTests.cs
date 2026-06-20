@@ -1,3 +1,4 @@
+using BootManager.Application.Inventory.Contracts;
 using BootManager.Application.Storage.QrFormat;
 using BootManager.Application.Storage.Results;
 using BootManager.Application.Storage.Services;
@@ -15,6 +16,7 @@ public class StorageServiceQrTokenTests
 {
     private readonly Mock<IRepository<StorageArea>> _areaRepoMock = new();
     private readonly Mock<IRepository<StorageLocation>> _locationRepoMock = new();
+    private readonly Mock<IStockService> _stockServiceMock = new();
     private StorageService _service = null!;
 
     public StorageServiceQrTokenTests()
@@ -24,7 +26,7 @@ public class StorageServiceQrTokenTests
 
     private void ResetService()
     {
-        _service = new StorageService(_areaRepoMock.Object, _locationRepoMock.Object);
+        _service = new StorageService(_areaRepoMock.Object, _locationRepoMock.Object, _stockServiceMock.Object);
     }
 
     [Fact]

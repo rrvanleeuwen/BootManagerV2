@@ -1,3 +1,6 @@
+using BootManager.Application.Inventory.Contracts;
+using BootManager.Application.Inventory.DTOs;
+using BootManager.Application.Inventory.Results;
 using BootManager.Application.Storage.QrFormat;
 using BootManager.Application.Storage.Services;
 using BootManager.Core.Entities;
@@ -34,7 +37,7 @@ public class StorageQrTokenIntegrationTests : IAsyncLifetime
 
         var areaRepo = new EfRepository<StorageArea>(_context);
         var locationRepo = new EfRepository<StorageLocation>(_context);
-        _service = new StorageService(areaRepo, locationRepo);
+        _service = new StorageService(areaRepo, locationRepo, new NullStockService());
     }
 
     public async Task DisposeAsync()
@@ -358,7 +361,8 @@ public class StorageQrTokenIntegrationTests : IAsyncLifetime
                 {
                     var service2 = new StorageService(
                         new EfRepository<StorageArea>(ctx2),
-                        new EfRepository<StorageLocation>(ctx2));
+                        new EfRepository<StorageLocation>(ctx2),
+                        new NullStockService());
 
                     var linkResult = await service2.LinkQrToExistingLocationAsync(linkedToken, locationId);
                     Assert.True(linkResult.Success, $"Link failed: {linkResult.ErrorMessage}");
@@ -374,7 +378,8 @@ public class StorageQrTokenIntegrationTests : IAsyncLifetime
                 {
                     var service3 = new StorageService(
                         new EfRepository<StorageArea>(ctx3),
-                        new EfRepository<StorageLocation>(ctx3));
+                        new EfRepository<StorageLocation>(ctx3),
+                        new NullStockService());
 
                     var detailResult = await service3.GetLocationDetailAsync(locationId);
                     Assert.True(detailResult.Success);
@@ -457,7 +462,8 @@ VALUES ({locationIdBeforeUpgrade}, {areaIdBeforeUpgrade}, {locationNameBefore}, 
 
                 var service = new StorageService(
                     new EfRepository<StorageArea>(contextB),
-                    new EfRepository<StorageLocation>(contextB));
+                    new EfRepository<StorageLocation>(contextB),
+                    new NullStockService());
 
                 var generated = await service.GenerateOrGetQrTokenAsync(locationIdBeforeUpgrade);
                 Assert.True(generated.Success);

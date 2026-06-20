@@ -72,12 +72,13 @@
   - **Buiten scope:** voorraad per locatie, scan-inruimflow, terugvinden, mutaties en historie.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-INV-02 taakgerichte voorraadbasis per locatie**
-  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+- [x] **Holiday Pilot 2026 — PILOT-INV-02 taakgerichte voorraadbasis per locatie**
+  - **Status 2026-06-20:** technisch gecontroleerd en handmatig geaccepteerd.
   - **Doel:** vanaf een locatiepagina voorraad taakgericht toevoegen en aanvullen zonder CRUD-omweg.
   - **Kern:** actie `Voorraad toevoegen` op locatiepagina; product kiezen of nieuw product maken; voorraadregel is `product + locatie + hoeveelheid`; meerdere locaties per product zijn toegestaan.
-  - **Belangrijk:** bestaande regel op dezelfde locatie wordt aangevuld; `0` of lager wordt geblokkeerd; verwijderen van een actuele voorraadregel mag na bevestiging.
+  - **Belangrijk:** bestaande regel op dezelfde locatie wordt aangevuld; `0` of lager wordt geblokkeerd; verwijderen van een actuele voorraadregel mag na bevestiging; Crew heeft nu ook toegang tot `Opslag > Locaties` en een read-only opslagoverzicht met voorraadtoegang.
   - **Buiten scope:** scan-gestuurde start, verbruik/correcties, historie en verplaatsen tussen locaties.
+  - **Verificatie:** gerichte `StockService`, `StorageLocationDetailsWithStock`, `NavMenu`, `RouteAuthorization` en `StorageManagement` tests groen; handmatige acceptatie door gebruiker geslaagd.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-INV-03 scan-gestuurde inruimflow**

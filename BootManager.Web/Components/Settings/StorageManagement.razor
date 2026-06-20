@@ -1,6 +1,8 @@
 @using BootManager.Application.Storage.DTOs
 @using BootManager.Application.Storage.Services
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IStorageService StorageService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <h5>Opslag</h5>
 
@@ -18,14 +20,17 @@ else
             <div class="alert alert-danger alert-dismissible fade show">@_areaError<button type="button" class="btn-close" @onclick="() => _areaError = null"></button></div>
         }
 
-        <div class="mb-3">
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Gebiedsnaam" @bind="_newAreaName" />
-                <button class="btn btn-primary" @onclick="CreateArea" disabled="@(_areaCreating || string.IsNullOrWhiteSpace(_newAreaName))">
-                    @(_areaCreating ? "Bezig..." : "Toevoegen")
-                </button>
+        @if (_isOwner)
+        {
+            <div class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Gebiedsnaam" @bind="_newAreaName" />
+                    <button class="btn btn-primary" @onclick="CreateArea" disabled="@(_areaCreating || string.IsNullOrWhiteSpace(_newAreaName))">
+                        @(_areaCreating ? "Bezig..." : "Toevoegen")
+                    </button>
+                </div>
             </div>
-        </div>
+        }
 
         @if (_areas != null && _areas.Count > 0)
         {
@@ -34,7 +39,10 @@ else
                     <thead>
                         <tr>
                             <th>Gebiedsnaam</th>
-                            <th>Acties</th>
+                            @if (_isOwner)
+                            {
+                                <th>Acties</th>
+                            }
                         </tr>
                     </thead>
                     <tbody>
@@ -51,27 +59,33 @@ else
                                         <span>@area.Name</span>
                                     }
                                 </td>
-                                <td>
-                                    @if (_editingAreaId == area.Id)
-                                    {
-                                        <button class="btn btn-sm btn-success me-1" @onclick="() => SaveAreaName(area.Id)" disabled="@_areaCreating">Opslaan</button>
-                                        <button class="btn btn-sm btn-secondary" @onclick="() => _editingAreaId = Guid.Empty">Annulieren</button>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditArea(area)">Hernoemen</button>
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteArea(area.Id)">Verwijderen</button>
-                                    }
-                                </td>
+                                @if (_isOwner)
+                                {
+                                    <td>
+                                        @if (_editingAreaId == area.Id)
+                                        {
+                                            <button class="btn btn-sm btn-success me-1" @onclick="() => SaveAreaName(area.Id)" disabled="@_areaCreating">Opslaan</button>
+                                            <button class="btn btn-sm btn-secondary" @onclick="() => _editingAreaId = Guid.Empty">Annulieren</button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditArea(area)">Hernoemen</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteArea(area.Id)">Verwijderen</button>
+                                        }
+                                    </td>
+                                }
                             </tr>
 
                             <!-- Locaties voor dit gebied -->
                             <tr class="table-light">
-                                <td colspan="2">
+                                <td colspan="@(_isOwner ? 2 : 1)">
                                     <h6 class="mb-2">Locaties in @area.Name</h6>
-                                    <div class="mb-2">
-                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SelectAreaForCreation(area.Id)">Locatie toevoegen</button>
-                                    </div>
+                                    @if (_isOwner)
+                                    {
+                                        <div class="mb-2">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => SelectAreaForCreation(area.Id)">Locatie toevoegen</button>
+                                        </div>
+                                    }
 
                                     @{
                                         var areaLocations = _locations.Where(l => l.StorageAreaId == area.Id).ToList();
@@ -85,7 +99,10 @@ else
                                                     <tr>
                                                         <th>Locatienaam</th>
                                                         <th>Beschrijving</th>
-                                                        <th>Acties</th>
+                                                        @if (_isOwner)
+                                                        {
+                                                            <th>Acties</th>
+                                                        }
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -112,19 +129,22 @@ else
                                                                     <span>@location.Description</span>
                                                                 }
                                                             </td>
-                                                            <td>
-                                                                @if (_editingLocationId == location.Id)
-                                                                {
-                                                                    <button class="btn btn-sm btn-success me-1" @onclick="() => SaveLocation(location.Id)" disabled="@_locationCreating">Opslaan</button>
-                                                                    <button class="btn btn-sm btn-secondary" @onclick="() => _editingLocationId = Guid.Empty">Annulieren</button>
-                                                                }
-                                                                else
-                                                                {
-                                                                    <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditLocation(location)">Bewerk</button>
-                                                                    <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ShowMoveDialog(location, area.Id)">Verplaats</button>
-                                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteLocation(location.Id)">Verwijder</button>
-                                                                }
-                                                            </td>
+                                                            @if (_isOwner)
+                                                            {
+                                                                <td>
+                                                                    @if (_editingLocationId == location.Id)
+                                                                    {
+                                                                        <button class="btn btn-sm btn-success me-1" @onclick="() => SaveLocation(location.Id)" disabled="@_locationCreating">Opslaan</button>
+                                                                        <button class="btn btn-sm btn-secondary" @onclick="() => _editingLocationId = Guid.Empty">Annulieren</button>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditLocation(location)">Bewerk</button>
+                                                                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ShowMoveDialog(location, area.Id)">Verplaats</button>
+                                                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteLocation(location.Id)">Verwijder</button>
+                                                                    }
+                                                                </td>
+                                                            }
                                                         </tr>
                                                     }
                                                 </tbody>
@@ -225,6 +245,7 @@ else
 
 @code {
     private bool _loading = true;
+    private bool _isOwner;
     private List<StorageAreaDto> _areas = [];
     private List<StorageLocationDto> _locations = [];
 
@@ -257,6 +278,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isOwner = authState.User.IsInRole("Owner");
         await LoadData();
     }
 

@@ -5,6 +5,7 @@
 @inject IProductService ProductService
 @inject IProductCategoryService CategoryService
 @inject IUnitService UnitService
+@inject IStockService StockService
 @inject ILogger<Products> Logger
 
 <PageTitle>Producten</PageTitle>
@@ -53,6 +54,7 @@
             <table class="table table-sm">
                 <thead>
                     <tr>
+                        <th style="width: 40px;"></th>
                         <th>Naam</th>
                         <th>Categorie</th>
                         <th>Eenheid</th>
@@ -64,6 +66,14 @@
                     @foreach (var product in _displayedProducts)
                     {
                         <tr>
+                            <td>
+                                @if (!product.IsArchived)
+                                {
+                                    <button class="btn btn-sm btn-link p-0" @onclick="() => ToggleExpanded(product.Id)" title="Gekoppelde locaties">
+                                        <i class="fas @(_expandedProductIds.Contains(product.Id) ? "fa-chevron-down" : "fa-chevron-right")"></i>
+                                    </button>
+                                }
+                            </td>
                             <td>@product.Name</td>
                             <td>@(product.ActiveCategoryName ?? "-")</td>
                             <td>@(product.DefaultUnitName ?? "-")</td>
@@ -86,6 +96,51 @@
                                 }
                             </td>
                         </tr>
+                        @if (_expandedProductIds.Contains(product.Id))
+                        {
+                            <tr>
+                                <td colspan="6">
+                                    <div class="p-3 bg-light">
+                                        <h6>Gekoppelde opslaglocaties</h6>
+                                        @if (_productStocks.TryGetValue(product.Id, out var stocks) && stocks != null)
+                                        {
+                                            @if (stocks.Count > 0)
+                                            {
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-borderless">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Gebied</th>
+                                                                <th>Locatie</th>
+                                                                <th class="text-end">Hoeveelheid</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var stock in stocks)
+                                                            {
+                                                                <tr>
+                                                                    <td>@stock.StorageAreaName</td>
+                                                                    <td>@stock.StorageLocationName</td>
+                                                                    <td class="text-end">@stock.Quantity @stock.DefaultUnitName</td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <p class="text-muted small">Geen opslaglocaties gekoppeld.</p>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted small">Laden...</p>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
                     }
                 </tbody>
             </table>
@@ -303,6 +358,9 @@ else
     private bool _showAddCodeForm = false;
     private string _newCodeValue = "";
     private string _newCodeFormat = "";
+
+    private HashSet<Guid> _expandedProductIds = new();
+    private Dictionary<Guid, List<BootManager.Application.Inventory.DTOs.StockDto>?> _productStocks = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -651,6 +709,23 @@ else
         {
             Logger.LogError(ex, "Fout bij reactiveren van product");
             _errorMessage = "Fout bij reactiveren.";
+        }
+    }
+
+    private async Task ToggleExpanded(Guid productId)
+    {
+        if (_expandedProductIds.Contains(productId))
+        {
+            _expandedProductIds.Remove(productId);
+        }
+        else
+        {
+            _expandedProductIds.Add(productId);
+            if (!_productStocks.ContainsKey(productId))
+            {
+                var result = await StockService.GetStocksByProductAsync(productId);
+                _productStocks[productId] = result.Success ? result.Data?.ToList() : null;
+            }
         }
     }
 

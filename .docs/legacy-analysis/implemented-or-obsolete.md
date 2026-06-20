@@ -151,8 +151,9 @@ Word-verificatie Epic 1:
   - Nieuwe stories nodig binnen toekomstige inventaris/opslaglocatie-epic.
 - Inventarisbeheer:
   - Word-verificatie van Epic 2 bevestigt US2.1 t/m US2.21.
-  - Nog niet geïmplementeerd in BootManagerV2.
-  - Eerste relevante slices zijn categorieën, opslaglocaties, productcatalogus, voorraad per locatie, voorraadmutaties en zoeken/filteren.
+  - Niet meer volledig open: `PILOT-INV-01` levert productcatalogus en gekoppelde codebasis; `PILOT-INV-02` levert de eerste voorraadbasis per locatie.
+  - Functioneel afgedekt zijn nu in elk geval categorieën, productcatalogus en product-locatiekoppeling met actuele locatie-inhoud.
+  - Open blijven vooral scan-gestuurde inruimflow, product terugvinden, voorraadmutaties, historie, minimumvoorraad en breder zoeken/filteren.
 - Passageplanning:
   - Word-verificatie van Epic 3 bevestigt US3.1 t/m US3.14.
   - Nog niet geïmplementeerd als eigen module.

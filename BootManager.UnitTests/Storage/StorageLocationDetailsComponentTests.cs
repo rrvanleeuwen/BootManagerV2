@@ -1,4 +1,5 @@
 using Bunit;
+using BootManager.Application.Inventory.Contracts;
 using BootManager.Application.Storage.DTOs;
 using BootManager.Application.Storage.Results;
 using BootManager.Application.Storage.Services;
@@ -18,10 +19,12 @@ namespace BootManager.UnitTests.Storage;
 public class StorageLocationDetailsComponentTests : TestContext
 {
     private readonly Mock<IStorageService> _storageMock = new();
+    private readonly Mock<IStockService> _stockMock = new();
 
     public StorageLocationDetailsComponentTests()
     {
         Services.AddScoped<IStorageService>(_ => _storageMock.Object);
+        Services.AddScoped<IStockService>(_ => _stockMock.Object);
     }
 
     [Fact]

@@ -1,3 +1,6 @@
+using BootManager.Application.Inventory.Contracts;
+using BootManager.Application.Inventory.DTOs;
+using BootManager.Application.Inventory.Results;
 using BootManager.Application.Storage.QrFormat;
 using BootManager.Application.Storage.Services;
 using BootManager.Core.Entities;
@@ -62,7 +65,7 @@ public class StorageMigrationUpgradePathTests
             {
                 var areaRepo = new EfRepository<StorageArea>(context);
                 var locationRepo = new EfRepository<StorageLocation>(context);
-                var service = new StorageService(areaRepo, locationRepo);
+                var service = new StorageService(areaRepo, locationRepo, new NullStockService());
 
                 var allAfter = await context.StorageLocations.ToListAsync();
                 Assert.Equal(2, allAfter.Count);
@@ -143,7 +146,7 @@ public class StorageMigrationUpgradePathTests
             {
                 var areaRepo = new EfRepository<StorageArea>(context);
                 var locationRepo = new EfRepository<StorageLocation>(context);
-                var service = new StorageService(areaRepo, locationRepo);
+                var service = new StorageService(areaRepo, locationRepo, new NullStockService());
 
                 var location = await context.StorageLocations.FirstAsync();
                 Assert.Null(location.QrToken);

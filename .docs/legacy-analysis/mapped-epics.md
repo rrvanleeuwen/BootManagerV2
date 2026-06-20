@@ -50,7 +50,7 @@ Mapping:
 
 ## Epic 2: Inventarisbeheer
 
-Status: ⏳ niet geïmplementeerd in BootManagerV2.
+Status: 🟡 deels geïmplementeerd in BootManagerV2.
 
 Word-verificatie:
 
@@ -60,18 +60,23 @@ Word-verificatie:
 
 Mapping:
 
-- Oude repo had DTO's voor inventaris en opberglocaties, maar BootManagerV2 bevat nog geen inventarismodule.
-- Functionele scope blijft relevant, maar moet opnieuw worden gesneden in kleinere BootManagerV2-slices:
-  - productcategorieën;
-  - categorie-icoontjes of een beperkte vaste iconenset;
-  - opslaglocaties;
-  - productcatalogus;
-  - voorraad per locatie;
-  - voorraadmutaties;
-  - zoeken/filteren;
+- BootManagerV2 heeft inmiddels een eerste inventarismodule via `PILOT-INV-01` en
+  `PILOT-INV-02`.
+- Al aanwezig:
+  - productcategorieën met vaste icoonset;
+  - productcatalogus met eenheden en één unieke gekoppelde code per product;
+  - voorraadregels per product-locatiecombinatie;
+  - actuele locatie-inhoud per opslaglocatie;
+  - productdetail met gekoppelde voorraadlocaties.
+- Open en nog verder te slicen:
+  - scan-gestuurde inruimflow;
+  - product terugvinden via scan of zoeken;
+  - voorraadmutaties en historie;
   - minimumvoorraad;
-  - barcode/QR later.
-- AI-herkenning, cloud-synchronisatie en passageplanning-integratie blijven latere afhankelijkheden, niet de eerste inventarisslice.
+  - breder zoeken/filteren;
+  - barcode/QR-hoofdroutes buiten de handmatige basisflow.
+- AI-herkenning, cloud-synchronisatie en passageplanning-integratie blijven latere
+  afhankelijkheden, niet de eerstvolgende inventarisslices.
 
 ## Epic 3: Passageplanning
 

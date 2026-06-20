@@ -1,4 +1,5 @@
 using Bunit;
+using Bunit.TestDoubles;
 using BootManager.Application.Storage.DTOs;
 using BootManager.Application.Storage.Results;
 using BootManager.Application.Storage.Services;
@@ -17,6 +18,10 @@ public class StorageManagementComponentTests : TestContext
 
     public StorageManagementComponentTests()
     {
+        var authContext = this.AddTestAuthorization();
+        authContext.SetAuthorized("owner");
+        authContext.SetRoles("Owner");
+
         Services.AddScoped<IStorageService>(_ => _testService);
     }
 
@@ -358,6 +363,28 @@ public class StorageManagementComponentTests : TestContext
         Assert.NotNull(modal);
         var errorAlert = cut.FindAll(".alert.alert-danger").FirstOrDefault(el => el.TextContent.Contains("Move failed"));
         Assert.NotNull(errorAlert);
+    }
+
+    [Fact]
+    public void Crew_Render_IsReadOnly()
+    {
+        var authContext = this.AddTestAuthorization();
+        authContext.SetAuthorized("crew");
+        authContext.SetRoles("Crew");
+
+        var kombuisId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        _testService.Areas.Add(new() { Id = kombuisId, Name = "Kombuis" });
+        _testService.Locations.Add(new() { Id = locationId, StorageAreaId = kombuisId, Name = "Kast 1", Description = null });
+
+        var cut = RenderComponent<StorageManagement>();
+
+        Assert.Contains("Kombuis", cut.Markup);
+        Assert.Contains("Kast 1", cut.Markup);
+        Assert.Empty(cut.FindAll("button").Where(b => b.TextContent.Contains("Locatie toevoegen")));
+        Assert.Empty(cut.FindAll("button").Where(b => b.TextContent.Contains("Hernoemen")));
+        Assert.Empty(cut.FindAll("button").Where(b => b.TextContent.Contains("Bewerk")));
+        Assert.Empty(cut.FindAll("button").Where(b => b.TextContent.Contains("Verwijder")));
     }
 
     private class TestStorageService : IStorageService

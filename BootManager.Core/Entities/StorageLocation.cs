@@ -29,6 +29,7 @@ public class StorageLocation
     public TagStatus TagStatus { get; private set; } = TagStatus.NotPrinted;
 
     public StorageArea StorageArea { get; private set; } = default!;
+    public ICollection<Stock> Stocks { get; private set; } = new List<Stock>();
 
     private StorageLocation() { } // Voor EF
 

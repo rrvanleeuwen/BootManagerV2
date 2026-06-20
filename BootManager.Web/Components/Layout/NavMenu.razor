@@ -62,15 +62,9 @@
                     </Authorized>
                 </AuthorizeView>
 
-                <!-- Owner-only features -->
-                <AuthorizeView Roles="Owner" Context="ownerContext">
+                <!-- Storage navigation for Owner and Crew -->
+                <AuthorizeView Roles="Owner,Crew" Context="storageContext">
                     <Authorized>
-                        <li class="nav-item">
-                            <NavLink class="nav-link" href="analysis">
-                                <i class="fas fa-chart-line"></i>
-                                <span class="ml-2">Beheerder</span>
-                            </NavLink>
-                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="storageDropdown" role="button" @onclick="ToggleStorageDropdown" @onclick:preventDefault>
                                 <i class="fas fa-cube"></i>
@@ -82,12 +76,27 @@
                                         Locaties
                                     </NavLink>
                                 </li>
-                                <li>
-                                    <NavLink class="dropdown-item" href="storage/tag-overview" @onclick="CloseStorageDropdown">
-                                        Tagoverzicht
-                                    </NavLink>
-                                </li>
+                                @if (storageContext.User.IsInRole("Owner"))
+                                {
+                                    <li>
+                                        <NavLink class="dropdown-item" href="storage/tag-overview" @onclick="CloseStorageDropdown">
+                                            Tagoverzicht
+                                        </NavLink>
+                                    </li>
+                                }
                             </ul>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+
+                <!-- Owner-only features -->
+                <AuthorizeView Roles="Owner" Context="ownerContext">
+                    <Authorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="analysis">
+                                <i class="fas fa-chart-line"></i>
+                                <span class="ml-2">Beheerder</span>
+                            </NavLink>
                         </li>
                         <li class="nav-item">
                             <NavLink class="nav-link" href="settings">

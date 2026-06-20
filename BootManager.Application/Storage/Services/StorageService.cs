@@ -1,3 +1,4 @@
+using BootManager.Application.Inventory.Contracts;
 using BootManager.Application.Storage.DTOs;
 using BootManager.Application.Storage.QrFormat;
 using BootManager.Application.Storage.Results;
@@ -18,13 +19,16 @@ public class StorageService : IStorageService
 
     private readonly IRepository<StorageArea> _areaRepo;
     private readonly IRepository<StorageLocation> _locationRepo;
+    private readonly IStockService _stockService;
 
     public StorageService(
         IRepository<StorageArea> areaRepo,
-        IRepository<StorageLocation> locationRepo)
+        IRepository<StorageLocation> locationRepo,
+        IStockService stockService)
     {
         _areaRepo = areaRepo;
         _locationRepo = locationRepo;
+        _stockService = stockService;
     }
 
     // --- StorageArea CRUD ---
@@ -250,6 +254,10 @@ public class StorageService : IStorageService
 
         var qrValue = location.QrToken != null ? LocationQrValue.FormatQrValue(location.QrToken) : null;
 
+        var stocksResult = await _stockService.GetStocksByLocationAsync(locationId, ct);
+        var stocks = stocksResult.Success ? stocksResult.Data ?? new List<BootManager.Application.Inventory.DTOs.StockDto>()
+                                          : new List<BootManager.Application.Inventory.DTOs.StockDto>();
+
         return StorageOperationResult<StorageLocationDetailDto>.Ok(new StorageLocationDetailDto
         {
             Id = location.Id,
@@ -257,7 +265,8 @@ public class StorageService : IStorageService
             LocationName = location.Name,
             Description = location.Description,
             QrValue = qrValue,
-            TagStatus = location.TagStatus
+            TagStatus = location.TagStatus,
+            Stocks = stocks
         });
     }
 
