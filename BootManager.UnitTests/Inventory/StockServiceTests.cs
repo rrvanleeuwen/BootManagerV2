@@ -1,13 +1,14 @@
 using BootManager.Application.Inventory.Contracts;
 using BootManager.Application.Inventory.Services;
 using BootManager.Core.Entities;
+using BootManager.Core.Enums;
 using BootManager.Core.Interfaces;
 using Moq;
 
 namespace BootManager.UnitTests.Inventory;
 
 /// <summary>
-/// Unit tests for StockService: add/increment, delete, search, quantity validation.
+/// Unit tests for StockService: add/increment, delete, search, quantity validation, mutations.
 /// </summary>
 public class StockServiceTests
 {
@@ -17,6 +18,9 @@ public class StockServiceTests
     private readonly Mock<IRepository<Unit>> _unitRepoMock;
     private readonly Mock<IRepository<StorageArea>> _areaRepoMock;
     private readonly Mock<IRepository<ProductCode>> _codeRepoMock;
+    private readonly Mock<IRepository<StockMutation>> _mutationRepoMock;
+    private readonly Mock<IRepository<LocalUser>> _userRepoMock;
+    private readonly Mock<IRepository<StockExpectedLocation>> _expectedLocationRepoMock;
     private readonly StockService _service;
 
     public StockServiceTests()
@@ -27,13 +31,19 @@ public class StockServiceTests
         _unitRepoMock = new Mock<IRepository<Unit>>();
         _areaRepoMock = new Mock<IRepository<StorageArea>>();
         _codeRepoMock = new Mock<IRepository<ProductCode>>();
+        _mutationRepoMock = new Mock<IRepository<StockMutation>>();
+        _userRepoMock = new Mock<IRepository<LocalUser>>();
+        _expectedLocationRepoMock = new Mock<IRepository<StockExpectedLocation>>();
         _service = new StockService(
             _stockRepoMock.Object,
             _productRepoMock.Object,
             _locationRepoMock.Object,
             _unitRepoMock.Object,
             _areaRepoMock.Object,
-            _codeRepoMock.Object);
+            _codeRepoMock.Object,
+            _mutationRepoMock.Object,
+            _userRepoMock.Object,
+            _expectedLocationRepoMock.Object);
     }
 
     [Fact]
@@ -516,7 +526,7 @@ public class StockServiceTests
     }
 
     [Fact]
-    public async Task GetExpectedLocationForProductAsync_ReturnsMostRecentStock_EvenIfZeroQuantity()
+    public async Task GetExpectedLocationForProductAsync_ReturnsExpectedLocationFromRegistry()
     {
         var unitId = Guid.NewGuid();
         var productId = Guid.NewGuid();
@@ -528,14 +538,14 @@ public class StockServiceTests
         var area = StorageArea.Create("TestArea");
         var location = StorageLocation.Create(areaId, "TestLocation", null);
 
-        var stock = Stock.Create(productId, locationId, 0);
+        var expectedLocation = StockExpectedLocation.Create(productId, locationId);
 
         _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
             .ReturnsAsync(product);
         _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, default))
             .ReturnsAsync(unit);
-        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
-            .ReturnsAsync(new List<Stock> { stock });
+        _expectedLocationRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StockExpectedLocation, bool>>>(), default))
+            .ReturnsAsync(expectedLocation);
         _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
             .ReturnsAsync(location);
         _areaRepoMock.Setup(r => r.GetByIdAsync(areaId, default))
@@ -550,17 +560,225 @@ public class StockServiceTests
     }
 
     [Fact]
-    public async Task GetExpectedLocationForProductAsync_ReturnsNotFound_WhenProductHasNoStockHistory()
+    public async Task GetExpectedLocationForProductAsync_ReturnsNotFound_WhenNoExpectedLocation()
     {
         var productId = Guid.NewGuid();
 
         _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
             .ReturnsAsync(Product.Create("TestProduct", null, Guid.NewGuid()));
-        _stockRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
-            .ReturnsAsync(new List<Stock>());
+        _expectedLocationRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StockExpectedLocation, bool>>>(), default))
+            .ReturnsAsync((StockExpectedLocation?)null);
 
         var result = await _service.GetExpectedLocationForProductAsync(productId);
 
         Assert.False(result.Success);
     }
+
+    [Fact]
+    public async Task MutateStockAsync_ConsumesStock_WhenVerbruikAndSufficientQuantity()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location = StorageLocation.Create(areaId, "TestLocation", null);
+        var user = LocalUser.Create("Test User", LocalUserRole.Owner, "hash", "salt", "sha256", new byte[16], 1, DateTime.UtcNow);
+        var stock = Stock.Create(productId, locationId, 10m);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(location);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId, default))
+            .ReturnsAsync(user);
+        _stockRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(stock);
+        _stockRepoMock.Setup(r => r.UpdateAsync(It.IsAny<Stock>(), default))
+            .Returns(Task.CompletedTask);
+        _mutationRepoMock.Setup(r => r.AddAsync(It.IsAny<StockMutation>(), default))
+            .Returns(Task.CompletedTask);
+        _expectedLocationRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StockExpectedLocation, bool>>>(), default))
+            .ReturnsAsync((StockExpectedLocation?)null);
+        _expectedLocationRepoMock.Setup(r => r.AddAsync(It.IsAny<StockExpectedLocation>(), default))
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.MutateStockAsync(productId, locationId, StockMutationType.Verbruik, 3m, userId, "Test consumption");
+
+        Assert.True(result.Success);
+        _stockRepoMock.Verify(r => r.UpdateAsync(It.IsAny<Stock>(), default), Times.Once);
+        _mutationRepoMock.Verify(r => r.AddAsync(It.IsAny<StockMutation>(), default), Times.Once);
+    }
+
+    [Fact]
+    public async Task MutateStockAsync_BlocksOverconsumption_AndLeavesStockUnchanged()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var user = LocalUser.Create("Test User", LocalUserRole.Owner, "hash", "salt", "sha256", new byte[16], 1, DateTime.UtcNow);
+        var stock = Stock.Create(productId, locationId, 5m);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(StorageLocation.Create(Guid.NewGuid(), "Loc", null));
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId, default))
+            .ReturnsAsync(user);
+        _stockRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(stock);
+
+        var result = await _service.MutateStockAsync(productId, locationId, StockMutationType.Verbruik, 10m, userId);
+
+        Assert.False(result.Success);
+        Assert.Contains("Onvoldoende voorraad", result.ErrorMessage);
+        _stockRepoMock.Verify(r => r.UpdateAsync(It.IsAny<Stock>(), default), Times.Never);
+        _mutationRepoMock.Verify(r => r.AddAsync(It.IsAny<StockMutation>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task MutateStockAsync_SetQuantity_WhenCorrectie()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location = StorageLocation.Create(areaId, "TestLocation", null);
+        var user = LocalUser.Create("Test User", LocalUserRole.Owner, "hash", "salt", "sha256", new byte[16], 1, DateTime.UtcNow);
+        var stock = Stock.Create(productId, locationId, 10m);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(location);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId, default))
+            .ReturnsAsync(user);
+        _stockRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(stock);
+        _stockRepoMock.Setup(r => r.UpdateAsync(It.IsAny<Stock>(), default))
+            .Returns(Task.CompletedTask);
+        _mutationRepoMock.Setup(r => r.AddAsync(It.IsAny<StockMutation>(), default))
+            .Returns(Task.CompletedTask);
+        _expectedLocationRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StockExpectedLocation, bool>>>(), default))
+            .ReturnsAsync((StockExpectedLocation?)null);
+        _expectedLocationRepoMock.Setup(r => r.AddAsync(It.IsAny<StockExpectedLocation>(), default))
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.MutateStockAsync(productId, locationId, StockMutationType.Correctie, 7m, userId, "Correction");
+
+        Assert.True(result.Success);
+        _stockRepoMock.Verify(r => r.UpdateAsync(It.IsAny<Stock>(), default), Times.Once);
+    }
+
+    [Fact]
+    public async Task MutateStockAsync_DeletesStock_AndPreservesExpectedLocation_WhenQuantityGoesTo_Zero()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location = StorageLocation.Create(areaId, "TestLocation", null);
+        var user = LocalUser.Create("Test User", LocalUserRole.Owner, "hash", "salt", "sha256", new byte[16], 1, DateTime.UtcNow);
+        var stock = Stock.Create(productId, locationId, 5m);
+
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(location);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId, default))
+            .ReturnsAsync(user);
+        _stockRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Stock, bool>>>(), default))
+            .ReturnsAsync(stock);
+        _stockRepoMock.Setup(r => r.DeleteAsync(It.IsAny<Stock>(), default))
+            .Returns(Task.CompletedTask);
+        _mutationRepoMock.Setup(r => r.AddAsync(It.IsAny<StockMutation>(), default))
+            .Returns(Task.CompletedTask);
+        _expectedLocationRepoMock.Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StockExpectedLocation, bool>>>(), default))
+            .ReturnsAsync((StockExpectedLocation?)null);
+        _expectedLocationRepoMock.Setup(r => r.AddAsync(It.IsAny<StockExpectedLocation>(), default))
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.MutateStockAsync(productId, locationId, StockMutationType.Verbruik, 5m, userId, "Consumed all");
+
+        Assert.True(result.Success);
+        _stockRepoMock.Verify(r => r.DeleteAsync(It.IsAny<Stock>(), default), Times.Once);
+        _expectedLocationRepoMock.Verify(r => r.AddAsync(It.IsAny<StockExpectedLocation>(), default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetStockMutationsAsync_ReturnsMutationsNewestFirst_WithAllRequiredFields()
+    {
+        var unitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var areaId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var unit = Unit.Create("Stuk");
+        var product = Product.Create("TestProduct", null, unitId);
+        var area = StorageArea.Create("TestArea");
+        var location = StorageLocation.Create(areaId, "TestLocation", null);
+        var user = LocalUser.Create("Test User", LocalUserRole.Owner, "hash", "salt", "sha256", new byte[16], 1, DateTime.UtcNow);
+
+        var olderMutation = StockMutation.Create(productId, locationId, StockMutationType.Verbruik, 10m, 7m, userId, "Old mutation");
+        var newerMutation = StockMutation.Create(productId, locationId, StockMutationType.Correctie, 7m, 5m, userId, "New mutation");
+
+        // Make newer mutation have a later timestamp
+        System.Threading.Thread.Sleep(10);
+        var mutationList = new List<StockMutation> { olderMutation, newerMutation };
+
+        _mutationRepoMock.Setup(r => r.ListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StockMutation, bool>>?>(), default))
+            .ReturnsAsync(mutationList);
+        _productRepoMock.Setup(r => r.GetByIdAsync(productId, default))
+            .ReturnsAsync(product);
+        _locationRepoMock.Setup(r => r.GetByIdAsync(locationId, default))
+            .ReturnsAsync(location);
+        _areaRepoMock.Setup(r => r.GetByIdAsync(areaId, default))
+            .ReturnsAsync(area);
+        _unitRepoMock.Setup(r => r.GetByIdAsync(unitId, default))
+            .ReturnsAsync(unit);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId, default))
+            .ReturnsAsync(user);
+
+        var result = await _service.GetStockMutationsAsync();
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Equal(2, result.Data.Count);
+        // Verify newest first
+        Assert.Equal(newerMutation.Id, result.Data[0].Id);
+        Assert.Equal(olderMutation.Id, result.Data[1].Id);
+        // Verify all required fields are present
+        Assert.All(result.Data, dto =>
+        {
+            Assert.NotEqual(Guid.Empty, dto.Id);
+            Assert.NotEqual(Guid.Empty, dto.ProductId);
+            Assert.NotEqual(Guid.Empty, dto.StorageLocationId);
+            Assert.NotEqual(Guid.Empty, dto.UserId);
+            Assert.NotNull(dto.ProductName);
+            Assert.NotNull(dto.StorageAreaName);
+            Assert.NotNull(dto.StorageLocationName);
+            Assert.NotNull(dto.UserDisplayName);
+            Assert.NotNull(dto.DefaultUnitName);
+        });
+    }
+
 }

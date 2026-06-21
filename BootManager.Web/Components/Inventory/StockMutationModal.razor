@@ -1,0 +1,159 @@
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Core.Entities
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IStockService StockService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="modal d-block" style="display: block; background-color: rgba(0, 0, 0, 0.5);">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Voorraadbijzonderheid</h5>
+                <button type="button" class="btn-close" @onclick="OnClose"></button>
+            </div>
+            <div class="modal-body">
+                @if (_errorMessage != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                <div class="alert alert-info mb-3">
+                    <strong>Product:</strong> @_product?.ProductName<br />
+                    <strong>Locatie:</strong> @_product?.StorageAreaName - @_product?.StorageLocationName<br />
+                    <strong>Huidige hoeveelheid:</strong> @_product?.Quantity @_product?.DefaultUnitName
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Mutatielogtype *</label>
+                    <select class="form-select" @bind="_selectedType">
+                        <option value="">-- Selecteer type --</option>
+                        <option value="Verbruik">Verbruik (afname)</option>
+                        <option value="Correctie">Correctie (herzien hoeveelheid)</option>
+                        <option value="Telling">Telling (gecontroleerde hoeveelheid)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        @if (_selectedType == "Verbruik")
+                        {
+                            <span>Afnamehoeveelheid *</span>
+                        }
+                        else if (_selectedType == "Correctie" || _selectedType == "Telling")
+                        {
+                            <span>Nieuwe hoeveelheid *</span>
+                        }
+                        else
+                        {
+                            <span>Hoeveelheid *</span>
+                        }
+                    </label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" step="0.01"
+                               @bind="_quantity" placeholder="0" />
+                        <span class="input-group-text">@_product?.DefaultUnitName</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Notitie (optioneel)</label>
+                    <textarea class="form-control" @bind="_note" placeholder="Vrije notitie…" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="OnClose">Annuleren</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveMutation"
+                        disabled="@(string.IsNullOrEmpty(_selectedType) || _quantity <= 0 || _isSaving)">
+                    @if (_isSaving)
+                    {
+                        <span>Opslaan…</span>
+                    }
+                    else
+                    {
+                        <span>Opslaan</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public StockDto? Stock { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnMutationSaved { get; set; }
+
+    private StockDto? _product;
+    private string _selectedType = "";
+    private decimal _quantity = 0;
+    private string? _note;
+    private string? _errorMessage;
+    private bool _isSaving = false;
+
+    protected override void OnInitialized()
+    {
+        _product = Stock;
+    }
+
+    private async Task SaveMutation()
+    {
+        if (_product == null || string.IsNullOrEmpty(_selectedType) || _quantity <= 0)
+        {
+            _errorMessage = "Onvolledig formulier.";
+            return;
+        }
+
+        if (!Enum.TryParse<StockMutationType>(_selectedType, out var mutationType))
+        {
+            _errorMessage = "Ongeldig mutatielogtype.";
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst("sub");
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            _errorMessage = "Gebruiker niet bepaald.";
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            var result = await StockService.MutateStockAsync(
+                _product.ProductId,
+                _product.StorageLocationId,
+                mutationType,
+                _quantity,
+                userId,
+                string.IsNullOrWhiteSpace(_note) ? null : _note.Trim());
+
+            if (result.Success)
+            {
+                await OnMutationSaved.InvokeAsync();
+                await OnClose.InvokeAsync();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Opslaan mislukt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout: " + ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

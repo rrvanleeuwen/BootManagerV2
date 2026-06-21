@@ -58,7 +58,25 @@ public interface IStockService
 
     /// <summary>
     /// Haalt de verwachte (laatst gebruikte) locatie voor een product op, zelfs als daar geen actieve voorraad meer is.
+    /// Raadpleegt het aparte verwachte-locatie-register, niet afhankelijk van actieve Stock-regels.
     /// </summary>
     Task<InventoryOperationResult<StockDto>> GetExpectedLocationForProductAsync(
         Guid productId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Verwerkt een voorraadbijzonderheid (Verbruik, Correctie of Telling) en slaat deze op.
+    /// Voor Verbruik: neemt de opgegeven hoeveelheid af van de huidige voorraad.
+    /// Voor Correctie/Telling: stelt de voorraad in op de opgegeven hoeveelheid.
+    /// Blokkeert Verbruik wanneer de afname groter is dan huidige voorraad.
+    /// Verwijdert de voorraadregel wanneer de resultaat 0 is, maar behoudt de verwachte locatie.
+    /// </summary>
+    Task<InventoryOperationResult> MutateStockAsync(
+        Guid productId, Guid locationId, Core.Entities.StockMutationType mutationType,
+        decimal quantityOrAmount, Guid userId, string? note = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Haalt alle voorraadbijzonderheden op, standaard nieuwste eerst.
+    /// </summary>
+    Task<InventoryOperationResult<IReadOnlyList<StockMutationDto>>> GetStockMutationsAsync(
+        CancellationToken ct = default);
 }

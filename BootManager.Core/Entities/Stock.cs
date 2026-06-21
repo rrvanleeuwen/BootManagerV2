@@ -14,6 +14,9 @@ public class Stock
     /// <summary>Gekoppelde opslaglocatie (verplicht).</summary>
     public Guid StorageLocationId { get; private set; }
 
+    /// <summary>Verwachte locatie (laatst gebruikte locatie voor het product, behouden ook wanneer Quantity==0).</summary>
+    public Guid? ExpectedLocationId { get; private set; }
+
     /// <summary>Numerieke hoeveelheid in standaardeenheid van het product.</summary>
     public decimal Quantity { get; private set; }
 
@@ -22,6 +25,7 @@ public class Stock
 
     public Product Product { get; private set; } = default!;
     public StorageLocation StorageLocation { get; private set; } = default!;
+    public StorageLocation? ExpectedLocation { get; private set; }
 
     private Stock() { }
 
@@ -29,6 +33,7 @@ public class Stock
     {
         ProductId = productId;
         StorageLocationId = locationId;
+        ExpectedLocationId = locationId;
         Quantity = quantity;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -39,12 +44,14 @@ public class Stock
     public void SetQuantity(decimal newQuantity)
     {
         Quantity = newQuantity;
+        ExpectedLocationId = StorageLocationId;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void AddQuantity(decimal amount)
     {
         Quantity += amount;
+        ExpectedLocationId = StorageLocationId;
         UpdatedAt = DateTime.UtcNow;
     }
 }

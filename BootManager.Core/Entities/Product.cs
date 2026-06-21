@@ -25,6 +25,7 @@ public class Product
     public Unit DefaultUnit { get; private set; } = default!;
     public ICollection<ProductCategoryMapping> CategoryMappings { get; private set; } = new List<ProductCategoryMapping>();
     public ICollection<Stock> Stocks { get; private set; } = new List<Stock>();
+    public ICollection<StockMutation> StockMutations { get; private set; } = new List<StockMutation>();
     public ProductCode? Code { get; private set; }
 
     private Product() { }

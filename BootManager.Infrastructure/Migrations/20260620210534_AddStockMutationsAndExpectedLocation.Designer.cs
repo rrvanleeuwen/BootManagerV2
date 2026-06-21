@@ -3,6 +3,7 @@ using System;
 using BootManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BootManager.Infrastructure.Migrations
 {
     [DbContext(typeof(BootManagerDbContext))]
-    partial class BootManagerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260620210534_AddStockMutationsAndExpectedLocation")]
+    partial class AddStockMutationsAndExpectedLocation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
@@ -802,34 +805,6 @@ namespace BootManager.Infrastructure.Migrations
                     b.ToTable("Stocks", (string)null);
                 });
 
-            modelBuilder.Entity("BootManager.Core.Entities.StockExpectedLocation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("StorageLocationId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId")
-                        .IsUnique();
-
-                    b.HasIndex("StorageLocationId");
-
-                    b.HasIndex("UpdatedAt")
-                        .IsDescending();
-
-                    b.ToTable("StockExpectedLocations", (string)null);
-                });
-
             modelBuilder.Entity("BootManager.Core.Entities.StockMutation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1175,25 +1150,6 @@ namespace BootManager.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ExpectedLocation");
-
-                    b.Navigation("Product");
-
-                    b.Navigation("StorageLocation");
-                });
-
-            modelBuilder.Entity("BootManager.Core.Entities.StockExpectedLocation", b =>
-                {
-                    b.HasOne("BootManager.Core.Entities.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BootManager.Core.Entities.StorageLocation", "StorageLocation")
-                        .WithMany()
-                        .HasForeignKey("StorageLocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
 
                     b.Navigation("Product");
 
