@@ -2,6 +2,13 @@
 
 ## Current Implementation Status
 
+## Scanflow Focus
+
+- [x] `PILOT-SCAN-03` nieuwe scanstart-UX plus eerste acceptabele routering
+- [x] `PILOT-SCAN-03A` product-scanwerkcontext zonder legacy-terugval
+- [ ] `PILOT-SCAN-04` locatiegerichte scanwerkcontext uitwerken
+- [ ] `PILOT-SCAN-05` productgerichte vervolgstappen en onbekende-code-flow afronden
+
 ### ✅ Completed Vertical Slices
 
 | Measurement Type | PGN | Core Entity | Parser | Interpreter | Service | Storage | Status |

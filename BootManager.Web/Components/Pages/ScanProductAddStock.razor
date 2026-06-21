@@ -1,0 +1,551 @@
+@page "/scan/product/{ProductId}/add-stock"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@implements IAsyncDisposable
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Application.Storage.Services
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Results
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@using System.Security.Claims
+
+@inject IProductService ProductService
+@inject IStockService StockService
+@inject IStorageService StorageService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime Js
+
+<PageTitle>Voorraad toevoegen</PageTitle>
+
+<div class="scan-product-container">
+    <h2>Voorraad toevoegen</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Product laden...</div>
+    }
+    else if (_product == null)
+    {
+        <div class="alert alert-danger">Product niet gevonden.</div>
+        <button class="btn btn-secondary" @onclick="GoBack">Terug</button>
+    }
+    else
+    {
+        <!-- Product header -->
+        <div class="scan-product-card card scan-product-header">
+            <div class="card-body">
+                <h3 class="card-title">@_product.Name</h3>
+                @if (_product.Code != null)
+                {
+                    <p class="text-muted">Code: <code>@_product.Code.Value</code></p>
+                }
+                <p class="text-muted">Eenheid: @_product.DefaultUnitName</p>
+            </div>
+        </div>
+
+        <!-- Current locations summary -->
+        @if (_stockLocations != null && _stockLocations.Count > 0)
+        {
+            <div class="scan-product-card card">
+                <div class="card-body">
+                    <h5 class="card-title">Huidige locaties</h5>
+                    <div class="stock-list">
+                        @foreach (var stock in _stockLocations)
+                        {
+                            <div class="stock-item">
+                                <div class="stock-location">
+                                    <strong>@stock.StorageAreaName</strong><br />
+                                    <span class="text-muted">@stock.StorageLocationName</span>
+                                </div>
+                                <div class="stock-quantity">
+                                    <span class="badge bg-primary">@stock.Quantity @stock.DefaultUnitName</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Location selection -->
+        <div class="scan-product-card card">
+            <div class="card-body">
+                <h5 class="card-title">Locatie selecteren</h5>
+
+                <!-- QR Scan section: compact card -->
+                <div class="scan-location-qr-section mb-3">
+                    <p class="text-muted small">Locatie selecteren via scan of handmatige code:</p>
+
+                    @if (_scanStatus == ScanStatus.InsecureContext)
+                    {
+                        <div class="alert alert-warning alert-sm mb-2">
+                            Camera niet beschikbaar via HTTP. Handmatige invoer is beschikbaar.
+                        </div>
+                    }
+                    else if (_scanStatus == ScanStatus.Error && !string.IsNullOrEmpty(_scanErrorMessage))
+                    {
+                        <div class="alert alert-warning alert-dismissible fade show alert-sm mb-2" role="alert">
+                            @_scanErrorMessage
+                            <button type="button" class="btn-close btn-close-sm" @onclick="() => _scanErrorMessage = null"></button>
+                        </div>
+                    }
+
+                    <div class="scan-video-wrapper @(_showScanVideo ? "scan-video-visible" : "scan-video-hidden") mb-2">
+                        <video id="add-stock-scan-video" autoplay playsinline muted></video>
+                    </div>
+
+                    <div class="scan-location-controls mb-2">
+                        @if (_scanStatus is ScanStatus.NotStarted or ScanStatus.Stopped or ScanStatus.Error)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" @onclick="StartLocationScan" disabled="@_isSaving">
+                                Locatie-QR scannen
+                            </button>
+                        }
+                        else if (_scanStatus == ScanStatus.RequestingPermission)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" disabled>
+                                Camera wordt gestart…
+                            </button>
+                        }
+                        else if (_scanStatus == ScanStatus.Active)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" @onclick="StopLocationScan">
+                                Scanner stoppen
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Manual location code input fallback -->
+                    <div class="scan-location-manual-input mb-2">
+                        <label for="location-code-input" class="form-label form-label-sm">Of voer locatiecode in:</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="location-code-input"
+                                   placeholder="Locatiecode…" @bind="_manualLocationCode"
+                                   @bind:event="oninput" @onkeydown="HandleLocationCodeKeyDown"
+                                   disabled="@_isSaving" />
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="ResolveManualLocationCode"
+                                    disabled="@(string.IsNullOrWhiteSpace(_manualLocationCode) || _isSaving)">
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show alert-sm mb-2" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close btn-close-sm" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_successMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show alert-sm mb-2" role="alert">
+                        @_successMessage
+                        <button type="button" class="btn-close btn-close-sm" @onclick="() => _successMessage = null"></button>
+                    </div>
+                }
+
+                <!-- Manual location dropdown: fallback selection -->
+                <div class="form-group mb-3">
+                    <label for="location-select" class="form-label">Of kies uit beschikbare locaties:</label>
+                    <select class="form-select form-select-sm" id="location-select" @bind="_selectedLocationId" disabled="@_isSaving">
+                        <option value="">-- Kies een locatie --</option>
+                        @if (_availableLocations != null)
+                        {
+                            @foreach (var location in _availableLocations)
+                            {
+                                <option value="@location.Id">@location.StorageAreaName - @location.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Quantity input -->
+                <div class="form-group mb-3">
+                    <label for="quantity-input" class="form-label">Hoeveelheid (@_product.DefaultUnitName) *</label>
+                    <input type="number" class="form-control" id="quantity-input" @bind="_quantity" min="0" step="0.01" disabled="@_isSaving" />
+                </div>
+
+                <button class="btn btn-primary w-100" @onclick="AddStock" disabled="@(string.IsNullOrWhiteSpace(_selectedLocationId) || _isSaving)">
+                    @if (_isSaving)
+                    {
+                        <span>Opslaan…</span>
+                    }
+                    else
+                    {
+                        <span>Voorraad toevoegen</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <!-- Back button -->
+        <div class="scan-product-footer">
+            <button class="btn btn-outline-secondary w-100" @onclick="GoBack">
+                Terug naar product
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private enum ScanStatus
+    {
+        NotStarted,
+        RequestingPermission,
+        Active,
+        Stopped,
+        Error,
+        InsecureContext
+    }
+
+    [Parameter]
+    public string ProductId { get; set; } = string.Empty;
+
+    private ProductDto? _product;
+    private List<StockDto>? _stockLocations;
+    private List<StorageLocationDto>? _availableLocations;
+    private string? _selectedLocationId;
+    private string? _manualLocationCode;
+    private int _quantity = 0;
+    private bool _loading = true;
+    private bool _isSaving = false;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    private ScanStatus _scanStatus = ScanStatus.NotStarted;
+    private string? _scanErrorMessage;
+    private int _scanRequestId = 0;
+    private IJSObjectReference? _scanModule;
+    private DotNetObjectReference<ScanProductAddStock>? _dotnetRef;
+
+    private bool _showScanVideo =>
+        _scanStatus is ScanStatus.RequestingPermission or ScanStatus.Active;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!Guid.TryParse(ProductId, out var productId))
+        {
+            _product = null;
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var productResult = await ProductService.GetByIdAsync(productId);
+            if (productResult.Success && productResult.Data != null)
+            {
+                _product = productResult.Data;
+
+                var stockResult = await StockService.GetActiveStocksByProductAsync(productId);
+                _stockLocations = stockResult.Success && stockResult.Data != null
+                    ? stockResult.Data.ToList()
+                    : new();
+
+                var areasResult = await StorageService.GetAllAreasAsync();
+                _availableLocations = new();
+
+                if (areasResult != null)
+                {
+                    foreach (var area in areasResult)
+                    {
+                        var locationsResult = await StorageService.GetLocationsByAreaAsync(area.Id);
+                        if (locationsResult != null)
+                        {
+                            _availableLocations.AddRange(locationsResult);
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            _product = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _scanModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/barcodeScanner.js");
+            }
+            catch (JSException)
+            {
+                _scanStatus = ScanStatus.Error;
+                _scanErrorMessage = "Scannermodule kon niet worden geladen.";
+                StateHasChanged();
+                return;
+            }
+
+            _dotnetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                var isSecure = await _scanModule.InvokeAsync<bool>("checkSecureContext");
+                if (!isSecure)
+                {
+                    _scanStatus = ScanStatus.InsecureContext;
+                    StateHasChanged();
+                }
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+    }
+
+    private async Task StartLocationScan()
+    {
+        if (_scanModule is null || _dotnetRef is null)
+            return;
+
+        _scanErrorMessage = null;
+        _scanRequestId++;
+        var localRequestId = _scanRequestId;
+
+        _scanStatus = ScanStatus.RequestingPermission;
+        StateHasChanged();
+
+        await _internalStartScan(localRequestId);
+    }
+
+    private async Task _internalStartScan(int localRequestId)
+    {
+        if (_scanModule is null || _dotnetRef is null)
+            return;
+
+        try
+        {
+            await _scanModule.InvokeVoidAsync("startScan", _dotnetRef, "add-stock-scan-video", null, localRequestId);
+
+            if (localRequestId != _scanRequestId)
+                return;
+        }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
+        catch (JSException ex)
+        {
+            if (localRequestId != _scanRequestId)
+                return;
+
+            _scanStatus = ScanStatus.Error;
+            _scanErrorMessage = "Fout bij starten van scanner: " + ex.Message;
+            StateHasChanged();
+            return;
+        }
+
+        if (localRequestId != _scanRequestId)
+            return;
+
+        if (_scanStatus == ScanStatus.RequestingPermission)
+        {
+            _scanStatus = ScanStatus.Active;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StopLocationScan()
+    {
+        _scanRequestId++;
+
+        if (_scanModule is not null)
+        {
+            try
+            {
+                await _scanModule.InvokeVoidAsync("stopScan");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _scanStatus = ScanStatus.Stopped;
+        StateHasChanged();
+    }
+
+    private async Task HandleLocationCodeKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ResolveManualLocationCode();
+        }
+    }
+
+    private async Task ResolveManualLocationCode()
+    {
+        var code = _manualLocationCode?.Trim();
+        if (string.IsNullOrEmpty(code) || _availableLocations == null)
+            return;
+
+        // Try to resolve as BootManager location QR first
+        var qrResolution = await StorageService.ResolveQrValueAsync(code);
+
+        if (qrResolution.Status == QrStatus.Linked && qrResolution.LinkedLocationId.HasValue)
+        {
+            // Known location QR — find and select it
+            var matchedLocation = _availableLocations.FirstOrDefault(l => l.Id == qrResolution.LinkedLocationId.Value);
+            if (matchedLocation != null)
+            {
+                _selectedLocationId = matchedLocation.Id.ToString();
+                _manualLocationCode = null;
+                _successMessage = $"Locatie '{matchedLocation.Name}' geselecteerd.";
+                await Task.Delay(800);
+                _successMessage = null;
+                StateHasChanged();
+                return;
+            }
+        }
+        else if (qrResolution.Status == QrStatus.Unknown)
+        {
+            // Valid BootManager QR but not linked to any location
+            _errorMessage = "Onbekende BootManager locatie-QR.";
+            return;
+        }
+
+        // Not a BootManager QR or Invalid — fall back to ID or name matching
+        var fallbackMatch = _availableLocations.FirstOrDefault(l =>
+            l.Id.ToString().Equals(code, StringComparison.OrdinalIgnoreCase) ||
+            l.Name.Equals(code, StringComparison.OrdinalIgnoreCase));
+
+        if (fallbackMatch != null)
+        {
+            _selectedLocationId = fallbackMatch.Id.ToString();
+            _manualLocationCode = null;
+            _successMessage = $"Locatie '{fallbackMatch.Name}' geselecteerd.";
+            await Task.Delay(800);
+            _successMessage = null;
+            StateHasChanged();
+        }
+        else
+        {
+            _errorMessage = $"Locatie niet gevonden: {code}";
+        }
+    }
+
+    [JSInvokable]
+    public async void OnLocationScanResult(int requestId, string value, string format)
+    {
+        if (requestId != _scanRequestId)
+            return;
+
+        _scanStatus = ScanStatus.Stopped;
+
+        if (_availableLocations == null)
+        {
+            _scanErrorMessage = "Locaties niet geladen.";
+            StateHasChanged();
+            return;
+        }
+
+        var scannedLocation = _availableLocations.FirstOrDefault(l => l.Id.ToString() == value);
+
+        if (scannedLocation != null)
+        {
+            _selectedLocationId = scannedLocation.Id.ToString();
+            _scanErrorMessage = null;
+            _successMessage = $"Locatie '{scannedLocation.Name}' gescand.";
+            await StopLocationScan();
+            await Task.Delay(800);
+            _successMessage = null;
+        }
+        else
+        {
+            _scanErrorMessage = $"Locatie niet herkend: {value}";
+        }
+
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnLocationScanError(int requestId, string errorCode)
+    {
+        if (requestId != _scanRequestId)
+            return;
+
+        _scanStatus = errorCode == "INSECURE_CONTEXT" ? ScanStatus.InsecureContext : ScanStatus.Error;
+        _scanErrorMessage = errorCode switch
+        {
+            "INSECURE_CONTEXT"    => "Cameratoegang vereist HTTPS.",
+            "NO_CAMERA_API"       => "Camera-API niet beschikbaar.",
+            "PERMISSION_DENIED"   => "Cameratoestemming geweigerd.",
+            "NO_CAMERA"           => "Geen camera gevonden.",
+            "CAMERA_ERROR"        => "Camera kon niet worden gestart.",
+            "DECODER_LOAD_FAILED" => "Barcodedecoder kon niet worden geladen.",
+            _                     => "Onbekende fout bij scanner."
+        };
+
+        StateHasChanged();
+    }
+
+    private async Task AddStock()
+    {
+        if (_product == null || string.IsNullOrWhiteSpace(_selectedLocationId) || !Guid.TryParse(_selectedLocationId, out var locationId))
+            return;
+
+        if (_quantity <= 0)
+            return;
+
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var result = await StockService.AddOrIncrementStockAsync(_product.Id, locationId, _quantity);
+
+            if (result.Success)
+            {
+                _successMessage = "Voorraad toegevoegd.";
+                await Task.Delay(500);
+                NavigationManager.NavigateTo($"/scan/product/{ProductId}");
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Voorraad toevoegen mislukt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout: " + ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo($"/scan/product/{ProductId}");
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (_dotnetRef is not null)
+            _dotnetRef.Dispose();
+
+        if (_scanModule is not null)
+            await _scanModule.DisposeAsync();
+    }
+}

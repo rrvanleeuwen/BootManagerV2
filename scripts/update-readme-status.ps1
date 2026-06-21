@@ -193,7 +193,7 @@ function Get-HolidayPilotStatus {
 
     # De pilotstories hebben een vaste prioriteitsvolgorde in het releasedocument.
     # Houd deze tellers bij wanneer een pilotstory administratief van status wijzigt.
-    $done = 12
+    $done = 13
     $partial = 0
     $open = 8
     $parked = 0
@@ -208,7 +208,7 @@ function Get-HolidayPilotStatus {
         Parked = $parked
         Active = $done + $partial + $open
         Progress = $progress
-        Next = "PILOT-SCAN-03 - Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans"
+        Next = "PILOT-SCAN-04 - Locatiegerichte scanmodus"
     }
 }
 

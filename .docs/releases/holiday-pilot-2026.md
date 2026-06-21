@@ -251,6 +251,13 @@ Als Owner of Crew wil ik een nieuw centraal scanstartscherm hebben dat scans dir
 routert naar locatiecontext, productcontext of onbekende-code-afhandeling, zodat
 scannen een duidelijke hoofdtaak wordt in plaats van een losse cameraweergave.
 
+**Statusnotitie 2026-06-21**
+De technische scanstart en basisroutering zijn werkend. De productroute is aanvullend
+afgerond via `PILOT-SCAN-03A`, zodat bekende productscans niet meer in legacy-achtige
+schermen eindigen. De bekende locatie- en onbekende-code-routes krijgen in de volgende
+stories nog hun definitieve nieuwe eindschermen, maar deze startstory is daarmee
+functioneel en UX-matig geaccepteerd als nieuwe centrale scan-ingang.
+
 **Scope**
 
 - Nieuw scherm `Scannen` voor mobiel en desktop volgens de scanflow- en UI-richtlijnen.
@@ -265,6 +272,66 @@ scannen een duidelijke hoofdtaak wordt in plaats van een losse cameraweergave.
 - Volledige locatiegerichte vervolgflow.
 - Volledige productgerichte vervolgflow.
 - Definitieve verwijdering van oude scanstart.
+
+### PILOT-SCAN-03A — Product-scanwerkcontext zonder legacy-terugval
+
+**Storyzin**
+Als Owner of Crew wil ik na het scannen van een bekende productcode in een compacte,
+taakgerichte productwerkcontext landen, zodat ik direct begrijp welk product is
+herkend, welke voorraadlocaties relevant zijn en wat mijn eerstvolgende actie is,
+zonder terug te vallen op een oud CRUD-achtig scherm.
+
+**Waarom deze slice nu**
+`PILOT-SCAN-03` heeft bevestigd dat alleen een nieuw scanstartscherm niet voldoende is.
+Zolang een bekende productscan eindigt in `/scan/old` of een generieke detailpagina,
+raakt de gebruiker de draad kwijt. Deze slice maakt daarom eerst een echte
+product-scanwerkcontext, zodat de productroute uit de nieuwe scanflow ook UX-matig
+acceptabel wordt.
+
+**Statusnotitie 2026-06-21**
+Handmatig geaccepteerd. Bekende productscans landen nu in een nieuwe
+productwerkcontext met nieuwe vervolgroutes voor muteren en voorraad toevoegen, zonder
+zichtbare terugval naar oude scanpagina's of oude CRUD-achtige eindschermen.
+
+**Scope**
+
+- Nieuwe scanwerkcontext voor een bekende productscan.
+- Duidelijke productkop met minimale kerninformatie.
+- Compact blok `Voorraad per locatie`.
+- Duidelijke primaire werkactie voor vervolgstap of mutatie.
+- Rustige kaartopbouw voor mobiel en desktop volgens de scanflow-UI-richtlijnen.
+- Routering vanaf `/scan` voor bekende productcodes naar deze nieuwe werkcontext in
+  plaats van naar `/scan/old` als eindervaring.
+
+**Buiten scope**
+
+- Volledige locatiegerichte scanwerkcontext.
+- Definitieve onbekende-code-flow.
+- Volledig productbeheer of klassieke productdetailschermen.
+- Historie als dominante primaire inhoud.
+- Definitieve verwijdering van `/scan/old`.
+
+**Acceptatiecriteria**
+
+1. Een bekende productscan eindigt niet meer in een oud CRUD-achtig scherm.
+2. De gebruiker ziet direct welk product is herkend.
+3. De gebruiker ziet direct welke locaties of voorraadcontext relevant zijn.
+4. Het scherm heeft precies één duidelijke hoofdactie of eerstvolgende werkstap.
+5. Het scherm voelt op mobiel compact en taakgericht en op desktop overzichtelijk en
+   rustig.
+6. De productscanroute blijft onderdeel van de nieuwe scanervaring en voelt niet als
+   een technische handoff naar legacy.
+
+**Handmatige acceptatietest**
+
+1. Open `/scan` als ingelogde Owner of Crew.
+2. Scan of voer een bekende productcode in.
+3. Controleer dat de app niet eindigt op `/scan/old` of een klassieke beheerpagina als
+   eindervaring.
+4. Controleer dat direct een compacte productwerkcontext zichtbaar is met productkop,
+   relevante locatie-/voorraadinfo en een duidelijke hoofdactie.
+5. Controleer de schermervaring op mobiel en desktop op rust, duidelijkheid en minimale
+   informatie.
 
 ### PILOT-SCAN-04 — Locatiegerichte scanmodus
 

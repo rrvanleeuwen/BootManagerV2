@@ -1,0 +1,140 @@
+@page "/scan/product/{ProductId}/mutate"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Application.Storage.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+@inject IProductService ProductService
+@inject IStockService StockService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Mutatie</PageTitle>
+
+<div class="scan-product-container">
+    <h2>Mutatie op product</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Product laden...</div>
+    }
+    else if (_product == null)
+    {
+        <div class="alert alert-danger">Product niet gevonden.</div>
+        <button class="btn btn-secondary" @onclick="GoBack">Terug</button>
+    }
+    else
+    {
+        <!-- Product header -->
+        <div class="scan-product-card card scan-product-header">
+            <div class="card-body">
+                <h3 class="card-title">@_product.Name</h3>
+                @if (_product.Code != null)
+                {
+                    <p class="text-muted">Code: <code>@_product.Code.Value</code></p>
+                }
+                <p class="text-muted">Eenheid: @_product.DefaultUnitName</p>
+            </div>
+        </div>
+
+        <!-- Stock list for selection -->
+        @if (_stockLocations != null && _stockLocations.Count > 0)
+        {
+            <div class="scan-product-card card">
+                <div class="card-body">
+                    <h5 class="card-title">Kies een locatie om te muteren</h5>
+                    <div class="stock-list">
+                        @foreach (var stock in _stockLocations)
+                        {
+                            <button type="button" class="btn btn-outline-primary w-100 text-start p-3 mb-2" @onclick="() => SelectLocation(stock)">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@stock.StorageAreaName</strong><br />
+                                        <span class="text-muted">@stock.StorageLocationName</span>
+                                    </div>
+                                    <span class="badge bg-primary">@stock.Quantity @stock.DefaultUnitName</span>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                Dit product heeft geen actieve voorraad. Ga terug en kies 'Voorraad toevoegen'.
+            </div>
+        }
+
+        <!-- Back button -->
+        <div class="scan-product-footer">
+            <button class="btn btn-outline-secondary w-100" @onclick="GoBack">
+                Terug naar product
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string ProductId { get; set; } = string.Empty;
+
+    private ProductDto? _product;
+    private List<StockDto>? _stockLocations;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!Guid.TryParse(ProductId, out var productId))
+        {
+            _product = null;
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var productResult = await ProductService.GetByIdAsync(productId);
+            if (productResult.Success && productResult.Data != null)
+            {
+                _product = productResult.Data;
+
+                var stockResult = await StockService.GetActiveStocksByProductAsync(productId);
+                _stockLocations = stockResult.Success && stockResult.Data != null
+                    ? stockResult.Data.ToList()
+                    : new();
+            }
+        }
+        catch
+        {
+            _product = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void SelectLocation(StockDto stock)
+    {
+        if (_product == null)
+            return;
+
+        NavigationManager.NavigateTo($"/scan/product/{_product.Id}/mutate/{stock.StorageLocationId}");
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo($"/scan/product/{ProductId}");
+    }
+}

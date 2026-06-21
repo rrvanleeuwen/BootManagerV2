@@ -10,6 +10,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using BootManager.Web.Components.Inventory
+@using Microsoft.AspNetCore.Components
 
 @inject IJSRuntime Js
 @inject IStorageService StorageService
@@ -650,6 +651,9 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "code")]
+    public string? HandoffCode { get; set; }
+
     private enum ScanStatus
     {
         NotStarted,
@@ -826,6 +830,16 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         _isOwner = authState.User.IsInRole("Owner");
+
+        // Handle handoff code from new /scan startscreen without requiring re-entry
+        if (!string.IsNullOrEmpty(HandoffCode))
+        {
+            _manualInput = null;
+            _resultValue = HandoffCode;
+            _resultFormat = "Handoff (no re-entry)";
+            _status = ScanStatus.ManualEntry;
+            await ProcessScannedValue(HandoffCode);
+        }
     }
 
     /// <summary>

@@ -264,10 +264,187 @@ Historie ondersteunt controle en terugvinden, maar mag de primaire scan- en muta
 - baseer mobiel op `historie_logboek`;
 - baseer desktop op `historie_logboek_desktop`.
 
+## Concreet schermcontract voor BootManager
+
+Deze sectie is leidend voor alle vervolgstories in het scanspoor. Een story is pas
+acceptabel wanneer zowel de functionele flow als de bedoelde UI-vertaling zichtbaar is.
+Een technisch werkende route die de gebruiker laat terugvallen op een oud CRUD-achtig
+scherm geldt daarom niet als voldoende eindresultaat.
+
+## 1. `Scan start`
+
+### Doel
+
+De gebruiker moet in minder dan enkele seconden begrijpen:
+
+- dit is het centrale scanwerkgebied;
+- hier kan ik direct scannen of handmatig invoeren;
+- het systeem onthoudt mijn recente werk;
+- de hoofdactie is nu scannen, niet zoeken of beheren.
+
+### Mobiel: boven de vouw
+
+Toon direct:
+
+- paginatitel `Scannen`;
+- korte instructieregel van maximaal één zin;
+- één dominante scankaart met duidelijke primaire knop;
+- één compact blok voor handmatige invoer.
+
+Toon nog niet boven de vouw:
+
+- uitgebreide technische statussen;
+- meerdere concurrerende primaire knoppen;
+- beheerinformatie of oude resultaatschermen.
+
+### Desktop: eerste indruk
+
+Toon direct:
+
+- een dominante scanzone als primaire kolom;
+- een rustige rechterkolom voor handmatige invoer en recents;
+- voldoende witruimte en duidelijke kaartscheiding.
+
+Voorkom:
+
+- een formulierwand;
+- gelijkgewicht tussen scan, historie en beheer;
+- tabellen of detailvelden die de scanstart verdringen.
+
+### Informatiehiërarchie
+
+Volgorde:
+
+1. wat kan ik nu doen;
+2. hoe kan ik fallback gebruiken;
+3. wat heb ik net gedaan.
+
+### Acties
+
+- primaire knop: `Camera starten` of equivalent;
+- secundaire actie: handmatige invoer toepassen;
+- recents zijn snelle hervat-acties, geen hoofdtaak.
+
+## 2. `Product gescand`
+
+### Doel
+
+Na het scannen van een product moet de gebruiker direct begrijpen:
+
+- welk product is herkend;
+- op welke locaties dit product nu aanwezig is;
+- wat de eerstvolgende logische actie is;
+- hoe hij snel voorraad kan muteren zonder te verdwalen.
+
+### Harde UX-regel
+
+Een productscan mag niet eindigen op een generieke oude locatie- of beheerpagina als
+eindervaring. Zolang een tijdelijke technische handoff nodig is, moet de vervolgstap
+nog steeds aanvoelen als onderdeel van de nieuwe scanflow en niet als terugval naar een
+legacy CRUD-scherm.
+
+### Mobiel
+
+Toon in deze volgorde:
+
+- productkaart met naam, code en compacte status;
+- primaire actiekaart `Muteren op bestaande locatie`;
+- secundaire actiekaart `Voorraad op andere locatie toevoegen`;
+- compacte lijst `Voorraad per locatie`;
+- pas daarna eventuele historie.
+
+Beperk tot minimale informatie:
+
+- geen brede beheerformulieren;
+- geen irrelevante productmetadata;
+- geen zware tabellen boven de hoofdactie.
+
+### Desktop
+
+Toon in duidelijke kaarten of kolommen:
+
+- productidentiteit;
+- voorraad per locatie;
+- nieuwe mutatie;
+- recente mutaties.
+
+De mutatiekaart moet visueel dominanter zijn dan historische of administratieve blokken.
+
+### Actielogica
+
+- precies één dominante eerstvolgende actie;
+- locatiekeuze of mutatiekeuze moet direct zichtbaar zijn;
+- de gebruiker hoeft niet te zoeken naar de werkactie.
+
+## 3. `Locatie gescand`
+
+### Doel
+
+Na het scannen van een locatie moet de gebruiker direct begrijpen:
+
+- welke locatie actief is;
+- welke producten daar nu liggen;
+- hoe hij direct op bestaand product muteert;
+- hoe hij snel een ander product aan deze locatie toevoegt.
+
+### Harde UX-regel
+
+Een locatiescan mag niet landen op een klassieke detailpagina die primair voelt als
+beheer- of registratiescherm. Het moet een werkcontext zijn: overzichtelijk, actiegericht
+en duidelijk scan-gerelateerd.
+
+### Mobiel
+
+Toon in deze volgorde:
+
+- locatiekop met naam en status;
+- primaire actie `Muteren op bestaand product`;
+- secundaire actie `Ander product toevoegen`;
+- compacte voorraadlijst;
+- pas daarna recente activiteit of aanvullende details.
+
+### Desktop
+
+Toon in kaarten/kolommen:
+
+- locatie-identiteit;
+- actieblok;
+- voorraad als hoofdinhoud;
+- activiteit of context als tweede inhoudsblok.
+
+### Informatiebeperking
+
+Laat alleen zien wat nodig is om direct verder te werken:
+
+- productnaam;
+- hoeveelheid;
+- relevante locatiecontext;
+- duidelijke volgende actie.
+
+Vermijd:
+
+- overmatige detailvelden;
+- administratieve metadata zonder taakwaarde;
+- schermen die voelen als een database-record.
+
+## Beslisregel voor acceptatie
+
+Bij iedere scanstory geldt voortaan:
+
+- flow correct, UI onduidelijk: niet acceptabel;
+- UI mooi, flow onduidelijk: niet acceptabel;
+- pas akkoord als de gebruiker zowel begrijpt wat er gebeurt als direct ziet wat de
+  volgende logische actie is.
+
 ## Implementatie-afspraken voor de volgende fase
 
 - Nieuwe scanflow-schermen volgen deze documentatie als referentie voor layout en interactie.
 - Voorbeelden uit het zip-pakket gelden als patroonbibliotheek, niet als pixelverplichte kopie.
+- Iedere update in het scanspoor bevat voortaan expliciet:
+  - de functionele flowwijziging;
+  - de bedoelde UI-vertaling op mobiel en desktop;
+  - de reden waarom de gekozen eindschermen de gebruiker niet laten terugvallen op een
+    oud beheer- of CRUD-patroon.
 - Bij twijfel is de volgorde:
   1. functionele flow uit `scanflow-herdefinitie.md`;
   2. daarna de UI-principes uit dit document;
