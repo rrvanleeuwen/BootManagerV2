@@ -49,6 +49,18 @@ public class NavMenuComponentTests : TestContext
         Assert.Empty(cut.FindAll("a[href='storage/tag-overview']"));
     }
 
+    [Fact]
+    public void NavMenu_AuthorizedUserSeesScanMenu_LinksToCanonicalScanRoute()
+    {
+        var authContext = this.AddTestAuthorization();
+        authContext.SetAuthorized("testuser");
+
+        var cut = Render(RenderNavMenu);
+
+        var scanLink = cut.Find("a[href='scan']");
+        Assert.Equal("Scannen", scanLink.TextContent.Trim());
+    }
+
     private static RenderFragment RenderNavMenu => builder =>
     {
         builder.OpenComponent<CascadingAuthenticationState>(0);

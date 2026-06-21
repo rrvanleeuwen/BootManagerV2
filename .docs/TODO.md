@@ -108,6 +108,34 @@
   - **Verificatie:** `ScanComponentTests`, `ProductsComponentTests` en `StockServiceTests` uitgebreid voor scanflow, claim-afhandeling, fallback-mutaties en historie; build en gerichte regressies groen.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
+- [x] **Holiday Pilot 2026 — PILOT-SCAN-02 parallelle scan-reworkbasis met `old`-isolatie**
+  - **Aanleiding 2026-06-21:** de huidige scanflow wordt als ontevredenstellend beschouwd en moet vóór de vakantie opnieuw worden opgebouwd op basis van `.docs/analysis/ScannenFlow/scanflow-herdefinitie.md` en `.docs/analysis/ScannenFlow/scanflow-ui-richtlijnen.md`.
+  - **Doel:** oude scanroutes en componenten expliciet isoleren als `old`, zodat de nieuwe implementatie direct de juiste definitieve naamgeving kan krijgen.
+  - **Kern:** huidige flow blijft tijdelijk bruikbaar; technische naamgeving, routes, navigatie en tests maken oud versus nieuw expliciet; parallelle opbouw wordt mogelijk zonder routeconflict.
+  - **Buiten scope:** nieuwe scanstart, nieuwe locatieflow, nieuwe productflow en definitieve cutover.
+  - **Belangrijk:** deze slice is de overgangsbasis; pas na acceptatie van de nieuwe flow mag de oude implementatie verdwijnen.
+  - **Status 2026-06-21:** technisch gecontroleerd en handmatig geaccepteerd.
+  - **Verificatie:** `ScanComponentTests` en `NavMenuComponentTests` groen; solution-build groen; canonieke route `/scan` blijft behouden en verwijst tijdelijk door naar `/scan/old`, terwijl de oude flow functioneel beschikbaar blijft.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-SCAN-03 nieuw scanstartscherm met routering**
+  - **Doel:** `Scannen` wordt een volwaardig startscherm met camera, handmatige fallback en recente scans.
+  - **Kern:** bekende locatiecode, bekende productcode en onbekende code krijgen elk hun eigen directe routering.
+  - **Buiten scope:** volledige vervolgschermen voor locatie- en productcontext.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-SCAN-04 locatiegerichte scanmodus**
+  - **Doel:** na een locatiescan direct werken in locatiecontext met aanwezige producten en snelle vervolgacties.
+  - **Kern:** muteren op bestaand product en ander product toevoegen binnen vaste locatiecontext.
+  - **Buiten scope:** productgerichte route en volledige onbekende-code-flow buiten locatiecontext.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-SCAN-05 productgerichte scanmodus en onbekende-code-flow**
+  - **Doel:** na een productscan direct werken in productcontext met voorraadlocaties, mutatieacties en veilige onbekende-code-afhandeling.
+  - **Kern:** bestaande locatie muteren, andere locatie toevoegen en expliciete keuze bij onbekende code.
+  - **Buiten scope:** definitieve verwijdering van de oude scanflow.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**
   - **Aanleiding 2026-05-26:** Tijdens Raspberry Pi test vóór login/onboarding stond in het menu nog **Register Owner**. Klikken navigeert naar `/register-owner`. Dit is oude vrije registratie en hoort niet meer bij de huidige bootstrap owner + verplichte onboarding flow.
   - **Status:** afgerond via PR #64, merge commit `a441ca8`. User story `US7: Legacy Register Owner Route En Menu Verwijderen` staat als gereed in `.docs/epics/first-run-onboarding.md`.
