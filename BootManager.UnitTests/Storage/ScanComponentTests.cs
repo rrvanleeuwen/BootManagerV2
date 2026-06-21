@@ -197,6 +197,49 @@ public class ScanComponentTests : TestContext
     }
 
     [Fact]
+    public void HandoffCode_KnownProduct_ProcessesWithoutManualReentry()
+    {
+        var productId = Guid.NewGuid();
+        var productCode = "ABC123";
+        SetupAuthState("Owner");
+
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "TestProduct",
+            DefaultUnitName = "stuk",
+            Code = new ProductCodeDto { Value = productCode }
+        };
+
+        _storageMock
+            .Setup(s => s.ResolveQrValueAsync(productCode, default))
+            .ReturnsAsync(QrResolutionResult.Invalid());
+
+        _productServiceMock
+            .Setup(s => s.GetByCodeValueAsync(productCode, default))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, default))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        _stockServiceMock
+            .Setup(s => s.GetExpectedLocationForProductAsync(productId, default))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.NotFound());
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo($"/scan/old?code={Uri.EscapeDataString(productCode)}");
+
+        var cut = RenderComponent<ScanOld>();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Geen actieve voorraad", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("TestProduct", cut.Markup);
+        });
+    }
+
+    [Fact]
     public async Task KnownProductCode_WithOneActiveLocation_NavigatesDirectlyToLocation()
     {
         var productId = Guid.NewGuid();
@@ -1452,6 +1495,7 @@ public class ScanComponentTests : TestContext
             .ReturnsAsync(new AuthenticationState(principal));
         Services.AddScoped(_ => authStateMock.Object);
     }
+
 
     private void SetupScannerJs()
     {

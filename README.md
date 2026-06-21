@@ -15,7 +15,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[############--------]` 60% | 20 |
+| Vakantiepilot 2026 | `[############--------]` 61.9% | 21 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
 | Legacy scope | `[#######-------------]` 32.9% | 129 |
 
@@ -23,7 +23,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[############--------]` 60% | 12 | 0 | 8 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-SCAN-03 - Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans |
+| `[############--------]` 61.9% | 13 | 0 | 8 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-SCAN-04 - Locatiegerichte scanmodus |
 
 ### BootManagerV2 Epics
 

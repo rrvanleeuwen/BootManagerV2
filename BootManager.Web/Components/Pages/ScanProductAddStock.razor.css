@@ -1,0 +1,103 @@
+/* Add-stock specific styling: compact location selection card */
+
+.scan-location-qr-section {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.scan-location-qr-section .text-muted {
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Compact video wrapper */
+.scan-video-wrapper {
+    width: 100%;
+    background: #000;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.scan-video-visible {
+    aspect-ratio: 4 / 3;
+}
+
+.scan-video-hidden {
+    height: 0;
+}
+
+.scan-video-wrapper video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+/* Compact controls */
+.scan-location-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.scan-location-controls .btn {
+    flex: 1;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.75rem;
+}
+
+/* Manual location code input */
+.scan-location-manual-input .form-label-sm {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+}
+
+.scan-location-manual-input .input-group-sm {
+    gap: 0.25rem;
+}
+
+.scan-location-manual-input .form-control {
+    font-size: 0.9rem;
+}
+
+/* Compact alerts */
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+
+.btn-close-sm {
+    width: 1rem;
+    height: 1rem;
+    padding: 0.1rem;
+}
+
+/* Form control sizing for compact flow */
+.form-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+}
+
+.form-control,
+.form-select {
+    font-size: 0.95rem;
+}
+
+.form-select-sm {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.75rem;
+}
+
+/* Button styling: primary action emphasis */
+.scan-product-container .btn-primary {
+    padding: 0.6rem 1rem;
+    font-weight: 500;
+}
+
+.scan-product-container .btn-primary:disabled {
+    opacity: 0.6;
+}

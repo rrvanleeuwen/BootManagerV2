@@ -10,10 +10,11 @@ Updated: 2026-06-21.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/scanflow-herdefinitie`.
-- Branch bevat documentatievoorbereiding voor de herdefinitie van de scanflows,
-  inclusief nieuwe analyse- en UI-richtlijnendocumenten.
-- Lokale status bevat alleen documentatiewijzigingen voor het nieuwe scan-reworkspoor.
+- Actieve branch: `codex/pilot-scan-03a-product-scan-context`.
+- Branch bevat de nieuwe scanstart en product-scanwerkcontext uit `PILOT-SCAN-03A`,
+  plus de bijbehorende documentatie-updates.
+- Lokale status bevat implementatie-, test- en documentatiewijzigingen voor het
+  scan-reworkspoor die nog gecommit en gepusht moeten worden.
 
 ## Actieve release
 
@@ -23,16 +24,20 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
 - status: actief en leidend voor de eerstvolgende ontwikkelperiode;
 - afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
-  `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`;
-- eerstvolgende focus na afronding van deze documentatiebranch: `PILOT-SCAN-03`.
+  `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
+  `PILOT-SCAN-03A`;
+- eerstvolgende focus: `PILOT-SCAN-04` als nieuwe locatie-scanwerkcontext zonder
+  hergebruik van oude scan- of locatiepagina's.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Bij hervatten na merge de implementation packet-voorbereiding voor `PILOT-SCAN-03`
-starten, gevolgd door `PILOT-SCAN-04` en `PILOT-SCAN-05`.
+Na commit/push van deze branch de volgende implementatiestap voorbereiden voor
+`PILOT-SCAN-04`: een volledig nieuwe locatie-scanwerkcontext, zonder hergebruik van
+oude scanflow-pagina's, oude scancomponenten of de bestaande generieke locatiepagina
+als scan-eindervaring.
 
 Technisch bevestigd in deze sessie:
 
@@ -50,6 +55,14 @@ Technisch bevestigd in deze sessie:
   - navigatie blijft naar `/scan` wijzen;
 - `PILOT-INV-05` blijft de actuele oude scan/mutatiebasis totdat de nieuwe flow
   handmatig geaccepteerd is.
+- vanaf nu geldt voor alle scanstories expliciet dat flow en UI samen beoordeeld worden;
+  een technisch werkende route zonder duidelijke UI-vertaling naar de aangeleverde
+  designs is niet acceptabel.
+- `PILOT-SCAN-03A` is handmatig geaccepteerd:
+  - bekende productscans landen nu in nieuwe scanroutes;
+  - muteren en voorraad toevoegen werken binnen nieuwe productflow-schermen;
+  - locatie-QR scannen en handmatige locatiecode-invoer werken in de add-stock-flow;
+  - er is geen zichtbare terugval naar `/scan/old` binnen het bekende-product-pad.
 
 ## Niet-standaard context
 
