@@ -8,6 +8,7 @@
 @using BootManager.Application.Inventory.Contracts
 @using BootManager.Application.Inventory.DTOs
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @using BootManager.Web.Components.Inventory
 
 @inject IJSRuntime Js
@@ -159,7 +160,186 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
 
 @if (_status is ScanStatus.Result or ScanStatus.ManualEntry)
 {
-    @if (_productFindingFlowActive)
+    @if (_mutationFlowActive)
+    {
+        <div class="scan-mutation-flow">
+            @if (_mutationFlowState == MutationFlowState.ChoosingLocation)
+            {
+                <div class="card p-3">
+                    <h6>Voorraadbijzonderheid: locatie selecteren</h6>
+                    @if (_suggestedLocation != null)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <strong>Meest recent:</strong><br/>
+                            @_suggestedLocation.StorageAreaName - @_suggestedLocation.StorageLocationName
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-primary" @onclick="async () => await SelectMutationLocationStep(_suggestedLocation)">Selecteren</button>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_alternativeLocations?.Count > 0)
+                    {
+                        <div class="mb-3">
+                            <strong>Andere locaties:</strong>
+                            <div class="list-group list-group-sm">
+                                @foreach (var loc in _alternativeLocations)
+                                {
+                                    <button type="button" class="list-group-item list-group-item-action" @onclick="async () => await SelectMutationLocation(loc)">
+                                        @loc.StorageAreaName - @loc.StorageLocationName
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="SelectMutationLocationManually">Handmatig selecteren</button>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="StartMutationLocationScan">Of scan locatie-QR</button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-danger" @onclick="CancelMutationFlow">Annuleren</button>
+                </div>
+            }
+            else if (_mutationFlowState == MutationFlowState.ScanningProduct)
+            {
+                <div class="card p-3">
+                    <h6>Voorraadbijzonderheid: product scannen</h6>
+                    @if (_mutationSelectedLocation != null)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <strong>Locatie:</strong> @_mutationSelectedLocation.StorageAreaName - @_mutationSelectedLocation.StorageLocationName
+                        </div>
+                    }
+                    <p class="text-muted mb-3">Scan de productcode of voer handmatig een code in.</p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Scan productcode…" @bind="_mutationScannedProductCode" />
+                        <button class="btn btn-outline-primary" @onclick="ProcessMutationProductScan" disabled="@string.IsNullOrEmpty(_mutationScannedProductCode)">Toepassen</button>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="GoBackToMutationLocationChoice">Terug</button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="CancelMutationFlow">Annuleren</button>
+                </div>
+            }
+            else if (_mutationFlowState == MutationFlowState.ChoosingLocationManually)
+            {
+                <div class="card p-3">
+                    <h6>Selecteer locatie</h6>
+                    @if (_mutationAllLocationsForSelection?.Count > 0)
+                    {
+                        <div class="list-group">
+                            @foreach (var loc in _mutationAllLocationsForSelection)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="async () => await SelectMutationLocationManually(loc)">
+                                    @loc.StorageAreaName - @loc.Name
+                                </button>
+                            }
+                        </div>
+                    }
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="StartMutationLocationScan">Of scan locatie-QR</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="GoBackToMutationLocationChoice">Terug</button>
+                    </div>
+                </div>
+            }
+            else if (_mutationFlowState == MutationFlowState.ChoosingProduct)
+            {
+                <div class="card p-3">
+                    <h6>Voorraadbijzonderheid: product selecteren</h6>
+                    @if (_mutationSelectedLocation != null)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <strong>Locatie:</strong> @_mutationSelectedLocation.StorageAreaName - @_mutationSelectedLocation.StorageLocationName
+                        </div>
+                    }
+
+                    @if (_mutationProductLocations?.Count > 0)
+                    {
+                        <div class="list-group mb-3">
+                            @foreach (var stock in _mutationProductLocations)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectMutationProduct(stock)">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@stock.ProductName</strong>
+                                        <span class="badge bg-primary">@stock.Quantity @stock.DefaultUnitName</span>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="GoBackToMutationLocationChoice">Terug</button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="CancelMutationFlow">Annuleren</button>
+                </div>
+            }
+            else if (_mutationFlowState == MutationFlowState.EnteringMutationQuantity)
+            {
+                <div class="card p-3">
+                    <h6>Voorraadbijzonderheid opslaan</h6>
+                    @if (_mutationSelectedProduct != null && _mutationSelectedLocation != null)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <strong>Product:</strong> @_mutationSelectedProduct.ProductName<br/>
+                            <strong>Locatie:</strong> @_mutationSelectedLocation.StorageAreaName - @_mutationSelectedLocation.StorageLocationName<br/>
+                            <strong>Huidige hoeveelheid:</strong> @_mutationSelectedProduct.Quantity @_mutationSelectedProduct.DefaultUnitName
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Mutatielogtype *</label>
+                        <select class="form-select" @bind="_mutationTypeSelection">
+                            <option value="">-- Selecteer type --</option>
+                            <option value="Verbruik">Verbruik (afname)</option>
+                            <option value="Correctie">Correctie (herzien hoeveelheid)</option>
+                            <option value="Telling">Telling (gecontroleerde hoeveelheid)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            @if (_mutationTypeSelection == "Verbruik")
+                            {
+                                <span>Afnamehoeveelheid *</span>
+                            }
+                            else if (_mutationTypeSelection == "Correctie" || _mutationTypeSelection == "Telling")
+                            {
+                                <span>Nieuwe hoeveelheid *</span>
+                            }
+                            else
+                            {
+                                <span>Hoeveelheid *</span>
+                            }
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" step="0.01"
+                                   @bind="_mutationQuantityInput" placeholder="0" />
+                            <span class="input-group-text">@_mutationSelectedProduct?.DefaultUnitName</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notitie (optioneel)</label>
+                        <textarea class="form-control" @bind="_mutationNote" placeholder="Vrije notitie…" rows="2"></textarea>
+                    </div>
+
+                    <button class="btn btn-sm btn-primary" @onclick="SaveMutation" disabled="@(string.IsNullOrEmpty(_mutationTypeSelection) || _mutationQuantityInput <= 0)">Opslaan</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="GoBackToMutationProductChoice">Terug</button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="CancelMutationFlow">Annuleren</button>
+                </div>
+            }
+            else if (_mutationFlowState == MutationFlowState.ContinuePrompt)
+            {
+                <div class="card p-3 alert-success">
+                    <h6>Voorraadbijzonderheid opgeslagen!</h6>
+                    <p>Wil je nog een bijzonderheid vastleggen?</p>
+                    <button class="btn btn-sm btn-primary" @onclick="ContinueMutationFlow">Ja, nog een</button>
+                    <button class="btn btn-sm btn-secondary" @onclick="CancelMutationFlow">Nee, sluiten</button>
+                </div>
+            }
+        </div>
+    }
+    else if (_productFindingFlowActive)
     {
         <div class="scan-finding-flow">
             @if (_productFindingFlowState == ProductFindingFlowState.ShowingLocationOptions)
@@ -214,11 +394,16 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
                             </div>
                         }
                         <button class="btn btn-sm btn-primary" @onclick="RequestAddStock">Voorraad toevoegen</button>
+                        <button class="btn btn-sm btn-info" @onclick="StartMutationFlowFromProduct">Voorraadbijzonderheid</button>
                         <button class="btn btn-sm btn-outline-secondary" @onclick="CancelProductFinding">Sluiten</button>
                     </div>
                 }
             }
         </div>
+    }
+    else if (_mutationFlowActive)
+    {
+        // Mutation flow is shown separately above
     }
     else if (_inventoryFlowActive)
     {
@@ -488,6 +673,16 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         LinkingCodeToProduct
     }
 
+    private enum MutationFlowState
+    {
+        ChoosingLocation,
+        ChoosingLocationManually,
+        ScanningProduct,
+        ChoosingProduct,
+        EnteringMutationQuantity,
+        ContinuePrompt
+    }
+
     private enum ProductFindingFlowState
     {
         ShowingLocationOptions,
@@ -552,6 +747,19 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
     private StockDto? _selectedLocation;
     private decimal _quantityInput = 0;
 
+    // Mutation flow state
+    private bool _mutationFlowActive = false;
+    private MutationFlowState _mutationFlowState = MutationFlowState.ChoosingLocation;
+    private StockDto? _mutationSelectedLocation;
+    private StockDto? _mutationSelectedProduct;
+    private List<StockDto>? _mutationProductLocations;
+    private decimal _mutationQuantityInput = 0;
+    private string _mutationTypeSelection = "";
+    private string? _mutationNote;
+    private List<StorageLocationDto>? _mutationAllLocationsForSelection;
+    private string? _mutationScannedProductCode;
+    private ProductDto? _mutationScannedProduct;
+
     // Unknown product code flow state
     private string? _unknownScannedCode;
     private IReadOnlyList<ProductDto>? _productsForCodeLinking;
@@ -563,6 +771,9 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
 
     // Location scanning context: true when we're in inventory flow selecting a location via scan
     private bool _isLocationScanningForInventory = false;
+
+    // Location scanning context: true when we're in mutation flow selecting a location via scan
+    private bool _isLocationScanningForMutation = false;
 
     // Product finding flow state
     private bool _productFindingFlowActive = false;
@@ -920,6 +1131,18 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         // Handle BootManager location QRs (both linked and unknown)
         if (_qrResolution.Status == QrStatus.Linked && _qrResolution.LinkedLocationId.HasValue)
         {
+            // Als we in mutation flow zijn en locatie selecteren, gebruik deze locatie
+            if (_mutationFlowActive && (_mutationFlowState == MutationFlowState.ChoosingLocationManually || _isLocationScanningForMutation))
+            {
+                _isLocationScanningForMutation = false;
+                var location = await StorageService.GetLocationDetailAsync(_qrResolution.LinkedLocationId.Value);
+                if (location.Success && location.Data != null)
+                {
+                    await SelectMutationLocationManually(new StorageLocationDto { Id = location.Data.Id, Name = location.Data.LocationName, StorageAreaName = location.Data.AreaName });
+                }
+                return;
+            }
+
             // Als we in inventory flow zijn en locatie selecteren, gebruik deze locatie
             if (_inventoryFlowActive && (_inventoryFlowState == InventoryFlowState.ChoosingLocationManually || _isLocationScanningForInventory))
             {
@@ -946,6 +1169,12 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
         // Do NOT navigate automatically. Show result screen with role-based button instead.
         if (_qrResolution.Status == QrStatus.Unknown)
         {
+            return;
+        }
+
+        if (_mutationFlowActive && _mutationFlowState == MutationFlowState.ScanningProduct)
+        {
+            await HandleMutationProductScanAsync(value);
             return;
         }
 
@@ -1299,6 +1528,332 @@ else if (_status == ScanStatus.Error && _errorMessage is not null)
             NavigationManager.NavigateTo($"/storage/link-location-qr?qrValue={encodedQrValue}");
         }
         return Task.CompletedTask;
+    }
+
+    private async Task StartMutationFlowFromProduct()
+    {
+        if (_currentProduct == null)
+            return;
+
+        _mutationFlowActive = true;
+        _mutationFlowState = MutationFlowState.ChoosingLocation;
+        _mutationSelectedLocation = null;
+        _mutationSelectedProduct = null;
+        _mutationQuantityInput = 0;
+        _mutationTypeSelection = "";
+        _mutationNote = null;
+        _mutationProductLocations = null;
+        _mutationAllLocationsForSelection = null;
+        _mutationScannedProductCode = null;
+        _mutationScannedProduct = _currentProduct;
+        _productFindingFlowActive = false;
+
+        _suggestedLocation = null;
+        _alternativeLocations = null;
+
+        var suggestedResult = await StockService.GetMostRecentStockForProductAsync(_currentProduct.Id);
+        _suggestedLocation = suggestedResult.Success ? suggestedResult.Data : null;
+
+        var alternativesResult = await StockService.GetAlternativeLocationsForProductAsync(_currentProduct.Id);
+        _alternativeLocations = alternativesResult.Success ? alternativesResult.Data?.ToList() : new();
+
+        StateHasChanged();
+    }
+
+    private async Task StartMutationFlow()
+    {
+        _mutationFlowActive = true;
+        _mutationFlowState = MutationFlowState.ChoosingLocation;
+        _mutationSelectedLocation = null;
+        _mutationSelectedProduct = null;
+        _mutationQuantityInput = 0;
+        _mutationTypeSelection = "";
+        _mutationNote = null;
+        _mutationProductLocations = null;
+        _mutationAllLocationsForSelection = null;
+
+        _suggestedLocation = null;
+        _alternativeLocations = null;
+        if (_currentProduct != null)
+        {
+            var suggestedResult = await StockService.GetMostRecentStockForProductAsync(_currentProduct.Id);
+            _suggestedLocation = suggestedResult.Success ? suggestedResult.Data : null;
+
+            var alternativesResult = await StockService.GetAlternativeLocationsForProductAsync(_currentProduct.Id);
+            _alternativeLocations = alternativesResult.Success ? alternativesResult.Data?.ToList() : new();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SelectMutationLocationStep(StockDto location)
+    {
+        _mutationSelectedLocation = location;
+        _mutationScannedProductCode = null;
+
+        if (await TryContinueMutationWithScannedProductAsync(
+            location.StorageLocationId,
+            location.StorageAreaName,
+            location.StorageLocationName))
+        {
+            StateHasChanged();
+            return;
+        }
+
+        _mutationFlowState = MutationFlowState.ScanningProduct;
+        StateHasChanged();
+    }
+
+    private async Task ProcessMutationProductScan()
+    {
+        var scannedCode = _mutationScannedProductCode?.Trim();
+        if (string.IsNullOrEmpty(scannedCode) || _mutationSelectedLocation == null)
+            return;
+
+        await HandleMutationProductScanAsync(scannedCode);
+        _mutationScannedProductCode = null;
+        StateHasChanged();
+    }
+
+    private async Task HandleMutationProductScanAsync(string scannedCode)
+    {
+        if (_mutationSelectedLocation == null)
+            return;
+
+        var productResult = await ProductService.GetByCodeValueAsync(scannedCode);
+        if (!productResult.Success || productResult.Data == null)
+        {
+            await LoadMutationProductFallbackAsync();
+            return;
+        }
+
+        var locationStocksResult = await StockService.GetStocksByLocationAsync(_mutationSelectedLocation.StorageLocationId);
+        var locationStocks = locationStocksResult.Success && locationStocksResult.Data != null
+            ? locationStocksResult.Data.ToList()
+            : new List<StockDto>();
+
+        var matchingStock = locationStocks.FirstOrDefault(s => s.ProductId == productResult.Data.Id);
+        if (matchingStock != null)
+        {
+            _mutationSelectedProduct = matchingStock;
+            _mutationFlowState = MutationFlowState.EnteringMutationQuantity;
+            _errorMessage = null;
+            return;
+        }
+
+        await LoadMutationProductFallbackAsync();
+    }
+
+    private async Task LoadMutationProductFallbackAsync()
+    {
+        if (_mutationSelectedLocation == null)
+            return;
+
+        var locationStocksResult = await StockService.GetStocksByLocationAsync(_mutationSelectedLocation.StorageLocationId);
+        _mutationProductLocations = locationStocksResult.Success && locationStocksResult.Data != null
+            ? locationStocksResult.Data.ToList()
+            : new List<StockDto>();
+        _mutationFlowState = MutationFlowState.ChoosingProduct;
+        _errorMessage = _mutationProductLocations.Count == 0
+            ? "Geen producten gevonden op deze locatie."
+            : "Product niet direct gevonden. Kies handmatig uit de locatievoorraad.";
+    }
+
+    private void GoBackToMutationLocationChoice()
+    {
+        _mutationFlowState = MutationFlowState.ChoosingLocation;
+        StateHasChanged();
+    }
+
+    private void GoBackToMutationProductChoice()
+    {
+        _mutationFlowState = MutationFlowState.ScanningProduct;
+        _mutationScannedProductCode = null;
+        StateHasChanged();
+    }
+
+    private async Task SelectMutationLocation(StockDto location)
+    {
+        _mutationSelectedLocation = location;
+        _mutationScannedProductCode = null;
+
+        if (await TryContinueMutationWithScannedProductAsync(
+            location.StorageLocationId,
+            location.StorageAreaName,
+            location.StorageLocationName))
+        {
+            StateHasChanged();
+            return;
+        }
+
+        _mutationFlowState = MutationFlowState.ScanningProduct;
+        StateHasChanged();
+    }
+
+    private async Task SelectMutationLocationManually()
+    {
+        _mutationAllLocationsForSelection = await LoadAllLocations();
+        _mutationFlowState = MutationFlowState.ChoosingLocationManually;
+        StateHasChanged();
+    }
+
+    private async Task SelectMutationLocationManually(StorageLocationDto location)
+    {
+        _mutationSelectedLocation = new StockDto
+        {
+            StorageLocationId = location.Id,
+            StorageAreaName = location.StorageAreaName ?? "Onbekend",
+            StorageLocationName = location.Name
+        };
+        _mutationScannedProductCode = null;
+
+        if (await TryContinueMutationWithScannedProductAsync(
+            location.Id,
+            location.StorageAreaName ?? "Onbekend",
+            location.Name))
+        {
+            StateHasChanged();
+            return;
+        }
+
+        _mutationFlowState = MutationFlowState.ScanningProduct;
+        StateHasChanged();
+    }
+
+    private async Task<bool> TryContinueMutationWithScannedProductAsync(
+        Guid locationId,
+        string areaName,
+        string locationName)
+    {
+        if (_mutationScannedProduct == null)
+            return false;
+
+        var locationStocksResult = await StockService.GetStocksByLocationAsync(locationId);
+        var locationStocks = locationStocksResult.Success && locationStocksResult.Data != null
+            ? locationStocksResult.Data.ToList()
+            : new List<StockDto>();
+
+        var matchingStock = locationStocks.FirstOrDefault(s => s.ProductId == _mutationScannedProduct.Id);
+        _mutationSelectedProduct = matchingStock ?? new StockDto
+        {
+            ProductId = _mutationScannedProduct.Id,
+            StorageLocationId = locationId,
+            ProductName = _mutationScannedProduct.Name,
+            StorageAreaName = areaName,
+            StorageLocationName = locationName,
+            Quantity = 0,
+            DefaultUnitName = _mutationScannedProduct.DefaultUnitName
+        };
+
+        _mutationFlowState = MutationFlowState.EnteringMutationQuantity;
+        _errorMessage = null;
+        return true;
+    }
+
+    private async Task StartMutationLocationScan()
+    {
+        _resultValue = null;
+        _resultFormat = null;
+        _errorMessage = null;
+        _isLocationScanningForMutation = true;
+        _status = ScanStatus.RequestingPermission;
+        _requestId++;
+
+        var localRequestId = _requestId;
+        var localSelectedDeviceId = _selectedDeviceId;
+
+        StateHasChanged();
+        await _internalStartScan(localRequestId, localSelectedDeviceId);
+    }
+
+    private void LoadMutationProductsForLocation(Guid locationId)
+    {
+        _mutationProductLocations = _alternativeLocations?.Where(s => s.StorageLocationId == locationId).ToList() ?? new();
+        if (_suggestedLocation?.StorageLocationId == locationId && !_mutationProductLocations.Any(s => s.Id == _suggestedLocation.Id))
+        {
+            _mutationProductLocations.Insert(0, _suggestedLocation);
+        }
+    }
+
+    private void SelectMutationProduct(StockDto stock)
+    {
+        _mutationSelectedProduct = stock;
+        _mutationFlowState = MutationFlowState.EnteringMutationQuantity;
+        StateHasChanged();
+    }
+
+    private async Task SaveMutation()
+    {
+        if (_mutationSelectedProduct == null || _mutationSelectedLocation == null || string.IsNullOrEmpty(_mutationTypeSelection) || _mutationQuantityInput <= 0)
+        {
+            _errorMessage = "Onvolledig formulier.";
+            return;
+        }
+
+        if (!Enum.TryParse<Core.Entities.StockMutationType>(_mutationTypeSelection, out var mutationType))
+        {
+            _errorMessage = "Ongeldig mutatielogtype.";
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst("sub")?.Value
+            ?? authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            _errorMessage = "Gebruiker niet bepaald.";
+            return;
+        }
+
+        var result = await StockService.MutateStockAsync(
+            _mutationSelectedProduct.ProductId,
+            _mutationSelectedLocation.StorageLocationId,
+            mutationType,
+            _mutationQuantityInput,
+            userId,
+            string.IsNullOrWhiteSpace(_mutationNote) ? null : _mutationNote.Trim());
+
+        if (result.Success)
+        {
+            _mutationFlowState = MutationFlowState.ContinuePrompt;
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage ?? "Opslaan mislukt.";
+        }
+
+        StateHasChanged();
+    }
+
+    private void ContinueMutationFlow()
+    {
+        _mutationSelectedLocation = null;
+        _mutationSelectedProduct = null;
+        _mutationQuantityInput = 0;
+        _mutationTypeSelection = "";
+        _mutationNote = null;
+        _mutationFlowState = MutationFlowState.ChoosingLocation;
+        _mutationProductLocations = null;
+        _mutationScannedProductCode = null;
+        _mutationScannedProduct = null;
+        _isLocationScanningForMutation = false;
+        StateHasChanged();
+    }
+
+    private void CancelMutationFlow()
+    {
+        _mutationFlowActive = false;
+        _mutationSelectedLocation = null;
+        _mutationSelectedProduct = null;
+        _mutationQuantityInput = 0;
+        _mutationTypeSelection = "";
+        _mutationNote = null;
+        _mutationProductLocations = null;
+        _mutationAllLocationsForSelection = null;
+        _mutationScannedProductCode = null;
+        _mutationScannedProduct = null;
+        _isLocationScanningForMutation = false;
+        StateHasChanged();
     }
 
     /// <summary>

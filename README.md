@@ -5,7 +5,7 @@ BootManagerV2 is een lokale, Raspberry Pi-vriendelijke bootmanagementapplicatie 
 <!-- PROJECT-STATUS:START -->
 ## Projectstatus
 
-_Laatst bijgewerkt: 2026-06-20. Gegenereerd met `scripts/update-readme-status.ps1`._
+_Laatst bijgewerkt: 2026-06-21. Gegenereerd met `scripts/update-readme-status.ps1`._
 
 De percentages zijn voortgangsindicatoren, geen harde planning. Berekening: `Done` en `Replaced` tellen als 100%, `Partial` telt als 50%, `Open` telt als 0%. `Parked` en `Obsolete` tellen niet mee in de actieve scope.
 
@@ -23,7 +23,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[############--------]` 62.5% | 10 | 0 | 6 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-05 - Voorraad muteren en eenvoudige historie |
+| `[##############------]` 68.8% | 11 | 0 | 5 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-LOG-01 - Handmatig logboekmoment met actuele NMEA-snapshot |
 
 ### BootManagerV2 Epics
 

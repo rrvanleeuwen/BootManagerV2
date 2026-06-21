@@ -4,12 +4,14 @@ using BootManager.Application.Inventory.DTOs;
 using BootManager.Application.Inventory.Results;
 using BootManager.Application.Storage.DTOs;
 using BootManager.Application.Storage.Services;
+using BootManager.Core.Entities;
 using BootManager.Web.Components.Pages.Inventory;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using System.Security.Claims;
+using System.Reflection;
 
 namespace BootManager.UnitTests.Inventory;
 
@@ -464,9 +466,177 @@ public class ProductsComponentTests : TestContext
         Assert.NotEmpty(selects);
     }
 
-    private void SetupAuthState(string role)
+    [Fact]
+    public async Task AdministrativeMutationFallback_ModalCanBeOpened()
     {
-        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, role) }, "test");
+        // Arrange
+        SetupAuthState("Owner");
+
+        _productServiceMock
+            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto>().AsReadOnly());
+        _categoryServiceMock
+            .Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductCategoryDto>().AsReadOnly());
+        _unitServiceMock
+            .Setup(s => s.InitializeDefaultUnitsAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _unitServiceMock
+            .Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UnitDto>().AsReadOnly());
+        _categoryServiceMock
+            .Setup(s => s.GetValidIconKeys())
+            .Returns(new List<string>());
+
+        var cut = RenderComponent<Products>();
+
+        // Act: Click the fallback mutation button
+        await cut.InvokeAsync(() =>
+        {
+            var mutationBtn = cut.FindAll("button").First(b => b.TextContent.Contains("Voorraadbijzonderheid"));
+            mutationBtn.Click();
+        });
+
+        // Assert: Modal opens
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid vastleggen", cut.Markup));
+    }
+
+    [Fact]
+    public async Task AdministrativeMutationFallback_CallsMutateStockAsync_WhenSaved()
+    {
+        var productId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Appel",
+            Description = "Groene appel",
+            DefaultUnitName = "stuk"
+        };
+        var stock = new StockDto
+        {
+            ProductId = productId,
+            StorageLocationId = locationId,
+            ProductName = "Appel",
+            StorageAreaName = "Kombuis",
+            StorageLocationName = "Voorraadbak",
+            Quantity = 5,
+            DefaultUnitName = "stuk"
+        };
+
+        SetupAuthState("Owner", userId);
+
+        _productServiceMock
+            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto>().AsReadOnly());
+        _categoryServiceMock
+            .Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductCategoryDto>().AsReadOnly());
+        _unitServiceMock
+            .Setup(s => s.InitializeDefaultUnitsAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _unitServiceMock
+            .Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UnitDto>().AsReadOnly());
+        _categoryServiceMock
+            .Setup(s => s.GetValidIconKeys())
+            .Returns(new List<string>());
+        _productServiceMock
+            .Setup(s => s.SearchByNameOrDescriptionAsync("Appel", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto> { stock }.AsReadOnly()));
+
+        _stockServiceMock
+            .Setup(s => s.MutateStockAsync(
+                productId,
+                locationId,
+                StockMutationType.Verbruik,
+                2m,
+                userId,
+                null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult.Ok());
+
+        var cut = RenderComponent<Products>();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Contains("Voorraadbijzonderheid"))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid vastleggen", cut.Markup));
+
+        var componentType = typeof(Products);
+        componentType
+            .GetField("_searchTerm", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(cut.Instance, "Appel");
+
+        var performFallbackSearch = componentType.GetMethod(
+            "PerformMutationFallbackSearch",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        var selectFallbackProduct = componentType.GetMethod(
+            "SelectProductForMutationFallback",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+
+        await cut.InvokeAsync(async () =>
+        {
+            await (Task)performFallbackSearch!.Invoke(cut.Instance, null)!;
+            await (Task)selectFallbackProduct!.Invoke(cut.Instance, new object[] { product })!;
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Appel", cut.Markup));
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Locatie:", cut.Markup);
+            Assert.Contains("Voorraadbak", cut.Markup);
+        });
+
+        componentType
+            .GetField("_fallbackMutationType", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(cut.Instance, "Verbruik");
+        componentType
+            .GetField("_fallbackQuantity", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(cut.Instance, 2m);
+
+        var saveFallbackMutation = componentType.GetMethod(
+            "SaveMutationFallback",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+
+        await cut.InvokeAsync(async () =>
+        {
+            await (Task)saveFallbackMutation!.Invoke(cut.Instance, null)!;
+        });
+
+        _stockServiceMock.Verify(
+            s => s.MutateStockAsync(
+                productId,
+                locationId,
+                StockMutationType.Verbruik,
+                2m,
+                userId,
+                null,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    private void SetupAuthState(string role, Guid? userId = null)
+    {
+        var claims = new List<Claim> { new Claim(ClaimTypes.Role, role) };
+        if (userId.HasValue)
+        {
+            claims.Add(new Claim("sub", userId.Value.ToString()));
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
+        }
+        var identity = new ClaimsIdentity(claims, "test");
         var principal = new ClaimsPrincipal(identity);
         var authStateMock = new Mock<AuthenticationStateProvider>();
         authStateMock.Setup(p => p.GetAuthenticationStateAsync())

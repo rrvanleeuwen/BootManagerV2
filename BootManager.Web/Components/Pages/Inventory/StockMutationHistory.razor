@@ -1,0 +1,115 @@
+@page "/inventory/mutations"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Core.Entities
+@inject IStockService StockService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Voorraadbijzonderheden</PageTitle>
+
+<div class="mb-4">
+    <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="GoBack">← Terug</button>
+</div>
+
+<h3>Voorraadbijzonderheden</h3>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else if (_mutations == null || _mutations.Count == 0)
+{
+    <div class="alert alert-info">Geen voorraadbijzonderheden gevonden.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 15%;">Datum/Tijd</th>
+                    <th style="width: 10%;">Type</th>
+                    <th style="width: 15%;">Product</th>
+                    <th style="width: 20%;">Locatie</th>
+                    <th style="width: 10%;">Oude hoeveelheid</th>
+                    <th style="width: 10%;">Nieuwe hoeveelheid</th>
+                    <th style="width: 10%;">Gebruiker</th>
+                    <th style="width: 10%;">Notitie</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var mutation in _mutations)
+                {
+                    <tr>
+                        <td>
+                            <span title="@mutation.MutatedAt.ToString("O")">
+                                @mutation.MutatedAt.ToString("g")
+                            </span>
+                        </td>
+                        <td>
+                            @GetMutationTypeLabel(mutation.MutationType)
+                        </td>
+                        <td>@mutation.ProductName</td>
+                        <td>@mutation.StorageAreaName - @mutation.StorageLocationName</td>
+                        <td class="text-end">@mutation.OldQuantity @mutation.DefaultUnitName</td>
+                        <td class="text-end">@mutation.NewQuantity @mutation.DefaultUnitName</td>
+                        <td>@mutation.UserDisplayName</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(mutation.Note))
+                            {
+                                <span title="@mutation.Note">
+                                    @(mutation.Note.Length > 20 ? mutation.Note.Substring(0, 20) + "…" : mutation.Note)
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<StockMutationDto>? _mutations;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMutationsAsync();
+    }
+
+    private async Task LoadMutationsAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await StockService.GetStockMutationsAsync();
+            if (result.Success)
+            {
+                _mutations = result.Data?.ToList();
+            }
+        }
+        catch
+        {
+            // Log error, display empty list
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string GetMutationTypeLabel(StockMutationType type) => type switch
+    {
+        StockMutationType.Verbruik => "Verbruik",
+        StockMutationType.Correctie => "Correctie",
+        StockMutationType.Telling => "Telling",
+        _ => "Onbekend"
+    };
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/inventory/products");
+    }
+}

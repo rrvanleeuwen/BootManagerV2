@@ -69,17 +69,17 @@ Bij afronding van een story of PR:
 | US2.7 Barcodeherkenning via foto en AI | Parked | AI-herkenning lage prioriteit. |
 | US2.8 Product koppelen aan opslaglocatie | Done | `PILOT-INV-02` dekt voorraadregels per product-locatiecombinatie af via `Voorraad toevoegen` vanaf de locatiepagina, inclusief direct nieuw product aanmaken binnen dezelfde locatiecontext. |
 | US2.9 Voorraad bekijken per locatie | Done | `PILOT-INV-02` toont actuele locatie-inhoud per opslaglocatie en laat op productniveau zien op welke locaties voorraad ligt met hoeveelheid en eenheid. |
-| US2.10 Voorraad aanpassen | Open | Voorraadmutaties ontbreken. |
+| US2.10 Voorraad aanpassen | Done | `PILOT-INV-05` levert verbruik, tellingen en correcties op expliciete product-locatieregels met scan-gestuurde hoofdflow en administratieve fallback. |
 | US2.11 Minimumvoorraad en waarschuwing | Open | Afhankelijk van inventory en notificaties. |
 | US2.12 Zoeken en filteren | Partial | `PILOT-INV-04` levert eenvoudige handmatige zoekfallback in `Voorraadbeheer > Producten` op productnaam en omschrijving, hoofdletterongevoelig en met deelmatches. Uitgebreide filters, categorie-/gebiedfilters en bredere zoekopties blijven open. |
-| US2.13 Voorraadlogboek | Open | Voorraadmutaties ontbreken. |
+| US2.13 Voorraadlogboek | Done | `PILOT-INV-05` voegt een aparte historiepagina toe met datum/tijd, type, product, gebied + locatie, oude hoeveelheid, nieuwe hoeveelheid, gebruiker en notitie. |
 | US2.14 QR-scanner-modus | Partial | `PILOT-SCAN-01` levert een generieke QR-scanner, `PILOT-LOC-02` voegt BootManager locatie-QR routing toe, `PILOT-INV-03` maakt het scanmenu praktisch bruikbaar voor inventory-inruimen en `PILOT-INV-04` voegt scan-gebaseerd product terugvinden toe. Voorraadmutaties en bredere scan-gebaseerde vervolgacties blijven later open. |
 | US2.15 Bulkimport/export voorraad | Open | Later na datamodel. |
 | US2.16 Voorraadstatus in dashboard | Open | Afhankelijk van inventory en dashboard. |
 | US2.17 Integratie met passageplanning | Open | Afhankelijk van inventory en passageplanning. |
 | US2.18 Productfoto of label | Open | Later na productcatalogus. |
 | US2.19 Voorraad automatisch ophogen bij aankoop | Partial | `PILOT-INV-02` vult een bestaande product-locatieregel additief aan wanneer op dezelfde locatie opnieuw voorraad wordt toegevoegd. Een expliciete aankoopflow, mutatietypes en historie ontbreken nog. |
-| US2.20 Voorraad verminderen bij verbruik via barcode | Open | Afhankelijk van voorraadmutaties en scanning. |
+| US2.20 Voorraad verminderen bij verbruik via barcode | Partial | `PILOT-INV-05` ondersteunt verbruik via de scanflow `product -> Voorraadbijzonderheid -> locatie -> mutatie`, met expliciete locatiecontext en blokkade op oververbruik. Verdere automatisering en bredere barcodeverbruikpaden blijven open. |
 | US2.21 Cloud-synchronisatie | Parked | Cloud-sync geparkeerd. |
 
 ## Epic 3: Passageplanning

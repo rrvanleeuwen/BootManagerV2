@@ -5,12 +5,14 @@ using BootManager.Application.Inventory.Results;
 using BootManager.Application.Storage.DTOs;
 using BootManager.Application.Storage.Results;
 using BootManager.Application.Storage.Services;
+using BootManager.Core.Entities;
 using BootManager.Web.Components.Pages;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using System.Security.Claims;
+using System.Reflection;
 
 namespace BootManager.UnitTests.Storage;
 
@@ -267,16 +269,6 @@ public class ScanComponentTests : TestContext
             Assert.EndsWith($"/storage/locations/{locationId}", navigation.Uri));
 
         Assert.DoesNotContain("Product inruimen", cut.Markup);
-    }
-
-    private void SetupAuthState(string role)
-    {
-        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, role) }, "test");
-        var principal = new ClaimsPrincipal(identity);
-        var authStateMock = new Mock<AuthenticationStateProvider>();
-        authStateMock.Setup(p => p.GetAuthenticationStateAsync())
-            .ReturnsAsync(new AuthenticationState(principal));
-        Services.AddScoped(_ => authStateMock.Object);
     }
 
     [Fact]
@@ -912,6 +904,552 @@ public class ScanComponentTests : TestContext
         });
 
         Assert.Equal(initialUri, navigation.Uri);
+    }
+
+    [Fact]
+    public async Task PhysicalMutationRoute_PreScannedProduct_StoresMutationAndReturnsToStart()
+    {
+        var initialProductId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        const string initialCode = "INIT-001";
+
+        SetupAuthState("Crew", userId);
+
+        var initialProduct = new ProductDto
+        {
+            Id = initialProductId,
+            Name = "Lege Productkaart",
+            DefaultUnitName = "stuk",
+            Code = new ProductCodeDto { Value = initialCode, Format = "EAN13" }
+        };
+
+        var suggestedLocation = new StockDto
+        {
+            ProductId = initialProductId,
+            StorageLocationId = locationId,
+            StorageAreaName = "Kombuis",
+            StorageLocationName = "Bakboordkast",
+            Quantity = 0,
+            DefaultUnitName = "stuk"
+        };
+
+        _storageMock
+            .Setup(s => s.ResolveQrValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(QrResolutionResult.Invalid());
+
+        _productServiceMock
+            .Setup(s => s.GetByCodeValueAsync(initialCode, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(initialProduct));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(initialProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+        _stockServiceMock
+            .Setup(s => s.GetExpectedLocationForProductAsync(initialProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.NotFound());
+        _stockServiceMock
+            .Setup(s => s.GetMostRecentStockForProductAsync(initialProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.Ok(suggestedLocation));
+        _stockServiceMock
+            .Setup(s => s.GetAlternativeLocationsForProductAsync(initialProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+        _stockServiceMock
+            .Setup(s => s.GetStocksByLocationAsync(locationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+        _stockServiceMock
+            .Setup(s => s.MutateStockAsync(
+                initialProductId,
+                locationId,
+                StockMutationType.Correctie,
+                2m,
+                userId,
+                null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult.Ok());
+
+        var cut = RenderComponent<Scan>();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("input[placeholder='Voer barcode of QR-waarde in…']").Input(initialCode);
+            cut.FindAll("button").Single(b => b.TextContent.Contains("Toepassen")).Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Geen actieve voorraad", cut.Markup, StringComparison.OrdinalIgnoreCase));
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Trim().Equals("Voorraadbijzonderheid", StringComparison.Ordinal))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid: locatie selecteren", cut.Markup));
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Trim().Equals("Selecteren", StringComparison.Ordinal))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Voorraadbijzonderheid opslaan", cut.Markup);
+            Assert.Contains("Lege Productkaart", cut.Markup);
+        });
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("select").Change("Correctie");
+            cut.Find("input[type='number']").Change("2");
+            cut.FindAll("button").First(b => b.TextContent.Trim().Equals("Opslaan", StringComparison.Ordinal)).Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid opgeslagen!", cut.Markup));
+
+        _stockServiceMock.Verify(
+            s => s.MutateStockAsync(
+                initialProductId,
+                locationId,
+                StockMutationType.Correctie,
+                2m,
+                userId,
+                null,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Contains("Ja, nog een", StringComparison.Ordinal))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid: locatie selecteren", cut.Markup));
+    }
+
+    [Fact]
+    public async Task MutationFlow_WhenScannedProductExistsAtLocation_SkipsScanningAndGoesDirectlyToQuantity()
+    {
+        var scannedProductId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        const string scannedCode = "PROD-001";
+
+        SetupAuthState("Crew", userId);
+
+        var scannedProduct = new ProductDto
+        {
+            Id = scannedProductId,
+            Name = "TestProduct",
+            DefaultUnitName = "stuk",
+            Code = new ProductCodeDto { Value = scannedCode, Format = "EAN13" }
+        };
+
+        var location = new StockDto
+        {
+            StorageLocationId = locationId,
+            StorageAreaName = "Area1",
+            StorageLocationName = "Location1"
+        };
+
+        var stockAtLocation = new StockDto
+        {
+            ProductId = scannedProductId,
+            StorageLocationId = locationId,
+            ProductName = "TestProduct",
+            StorageAreaName = "Area1",
+            StorageLocationName = "Location1",
+            Quantity = 10,
+            DefaultUnitName = "stuk"
+        };
+
+        _storageMock
+            .Setup(s => s.ResolveQrValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(QrResolutionResult.Invalid());
+
+        _productServiceMock
+            .Setup(s => s.GetByCodeValueAsync(scannedCode, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(scannedProduct));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(scannedProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        _stockServiceMock
+            .Setup(s => s.GetExpectedLocationForProductAsync(scannedProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.NotFound());
+
+        _stockServiceMock
+            .Setup(s => s.GetMostRecentStockForProductAsync(scannedProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.Ok(location));
+
+        _stockServiceMock
+            .Setup(s => s.GetAlternativeLocationsForProductAsync(scannedProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        // Key setup: the scanned product DOES exist at the suggested location
+        _stockServiceMock
+            .Setup(s => s.GetStocksByLocationAsync(locationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
+                new List<StockDto> { stockAtLocation }.AsReadOnly()));
+
+        var cut = RenderComponent<Scan>();
+
+        // Scan the product code
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("input[placeholder='Voer barcode of QR-waarde in…']").Input(scannedCode);
+            cut.FindAll("button").Single(b => b.TextContent.Contains("Toepassen")).Click();
+        });
+
+        // Assert: no active stock found, showing mutation flow option
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Geen actieve voorraad", cut.Markup, StringComparison.OrdinalIgnoreCase));
+
+        // Click "Voorraadbijzonderheid"
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Trim().Equals("Voorraadbijzonderheid", StringComparison.Ordinal))
+                .Click();
+        });
+
+        // Assert: should show location selection
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid: locatie selecteren", cut.Markup));
+
+        // Click the suggested location (which contains the scanned product)
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Trim().Equals("Selecteren", StringComparison.Ordinal))
+                .Click();
+        });
+
+        // KEY ASSERTION: should skip product scanning and go directly to quantity entry
+        // This verifies the fix: the scanned product is automatically reused without asking to scan again
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid opslaan", cut.Markup));
+
+        // Verify the product info is shown (proving the product was found without rescanning)
+        Assert.Contains("TestProduct", cut.Markup);
+        Assert.Contains("Area1 - Location1", cut.Markup);
+
+        // Should NOT show the "product scannen" state
+        Assert.DoesNotContain("Voorraadbijzonderheid: product scannen", cut.Markup);
+    }
+
+    [Fact]
+    public async Task MutationFlow_WhenScannedProductHasNoStockAtScannedLocation_GoesDirectlyToQuantityWithZeroStock()
+    {
+        var scannedProductId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        const string scannedCode = "PROD-QR-001";
+        const string locationQr = "bootmanager:location:abc123";
+
+        SetupAuthState("Crew", userId);
+
+        var scannedProduct = new ProductDto
+        {
+            Id = scannedProductId,
+            Name = "TestProduct",
+            DefaultUnitName = "stuk",
+            Code = new ProductCodeDto { Value = scannedCode, Format = "EAN13" }
+        };
+
+        var suggestedLocation = new StockDto
+        {
+            StorageLocationId = locationId,
+            StorageAreaName = "Area1",
+            StorageLocationName = "Location1"
+        };
+
+        _storageMock
+            .Setup(s => s.ResolveQrValueAsync(scannedCode, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(QrResolutionResult.Invalid());
+        _storageMock
+            .Setup(s => s.ResolveQrValueAsync(locationQr, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(QrResolutionResult.Linked(locationId));
+        _storageMock
+            .Setup(s => s.GetLocationDetailAsync(locationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(StorageOperationResult<StorageLocationDetailDto>.Ok(new StorageLocationDetailDto
+            {
+                Id = locationId,
+                AreaName = "Area1",
+                LocationName = "Location1"
+            }));
+
+        _productServiceMock
+            .Setup(s => s.GetByCodeValueAsync(scannedCode, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(scannedProduct));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(scannedProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+        _stockServiceMock
+            .Setup(s => s.GetExpectedLocationForProductAsync(scannedProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.NotFound());
+        _stockServiceMock
+            .Setup(s => s.GetMostRecentStockForProductAsync(scannedProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.Ok(suggestedLocation));
+        _stockServiceMock
+            .Setup(s => s.GetAlternativeLocationsForProductAsync(scannedProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+        _stockServiceMock
+            .Setup(s => s.GetStocksByLocationAsync(locationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        var cut = RenderComponent<Scan>();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("input[placeholder='Voer barcode of QR-waarde in…']").Input(scannedCode);
+            cut.FindAll("button").Single(b => b.TextContent.Contains("Toepassen")).Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Geen actieve voorraad", cut.Markup, StringComparison.OrdinalIgnoreCase));
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Trim().Equals("Voorraadbijzonderheid", StringComparison.Ordinal))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid: locatie selecteren", cut.Markup));
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Contains("Of scan locatie-QR", StringComparison.Ordinal))
+                .Click();
+        });
+
+        var requestId = (int)typeof(Scan)
+            .GetField("_requestId", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(cut.Instance)!;
+
+        await cut.InvokeAsync(() => cut.Instance.OnScanResult(requestId, locationQr, "QR_CODE"));
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid opslaan", cut.Markup));
+
+        Assert.Contains("TestProduct", cut.Markup);
+        Assert.Contains("Area1 - Location1", cut.Markup);
+        Assert.Contains("Huidige hoeveelheid:", cut.Markup);
+        Assert.Contains("0 stuk", cut.Markup);
+        Assert.DoesNotContain("Voorraadbijzonderheid: product scannen", cut.Markup);
+    }
+
+    [Fact]
+    public async Task MutationFlow_ContinueNewMutation_ResetsPreviousProductContext()
+    {
+        var product1Id = Guid.NewGuid();
+        var product2Id = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        const string code1 = "PROD-001";
+        const string code2 = "PROD-002";
+
+        SetupAuthState("Crew", userId);
+
+        var product1 = new ProductDto
+        {
+            Id = product1Id,
+            Name = "Product1",
+            DefaultUnitName = "stuk",
+            Code = new ProductCodeDto { Value = code1, Format = "EAN13" }
+        };
+
+        var product2 = new ProductDto
+        {
+            Id = product2Id,
+            Name = "Product2",
+            DefaultUnitName = "stuk",
+            Code = new ProductCodeDto { Value = code2, Format = "EAN13" }
+        };
+
+        var location = new StockDto
+        {
+            StorageLocationId = locationId,
+            StorageAreaName = "Area1",
+            StorageLocationName = "Location1"
+        };
+
+        var stock1 = new StockDto
+        {
+            ProductId = product1Id,
+            StorageLocationId = locationId,
+            ProductName = "Product1",
+            StorageAreaName = "Area1",
+            StorageLocationName = "Location1",
+            Quantity = 10,
+            DefaultUnitName = "stuk"
+        };
+
+        var stock2 = new StockDto
+        {
+            ProductId = product2Id,
+            StorageLocationId = locationId,
+            ProductName = "Product2",
+            StorageAreaName = "Area1",
+            StorageLocationName = "Location1",
+            Quantity = 5,
+            DefaultUnitName = "stuk"
+        };
+
+        _storageMock
+            .Setup(s => s.ResolveQrValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(QrResolutionResult.Invalid());
+
+        _productServiceMock
+            .Setup(s => s.GetByCodeValueAsync(code1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product1));
+        _productServiceMock
+            .Setup(s => s.GetByCodeValueAsync(code2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product2));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(product1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(product2Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        _stockServiceMock
+            .Setup(s => s.GetExpectedLocationForProductAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.NotFound());
+
+        _stockServiceMock
+            .Setup(s => s.GetMostRecentStockForProductAsync(product1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.Ok(location));
+
+        _stockServiceMock
+            .Setup(s => s.GetMostRecentStockForProductAsync(product2Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.Ok(location));
+
+        _stockServiceMock
+            .Setup(s => s.GetAlternativeLocationsForProductAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        // First mutation: product1 at location
+        _stockServiceMock
+            .Setup(s => s.GetStocksByLocationAsync(locationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
+                new List<StockDto> { stock1 }.AsReadOnly()));
+
+        _stockServiceMock
+            .Setup(s => s.MutateStockAsync(
+                product1Id,
+                locationId,
+                StockMutationType.Verbruik,
+                1m,
+                userId,
+                null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult.Ok());
+
+        var cut = RenderComponent<Scan>();
+
+        // Scan product1
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("input[placeholder='Voer barcode of QR-waarde in…']").Input(code1);
+            cut.FindAll("button").Single(b => b.TextContent.Contains("Toepassen")).Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Geen actieve voorraad", cut.Markup, StringComparison.OrdinalIgnoreCase));
+
+        // Start mutation flow
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Trim().Equals("Voorraadbijzonderheid", StringComparison.Ordinal))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid: locatie selecteren", cut.Markup));
+
+        // Select location
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Trim().Equals("Selecteren", StringComparison.Ordinal))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid opslaan", cut.Markup));
+
+        // Fill and save mutation
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("select").Change("Verbruik");
+            cut.Find("input[type='number']").Change("1");
+            cut.FindAll("button").First(b => b.TextContent.Trim().Equals("Opslaan", StringComparison.Ordinal)).Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid opgeslagen!", cut.Markup));
+
+        // Click "Ja, nog een"
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Contains("Ja, nog een", StringComparison.Ordinal))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid: locatie selecteren", cut.Markup));
+
+        // KEY TEST: Now setup mocks for product2 at location, which should NOT auto-match
+        // because the scanned product context should have been reset
+        _stockServiceMock
+            .Setup(s => s.GetStocksByLocationAsync(locationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
+                new List<StockDto> { stock2 }.AsReadOnly()));
+
+        // Select same location again
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .First(b => b.TextContent.Trim().Equals("Selecteren", StringComparison.Ordinal))
+                .Click();
+        });
+
+        // Should now show product scanning (NOT direct entry), because old product context was cleared
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Voorraadbijzonderheid: product scannen", cut.Markup, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void SetupAuthState(string role, Guid? userId = null)
+    {
+        var claims = new List<Claim> { new Claim(ClaimTypes.Role, role) };
+        if (userId.HasValue)
+        {
+            claims.Add(new Claim("sub", userId.Value.ToString()));
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
+        }
+        var identity = new ClaimsIdentity(claims, "test");
+        var principal = new ClaimsPrincipal(identity);
+        var authStateMock = new Mock<AuthenticationStateProvider>();
+        authStateMock.Setup(p => p.GetAuthenticationStateAsync())
+            .ReturnsAsync(new AuthenticationState(principal));
+        Services.AddScoped(_ => authStateMock.Object);
     }
 
     private void SetupScannerJs()

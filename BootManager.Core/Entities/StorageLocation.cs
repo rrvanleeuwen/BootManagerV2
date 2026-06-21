@@ -30,6 +30,7 @@ public class StorageLocation
 
     public StorageArea StorageArea { get; private set; } = default!;
     public ICollection<Stock> Stocks { get; private set; } = new List<Stock>();
+    public ICollection<StockMutation> StockMutations { get; private set; } = new List<StockMutation>();
 
     private StorageLocation() { } // Voor EF
 

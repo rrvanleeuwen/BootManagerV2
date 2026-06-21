@@ -3,12 +3,16 @@
 @using BootManager.Application.Inventory.Contracts
 @using BootManager.Application.Inventory.DTOs
 @using BootManager.Web.Components.Inventory
+@using BootManager.Core.Entities
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @inject IProductService ProductService
 @inject IProductCategoryService CategoryService
 @inject IUnitService UnitService
 @inject IStockService StockService
 @inject NavigationManager NavigationManager
 @inject ILogger<Products> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Producten</PageTitle>
 
@@ -49,6 +53,10 @@
 
                 <button class="btn btn-outline-secondary btn-sm" @onclick="OpenSearchMode">
                     <i class="fas fa-search"></i> Zoeken
+                </button>
+
+                <button class="btn btn-info btn-sm" @onclick="OpenMutationFallback">
+                    <i class="fas fa-edit"></i> Voorraadbijzonderheid
                 </button>
             </div>
         }
@@ -455,7 +463,151 @@ else
     </div>
 </div>
 
-@if (_addCategoryModalOpen || _addUnitModalOpen)
+@if (_showMutationFallback)
+{
+    <div class="modal d-block" style="display: block; background-color: rgba(0, 0, 0, 0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Voorraadbijzonderheid vastleggen</h5>
+                    <button type="button" class="btn-close" @onclick="CloseMutationFallback"></button>
+                </div>
+                <div class="modal-body">
+                    @if (_fallbackError != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @_fallbackError
+                            <button type="button" class="btn-close" @onclick="() => _fallbackError = null"></button>
+                        </div>
+                    }
+
+                    @if (_fallbackProduct == null)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Product selecteren *</label>
+                            <input type="text" class="form-control" placeholder="Typ productnaam…" @bind="_searchTerm" />
+                            <button class="btn btn-sm btn-primary mt-2" @onclick="PerformMutationFallbackSearch">Zoeken</button>
+                        </div>
+
+                        @if (_searchResults != null && _searchResults.Count > 0)
+                        {
+                            <div class="list-group">
+                                @foreach (var product in _searchResults)
+                                {
+                                    <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectProductForMutationFallback(product)">
+                                        <strong>@product.Name</strong>
+                                        @if (!string.IsNullOrEmpty(product.Description))
+                                        {
+                                            <br />
+                                            <small class="text-muted">@(product.Description.Length > 60 ? product.Description.Substring(0, 60) + "…" : product.Description)</small>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-3">
+                            <strong>Product:</strong> @_fallbackProduct.Name<br />
+                        </div>
+
+                        @if (_fallbackSelectedStock == null && _fallbackProductLocations != null)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Locatie selecteren *</label>
+                                @if (_fallbackProductLocations.Count == 1)
+                                {
+                                    <div class="alert alert-info">
+                                        Automatisch geselecteerd: <strong>@_fallbackProductLocations[0].StorageAreaName - @_fallbackProductLocations[0].StorageLocationName</strong>
+                                        <button class="btn btn-sm btn-primary mt-2" @onclick="() => _fallbackSelectedStock = _fallbackProductLocations[0]">Doorgaan</button>
+                                    </div>
+                                }
+                                else if (_fallbackProductLocations.Count > 0)
+                                {
+                                    <div class="list-group">
+                                        @foreach (var stock in _fallbackProductLocations)
+                                        {
+                                            <button type="button" class="list-group-item list-group-item-action" @onclick="() => _fallbackSelectedStock = stock">
+                                                <div class="d-flex justify-content-between">
+                                                    <strong>@stock.StorageAreaName - @stock.StorageLocationName</strong>
+                                                    <span class="badge bg-primary">@stock.Quantity @stock.DefaultUnitName</span>
+                                                </div>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        Geen actieve voorraad beschikbaar voor dit product.
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else if (_fallbackSelectedStock != null)
+                        {
+                            <div class="alert alert-info mb-3">
+                                <strong>Locatie:</strong> @_fallbackSelectedStock.StorageAreaName - @_fallbackSelectedStock.StorageLocationName<br />
+                                <strong>Huidige hoeveelheid:</strong> @_fallbackSelectedStock.Quantity @_fallbackSelectedStock.DefaultUnitName
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Mutatielogtype *</label>
+                                <select class="form-select" @bind="_fallbackMutationType">
+                                    <option value="">-- Selecteer type --</option>
+                                    <option value="Verbruik">Verbruik (afname)</option>
+                                    <option value="Correctie">Correctie (herzien hoeveelheid)</option>
+                                    <option value="Telling">Telling (gecontroleerde hoeveelheid)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    @if (_fallbackMutationType == "Verbruik")
+                                    {
+                                        <span>Afnamehoeveelheid *</span>
+                                    }
+                                    else if (_fallbackMutationType == "Correctie" || _fallbackMutationType == "Telling")
+                                    {
+                                        <span>Nieuwe hoeveelheid *</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Hoeveelheid *</span>
+                                    }
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" step="0.01"
+                                           @bind="_fallbackQuantity" placeholder="0" />
+                                    <span class="input-group-text">@_fallbackSelectedStock?.DefaultUnitName</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Notitie (optioneel)</label>
+                                <textarea class="form-control" @bind="_fallbackNote" placeholder="Vrije notitie…" rows="2"></textarea>
+                            </div>
+
+                            <button class="btn btn-sm btn-primary" @onclick="SaveMutationFallback"
+                                    disabled="@(string.IsNullOrEmpty(_fallbackMutationType) || _fallbackQuantity <= 0)">
+                                Opslaan
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearMutationForm">
+                                Terug
+                            </button>
+                        }
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseMutationFallback">Sluiten</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_addCategoryModalOpen || _addUnitModalOpen || _showMutationFallback)
 {
     <div class="modal-backdrop fade show"></div>
 }
@@ -497,6 +649,16 @@ else
     private HashSet<Guid> _expandedProductIds = new();
     private Dictionary<Guid, List<BootManager.Application.Inventory.DTOs.StockDto>?> _productStocks = new();
     private bool _showAddStockModal = false;
+
+    // Mutation fallback state
+    private bool _showMutationFallback = false;
+    private ProductDto? _fallbackProduct;
+    private List<StockDto>? _fallbackProductLocations;
+    private StockDto? _fallbackSelectedStock;
+    private string _fallbackMutationType = "";
+    private decimal _fallbackQuantity = 0;
+    private string? _fallbackNote;
+    private string? _fallbackError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -1002,4 +1164,135 @@ else
         "veiligheid" => "shield-alt",
         _ => "tag"
     };
+
+    private void OpenMutationFallback()
+    {
+        _showMutationFallback = true;
+        _fallbackProduct = null;
+        _fallbackProductLocations = null;
+        _fallbackSelectedStock = null;
+        _fallbackMutationType = "";
+        _fallbackQuantity = 0;
+        _fallbackNote = null;
+        _fallbackError = null;
+        _searchTerm = "";
+        _searchResults = null;
+        StateHasChanged();
+    }
+
+    private void CloseMutationFallback()
+    {
+        _showMutationFallback = false;
+        _fallbackProduct = null;
+        _fallbackProductLocations = null;
+        _fallbackSelectedStock = null;
+        _fallbackMutationType = "";
+        _fallbackQuantity = 0;
+        _fallbackNote = null;
+        _fallbackError = null;
+        _searchTerm = "";
+        _searchResults = null;
+        StateHasChanged();
+    }
+
+    private async Task PerformMutationFallbackSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _searchResults = new();
+            return;
+        }
+
+        try
+        {
+            _searchResults = (await ProductService.SearchByNameOrDescriptionAsync(_searchTerm)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij zoeken");
+            _fallbackError = "Fout bij zoeken.";
+        }
+    }
+
+    private async Task SelectProductForMutationFallback(ProductDto product)
+    {
+        _fallbackProduct = product;
+        _fallbackSelectedStock = null;
+        _fallbackMutationType = "";
+        _fallbackQuantity = 0;
+        _fallbackNote = null;
+        _fallbackError = null;
+
+        var activeStocksResult = await StockService.GetActiveStocksByProductAsync(product.Id);
+        _fallbackProductLocations = activeStocksResult.Success && activeStocksResult.Data != null
+            ? activeStocksResult.Data.ToList()
+            : new();
+
+        if (_fallbackProductLocations.Count == 1)
+        {
+            _fallbackSelectedStock = _fallbackProductLocations[0];
+        }
+
+        StateHasChanged();
+    }
+
+    private void ClearMutationForm()
+    {
+        _fallbackSelectedStock = null;
+        _fallbackMutationType = "";
+        _fallbackQuantity = 0;
+        _fallbackNote = null;
+        StateHasChanged();
+    }
+
+    private async Task SaveMutationFallback()
+    {
+        if (_fallbackProduct == null || _fallbackSelectedStock == null || string.IsNullOrEmpty(_fallbackMutationType) || _fallbackQuantity <= 0)
+        {
+            _fallbackError = "Onvolledig formulier.";
+            return;
+        }
+
+        if (!Enum.TryParse<StockMutationType>(_fallbackMutationType, out var mutationType))
+        {
+            _fallbackError = "Ongeldig mutatielogtype.";
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst("sub")?.Value
+            ?? authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            _fallbackError = "Gebruiker niet bepaald.";
+            return;
+        }
+
+        try
+        {
+            var result = await StockService.MutateStockAsync(
+                _fallbackProduct.Id,
+                _fallbackSelectedStock.StorageLocationId,
+                mutationType,
+                _fallbackQuantity,
+                userId,
+                string.IsNullOrWhiteSpace(_fallbackNote) ? null : _fallbackNote.Trim());
+
+            if (result.Success)
+            {
+                CloseMutationFallback();
+            }
+            else
+            {
+                _fallbackError = result.ErrorMessage ?? "Opslaan mislukt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij opslaan van voorraadbijzonderheid");
+            _fallbackError = "Fout: " + ex.Message;
+        }
+
+        StateHasChanged();
+    }
 }

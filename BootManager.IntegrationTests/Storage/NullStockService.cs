@@ -1,6 +1,7 @@
 using BootManager.Application.Inventory.Contracts;
 using BootManager.Application.Inventory.DTOs;
 using BootManager.Application.Inventory.Results;
+using BootManager.Core.Entities;
 
 namespace BootManager.IntegrationTests.Storage;
 
@@ -32,4 +33,10 @@ internal class NullStockService : IStockService
 
     public Task<InventoryOperationResult<StockDto>> GetExpectedLocationForProductAsync(Guid productId, CancellationToken ct = default)
         => Task.FromResult(InventoryOperationResult<StockDto>.NotFound());
+
+    public Task<InventoryOperationResult> MutateStockAsync(Guid productId, Guid locationId, StockMutationType mutationType, decimal quantityOrAmount, Guid userId, string? note = null, CancellationToken ct = default)
+        => Task.FromResult(InventoryOperationResult.Ok());
+
+    public Task<InventoryOperationResult<IReadOnlyList<StockMutationDto>>> GetStockMutationsAsync(CancellationToken ct = default)
+        => Task.FromResult(InventoryOperationResult<IReadOnlyList<StockMutationDto>>.Ok(new List<StockMutationDto>().AsReadOnly()));
 }

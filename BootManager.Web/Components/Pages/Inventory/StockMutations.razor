@@ -1,0 +1,314 @@
+@page "/inventory/mutations-admin"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Core.Entities
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IProductService ProductService
+@inject IStockService StockService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Voorraadbijzonderheid vastleggen</PageTitle>
+
+<div class="mb-4">
+    <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="GoBack">← Terug</button>
+</div>
+
+<h3>Voorraadbijzonderheid vastleggen</h3>
+
+@if (_step == MutationStep.SelectProduct)
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">1. Product selecteren</h5>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="Zoeken op productnaam…"
+                       @bind="_searchTerm"
+                       @bind:event="oninput"
+                       @onkeydown="HandleSearchKeyDown" />
+                <button class="btn btn-outline-secondary" @onclick="PerformSearch">Zoeken</button>
+            </div>
+
+            @if (_searchResults != null)
+            {
+                @if (_searchResults.Count > 0)
+                {
+                    <div class="list-group">
+                        @foreach (var product in _searchResults)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action"
+                                    @onclick="() => SelectProduct(product)">
+                                <strong>@product.Name</strong>
+                                @if (!string.IsNullOrEmpty(product.Description))
+                                {
+                                    <br />
+                                    <small class="text-muted">@(product.Description.Length > 60 ? product.Description.Substring(0, 60) + "…" : product.Description)</small>
+                                }
+                            </button>
+                        }
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(_searchTerm))
+                {
+                    <div class="alert alert-info">Geen producten gevonden.</div>
+                }
+            }
+        </div>
+    </div>
+}
+else if (_step == MutationStep.SelectLocation && _selectedProduct != null)
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">2. Locatie selecteren</h5>
+            <div class="alert alert-info mb-3">
+                <strong>Product:</strong> @_selectedProduct.Name
+            </div>
+
+            @if (_activeLocations != null)
+            {
+                @if (_activeLocations.Count == 1 && _selectedLocation == null)
+                {
+                    <div class="alert alert-success">
+                        Automatisch geselecteerd: <strong>@_activeLocations[0].StorageAreaName - @_activeLocations[0].StorageLocationName</strong>
+                        <small class="d-block mt-2">Hoeveelheid: @_activeLocations[0].Quantity @_activeLocations[0].DefaultUnitName</small>
+                    </div>
+                    <button class="btn btn-primary" @onclick="() => _selectedLocation = _activeLocations[0]">Doorgaan</button>
+                }
+                else if (_activeLocations.Count > 0)
+                {
+                    <div class="list-group">
+                        @foreach (var stock in _activeLocations)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action"
+                                    @onclick="() => SelectLocation(stock)">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@stock.StorageAreaName - @stock.StorageLocationName</strong>
+                                    <span class="badge bg-primary">@stock.Quantity @stock.DefaultUnitName</span>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">Geen actieve voorraad gevonden voor dit product.</div>
+                    <button class="btn btn-secondary" @onclick="ResetToProductSelection">Ander product</button>
+                }
+            }
+        </div>
+    </div>
+}
+else if (_step == MutationStep.EnterMutation && _selectedProduct != null && _selectedLocation != null)
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">3. Bijzonderheid vastleggen</h5>
+            <div class="alert alert-info mb-3">
+                <strong>Product:</strong> @_selectedProduct.Name<br />
+                <strong>Locatie:</strong> @_selectedLocation.StorageAreaName - @_selectedLocation.StorageLocationName<br />
+                <strong>Huidige hoeveelheid:</strong> @_selectedLocation.Quantity @_selectedLocation.DefaultUnitName
+            </div>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger">@_errorMessage</div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Mutatielogtype *</label>
+                <select class="form-select" @bind="_mutationType">
+                    <option value="">-- Selecteer type --</option>
+                    <option value="Verbruik">Verbruik (afname)</option>
+                    <option value="Correctie">Correctie (herzien hoeveelheid)</option>
+                    <option value="Telling">Telling (gecontroleerde hoeveelheid)</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    @if (_mutationType == "Verbruik")
+                    {
+                        <span>Afnamehoeveelheid *</span>
+                    }
+                    else if (_mutationType == "Correctie" || _mutationType == "Telling")
+                    {
+                        <span>Nieuwe hoeveelheid *</span>
+                    }
+                    else
+                    {
+                        <span>Hoeveelheid *</span>
+                    }
+                </label>
+                <div class="input-group">
+                    <input type="number" class="form-control" step="0.01"
+                           @bind="_quantity" placeholder="0" />
+                    <span class="input-group-text">@_selectedLocation.DefaultUnitName</span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Notitie (optioneel)</label>
+                <textarea class="form-control" @bind="_note" placeholder="Vrije notitie…" rows="2"></textarea>
+            </div>
+
+            <div>
+                <button class="btn btn-primary me-2" @onclick="SaveMutation"
+                        disabled="@(string.IsNullOrEmpty(_mutationType) || _quantity <= 0 || _isSaving)">
+                    @if (_isSaving)
+                    {
+                        <span>Opslaan…</span>
+                    }
+                    else
+                    {
+                        <span>Opslaan</span>
+                    }
+                </button>
+                <button class="btn btn-secondary" @onclick="ResetToLocationSelection">Terug</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    enum MutationStep { SelectProduct, SelectLocation, EnterMutation }
+
+    private MutationStep _step = MutationStep.SelectProduct;
+    private string _searchTerm = "";
+    private List<ProductDto>? _searchResults;
+    private ProductDto? _selectedProduct;
+    private List<StockDto>? _activeLocations;
+    private StockDto? _selectedLocation;
+    private string _mutationType = "";
+    private decimal _quantity = 0;
+    private string? _note;
+    private string? _errorMessage;
+    private bool _isSaving = false;
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _searchResults = null;
+            return;
+        }
+
+        var allProducts = await ProductService.GetActiveAsync();
+        var normalized = _searchTerm.ToLowerInvariant();
+        _searchResults = allProducts
+            .Where(p => p.Name.ToLowerInvariant().Contains(normalized))
+            .ToList();
+    }
+
+    private void HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            PerformSearch();
+        }
+    }
+
+    private async Task SelectProduct(ProductDto product)
+    {
+        _selectedProduct = product;
+        _step = MutationStep.SelectLocation;
+        _activeLocations = null;
+
+        var result = await StockService.GetActiveStocksByProductAsync(product.Id);
+        if (result.Success)
+        {
+            _activeLocations = result.Data?.ToList() ?? new List<StockDto>();
+            if (_activeLocations.Count == 1)
+            {
+                _selectedLocation = _activeLocations[0];
+            }
+        }
+    }
+
+    private void SelectLocation(StockDto stock)
+    {
+        _selectedLocation = stock;
+        _step = MutationStep.EnterMutation;
+        _errorMessage = null;
+    }
+
+    private void ResetToProductSelection()
+    {
+        _step = MutationStep.SelectProduct;
+        _selectedProduct = null;
+        _selectedLocation = null;
+        _activeLocations = null;
+        _mutationType = "";
+        _quantity = 0;
+        _note = null;
+        _errorMessage = null;
+    }
+
+    private void ResetToLocationSelection()
+    {
+        _step = MutationStep.SelectLocation;
+        _selectedLocation = null;
+        _mutationType = "";
+        _quantity = 0;
+        _note = null;
+        _errorMessage = null;
+    }
+
+    private async Task SaveMutation()
+    {
+        if (_selectedProduct == null || _selectedLocation == null || string.IsNullOrEmpty(_mutationType) || _quantity <= 0)
+        {
+            _errorMessage = "Onvolledig formulier.";
+            return;
+        }
+
+        if (!Enum.TryParse<StockMutationType>(_mutationType, out var mutationType))
+        {
+            _errorMessage = "Ongeldig mutatielogtype.";
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst("sub");
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            _errorMessage = "Gebruiker niet bepaald.";
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            var result = await StockService.MutateStockAsync(
+                _selectedProduct.Id,
+                _selectedLocation.StorageLocationId,
+                mutationType,
+                _quantity,
+                userId,
+                string.IsNullOrWhiteSpace(_note) ? null : _note.Trim());
+
+            if (result.Success)
+            {
+                NavigationManager.NavigateTo("/inventory/mutations");
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Opslaan mislukt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout: " + ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/inventory/products");
+    }
+}

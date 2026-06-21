@@ -124,6 +124,16 @@ public class BootManagerDbContext : DbContext
     /// </summary>
     public DbSet<Stock> Stocks => Set<Stock>();
 
+    /// <summary>
+    /// DbSet voor voorraadbijzonderheden (mutaties, tellingen, correcties).
+    /// </summary>
+    public DbSet<StockMutation> StockMutations => Set<StockMutation>();
+
+    /// <summary>
+    /// DbSet voor verwachte locaties per product (behouden ook wanneer Stock verwijderd is).
+    /// </summary>
+    public DbSet<StockExpectedLocation> StockExpectedLocations => Set<StockExpectedLocation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new Configurations.LocalUserConfiguration());
@@ -150,5 +160,7 @@ public class BootManagerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ProductCategoryMappingConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ProductCodeConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.StockConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.StockMutationConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.StockExpectedLocationConfiguration());
     }
 }

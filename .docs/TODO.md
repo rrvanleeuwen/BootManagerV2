@@ -99,12 +99,13 @@
   - **Verificatie:** gerichte `ScanComponentTests`, `ProductsComponentTests`, `AddStockToProductModalTests` en regressiechecks voor `StorageLocationDetailsWithStock` groen; build en diffcheck groen; handmatige acceptatie door gebruiker geslaagd.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-INV-05 voorraad muteren en eenvoudige historie**
-  - **Status 2026-06-20:** functioneel uitgewerkt, nog niet geïmplementeerd.
+- [x] **Holiday Pilot 2026 — PILOT-INV-05 voorraad muteren en eenvoudige historie**
+  - **Status 2026-06-21:** geïmplementeerd, technisch gecontroleerd en geaccepteerd voor scan-gestuurde mutaties, administratieve fallback en mutatiehistorie.
   - **Doel:** verbruik, tellingen en correcties registreren en later terugzien in een eenvoudig mutatielogboek.
   - **Kern:** drie mutatietypes `Verbruik`, `Correctie` en `Telling`; fysieke scanflow op locatie plus administratieve fallback zonder scannen; aparte historiepagina.
-  - **Belangrijk:** verbruik boekt altijd af op een expliciete locatie; oververbruik wordt geblokkeerd; bij `0` verdwijnt de actieve voorraadregel maar blijft de laatst gebruikte locatie als verwachte plek bewaard.
+  - **Belangrijk:** een eerder gescand product kan vanuit `Scannen` direct door naar `Voorraadbijzonderheid`; na locatiekeuze gaat de flow meteen naar mutatietype en hoeveelheid, ook wanneer de actuele locatievoorraad nog `0` is; verbruik boekt altijd af op een expliciete locatie; oververbruik wordt geblokkeerd; bij `0` verdwijnt de actieve voorraadregel maar blijft de laatst gebruikte locatie als verwachte plek bewaard.
   - **Buiten scope:** negatieve voorraad, inline historie op product- of locatiepagina’s en geavanceerde rapportage.
+  - **Verificatie:** `ScanComponentTests`, `ProductsComponentTests` en `StockServiceTests` uitgebreid voor scanflow, claim-afhandeling, fallback-mutaties en historie; build en gerichte regressies groen.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**

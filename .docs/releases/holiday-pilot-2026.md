@@ -144,7 +144,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 8. **PILOT-INV-02** — **Done** — Taakgerichte voorraadbasis: product en locatie koppelen, hoeveelheid vastleggen en voorraad handmatig tonen/beheren.
 9. **PILOT-INV-03** — **Done** — Scan-gestuurde inruimflow met locatievoorstel, onbekende-code-afhandeling en doorlopende scansessie.
 10. **PILOT-INV-04** — **Done** — Product terugvinden via scan of zoeken, locaties tonen en vanuit geen-voorraad direct voorraad toevoegen via een compacte modal.
-11. **PILOT-INV-05** — **Gepland** — Verbruik, correcties en eenvoudige historie.
+11. **PILOT-INV-05** — **Done** — Verbruik, correcties en eenvoudige historie.
 12. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
 13. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
 14. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
@@ -157,7 +157,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-INV-05` — Verbruik, correcties en eenvoudige historie.
+**Eerstvolgende story:** `PILOT-LOG-01` — Handmatig logboekmoment met actuele NMEA-snapshot.
 
 ## Story-uitwerking en archief
 
@@ -166,8 +166,8 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve inventory-uitwerkingen nu `PILOT-INV-05` aan; voeg daarna alleen
-  de eerstvolgende geplande stories toe wanneer ze werkelijk aan de beurt zijn.
+- Houd als actieve uitwerking nu `PILOT-LOG-01` aan; voeg daarna alleen de
+  eerstvolgende geplande stories toe wanneer ze werkelijk aan de beurt zijn.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
 - Verplaats een story na afronding en administratieve controle naar het archief,
@@ -421,6 +421,17 @@ administratieve fallback toe, plus een eenvoudige historie voor controle achtera
     getoond met datum/tijd, type, product, gebied + locatie, oude hoeveelheid, nieuwe
     hoeveelheid, gebruiker en eventuele notitie.
 
+**Status 2026-06-21**
+
+- technisch geïmplementeerd voor scan-gestuurde mutaties, administratieve fallback en
+  aparte historiepagina;
+- handmatig gevalideerd op de branch `codex/pilot-inv-05-mutaties-historie`, inclusief
+  de scanflow `product -> Voorraadbijzonderheid -> locatie -> mutatie opslaan`;
+- gerichte regressies groen:
+  `dotnet test BootManager.UnitTests/BootManager.UnitTests.csproj --no-restore --filter "FullyQualifiedName~ScanComponentTests|FullyQualifiedName~ProductsComponentTests"`;
+- solution-build groen:
+  `dotnet build BootManager.sln --no-restore`.
+
 ### Afgeronde stories in archief
 
 - `PILOT-SCAN-01` — scan proof-of-concept, handmatig geaccepteerd op 2026-06-09.
@@ -433,6 +444,7 @@ administratieve fallback toe, plus een eenvoudige historie voor controle achtera
 - `PILOT-INV-02` — taakgerichte voorraadbasis per locatie, geaccepteerd op 2026-06-20.
 - `PILOT-INV-03` — scan-gestuurde inruimflow met locatievoorstel, geaccepteerd op 2026-06-20.
 - `PILOT-INV-04` — product terugvinden via scan of zoeken en voorraad toevoegen vanuit geen-voorraad via compacte modal, geaccepteerd op 2026-06-20.
+- `PILOT-INV-05` — voorraadmutaties, scan/fallback-mutatieflow en eenvoudige historie, geaccepteerd op 2026-06-21.
 
 ## Niet-doelen voor deze pilot
 

@@ -4,6 +4,7 @@
 @using BootManager.Application.Storage.Services
 @using BootManager.Application.Inventory.Contracts
 @using BootManager.Application.Inventory.DTOs
+@using BootManager.Web.Components.Inventory
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IStorageService StorageService
 @inject IStockService StockService
@@ -86,6 +87,9 @@ else
                                         <td>@stock.ProductName</td>
                                         <td class="text-end">@stock.Quantity @stock.DefaultUnitName</td>
                                         <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenMutationModal(stock)" title="Bijzonderheid">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
                                             <button class="btn btn-sm btn-outline-danger" @onclick="() => OpenDeleteConfirmation(stock.Id)" title="Verwijderen">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -107,6 +111,11 @@ else
     @if (_showAddStockDialog)
     {
         <AddStockDialog LocationId="LocationId" OnClose="CloseAddStockDialog" OnStockAdded="OnStockAdded" />
+    }
+
+    @if (_showMutationModal && _selectedStock != null)
+    {
+        <StockMutationModal Stock="_selectedStock" OnClose="CloseMutationModal" OnMutationSaved="OnMutationSaved" />
     }
 
     @if (_showDeleteConfirmation)
@@ -138,6 +147,8 @@ else
     private bool _loading = true;
     private bool _isOwner = false;
     private bool _showAddStockDialog = false;
+    private bool _showMutationModal = false;
+    private StockDto? _selectedStock;
     private bool _showDeleteConfirmation = false;
     private Guid _stockToDeleteId;
 
@@ -185,6 +196,24 @@ else
     private async Task OnStockAdded()
     {
         CloseAddStockDialog();
+        await LoadDetail();
+    }
+
+    private void OpenMutationModal(StockDto stock)
+    {
+        _selectedStock = stock;
+        _showMutationModal = true;
+    }
+
+    private void CloseMutationModal()
+    {
+        _showMutationModal = false;
+        _selectedStock = null;
+    }
+
+    private async Task OnMutationSaved()
+    {
+        CloseMutationModal();
         await LoadDetail();
     }
 

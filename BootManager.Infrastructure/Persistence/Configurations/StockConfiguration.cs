@@ -13,6 +13,7 @@ public class StockConfiguration : IEntityTypeConfiguration<Stock>
 
         b.Property(x => x.ProductId).IsRequired();
         b.Property(x => x.StorageLocationId).IsRequired();
+        b.Property(x => x.ExpectedLocationId).IsRequired(false);
         b.Property(x => x.Quantity).IsRequired().HasPrecision(18, 2);
 
         b.HasOne(x => x.Product)
@@ -24,6 +25,11 @@ public class StockConfiguration : IEntityTypeConfiguration<Stock>
             .WithMany(l => l.Stocks)
             .HasForeignKey(x => x.StorageLocationId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne(x => x.ExpectedLocation)
+            .WithMany()
+            .HasForeignKey(x => x.ExpectedLocationId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         b.HasIndex(x => new { x.ProductId, x.StorageLocationId }).IsUnique();
     }

@@ -18,6 +18,9 @@ public class StockService : IStockService
     private readonly IRepository<Unit> _unitRepo;
     private readonly IRepository<StorageArea> _areaRepo;
     private readonly IRepository<ProductCode> _codeRepo;
+    private readonly IRepository<StockMutation> _mutationRepo;
+    private readonly IRepository<LocalUser> _userRepo;
+    private readonly IRepository<StockExpectedLocation> _expectedLocationRepo;
 
     public StockService(
         IRepository<Stock> stockRepo,
@@ -25,7 +28,10 @@ public class StockService : IStockService
         IRepository<StorageLocation> locationRepo,
         IRepository<Unit> unitRepo,
         IRepository<StorageArea> areaRepo,
-        IRepository<ProductCode> codeRepo)
+        IRepository<ProductCode> codeRepo,
+        IRepository<StockMutation> mutationRepo,
+        IRepository<LocalUser> userRepo,
+        IRepository<StockExpectedLocation> expectedLocationRepo)
     {
         _stockRepo = stockRepo;
         _productRepo = productRepo;
@@ -33,6 +39,9 @@ public class StockService : IStockService
         _unitRepo = unitRepo;
         _areaRepo = areaRepo;
         _codeRepo = codeRepo;
+        _mutationRepo = mutationRepo;
+        _userRepo = userRepo;
+        _expectedLocationRepo = expectedLocationRepo;
     }
 
     public async Task<InventoryOperationResult<StockDto>> AddOrIncrementStockAsync(
@@ -70,12 +79,19 @@ public class StockService : IStockService
             // Aanvullen van bestaande regel
             existingStock.AddQuantity(quantity);
             await _stockRepo.UpdateAsync(existingStock, ct);
+
+            // Zorg dat verwachte locatie bijgewerkt is
+            await UpdateExpectedLocationAsync(productId, locationId, ct);
+
             return InventoryOperationResult<StockDto>.Ok(MapToDto(existingStock, product, location, area, unit));
         }
 
         // Nieuwe voorraadregel
         var newStock = Stock.Create(productId, locationId, quantity);
         await _stockRepo.AddAsync(newStock, ct);
+
+        // Zorg dat verwachte locatie ingesteld is
+        await UpdateExpectedLocationAsync(productId, locationId, ct);
 
         return InventoryOperationResult<StockDto>.Ok(MapToDto(newStock, product, location, area, unit));
     }
@@ -394,17 +410,13 @@ public class StockService : IStockService
         if (unit == null)
             return InventoryOperationResult<StockDto>.Error("Standaardeenheid niet gevonden.");
 
-        var stocks = await _stockRepo.ListAsync(
-            s => s.ProductId == productId, ct);
+        var expectedLocation = await _expectedLocationRepo.SingleOrDefaultAsync(
+            el => el.ProductId == productId, ct);
 
-        if (stocks.Count == 0)
+        if (expectedLocation == null)
             return InventoryOperationResult<StockDto>.NotFound();
 
-        var mostRecent = stocks.OrderByDescending(s => s.UpdatedAt).FirstOrDefault();
-        if (mostRecent == null)
-            return InventoryOperationResult<StockDto>.NotFound();
-
-        var location = await _locationRepo.GetByIdAsync(mostRecent.StorageLocationId, ct);
+        var location = await _locationRepo.GetByIdAsync(expectedLocation.StorageLocationId, ct);
         if (location == null)
             return InventoryOperationResult<StockDto>.Error("Opslaglocatie niet gevonden.");
 
@@ -413,6 +425,162 @@ public class StockService : IStockService
             return InventoryOperationResult<StockDto>.Error("Opslaggebied niet gevonden.");
 
         return InventoryOperationResult<StockDto>.Ok(
-            MapToDto(mostRecent, product, location, area, unit));
+            new StockDto
+            {
+                Id = Guid.Empty,
+                ProductId = product.Id,
+                StorageLocationId = expectedLocation.StorageLocationId,
+                ProductName = product.Name,
+                StorageAreaName = area.Name,
+                StorageLocationName = location.Name,
+                Quantity = 0,
+                DefaultUnitName = unit.Name
+            });
+    }
+
+    public async Task<InventoryOperationResult> MutateStockAsync(
+        Guid productId, Guid locationId, StockMutationType mutationType,
+        decimal quantityOrAmount, Guid userId, string? note = null, CancellationToken ct = default)
+    {
+        // Valideer hoeveelheid
+        if (quantityOrAmount <= 0)
+            return InventoryOperationResult.Error("Hoeveelheid moet groter dan 0 zijn.");
+
+        // Controleer product
+        var product = await _productRepo.GetByIdAsync(productId, ct);
+        if (product == null)
+            return InventoryOperationResult.Error("Product niet gevonden.");
+
+        // Controleer locatie
+        var location = await _locationRepo.GetByIdAsync(locationId, ct);
+        if (location == null)
+            return InventoryOperationResult.Error("Opslaglocatie niet gevonden.");
+
+        // Controleer gebruiker
+        var user = await _userRepo.GetByIdAsync(userId, ct);
+        if (user == null)
+            return InventoryOperationResult.Error("Gebruiker niet gevonden.");
+
+        // Zoek bestaande voorraadregel
+        var stock = await _stockRepo.SingleOrDefaultAsync(
+            s => s.ProductId == productId && s.StorageLocationId == locationId, ct);
+
+        decimal oldQuantity = stock?.Quantity ?? 0;
+        decimal newQuantity;
+
+        if (mutationType == StockMutationType.Verbruik)
+        {
+            // Verbruik: trek hoeveelheid af
+            if (stock == null || stock.Quantity < quantityOrAmount)
+                return InventoryOperationResult.Error("Onvoldoende voorraad om deze hoeveelheid te verbruiken.");
+
+            newQuantity = stock.Quantity - quantityOrAmount;
+        }
+        else if (mutationType == StockMutationType.Telling || mutationType == StockMutationType.Correctie)
+        {
+            // Telling/Correctie: stel nieuw aantal in
+            newQuantity = quantityOrAmount;
+        }
+        else
+        {
+            return InventoryOperationResult.Error("Onbekend mutatielogtype.");
+        }
+
+        // Log mutatie
+        var mutation = StockMutation.Create(productId, locationId, mutationType, oldQuantity, newQuantity, userId, note);
+        await _mutationRepo.AddAsync(mutation, ct);
+
+        // Update of verwijder voorraadregel
+        if (newQuantity == 0)
+        {
+            // Verwijder voorraadregel, behoud verwachte locatie
+            if (stock != null)
+            {
+                await _stockRepo.DeleteAsync(stock, ct);
+                // Zorg dat verwachte locatie blijft bestaan
+                await UpdateExpectedLocationAsync(productId, locationId, ct);
+            }
+        }
+        else if (stock != null)
+        {
+            // Update bestaande regel
+            stock.SetQuantity(newQuantity);
+            await _stockRepo.UpdateAsync(stock, ct);
+            // Zorg dat verwachte locatie bijgewerkt is
+            await UpdateExpectedLocationAsync(productId, locationId, ct);
+        }
+        else
+        {
+            // Maak nieuwe regel aan (zelden, maar mogelijk bij Telling/Correctie op niet-bestaande regel)
+            var newStock = Stock.Create(productId, locationId, newQuantity);
+            await _stockRepo.AddAsync(newStock, ct);
+            // Zorg dat verwachte locatie ingesteld is
+            await UpdateExpectedLocationAsync(productId, locationId, ct);
+        }
+
+        return InventoryOperationResult.Ok();
+    }
+
+    public async Task<InventoryOperationResult<IReadOnlyList<StockMutationDto>>> GetStockMutationsAsync(
+        CancellationToken ct = default)
+    {
+        var mutations = await _mutationRepo.ListAsync(ct: ct);
+        var sortedMutations = mutations.OrderByDescending(m => m.MutatedAt).ToList();
+
+        var dtos = new List<StockMutationDto>();
+        foreach (var mutation in sortedMutations)
+        {
+            var product = await _productRepo.GetByIdAsync(mutation.ProductId, ct);
+            if (product == null) continue;
+
+            var location = await _locationRepo.GetByIdAsync(mutation.StorageLocationId, ct);
+            if (location == null) continue;
+
+            var area = await _areaRepo.GetByIdAsync(location.StorageAreaId, ct);
+            if (area == null) continue;
+
+            var unit = await _unitRepo.GetByIdAsync(product.DefaultUnitId, ct);
+            if (unit == null) continue;
+
+            var user = await _userRepo.GetByIdAsync(mutation.UserId, ct);
+            if (user == null) continue;
+
+            dtos.Add(new StockMutationDto
+            {
+                Id = mutation.Id,
+                ProductId = mutation.ProductId,
+                StorageLocationId = mutation.StorageLocationId,
+                MutationType = mutation.MutationType,
+                OldQuantity = mutation.OldQuantity,
+                NewQuantity = mutation.NewQuantity,
+                MutatedAt = mutation.MutatedAt,
+                UserId = mutation.UserId,
+                Note = mutation.Note,
+                ProductName = product.Name,
+                StorageAreaName = area.Name,
+                StorageLocationName = location.Name,
+                DefaultUnitName = unit.Name,
+                UserDisplayName = user.DisplayName
+            });
+        }
+
+        return InventoryOperationResult<IReadOnlyList<StockMutationDto>>.Ok(dtos.AsReadOnly());
+    }
+
+    private async Task UpdateExpectedLocationAsync(Guid productId, Guid locationId, CancellationToken ct)
+    {
+        var existing = await _expectedLocationRepo.SingleOrDefaultAsync(
+            el => el.ProductId == productId, ct);
+
+        if (existing != null)
+        {
+            existing.UpdateLocation(locationId);
+            await _expectedLocationRepo.UpdateAsync(existing, ct);
+        }
+        else
+        {
+            var newExpectedLocation = StockExpectedLocation.Create(productId, locationId);
+            await _expectedLocationRepo.AddAsync(newExpectedLocation, ct);
+        }
     }
 }

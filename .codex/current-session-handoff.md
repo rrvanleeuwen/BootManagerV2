@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-20.
+Updated: 2026-06-21.
 
 ## Rollen
 
@@ -10,9 +10,10 @@ Updated: 2026-06-20.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-inv-04-product-terugvinden`.
-- `master` en `origin/master` lopen nog achter op de lokaal afgeronde inventory-vervolgstappen.
-- `PILOT-INV-04` is lokaal geïmplementeerd, gericht getest en handmatig geaccepteerd; documentatie-, commit-, push- en PR-afronding lopen nu op de featurebranch.
+- Actieve branch: `codex/pilot-inv-05-mutaties-historie`.
+- Branch bevat de afgeronde werkset voor `PILOT-INV-05`, inclusief mutatiehistorie,
+  scan-gestuurde voorraadbijzonderheden en administratieve fallback.
+- Lokale status is gereed voor commit, push en PR vanaf deze branch.
 
 ## Actieve release
 
@@ -22,31 +23,32 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
 - status: actief en leidend voor de eerstvolgende ontwikkelperiode;
 - afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
-  `PILOT-INV-04`;
-- actuele focus: administratieve afronding van `PILOT-INV-04`, daarna inventory-vervolg vanaf `PILOT-INV-05`.
+  `PILOT-INV-04`, `PILOT-INV-05`;
+- eerstvolgende focus na afronding van deze branch: `PILOT-LOG-01`.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-`PILOT-INV-04` is technisch gerealiseerd en door de gebruiker handmatig geaccepteerd.
-De documentatie wordt nu bijgewerkt, waarna commit, push en een draft PR volgen.
+Bij hervatten na merge de volgende story `PILOT-LOG-01` voorbereiden, tenzij de
+gebruiker eerst nog een nieuwe branch of aanvullende correctie wil.
 
-Eerstvolgende inhoudelijke story na merge is `PILOT-INV-05` vanaf een schone actuele
-`master`.
+Technisch bevestigd in deze sessie:
 
-Let op bij vervolg op inventory:
-
-- handmatige gekoppelde code-invoer in `Voorraadbeheer > Producten` is aanwezig;
-- taakgerichte voorraadbasis per locatie is aanwezig, inclusief additief aanvullen op
-  dezelfde locatie en productdetail met gekoppelde locaties;
-- scan-gestuurd inruimen via `Scannen` is aanwezig, inclusief locatievoorstel,
-  onbekende-code-afhandeling, expliciete eenheidskeuze bij nieuw product en
-  doorlopende scansessie;
-- apart terugvinden van producten via scan of zoeken is aanwezig, inclusief directe
-  locatienavigatie, meervoudige locatielijst en een compacte modal voor
-  `Voorraad toevoegen` vanuit de geen-voorraad-situatie.
+- `PILOT-INV-05` levert de mutatietypes `Verbruik`, `Correctie` en `Telling` op;
+- `Scannen` ondersteunt nu de route `product -> Voorraadbijzonderheid -> locatie ->
+  mutatieformulier -> opslaan`, zonder verplichte herhaalscan van hetzelfde product;
+- na locatiekeuze gaat de flow ook direct door wanneer de gekozen locatie nog geen
+  actieve voorraadregel voor dat product heeft; de huidige hoeveelheid start dan op `0`;
+- de administratieve fallback in `Voorraadbeheer > Producten` gebruikt dezelfde
+  gebruikersclaim-afhandeling als de echte loginflow;
+- aparte pagina's `StockMutations` en `StockMutationHistory` zijn lokaal aanwezig op
+  deze branch;
+- gerichte regressies zijn groen:
+  `dotnet test BootManager.UnitTests/BootManager.UnitTests.csproj --no-restore --filter "FullyQualifiedName~ScanComponentTests|FullyQualifiedName~ProductsComponentTests"`;
+- solution-build is groen:
+  `dotnet build BootManager.sln --no-restore`.
 
 ## Niet-standaard context
 
