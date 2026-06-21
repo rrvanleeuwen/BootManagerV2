@@ -17,7 +17,8 @@ using System.Reflection;
 namespace BootManager.UnitTests.Storage;
 
 /// <summary>
-/// Real bUnit tests for Scan.razor QR behavior and inventory flow.
+/// Real bUnit tests for ScanOld.razor QR behavior and inventory flow.
+/// Tests the old scan implementation; new scan flows are tested separately.
 /// Covers navigation, product code detection, and scan-driven inventory flow.
 /// </summary>
 public class ScanComponentTests : TestContext
@@ -49,7 +50,7 @@ public class ScanComponentTests : TestContext
             .ReturnsAsync(QrResolutionResult.Linked(locationId));
 
         var navigation = Services.GetRequiredService<NavigationManager>();
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -76,7 +77,7 @@ public class ScanComponentTests : TestContext
             .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
 
         var navigation = Services.GetRequiredService<NavigationManager>();
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -109,7 +110,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetByCodeValueAsync(It.IsAny<string>(), default))
             .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -137,7 +138,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetByCodeValueAsync(value, default))
             .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -182,7 +183,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetExpectedLocationForProductAsync(productId, default))
             .ReturnsAsync(InventoryOperationResult<StockDto>.NotFound());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -232,7 +233,7 @@ public class ScanComponentTests : TestContext
                 new List<StockDto> { activeLocation }.AsReadOnly()));
 
         var navigation = Services.GetRequiredService<NavigationManager>();
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -257,7 +258,7 @@ public class ScanComponentTests : TestContext
             .ReturnsAsync(QrResolutionResult.Linked(locationId));
 
         var navigation = Services.GetRequiredService<NavigationManager>();
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -285,7 +286,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetByCodeValueAsync(unknownCode, default))
             .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -317,7 +318,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetByCodeValueAsync(unknownCode, default))
             .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -395,7 +396,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetAllAsync(default))
             .ReturnsAsync(new List<UnitDto> { new UnitDto { Id = unitId, Name = "stuk" } }.AsReadOnly());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         // Scan unknown code to trigger flow
         await cut.InvokeAsync(() =>
@@ -507,7 +508,7 @@ public class ScanComponentTests : TestContext
 
         var navigation = Services.GetRequiredService<NavigationManager>();
         var initialUri = navigation.Uri;
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -539,7 +540,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.ResolveQrValueAsync(qrValue, default))
             .ReturnsAsync(QrResolutionResult.Linked(locationId));
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -568,7 +569,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetByCodeValueAsync(It.IsAny<string>(), default))
             .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -601,7 +602,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetByCodeValueAsync(It.IsAny<string>(), default))
             .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -638,7 +639,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetAllAsync(default))
             .ReturnsAsync(new List<UnitDto> { unit1, unit2 }.AsReadOnly());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -686,7 +687,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetAllAsync(default))
             .ReturnsAsync(new List<UnitDto> { unit1 }.AsReadOnly());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -779,7 +780,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetAllAsync(default))
             .ReturnsAsync(new List<UnitDto> { unit1, unit2 }.AsReadOnly());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         // Scan unknown code
         await cut.InvokeAsync(() =>
@@ -870,7 +871,7 @@ public class ScanComponentTests : TestContext
 
         var navigation = Services.GetRequiredService<NavigationManager>();
         var initialUri = navigation.Uri;
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         // Act: Scan product code
         await cut.InvokeAsync(() =>
@@ -968,7 +969,7 @@ public class ScanComponentTests : TestContext
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult.Ok());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -1100,7 +1101,7 @@ public class ScanComponentTests : TestContext
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
                 new List<StockDto> { stockAtLocation }.AsReadOnly()));
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         // Scan the product code
         await cut.InvokeAsync(() =>
@@ -1207,7 +1208,7 @@ public class ScanComponentTests : TestContext
             .Setup(s => s.GetStocksByLocationAsync(locationId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         await cut.InvokeAsync(() =>
         {
@@ -1235,7 +1236,7 @@ public class ScanComponentTests : TestContext
                 .Click();
         });
 
-        var requestId = (int)typeof(Scan)
+        var requestId = (int)typeof(ScanOld)
             .GetField("_requestId", BindingFlags.Instance | BindingFlags.NonPublic)!
             .GetValue(cut.Instance)!;
 
@@ -1360,7 +1361,7 @@ public class ScanComponentTests : TestContext
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult.Ok());
 
-        var cut = RenderComponent<Scan>();
+        var cut = RenderComponent<ScanOld>();
 
         // Scan product1
         await cut.InvokeAsync(() =>

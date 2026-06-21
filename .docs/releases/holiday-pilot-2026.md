@@ -145,11 +145,15 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 9. **PILOT-INV-03** — **Done** — Scan-gestuurde inruimflow met locatievoorstel, onbekende-code-afhandeling en doorlopende scansessie.
 10. **PILOT-INV-04** — **Done** — Product terugvinden via scan of zoeken, locaties tonen en vanuit geen-voorraad direct voorraad toevoegen via een compacte modal.
 11. **PILOT-INV-05** — **Done** — Verbruik, correcties en eenvoudige historie.
-12. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
-13. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
-14. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
-15. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
-16. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
+12. **PILOT-SCAN-02** — **Done** — Parallelle scan-reworkbasis met `old`-isolatie van de huidige flow.
+13. **PILOT-SCAN-03** — **Gepland** — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
+14. **PILOT-SCAN-04** — **Gepland** — Locatiegerichte scanmodus met directe mutatie- en toevoegacties.
+15. **PILOT-SCAN-05** — **Gepland** — Productgerichte scanmodus en onbekende-code-flow.
+16. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
+17. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
+18. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
+19. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
+20. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
 
 Codex kiest geen story buiten deze volgorde, tenzij:
 
@@ -157,7 +161,18 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-LOG-01` — Handmatig logboekmoment met actuele NMEA-snapshot.
+**Eerstvolgende story:** `PILOT-SCAN-03` — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
+
+## Expliciete herprioritering
+
+Op 2026-06-21 is binnen deze actieve release expliciet gekozen om de scanflows nog
+vóór de vakantie te herdefiniëren en te implementeren. Daardoor schuiven
+`PILOT-LOG-01` en `PILOT-LOG-02` tijdelijk naar achteren, ondanks de eerdere
+standaardvolgorde.
+
+Deze afwijking is toegestaan omdat de gebruiker deze prioriteit expliciet heeft
+vastgesteld en de scanflow nu als directe pilotkritieke blocker voor gebruiksgemak en
+acceptatie wordt beschouwd.
 
 ## Story-uitwerking en archief
 
@@ -166,14 +181,129 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve uitwerking nu `PILOT-LOG-01` aan; voeg daarna alleen de
-  eerstvolgende geplande stories toe wanneer ze werkelijk aan de beurt zijn.
+- Houd als actieve uitwerking nu `PILOT-SCAN-03` t/m `PILOT-SCAN-05` aan; voeg
+  daarbinnen alleen de eerstvolgende kleine implementatiestap toe wanneer die werkelijk
+  aan de beurt is.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
 - Verplaats een story na afronding en administratieve controle naar het archief,
   zodat de dagelijkse context klein blijft maar de historie beschikbaar blijft.
 - Raadpleeg het archief alleen wanneer historische scope, acceptatie,
   implementatiestatus of legacy-impact opnieuw relevant is.
+
+### PILOT-SCAN-02 — Parallelle scan-reworkbasis met `old`-isolatie
+
+**Storyzin**
+Als ontwikkelteam willen we de bestaande scanimplementatie expliciet als `old`
+isoleren en parallelle nieuwe scanroutes vrijmaken, zodat de nieuwe scanflow met
+zuivere naamgeving gebouwd kan worden zonder de huidige route tussentijds definitief te
+verwijderen.
+
+**Waarom deze slice nu**
+De nieuwe scanflow wordt een grote wijziging over meerdere schermen. Zonder technische
+isolatie ontstaat snel verwarring tussen oude en nieuwe componenten, routes en tests.
+Deze slice maakt een veilige parallelle overgang mogelijk.
+
+**Scope**
+
+- De huidige scanimplementatie blijft functioneel beschikbaar tijdens de overgang.
+- Oude scanpagina's, componenten en ondersteunende routes krijgen expliciete `old`-
+  aanduiding in hun technische en route-context.
+- De nieuwe scanimplementatie krijgt vanaf het begin de beoogde definitieve
+  naamgeving.
+- Navigatie, tests en documentatie maken expliciet onderscheid tussen oud en nieuw
+  zolang beide naast elkaar bestaan.
+- Er komt een bewuste tijdelijke overgangsstrategie voor welke route standaard via het
+  menu of directe navigatie geopend wordt.
+
+**Buiten scope**
+
+- Volledige nieuwe scanstart of nieuwe contextschermen.
+- Verwijderen van de oude flow.
+- Definitieve cutover naar alleen de nieuwe implementatie.
+
+**Acceptatiecriteria**
+
+1. De huidige scanflow blijft bruikbaar tijdens de herbouw.
+2. Oude scanroutes en componenten zijn expliciet als `old` herkenbaar in code en
+   routing.
+3. De nieuwe implementatie kan met definitieve namen worden opgebouwd zonder conflict
+   met de oude flow.
+4. De tijdelijke overgang tussen oude en nieuwe scanroutes is expliciet en
+   gedocumenteerd.
+
+**Status 2026-06-21**
+
+- handmatig akkoord door gebruiker;
+- oude scanflow expliciet geïsoleerd naar `/scan/old`;
+- canonieke route `/scan` blijft behouden als officiële ingang en stuurt tijdelijk door
+  naar `/scan/old`;
+- navigatie verwijst weer naar `/scan` in plaats van direct naar `/scan/old`;
+- gerichte regressies groen:
+  `dotnet test BootManager.UnitTests/BootManager.UnitTests.csproj --no-restore --filter "FullyQualifiedName~ScanComponentTests|FullyQualifiedName~NavMenuComponentTests"`;
+- solution-build groen:
+  `dotnet build BootManager.sln --no-restore`.
+
+### PILOT-SCAN-03 — Nieuw scanstartscherm met routering
+
+**Storyzin**
+Als Owner of Crew wil ik een nieuw centraal scanstartscherm hebben dat scans direct
+routert naar locatiecontext, productcontext of onbekende-code-afhandeling, zodat
+scannen een duidelijke hoofdtaak wordt in plaats van een losse cameraweergave.
+
+**Scope**
+
+- Nieuw scherm `Scannen` voor mobiel en desktop volgens de scanflow- en UI-richtlijnen.
+- Camera-actie, handmatige code-invoer en recente scans op hetzelfde startscherm.
+- Routering naar:
+  - bekende locatiecode;
+  - bekende productcode;
+  - onbekende code.
+
+**Buiten scope**
+
+- Volledige locatiegerichte vervolgflow.
+- Volledige productgerichte vervolgflow.
+- Definitieve verwijdering van oude scanstart.
+
+### PILOT-SCAN-04 — Locatiegerichte scanmodus
+
+**Storyzin**
+Als Owner of Crew wil ik na het scannen van een locatie direct in een bruikbare
+locatiecontext komen, zodat ik daar aanwezige producten kan muteren of een ander
+product kan toevoegen zonder contextverlies.
+
+**Scope**
+
+- Locatiecontext na bekende locatie-QR.
+- Voorraadweergave per locatie als hoofdcontext.
+- Actie op bestaand product binnen die locatie.
+- Actie `ander product toevoegen` binnen diezelfde locatiecontext.
+- Contextbehoud zolang de gebruiker binnen dezelfde locatie blijft werken.
+
+**Buiten scope**
+
+- Productgerichte flow vanaf productscan.
+- Definitieve onbekende-code-flow buiten de locatiecontext.
+
+### PILOT-SCAN-05 — Productgerichte scanmodus en onbekende-code-flow
+
+**Storyzin**
+Als Owner of Crew wil ik na het scannen van een product direct productinfo,
+voorraadlocaties en passende vervolgacties zien, en bij een onbekende code veilig een
+kort beslispad krijgen, zodat het systeem logisch reageert op elke scan.
+
+**Scope**
+
+- Productcontext na bekende productbarcode.
+- Muteren op bestaande product-locatiecontext.
+- Voorraad op andere locatie toevoegen vanuit productcontext.
+- Expliciete onbekende-code-flow met keuze `nieuw product` of terug naar scanstart.
+
+**Buiten scope**
+
+- Definitieve verwijdering van de oude scanflow.
+- Verdere dashboard- of rapportagekoppelingen.
 
 ### PILOT-INV-03 — Scan-gestuurde inruimflow met locatievoorstel
 
