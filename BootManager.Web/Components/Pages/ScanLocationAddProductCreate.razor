@@ -1,0 +1,247 @@
+@page "/scan/location/{LocationId}/add-product/create"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Application.Storage.Services
+@using BootManager.Application.Storage.DTOs
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+@inject IProductService ProductService
+@inject IStockService StockService
+@inject IStorageService StorageService
+@inject IUnitService UnitService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Nieuw product toevoegen aan locatie</PageTitle>
+
+<div class="scan-location-container">
+    <h2>Nieuw product toevoegen</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Locatie laden...</div>
+    }
+    else if (_location == null)
+    {
+        <div class="alert alert-danger">Locatie niet gevonden.</div>
+        <button class="btn btn-secondary" @onclick="GoBack">Terug</button>
+    }
+    else
+    {
+        <!-- Location context header -->
+        <div class="scan-location-card card scan-location-header">
+            <div class="card-body">
+                <h3 class="card-title">@_location.LocationName</h3>
+                <p class="text-muted">@_location.AreaName</p>
+            </div>
+        </div>
+
+        <!-- Product creation form -->
+        <div class="scan-location-card card">
+            <div class="card-body">
+                <h5 class="card-title">Product details</h5>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_successMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @_successMessage
+                        <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label for="product-name" class="form-label">Productnaam *</label>
+                    <input type="text" class="form-control" id="product-name"
+                           @bind="_productName" placeholder="Voer productnaam in…"
+                           disabled="@_isSaving" autofocus />
+                </div>
+
+                <div class="mb-3">
+                    <label for="product-description" class="form-label">Omschrijving (optioneel)</label>
+                    <textarea class="form-control" id="product-description"
+                              @bind="_productDescription" placeholder="Voer omschrijving in…"
+                              rows="3" disabled="@_isSaving"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="quantity-input" class="form-label">Beginhoeveelheid *</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="quantity-input"
+                               @bind="_quantity" min="0" step="0.01" disabled="@_isSaving"
+                               placeholder="0" />
+                        <select class="form-select" @bind="_selectedUnitId" disabled="@_isSaving">
+                            <option value="">-- Selecteer eenheid --</option>
+                            @foreach (var unit in _availableUnits)
+                            {
+                                <option value="@unit.Id">@unit.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary w-100" @onclick="CreateAndAddProduct"
+                        disabled="@(string.IsNullOrEmpty(_productName) || string.IsNullOrEmpty(_selectedUnitId) || _quantity <= 0 || _isSaving)">
+                    @if (_isSaving)
+                    {
+                        <span>Opslaan…</span>
+                    }
+                    else
+                    {
+                        <span>Product aanmaken en toevoegen</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <!-- Back button -->
+        <div class="scan-location-footer">
+            <button class="btn btn-outline-secondary w-100" @onclick="GoBack" disabled="@_isSaving">
+                Terug naar productzoeken
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string LocationId { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery]
+    public string? SearchTerm { get; set; }
+
+    private StorageLocationDetailDto? _location;
+    private List<UnitDto> _availableUnits = new();
+    private string? _productName;
+    private string? _productDescription;
+    private decimal _quantity = 0;
+    private string? _selectedUnitId;
+    private bool _loading = true;
+    private bool _isSaving = false;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!Guid.TryParse(LocationId, out var locationId))
+        {
+            _location = null;
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var locationResult = await StorageService.GetLocationDetailAsync(locationId);
+            if (locationResult.Success && locationResult.Data != null)
+            {
+                _location = locationResult.Data;
+            }
+
+            // Load available units
+            var units = await UnitService.GetActiveAsync();
+            if (units != null)
+            {
+                _availableUnits = units.ToList();
+                if (_availableUnits.Count > 0)
+                {
+                    _selectedUnitId = _availableUnits[0].Id.ToString();
+                }
+            }
+
+            // Prefill product name from search term if provided
+            if (!string.IsNullOrEmpty(SearchTerm))
+            {
+                _productName = System.Net.WebUtility.UrlDecode(SearchTerm);
+            }
+        }
+        catch
+        {
+            _location = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateAndAddProduct()
+    {
+        if (_location == null || string.IsNullOrEmpty(_productName) || string.IsNullOrEmpty(_selectedUnitId) || _quantity <= 0)
+        {
+            _errorMessage = "Onvolledig formulier.";
+            return;
+        }
+
+        if (!Guid.TryParse(_selectedUnitId, out var unitId))
+        {
+            _errorMessage = "Ongeldige eenheid.";
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            // Create product
+            var createResult = await ProductService.CreateAsync(
+                _productName.Trim(),
+                string.IsNullOrWhiteSpace(_productDescription) ? null : _productDescription.Trim(),
+                unitId);
+
+            if (!createResult.Success || createResult.Data == null)
+            {
+                _errorMessage = createResult.ErrorMessage ?? "Product aanmaken mislukt.";
+                return;
+            }
+
+            // Add stock to location
+            var stockResult = await StockService.AddOrIncrementStockAsync(
+                createResult.Data.Id,
+                _location.Id,
+                _quantity);
+
+            if (stockResult.Success)
+            {
+                _successMessage = "Product aangemaakt en toegevoegd.";
+                await Task.Delay(500);
+                NavigationManager.NavigateTo($"/scan/location/{LocationId}");
+            }
+            else
+            {
+                _errorMessage = stockResult.ErrorMessage ?? "Product toevoegen aan locatie mislukt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout: " + ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo($"/scan/location/{LocationId}/add-product");
+    }
+}

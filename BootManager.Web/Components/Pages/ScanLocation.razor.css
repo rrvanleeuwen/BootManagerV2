@@ -1,0 +1,310 @@
+.scan-location-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* Page title */
+.scan-location-container > h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #212529;
+}
+
+/* Location cards: quiet card-based design */
+.scan-location-card {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: #fff;
+    margin-bottom: 1.5rem;
+    transition: box-shadow 0.2s ease;
+}
+
+/* Location header card: primary focus */
+.scan-location-card.scan-location-header {
+    border-width: 2px;
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
+    margin-bottom: 2rem;
+}
+
+.scan-location-card.scan-location-header .card-body {
+    padding: 1.5rem;
+}
+
+.scan-location-card.scan-location-header .card-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+.scan-location-card.scan-location-header .text-muted {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Stock/products card */
+.scan-location-card.scan-location-stock {
+    margin-bottom: 1.5rem;
+}
+
+.scan-location-card.scan-location-stock .card-body {
+    padding: 1.5rem;
+}
+
+.scan-location-card.scan-location-stock .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 1rem;
+}
+
+/* Stock list styling */
+.stock-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stock-item-button {
+    text-align: left;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    border-color: #dee2e6 !important;
+}
+
+.stock-item-button:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.stock-item-button:active {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Alert card styling */
+.scan-location-card.alert-warning {
+    border-color: #ffc107;
+    background-color: #fffbea;
+}
+
+.scan-location-card.alert-warning .card-body {
+    padding: 1.5rem;
+}
+
+.scan-location-card.alert-warning h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #856404;
+    margin-bottom: 0.5rem;
+}
+
+.scan-location-card.alert-warning .text-muted {
+    color: #856404;
+}
+
+/* Secondary action: add product button */
+.scan-location-secondary {
+    margin-bottom: 1.5rem;
+}
+
+.scan-location-secondary .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    width: 100%;
+}
+
+/* Primary action: when no stock */
+.scan-location-actions {
+    margin-bottom: 1.5rem;
+}
+
+.scan-location-actions .btn-primary {
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+}
+
+/* Footer: back button */
+.scan-location-footer {
+    margin-bottom: 1rem;
+}
+
+.scan-location-footer .btn {
+    width: 100%;
+}
+
+/* Search results and product selection */
+.search-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.search-results-list .btn {
+    text-align: left;
+    white-space: normal;
+    line-height: 1.4;
+}
+
+/* Stock item styling (shared with mutate) */
+.stock-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.stock-item:last-child {
+    border-bottom: none;
+}
+
+.stock-location {
+    flex: 1;
+}
+
+.stock-quantity {
+    flex-shrink: 0;
+    margin-left: 1rem;
+}
+
+/* Form styling */
+.scan-location-card .form-label {
+    font-weight: 500;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+.scan-location-card .form-control,
+.scan-location-card .form-select {
+    border-color: #dee2e6;
+    border-radius: 4px;
+}
+
+.scan-location-card .form-control:focus,
+.scan-location-card .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.scan-location-card .input-group {
+    margin-bottom: 0.5rem;
+}
+
+/* Mutation type select styling */
+.scan-location-card .form-select {
+    min-width: 200px;
+}
+
+/* Compact scan camera card for add-product flow */
+.scan-location-card.scan-product-camera-card {
+    border-width: 1px;
+    border-color: #dee2e6;
+    box-shadow: none;
+    margin-bottom: 1rem;
+}
+
+.scan-location-card.scan-product-camera-card .card-body {
+    padding: 0.5rem;
+}
+
+.scan-location-card.scan-product-camera-card .card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0d6efd;
+    margin-bottom: 0.3rem;
+}
+
+.scan-video-wrapper {
+    width: 100%;
+    background: #000;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.2rem;
+}
+
+.scan-video-visible {
+    aspect-ratio: 16 / 9;
+    max-height: 120px;
+}
+
+.scan-video-hidden {
+    height: 0;
+}
+
+.scan-video-wrapper video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.scan-status-text {
+    color: #6c757d;
+    font-size: 0.75rem;
+    margin: 0.2rem 0 0.4rem;
+    line-height: 1.2;
+}
+
+.scan-controls {
+    margin-bottom: 0;
+}
+
+.scan-controls button {
+    width: 100%;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+    .scan-location-container {
+        padding: 1.5rem;
+    }
+
+    .scan-location-container > h2 {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .scan-location-card.scan-location-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .scan-location-card.scan-location-header .card-title {
+        font-size: 1.5rem;
+    }
+
+    .stock-item-button {
+        padding: 1rem 1.5rem !important;
+    }
+}
+
+@media (max-width: 767px) {
+    .scan-location-container {
+        padding: 0.75rem;
+    }
+
+    .scan-location-container > h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .scan-location-card.scan-location-header .card-body {
+        padding: 1rem;
+    }
+
+    .scan-location-card.scan-location-stock .card-body {
+        padding: 1rem;
+    }
+
+    .input-group {
+        flex-direction: column;
+    }
+
+    .input-group .form-select {
+        margin-top: 0.5rem;
+    }
+}

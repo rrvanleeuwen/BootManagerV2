@@ -10,11 +10,12 @@ Updated: 2026-06-21.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-scan-03a-product-scan-context`.
-- Branch bevat de nieuwe scanstart en product-scanwerkcontext uit `PILOT-SCAN-03A`,
-  plus de bijbehorende documentatie-updates.
-- Lokale status bevat implementatie-, test- en documentatiewijzigingen voor het
-  scan-reworkspoor die nog gecommit en gepusht moeten worden.
+- Actieve branch: `codex/pilot-scan-04-location-scan-context`.
+- Branch bevat nu de nieuwe locatie-scanwerkcontext uit `PILOT-SCAN-04`, inclusief
+  locatiecontext, muteren op bestaand product en `ander product toevoegen` binnen
+  dezelfde vaste locatiecontext.
+- Volgende gitstap na deze handoff: committen, pushen en PR openen voor
+  `PILOT-SCAN-04`.
 
 ## Actieve release
 
@@ -25,19 +26,23 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
 - afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
-  `PILOT-SCAN-03A`;
-- eerstvolgende focus: `PILOT-SCAN-04` als nieuwe locatie-scanwerkcontext zonder
-  hergebruik van oude scan- of locatiepagina's.
+  `PILOT-SCAN-03A`, `PILOT-SCAN-04`;
+- eerstvolgende focus: `PILOT-SCAN-05` voor de onbekende-code-flow en resterende
+  scanvervolgstappen, opnieuw zonder zichtbare terugval naar oude scanflow-schermen.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Na commit/push van deze branch de volgende implementatiestap voorbereiden voor
-`PILOT-SCAN-04`: een volledig nieuwe locatie-scanwerkcontext, zonder hergebruik van
-oude scanflow-pagina's, oude scancomponenten of de bestaande generieke locatiepagina
-als scan-eindervaring.
+Na merge van deze branch de volgende sessie starten met `PILOT-SCAN-05`, met als
+expliciete hoofdfocus de onbekende-code-flow binnen de nieuwe scanervaring. Die route
+mag niet eindigen in legacy, generieke beheerpagina's of doodlopende schermen, maar
+moet een helder nieuw beslispad bieden voor:
+
+- bestaand product koppelen of hervatten waar logisch;
+- nieuw product aanmaken waar nodig;
+- terug naar scanstart wanneer de gebruiker bewust annuleert.
 
 Technisch bevestigd in deze sessie:
 
@@ -63,6 +68,19 @@ Technisch bevestigd in deze sessie:
   - muteren en voorraad toevoegen werken binnen nieuwe productflow-schermen;
   - locatie-QR scannen en handmatige locatiecode-invoer werken in de add-stock-flow;
   - er is geen zichtbare terugval naar `/scan/old` binnen het bekende-product-pad.
+- `PILOT-SCAN-04` is handmatig geaccepteerd:
+  - bekende locatie-QR's landen nu in een nieuwe locatie-werkcontext;
+  - muteren op bestaand product blijft binnen nieuwe scanroutes;
+  - `ander product toevoegen` houdt de locatiecontext vast;
+  - productselectie ondersteunt nu deelzoeking en zichtbare barcode-scan binnen de
+    nieuwe scanstijl;
+  - er is geen zichtbare terugval naar oude scanflow-pagina's of de generieke
+    locatiepagina als scan-eindervaring.
+- Voor `PILOT-SCAN-05` geldt dezelfde harde regel:
+  - geen gebruik van oude scanflow-pagina's;
+  - geen gebruik van oude scanflow-componenten;
+  - geen gebruik van generieke beheerpagina's als scan-eindervaring;
+  - onbekende codes krijgen een volledig nieuwe zichtbare afhandeling.
 
 ## Niet-standaard context
 

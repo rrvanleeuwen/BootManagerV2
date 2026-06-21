@@ -6,8 +6,8 @@
 
 - [x] `PILOT-SCAN-03` nieuwe scanstart-UX plus eerste acceptabele routering
 - [x] `PILOT-SCAN-03A` product-scanwerkcontext zonder legacy-terugval
-- [ ] `PILOT-SCAN-04` locatiegerichte scanwerkcontext uitwerken
-- [ ] `PILOT-SCAN-05` productgerichte vervolgstappen en onbekende-code-flow afronden
+- [x] `PILOT-SCAN-04` locatiegerichte scanwerkcontext uitwerken
+- [ ] `PILOT-SCAN-05` onbekende-code-flow en resterende scanvervolgstappen afronden
 
 ### ✅ Completed Vertical Slices
 
@@ -125,21 +125,21 @@
   - **Verificatie:** `ScanComponentTests` en `NavMenuComponentTests` groen; solution-build groen; canonieke route `/scan` blijft behouden en verwijst tijdelijk door naar `/scan/old`, terwijl de oude flow functioneel beschikbaar blijft.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-SCAN-03 nieuw scanstartscherm met routering**
+- [x] **Holiday Pilot 2026 — PILOT-SCAN-03 nieuw scanstartscherm met routering**
   - **Doel:** `Scannen` wordt een volwaardig startscherm met camera, handmatige fallback en recente scans.
   - **Kern:** bekende locatiecode, bekende productcode en onbekende code krijgen elk hun eigen directe routering.
   - **Buiten scope:** volledige vervolgschermen voor locatie- en productcontext.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-SCAN-04 locatiegerichte scanmodus**
+- [x] **Holiday Pilot 2026 — PILOT-SCAN-04 locatiegerichte scanmodus**
   - **Doel:** na een locatiescan direct werken in locatiecontext met aanwezige producten en snelle vervolgacties.
   - **Kern:** muteren op bestaand product en ander product toevoegen binnen vaste locatiecontext.
   - **Buiten scope:** productgerichte route en volledige onbekende-code-flow buiten locatiecontext.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-SCAN-05 productgerichte scanmodus en onbekende-code-flow**
-  - **Doel:** na een productscan direct werken in productcontext met voorraadlocaties, mutatieacties en veilige onbekende-code-afhandeling.
-  - **Kern:** bestaande locatie muteren, andere locatie toevoegen en expliciete keuze bij onbekende code.
+- [ ] **Holiday Pilot 2026 — PILOT-SCAN-05 onbekende-code-flow en resterende scanvervolgstappen**
+  - **Doel:** een onbekende scan veilig en begrijpelijk afhandelen binnen de nieuwe scanervaring, zonder legacy-terugval of doodlopende paden.
+  - **Kern:** expliciete keuze bij onbekende code, doorzetten naar bestaand product koppelen of nieuw product aanmaken, en alleen de resterende productgerichte vervolgstappen die daarvoor nog nodig zijn.
   - **Buiten scope:** definitieve verwijdering van de oude scanflow.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 

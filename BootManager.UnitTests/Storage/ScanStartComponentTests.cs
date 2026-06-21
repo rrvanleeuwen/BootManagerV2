@@ -32,7 +32,7 @@ public class ScanStartComponentTests : TestContext
     }
 
     [Fact]
-    public async Task KnownLocationCode_ManualInput_NavigatesDirectlyToLocation()
+    public async Task KnownLocationCode_ManualInput_NavigatesToNewLocationScanWorkcontext()
     {
         var token = "a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5";
         var qrValue = $"bootmanager:location:{token}";
@@ -53,7 +53,7 @@ public class ScanStartComponentTests : TestContext
         });
 
         cut.WaitForAssertion(() =>
-            Assert.EndsWith($"/storage/locations/{locationId}", navigation.Uri));
+            Assert.EndsWith($"/scan/location/{locationId}", navigation.Uri));
     }
 
     [Fact]
