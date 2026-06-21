@@ -1,0 +1,159 @@
+@page "/scan/location/{LocationId}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using BootManager.Application.Storage.Services
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+@inject IStorageService StorageService
+@inject IProductService ProductService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Locatie scannen</PageTitle>
+
+<div class="scan-location-container">
+    <h2>Locatieworkcontext</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Locatie laden...</div>
+    }
+    else if (_location == null)
+    {
+        <div class="alert alert-danger">Locatie niet gevonden.</div>
+        <button class="btn btn-secondary" @onclick="GoBack">Terug naar scannen</button>
+    }
+    else
+    {
+        <!-- Location identity card: primary focus -->
+        <div class="scan-location-card card scan-location-header">
+            <div class="card-body">
+                <h3 class="card-title">@_location.LocationName</h3>
+                <p class="text-muted">@_location.AreaName</p>
+                @if (!string.IsNullOrWhiteSpace(_location.Description))
+                {
+                    <p class="text-muted">@_location.Description</p>
+                }
+            </div>
+        </div>
+
+        <!-- Products at this location: main content - clickable for mutation -->
+        @if (_location.Stocks != null && _location.Stocks.Count > 0)
+        {
+            <div class="scan-location-card card scan-location-stock">
+                <div class="card-body">
+                    <h5 class="card-title">Aanwezige producten</h5>
+                    <div class="stock-list">
+                        @foreach (var stock in _location.Stocks)
+                        {
+                            <button type="button" class="btn btn-outline-primary w-100 text-start p-3 mb-2 stock-item-button" @onclick="() => NavigateToMutateProduct(stock)">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@stock.ProductName</strong>
+                                    </div>
+                                    <span class="badge bg-primary">@stock.Quantity @stock.DefaultUnitName</span>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary action: add different product to this location -->
+            <div class="scan-location-secondary">
+                <button class="btn btn-outline-primary d-grid" @onclick="OpenAddProductFlow">
+                    Ander product toevoegen
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="scan-location-card card alert-warning">
+                <div class="card-body">
+                    <h5>Geen producten op deze locatie</h5>
+                    <p class="text-muted">Deze locatie bevat momenteel geen producten.</p>
+                </div>
+            </div>
+
+            <!-- Primary action: add product when no stock exists -->
+            <div class="scan-location-actions">
+                <button class="btn btn-primary btn-lg d-grid" @onclick="OpenAddProductFlow">
+                    Product toevoegen
+                </button>
+            </div>
+        }
+
+        <!-- Back area -->
+        <div class="scan-location-footer">
+            <button class="btn btn-outline-secondary" @onclick="GoBack">
+                Terug naar scannen
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string LocationId { get; set; } = string.Empty;
+
+    private StorageLocationDetailDto? _location;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!Guid.TryParse(LocationId, out var locationId))
+        {
+            _location = null;
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var locationResult = await StorageService.GetLocationDetailAsync(locationId);
+            if (locationResult.Success && locationResult.Data != null)
+            {
+                _location = locationResult.Data;
+            }
+        }
+        catch
+        {
+            _location = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void NavigateToMutateProduct(StockDto stock)
+    {
+        if (_location == null)
+            return;
+
+        NavigationManager.NavigateTo($"/scan/location/{_location.Id}/mutate/{stock.ProductId}");
+    }
+
+    private void OpenAddProductFlow()
+    {
+        if (_location == null)
+            return;
+
+        NavigationManager.NavigateTo($"/scan/location/{_location.Id}/add-product");
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/scan");
+    }
+}

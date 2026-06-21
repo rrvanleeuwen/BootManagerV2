@@ -1,0 +1,569 @@
+@page "/scan/location/{LocationId}/add-product"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@implements IAsyncDisposable
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Application.Storage.Services
+@using BootManager.Application.Storage.DTOs
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@using System.Security.Claims
+
+@inject IProductService ProductService
+@inject IStockService StockService
+@inject IStorageService StorageService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime Js
+
+<PageTitle>Product toevoegen aan locatie</PageTitle>
+
+<div class="scan-location-container">
+    <h2>Product toevoegen</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Locatie laden...</div>
+    }
+    else if (_location == null)
+    {
+        <div class="alert alert-danger">Locatie niet gevonden.</div>
+        <button class="btn btn-secondary" @onclick="GoBack">Terug</button>
+    }
+    else
+    {
+        <!-- Location context header -->
+        <div class="scan-location-card card scan-location-header">
+            <div class="card-body">
+                <h3 class="card-title">@_location.LocationName</h3>
+                <p class="text-muted">@_location.AreaName</p>
+            </div>
+        </div>
+
+        <!-- Visible scan action: compact camera card -->
+        <div class="scan-location-card card scan-product-camera-card">
+            <div class="card-body">
+                <h5 class="card-title">Barcode scannen</h5>
+
+                <div class="scan-video-wrapper @(_showVideo ? "scan-video-visible" : "scan-video-hidden")">
+                    <video id="scan-location-add-product-video" autoplay playsinline muted></video>
+                </div>
+
+                <p class="scan-status-text">@_scanStatusText</p>
+
+                <div class="scan-controls">
+                    @if (_scanStatus == ScanStatus.NotStarted || _scanStatus == ScanStatus.Stopped || _scanStatus == ScanStatus.Error)
+                    {
+                        <button class="btn btn-primary" @onclick="StartScan" disabled="@_isSaving">Camera starten</button>
+                    }
+                    else if (_scanStatus == ScanStatus.RequestingPermission)
+                    {
+                        <button class="btn btn-primary" disabled>Bezig met starten…</button>
+                    }
+                    else if (_scanStatus == ScanStatus.Active)
+                    {
+                        <button class="btn btn-secondary" @onclick="StopScan" disabled="@_isSaving">Stoppen</button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Product search/selection -->
+        <div class="scan-location-card card">
+            <div class="card-body">
+                <h5 class="card-title">Handmatige invoer</h5>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_successMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @_successMessage
+                        <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label for="product-search" class="form-label">Voer in of zoek op naam *</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="product-search"
+                               placeholder="Productnaam, omschrijving of barcode…" @bind="_productSearchInput"
+                               @bind:event="oninput" @onkeydown="HandleProductSearchKeyDown"
+                               disabled="@_isSaving" />
+                        <button type="button" class="btn btn-outline-primary"
+                                @onclick="SearchProduct"
+                                disabled="@(string.IsNullOrWhiteSpace(_productSearchInput) || _isSaving)">
+                                Zoeken
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">Voer gedeelte van naam in, of scan een productbarcode</small>
+                </div>
+
+                @if (_searchResults != null && _searchResults.Count > 0)
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Gevonden producten:</label>
+                        <div class="search-results-list">
+                            @foreach (var product in _searchResults)
+                            {
+                                <button type="button" class="btn btn-outline-primary w-100 text-start p-2 mb-2"
+                                        @onclick="() => SelectProduct(product)">
+                                    <strong>@product.Name</strong>
+                                    @if (!string.IsNullOrWhiteSpace(product.Description))
+                                    {
+                                        <br /><small class="text-muted">@product.Description</small>
+                                    }
+                                    @if (product.Code != null)
+                                    {
+                                        <br /><small class="text-muted">Code: @product.Code.Value</small>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (_searchResults != null && _searchResults.Count == 0 && !string.IsNullOrEmpty(_lastSearchTerm))
+                {
+                    <div class="mb-3">
+                        <div class="alert alert-warning">
+                            <p>Geen product gevonden voor: <strong>@_lastSearchTerm</strong></p>
+                            <button type="button" class="btn btn-outline-primary"
+                                    @onclick="NavigateToCreateProduct">
+                                Nieuw product aanmaken
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                @if (_selectedProduct != null)
+                {
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <strong>Geselecteerd product:</strong><br />
+                        @_selectedProduct.Name
+                        @if (!string.IsNullOrWhiteSpace(_selectedProduct.Description))
+                        {
+                            <br /><small class="text-muted">@_selectedProduct.Description</small>
+                        }
+                        @if (_selectedProduct.Code != null)
+                        {
+                            <br /><small class="text-muted">Code: @_selectedProduct.Code.Value</small>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quantity-input" class="form-label">Hoeveelheid (@_selectedProduct.DefaultUnitName) *</label>
+                        <input type="number" class="form-control" id="quantity-input"
+                               @bind="_quantity" min="0" step="0.01" disabled="@_isSaving"
+                               placeholder="0" />
+                    </div>
+
+                    <button class="btn btn-primary w-100" @onclick="AddProduct"
+                            disabled="@(_quantity <= 0 || _isSaving)">
+                        @if (_isSaving)
+                        {
+                            <span>Opslaan…</span>
+                        }
+                        else
+                        {
+                            <span>Product toevoegen</span>
+                        }
+                    </button>
+
+                    <button type="button" class="btn btn-outline-secondary w-100 mt-2" @onclick="ClearSelection" disabled="@_isSaving">
+                        Ander product kiezen
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Back button -->
+        <div class="scan-location-footer">
+            <button class="btn btn-outline-secondary w-100" @onclick="GoBack" disabled="@_isSaving">
+                Terug naar locatie
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private enum ScanStatus
+    {
+        NotStarted,
+        RequestingPermission,
+        Active,
+        Stopped,
+        Error,
+        InsecureContext
+    }
+
+    [Parameter]
+    public string LocationId { get; set; } = string.Empty;
+
+    private StorageLocationDetailDto? _location;
+    private ProductDto? _selectedProduct;
+    private List<ProductDto>? _searchResults;
+    private string? _productSearchInput;
+    private string? _lastSearchTerm;
+    private decimal _quantity = 0;
+    private bool _loading = true;
+    private bool _isSaving = false;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    private ScanStatus _scanStatus = ScanStatus.NotStarted;
+    private IJSObjectReference? _scanModule;
+    private DotNetObjectReference<ScanLocationAddProduct>? _dotnetRef;
+    private int _requestId = 0;
+
+    private bool _showVideo =>
+        _scanStatus == ScanStatus.RequestingPermission || _scanStatus == ScanStatus.Active;
+
+    private string _scanStatusText => _scanStatus switch
+    {
+        ScanStatus.NotStarted           => "Druk op 'Camera starten' om barcode te scannen.",
+        ScanStatus.RequestingPermission => "Cameratoestemming aanvragen…",
+        ScanStatus.Active               => "Camera actief — houd een barcode voor de camera.",
+        ScanStatus.Stopped              => "Scanner gestopt.",
+        ScanStatus.Error                => "Fout bij starten van de scanner.",
+        ScanStatus.InsecureContext      => "Cameratoegang niet mogelijk via HTTP.",
+        _                               => string.Empty
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!Guid.TryParse(LocationId, out var locationId))
+        {
+            _location = null;
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var locationResult = await StorageService.GetLocationDetailAsync(locationId);
+            if (locationResult.Success && locationResult.Data != null)
+            {
+                _location = locationResult.Data;
+            }
+        }
+        catch
+        {
+            _location = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _scanModule = await Js.InvokeAsync<IJSObjectReference>("import", "./js/barcodeScanner.js");
+            }
+            catch (JSException)
+            {
+                _scanStatus = ScanStatus.Error;
+                _errorMessage = "Scannermodule kon niet worden geladen. Handmatige invoer is beschikbaar.";
+                StateHasChanged();
+                return;
+            }
+
+            _dotnetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                var isSecure = await _scanModule.InvokeAsync<bool>("checkSecureContext");
+                if (!isSecure)
+                {
+                    _scanStatus = ScanStatus.InsecureContext;
+                    StateHasChanged();
+                }
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+    }
+
+    private async Task _internalStartScan(int localRequestId)
+    {
+        if (_scanModule is null || _dotnetRef is null)
+            return;
+
+        try
+        {
+            await _scanModule.InvokeVoidAsync("startScan", _dotnetRef, "scan-location-add-product-video", null, localRequestId);
+
+            if (localRequestId != _requestId)
+                return;
+        }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
+        catch (JSException ex)
+        {
+            if (localRequestId != _requestId)
+                return;
+
+            _scanStatus = ScanStatus.Error;
+            _errorMessage = "Fout bij starten van de scanner: " + ex.Message;
+            StateHasChanged();
+            return;
+        }
+
+        if (localRequestId != _requestId)
+            return;
+
+        if (_scanStatus == ScanStatus.RequestingPermission)
+        {
+            _scanStatus = ScanStatus.Active;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartScan()
+    {
+        if (_scanModule is null || _dotnetRef is null)
+            return;
+
+        _errorMessage = null;
+        _requestId++;
+
+        var localRequestId = _requestId;
+
+        _scanStatus = ScanStatus.RequestingPermission;
+        StateHasChanged();
+
+        await _internalStartScan(localRequestId);
+    }
+
+    private async Task StopScan()
+    {
+        _requestId++;
+
+        if (_scanModule is not null)
+        {
+            try
+            {
+                await _scanModule.InvokeVoidAsync("stopScan");
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+
+        _scanStatus = ScanStatus.Stopped;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async void OnScanResult(int requestId, string value, string format)
+    {
+        if (requestId != _requestId)
+            return;
+
+        _scanStatus = ScanStatus.Stopped;
+        _productSearchInput = value;
+        await SearchProduct();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnScanError(int requestId, string errorCode)
+    {
+        if (requestId != _requestId)
+            return;
+
+        _scanStatus = errorCode == "INSECURE_CONTEXT" ? ScanStatus.InsecureContext : ScanStatus.Error;
+        _errorMessage = errorCode switch
+        {
+            "INSECURE_CONTEXT"    => "Cameratoegang vereist een beveiligde verbinding (HTTPS).",
+            "NO_CAMERA_API"       => "Camera-API niet beschikbaar in deze browser.",
+            "PERMISSION_DENIED"   => "Cameratoestemming geweigerd. Sta cameratoegang toe in de browserinstellingen.",
+            "NO_CAMERA"           => "Geen camera gevonden op dit apparaat.",
+            "CAMERA_ERROR"        => "Camera kon niet worden gestart. Controleer of de camera beschikbaar is.",
+            "DECODER_LOAD_FAILED" => "Barcodedecoder kon niet worden geladen. Controleer of lib/zxing/zxing.min.js aanwezig is.",
+            _                     => "Onbekende fout bij het starten van de scanner."
+        };
+
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnCamerasAvailable(int requestId, object[] cameras)
+    {
+        // Not needed for this flow.
+    }
+
+    [JSInvokable]
+    public void OnDiagnostics(int requestId, object diagnostics)
+    {
+        // Not needed for this flow.
+    }
+
+    [JSInvokable]
+    public void OnDecoderSupport(int requestId, object decoderSupport)
+    {
+        // Not needed for this flow.
+    }
+
+    private async Task HandleProductSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchProduct();
+        }
+    }
+
+    private async Task SearchProduct()
+    {
+        var searchTerm = _productSearchInput?.Trim();
+        if (string.IsNullOrEmpty(searchTerm))
+        {
+            _errorMessage = "Voer een zoekterm in.";
+            return;
+        }
+
+        _lastSearchTerm = searchTerm;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            // Try exact code match first
+            var exactResult = await ProductService.GetByCodeValueAsync(searchTerm);
+            if (exactResult.Success && exactResult.Data != null)
+            {
+                _searchResults = new() { exactResult.Data };
+                _successMessage = "Product gevonden via code.";
+                return;
+            }
+
+            // Fall back to name/description search (supports partial matching)
+            var searchResults = await ProductService.SearchByNameOrDescriptionAsync(searchTerm);
+            if (searchResults != null && searchResults.Count > 0)
+            {
+                _searchResults = searchResults.ToList();
+                _successMessage = $"{_searchResults.Count} product(en) gevonden.";
+            }
+            else
+            {
+                _searchResults = new();
+                _successMessage = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout bij zoeken: " + ex.Message;
+            _searchResults = null;
+        }
+    }
+
+    private void SelectProduct(ProductDto product)
+    {
+        _selectedProduct = product;
+        _searchResults = null;
+        _productSearchInput = null;
+        _lastSearchTerm = null;
+        _quantity = 0;
+        _successMessage = $"Product '{product.Name}' geselecteerd.";
+    }
+
+    private void ClearSelection()
+    {
+        _selectedProduct = null;
+        _searchResults = null;
+        _productSearchInput = null;
+        _lastSearchTerm = null;
+        _quantity = 0;
+        _successMessage = null;
+    }
+
+    private async Task AddProduct()
+    {
+        if (_location == null || _selectedProduct == null || _quantity <= 0)
+        {
+            _errorMessage = "Onvolledig formulier.";
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var result = await StockService.AddOrIncrementStockAsync(
+                _selectedProduct.Id,
+                _location.Id,
+                _quantity);
+
+            if (result.Success)
+            {
+                _successMessage = "Product toegevoegd.";
+                await Task.Delay(500);
+                NavigationManager.NavigateTo($"/scan/location/{LocationId}");
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Product toevoegen mislukt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout: " + ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void NavigateToCreateProduct()
+    {
+        if (_location == null || string.IsNullOrEmpty(_lastSearchTerm))
+            return;
+
+        NavigationManager.NavigateTo(
+            $"/scan/location/{LocationId}/add-product/create?searchTerm={Uri.EscapeDataString(_lastSearchTerm)}");
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo($"/scan/location/{LocationId}");
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (_dotnetRef is not null)
+        {
+            _dotnetRef.Dispose();
+        }
+
+        if (_scanModule is not null)
+        {
+            try
+            {
+                await _scanModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+        }
+    }
+}

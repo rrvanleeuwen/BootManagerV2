@@ -350,10 +350,10 @@
 
         var qrResolution = await StorageService.ResolveQrValueAsync(code);
 
-        // Known location code — navigate directly to location detail
+        // Known location code — navigate to new location scan workcontext
         if (qrResolution.Status == QrStatus.Linked && qrResolution.LinkedLocationId.HasValue)
         {
-            NavigationManager.NavigateTo($"/storage/locations/{qrResolution.LinkedLocationId.Value}");
+            NavigationManager.NavigateTo($"/scan/location/{qrResolution.LinkedLocationId.Value}");
             return;
         }
 

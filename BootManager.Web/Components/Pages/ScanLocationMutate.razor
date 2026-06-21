@@ -1,0 +1,269 @@
+@page "/scan/location/{LocationId}/mutate/{ProductId}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Application.Storage.Services
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Core.Entities
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+@inject IProductService ProductService
+@inject IStockService StockService
+@inject IStorageService StorageService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Voorraad muteren</PageTitle>
+
+<div class="scan-location-container">
+    <h2>Voorraad muteren</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Gegevens laden…</div>
+    }
+    else if (_product == null || _stock == null || _location == null)
+    {
+        <div class="alert alert-danger">Product, locatie of voorraad niet gevonden.</div>
+        <button class="btn btn-secondary" @onclick="GoBack">Terug</button>
+    }
+    else
+    {
+        <!-- Product context header -->
+        <div class="scan-location-card card scan-location-header">
+            <div class="card-body">
+                <h3 class="card-title">@_product.Name</h3>
+                @if (_product.Code != null)
+                {
+                    <p class="text-muted">Code: <code>@_product.Code.Value</code></p>
+                }
+                <p class="text-muted">Eenheid: @_product.DefaultUnitName</p>
+            </div>
+        </div>
+
+        <!-- Location context -->
+        <div class="scan-location-card card">
+            <div class="card-body">
+                <h5 class="card-title">Locatie</h5>
+                <div class="stock-item">
+                    <div class="stock-location">
+                        <strong>@_location.LocationName</strong><br />
+                        <span class="text-muted">@_location.AreaName</span>
+                    </div>
+                    <div class="stock-quantity">
+                        <span class="badge bg-primary">@_stock.Quantity @_stock.DefaultUnitName</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mutation form -->
+        <div class="scan-location-card card">
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_successMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @_successMessage
+                        <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Mutatielogtype *</label>
+                    <select class="form-select" @bind="_selectedType" disabled="@_isSaving">
+                        <option value="">-- Selecteer type --</option>
+                        <option value="Verbruik">Verbruik (afname)</option>
+                        <option value="Correctie">Correctie (herzien hoeveelheid)</option>
+                        <option value="Telling">Telling (gecontroleerde hoeveelheid)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        @if (_selectedType == "Verbruik")
+                        {
+                            <span>Afnamehoeveelheid *</span>
+                        }
+                        else if (_selectedType == "Correctie" || _selectedType == "Telling")
+                        {
+                            <span>Nieuwe hoeveelheid *</span>
+                        }
+                        else
+                        {
+                            <span>Hoeveelheid *</span>
+                        }
+                    </label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" step="0.01"
+                               @bind="_quantity" placeholder="0" disabled="@_isSaving" />
+                        <span class="input-group-text">@_product.DefaultUnitName</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Notitie (optioneel)</label>
+                    <textarea class="form-control" @bind="_note" placeholder="Vrije notitie…" rows="3" disabled="@_isSaving"></textarea>
+                </div>
+
+                <button class="btn btn-primary w-100" @onclick="SaveMutation"
+                        disabled="@(string.IsNullOrEmpty(_selectedType) || _quantity <= 0 || _isSaving)">
+                    @if (_isSaving)
+                    {
+                        <span>Opslaan…</span>
+                    }
+                    else
+                    {
+                        <span>Opslaan</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <!-- Back button -->
+        <div class="scan-location-footer">
+            <button class="btn btn-outline-secondary w-100" @onclick="GoBack" disabled="@_isSaving">
+                Terug naar locatie
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string LocationId { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ProductId { get; set; } = string.Empty;
+
+    private StorageLocationDetailDto? _location;
+    private ProductDto? _product;
+    private StockDto? _stock;
+    private string _selectedType = "Verbruik";
+    private decimal _quantity = 0;
+    private string? _note;
+    private string? _errorMessage;
+    private string? _successMessage;
+    private bool _isSaving = false;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!Guid.TryParse(LocationId, out var locationId) || !Guid.TryParse(ProductId, out var productId))
+        {
+            _location = null;
+            _product = null;
+            _stock = null;
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            // Load location
+            var locationResult = await StorageService.GetLocationDetailAsync(locationId);
+            if (locationResult.Success && locationResult.Data != null)
+            {
+                _location = locationResult.Data;
+
+                // Find stock for this product at this location
+                _stock = _location.Stocks.FirstOrDefault(s => s.ProductId == productId);
+            }
+
+            // Load product
+            var productResult = await ProductService.GetByIdAsync(productId);
+            if (productResult.Success && productResult.Data != null)
+            {
+                _product = productResult.Data;
+            }
+        }
+        catch
+        {
+            _location = null;
+            _product = null;
+            _stock = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveMutation()
+    {
+        if (_product == null || _stock == null || string.IsNullOrEmpty(_selectedType) || _quantity <= 0)
+        {
+            _errorMessage = "Onvolledig formulier.";
+            return;
+        }
+
+        if (!Enum.TryParse<StockMutationType>(_selectedType, out var mutationType))
+        {
+            _errorMessage = "Ongeldig mutatielogtype.";
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst("sub")?.Value
+            ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            _errorMessage = "Gebruiker niet bepaald.";
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var result = await StockService.MutateStockAsync(
+                _product.Id,
+                _stock.StorageLocationId,
+                mutationType,
+                _quantity,
+                userId,
+                string.IsNullOrWhiteSpace(_note) ? null : _note.Trim());
+
+            if (result.Success)
+            {
+                _successMessage = "Mutatie opgeslagen.";
+                await Task.Delay(500);
+                NavigationManager.NavigateTo($"/scan/location/{LocationId}");
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Opslaan mislukt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Fout: " + ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo($"/scan/location/{LocationId}");
+    }
+}

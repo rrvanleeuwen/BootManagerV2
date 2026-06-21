@@ -146,9 +146,9 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 10. **PILOT-INV-04** — **Done** — Product terugvinden via scan of zoeken, locaties tonen en vanuit geen-voorraad direct voorraad toevoegen via een compacte modal.
 11. **PILOT-INV-05** — **Done** — Verbruik, correcties en eenvoudige historie.
 12. **PILOT-SCAN-02** — **Done** — Parallelle scan-reworkbasis met `old`-isolatie van de huidige flow.
-13. **PILOT-SCAN-03** — **Gepland** — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
-14. **PILOT-SCAN-04** — **Gepland** — Locatiegerichte scanmodus met directe mutatie- en toevoegacties.
-15. **PILOT-SCAN-05** — **Gepland** — Productgerichte scanmodus en onbekende-code-flow.
+13. **PILOT-SCAN-03** — **Done** — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
+14. **PILOT-SCAN-04** — **Done** — Locatiegerichte scanmodus met directe mutatie- en toevoegacties.
+15. **PILOT-SCAN-05** — **Gepland** — Onbekende-code-flow afronden en resterende scanvervolgstappen aanscherpen.
 16. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
 17. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
 18. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
@@ -161,7 +161,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-SCAN-03` — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
+**Eerstvolgende story:** `PILOT-SCAN-05` — Onbekende-code-flow afronden en resterende scanvervolgstappen aanscherpen.
 
 ## Expliciete herprioritering
 
@@ -181,9 +181,8 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve uitwerking nu `PILOT-SCAN-03` t/m `PILOT-SCAN-05` aan; voeg
-  daarbinnen alleen de eerstvolgende kleine implementatiestap toe wanneer die werkelijk
-  aan de beurt is.
+- Houd als actieve uitwerking nu `PILOT-SCAN-05` aan; voeg daarbinnen alleen de
+  eerstvolgende kleine implementatiestap toe wanneer die werkelijk aan de beurt is.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
 - Verplaats een story na afronding en administratieve controle naar het archief,
@@ -340,6 +339,12 @@ Als Owner of Crew wil ik na het scannen van een locatie direct in een bruikbare
 locatiecontext komen, zodat ik daar aanwezige producten kan muteren of een ander
 product kan toevoegen zonder contextverlies.
 
+**Waarom deze slice nu**
+Na `PILOT-SCAN-03` en `PILOT-SCAN-03A` is de scanstart en de bekende productroute
+nieuw opgezet. De grootste resterende UX-kloof zit nu bij de bekende locatiescan:
+die mag niet eindigen op de bestaande generieke locatiepagina of op oude scanlogica,
+maar moet landen in een volledig nieuwe locatie-werkcontext.
+
 **Scope**
 
 - Locatiecontext na bekende locatie-QR.
@@ -347,11 +352,56 @@ product kan toevoegen zonder contextverlies.
 - Actie op bestaand product binnen die locatie.
 - Actie `ander product toevoegen` binnen diezelfde locatiecontext.
 - Contextbehoud zolang de gebruiker binnen dezelfde locatie blijft werken.
+- Volledig nieuwe zichtbare scanroute voor bekende locaties, zonder hergebruik van
+  oude scanflow-pagina's, oude scanflow-componenten of de bestaande generieke
+  locatiepagina als scan-eindervaring.
 
 **Buiten scope**
 
 - Productgerichte flow vanaf productscan.
 - Definitieve onbekende-code-flow buiten de locatiecontext.
+- Definitieve verwijdering van `/scan/old`.
+- Brede beheerfuncties of klassieke locatie-detailadministratie.
+
+**Acceptatiecriteria**
+
+1. Een bekende locatiescan eindigt niet meer op de bestaande generieke locatiepagina.
+2. De gebruiker ziet direct welke locatie actief is.
+3. De gebruiker ziet direct welke producten op die locatie aanwezig zijn.
+4. Vanuit die locatiecontext kan de gebruiker op bestaand product muteren zonder
+   contextverlies.
+5. Vanuit die locatiecontext kan de gebruiker een ander product toevoegen met behoud van
+   de vaste locatiecontext.
+6. De volledige bekende-locatieroute blijft binnen nieuwe scanflow-schermen en gebruikt
+   geen oude scanflow-pagina's of -componenten.
+7. Het scherm voelt op mobiel compact en taakgericht en op desktop overzichtelijk en
+   rustig.
+
+**Handmatige acceptatietest**
+
+1. Open `/scan` als ingelogde Owner of Crew.
+2. Scan of voer een bekende locatie-QR in.
+3. Controleer dat de app niet eindigt op een klassieke locatie-detailpagina of oude
+   scanpagina.
+4. Controleer dat direct een nieuwe locatie-werkcontext zichtbaar is met locatiekop,
+   aanwezige producten en duidelijke hoofdacties.
+5. Klik op een bestaand product en controleer dat de mutatieflow binnen de nieuwe
+   scanroutes blijft.
+6. Kies `ander product toevoegen` en controleer dat de locatie vast blijft staan binnen
+   de nieuwe flow.
+
+**Statusnotitie 2026-06-21**
+Handmatig geaccepteerd. Een bekende locatiescan landt nu in een nieuwe
+locatie-werkcontext met:
+
+- een compacte locatiekop;
+- aanwezige producten op die locatie;
+- directe mutatie vanuit bestaand product binnen dezelfde locatiecontext;
+- `ander product toevoegen` binnen dezelfde locatiecontext;
+- product zoeken op deel van naam of omschrijving;
+- zichtbare productbarcode-scan in dezelfde nieuwe scanstijl;
+- geen zichtbare terugval naar oude scanpagina's of de generieke locatiepagina als
+  scan-eindervaring.
 
 ### PILOT-SCAN-05 — Productgerichte scanmodus en onbekende-code-flow
 
@@ -360,12 +410,22 @@ Als Owner of Crew wil ik na het scannen van een product direct productinfo,
 voorraadlocaties en passende vervolgacties zien, en bij een onbekende code veilig een
 kort beslispad krijgen, zodat het systeem logisch reageert op elke scan.
 
+**Statusnotitie 2026-06-21**
+De bekende product- en bekende locatieroutes zijn nu handmatig geaccepteerd in nieuwe
+scancontexten. De eerstvolgende expliciete focus is daarom de onbekende-code-flow:
+een onbekende scan mag niet meer in legacy of doodlopende paden eindigen, maar moet een
+duidelijk nieuw beslispad bieden binnen dezelfde scanervaring.
+
 **Scope**
 
-- Productcontext na bekende productbarcode.
-- Muteren op bestaande product-locatiecontext.
-- Voorraad op andere locatie toevoegen vanuit productcontext.
-- Expliciete onbekende-code-flow met keuze `nieuw product` of terug naar scanstart.
+- Onbekende-code-flow binnen de nieuwe scanervaring.
+- Expliciete keuze wat de gebruiker met een onbekende code wil doen.
+- Doorzetten naar bestaand product koppelen of nieuw product aanmaken zonder legacy-
+  terugval.
+- Rustige, taakgerichte schermen voor mobiel en desktop volgens de scanflow-UI-
+  richtlijnen.
+- Alleen resterende productgerichte vervolgstappen die nog nodig zijn om de
+  onbekende-code-flow logisch af te ronden.
 
 **Buiten scope**
 

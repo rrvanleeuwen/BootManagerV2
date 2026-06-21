@@ -73,7 +73,7 @@ Bij afronding van een story of PR:
 | US2.11 Minimumvoorraad en waarschuwing | Open | Afhankelijk van inventory en notificaties. |
 | US2.12 Zoeken en filteren | Partial | `PILOT-INV-04` levert eenvoudige handmatige zoekfallback in `Voorraadbeheer > Producten` op productnaam en omschrijving, hoofdletterongevoelig en met deelmatches. Uitgebreide filters, categorie-/gebiedfilters en bredere zoekopties blijven open. |
 | US2.13 Voorraadlogboek | Done | `PILOT-INV-05` voegt een aparte historiepagina toe met datum/tijd, type, product, gebied + locatie, oude hoeveelheid, nieuwe hoeveelheid, gebruiker en notitie. |
-| US2.14 QR-scanner-modus | Partial | `PILOT-SCAN-01` levert een generieke QR-scanner, `PILOT-LOC-02` voegt BootManager locatie-QR routing toe, `PILOT-INV-03` maakt het scanmenu praktisch bruikbaar voor inventory-inruimen en `PILOT-INV-04` voegt scan-gebaseerd product terugvinden toe. Voorraadmutaties en bredere scan-gebaseerde vervolgacties blijven later open. |
+| US2.14 QR-scanner-modus | Partial | `PILOT-SCAN-01` levert een generieke QR-scanner, `PILOT-LOC-02` voegt BootManager locatie-QR routing toe, `PILOT-SCAN-03` maakt `Scannen` de nieuwe centrale scan-ingang, `PILOT-SCAN-03A` levert de nieuwe productscanwerkcontext en `PILOT-SCAN-04` levert de nieuwe locatie-scanwerkcontext met muteren en product toevoegen binnen vaste locatiecontext. De onbekende-code-flow en definitieve volledige scanafronding blijven nog open in `PILOT-SCAN-05`. |
 | US2.15 Bulkimport/export voorraad | Open | Later na datamodel. |
 | US2.16 Voorraadstatus in dashboard | Open | Afhankelijk van inventory en dashboard. |
 | US2.17 Integratie met passageplanning | Open | Afhankelijk van inventory en passageplanning. |
