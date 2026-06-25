@@ -27,6 +27,7 @@ public class ScanComponentTests : TestContext
     private readonly Mock<IProductService> _productServiceMock = new();
     private readonly Mock<IStockService> _stockServiceMock = new();
     private readonly Mock<IUnitService> _unitServiceMock = new();
+    private readonly Mock<IProductCategoryService> _categoryServiceMock = new();
 
     public ScanComponentTests()
     {
@@ -34,6 +35,7 @@ public class ScanComponentTests : TestContext
         Services.AddScoped<IProductService>(_ => _productServiceMock.Object);
         Services.AddScoped<IStockService>(_ => _stockServiceMock.Object);
         Services.AddScoped<IUnitService>(_ => _unitServiceMock.Object);
+        Services.AddScoped<IProductCategoryService>(_ => _categoryServiceMock.Object);
         SetupScannerJs();
     }
 
@@ -1478,6 +1480,295 @@ public class ScanComponentTests : TestContext
         // Should now show product scanning (NOT direct entry), because old product context was cleared
         cut.WaitForAssertion(() =>
             Assert.Contains("Voorraadbijzonderheid: product scannen", cut.Markup, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task UnknownCode_FromScan_NavigatesToNewUnknownCodeScreen()
+    {
+        // PILOT-SCAN-05: Unknown scan from /scan must go to new /scan/unknown, not /scan/old
+        var unknownCode = "UNKNOWN123ABC";
+        SetupAuthState("Owner");
+
+        _storageMock
+            .Setup(s => s.ResolveQrValueAsync(unknownCode, default))
+            .ReturnsAsync(QrResolutionResult.Invalid());
+
+        _productServiceMock
+            .Setup(s => s.GetByCodeValueAsync(unknownCode, default))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var cut = RenderComponent<Scan>();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("input[placeholder='Voer code in…']").Input(unknownCode);
+            cut.FindAll("button").Single(b => b.TextContent.Contains("OK")).Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("/scan/unknown", navigation.Uri));
+    }
+
+    [Fact]
+    public async Task UnknownCode_FromScan_DoesNotNavigateToOldFlow()
+    {
+        // PILOT-SCAN-05: Unknown scan must NOT go to /scan/old anymore
+        var unknownCode = "UNKNOWN456DEF";
+        SetupAuthState("Owner");
+
+        _storageMock
+            .Setup(s => s.ResolveQrValueAsync(unknownCode, default))
+            .ReturnsAsync(QrResolutionResult.Invalid());
+
+        _productServiceMock
+            .Setup(s => s.GetByCodeValueAsync(unknownCode, default))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var cut = RenderComponent<Scan>();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("input[placeholder='Voer code in…']").Input(unknownCode);
+            cut.FindAll("button").Single(b => b.TextContent.Contains("OK")).Click();
+        });
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.DoesNotContain("/scan/old", navigation.Uri);
+            Assert.Contains("/scan/unknown", navigation.Uri);
+        });
+    }
+
+    [Fact]
+    public void ScanUnknownCodeScreen_RenderCodeAndThreeChoices()
+    {
+        // PILOT-SCAN-05: New unknown-code screen displays code and three explicit action choices
+        var unknownCode = "TEST-CODE-001";
+        SetupAuthState("Owner");
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var navUri = navigation.GetUriWithQueryParameter("code", unknownCode);
+
+        // Navigate to the unknown code screen
+        navigation.NavigateTo(navUri);
+        var cut = RenderComponent<ScanUnknownCode>();
+
+        cut.WaitForAssertion(() =>
+        {
+            // Code must be visible
+            Assert.Contains(unknownCode, cut.Markup);
+            Assert.Contains("Code onbekend", cut.Markup);
+
+            // All three choices must be visible
+            var buttons = cut.FindAll("button");
+            Assert.NotEmpty(buttons.Where(b => b.TextContent.Contains("Nieuw product aanmaken")));
+            Assert.NotEmpty(buttons.Where(b => b.TextContent.Contains("Aan bestaand product koppelen")));
+            Assert.NotEmpty(buttons.Where(b => b.TextContent.Contains("Annuleren")));
+        });
+    }
+
+    [Fact]
+    public async Task ScanUnknownCodeScreen_CancelButton_ReturnsToScan()
+    {
+        // PILOT-SCAN-05: Canceling returns to /scan without changes
+        var unknownCode = "TEST-CODE-002";
+        SetupAuthState("Owner");
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var navUri = navigation.GetUriWithQueryParameter("code", unknownCode);
+        navigation.NavigateTo(navUri);
+
+        var cut = RenderComponent<ScanUnknownCode>();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .Single(b => b.TextContent.Contains("Annuleren"))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.EndsWith("/scan", navigation.Uri));
+    }
+
+    [Fact]
+    public async Task ScanUnknownCodeScreen_CreateProductButton_NavigatesToCreateFlow()
+    {
+        // PILOT-SCAN-05: "Nieuw product aanmaken" stays within new scan routes
+        var unknownCode = "TEST-CODE-003";
+        SetupAuthState("Owner");
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var navUri = navigation.GetUriWithQueryParameter("code", unknownCode);
+        navigation.NavigateTo(navUri);
+
+        var cut = RenderComponent<ScanUnknownCode>();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .Single(b => b.TextContent.Contains("Nieuw product aanmaken"))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("/scan/unknown/create-product", navigation.Uri));
+    }
+
+    [Fact]
+    public async Task ScanUnknownCodeScreen_LinkProductButton_NavigatesToLinkFlow()
+    {
+        // PILOT-SCAN-05: "Aan bestaand product koppelen" stays within new scan routes
+        var unknownCode = "TEST-CODE-004";
+        SetupAuthState("Owner");
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var navUri = navigation.GetUriWithQueryParameter("code", unknownCode);
+        navigation.NavigateTo(navUri);
+
+        var cut = RenderComponent<ScanUnknownCode>();
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.FindAll("button")
+                .Single(b => b.TextContent.Contains("Aan bestaand product koppelen"))
+                .Click();
+        });
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("/scan/unknown/link-product", navigation.Uri));
+    }
+
+    [Fact]
+    public void ScanUnknownCreateProduct_RendersUnitDropdown_WithActiveUnits()
+    {
+        // PILOT-SCAN-05: /scan/unknown/create-product must render an explicit unit dropdown
+        var code = "TEST-UNIT-001";
+        var unit1 = new UnitDto { Id = Guid.NewGuid(), Name = "stuk" };
+        var unit2 = new UnitDto { Id = Guid.NewGuid(), Name = "kg" };
+        SetupAuthState("Owner");
+
+        _unitServiceMock
+            .Setup(s => s.GetActiveAsync(default))
+            .ReturnsAsync(new List<UnitDto> { unit1, unit2 }.AsReadOnly());
+
+        _categoryServiceMock
+            .Setup(s => s.GetAllAsync(default))
+            .ReturnsAsync(new List<ProductCategoryDto>().AsReadOnly());
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo($"/scan/unknown/create-product?code={Uri.EscapeDataString(code)}");
+
+        var cut = RenderComponent<ScanUnknownCodeCreateProduct>();
+
+        cut.WaitForAssertion(() =>
+        {
+            var options = cut.FindAll("option");
+            Assert.Contains(options, o => o.TextContent.Contains("stuk"));
+            Assert.Contains(options, o => o.TextContent.Contains("kg"));
+            Assert.NotNull(cut.FindAll("select").FirstOrDefault(s => s.Id == "product-unit"));
+        });
+    }
+
+    [Fact]
+    public async Task ScanUnknownCreateProduct_SaveButtonDisabled_WhenNoUnitSelected()
+    {
+        // PILOT-SCAN-05: save must be blocked until the user explicitly picks a unit
+        var code = "TEST-UNIT-002";
+        var categoryId = Guid.NewGuid();
+        var unit1 = new UnitDto { Id = Guid.NewGuid(), Name = "stuk" };
+        SetupAuthState("Owner");
+
+        _unitServiceMock
+            .Setup(s => s.GetActiveAsync(default))
+            .ReturnsAsync(new List<UnitDto> { unit1 }.AsReadOnly());
+
+        _categoryServiceMock
+            .Setup(s => s.GetAllAsync(default))
+            .ReturnsAsync(new List<ProductCategoryDto>
+            {
+                new ProductCategoryDto { Id = categoryId, Name = "Vlees" }
+            }.AsReadOnly());
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo($"/scan/unknown/create-product?code={Uri.EscapeDataString(code)}");
+
+        var cut = RenderComponent<ScanUnknownCodeCreateProduct>();
+
+        cut.WaitForAssertion(() => Assert.Contains("Product aanmaken", cut.Markup));
+
+        // Fill in name and category but leave unit unselected
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("#product-name").Change("TestProduct");
+            cut.Find("#product-category").Change(categoryId.ToString());
+        });
+
+        var saveButton = cut.FindAll("button").Single(b => b.TextContent.Contains("Product aanmaken"));
+        Assert.True(saveButton.HasAttribute("disabled"));
+    }
+
+    [Fact]
+    public async Task ScanUnknownCreateProduct_SelectedUnitPassedToCreateAsync()
+    {
+        // PILOT-SCAN-05: the unit the user chose must be forwarded to CreateAsync, not the first active unit
+        var code = "TEST-UNIT-003";
+        var categoryId = Guid.NewGuid();
+        var selectedUnitId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        SetupAuthState("Owner");
+
+        var unit1 = new UnitDto { Id = Guid.NewGuid(), Name = "liter" };
+        var unit2 = new UnitDto { Id = selectedUnitId, Name = "stuk" };
+
+        _unitServiceMock
+            .Setup(s => s.GetActiveAsync(default))
+            .ReturnsAsync(new List<UnitDto> { unit1, unit2 }.AsReadOnly());
+
+        _categoryServiceMock
+            .Setup(s => s.GetAllAsync(default))
+            .ReturnsAsync(new List<ProductCategoryDto>
+            {
+                new ProductCategoryDto { Id = categoryId, Name = "Vlees" }
+            }.AsReadOnly());
+
+        var createdProduct = new ProductDto { Id = productId, Name = "TestProduct", DefaultUnitName = "stuk" };
+
+        var createCalls = new List<(string name, string? desc, Guid unitId, Guid? catId)>();
+        _productServiceMock
+            .Setup(s => s.CreateAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string?, Guid, Guid?, CancellationToken>((name, desc, unitId, catId, ct) =>
+                createCalls.Add((name, desc, unitId, catId)))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(createdProduct));
+
+        _productServiceMock
+            .Setup(s => s.AddCodeAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductCodeDto>.Ok(new ProductCodeDto { Value = code }));
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo($"/scan/unknown/create-product?code={Uri.EscapeDataString(code)}");
+
+        var cut = RenderComponent<ScanUnknownCodeCreateProduct>();
+
+        cut.WaitForAssertion(() => Assert.Contains("Product aanmaken", cut.Markup));
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("#product-name").Change("TestProduct");
+            cut.Find("#product-category").Change(categoryId.ToString());
+            cut.Find("#product-unit").Change(selectedUnitId.ToString());
+        });
+
+        await cut.InvokeAsync(() =>
+            cut.FindAll("button").Single(b => b.TextContent.Contains("Product aanmaken")).Click());
+
+        cut.WaitForAssertion(() =>
+            Assert.EndsWith($"/scan/product/{productId}", navigation.Uri));
+
+        Assert.NotEmpty(createCalls);
+        Assert.Equal(selectedUnitId, createCalls.Last().unitId);
     }
 
     private void SetupAuthState(string role, Guid? userId = null)

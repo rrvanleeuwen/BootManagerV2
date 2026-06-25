@@ -92,8 +92,9 @@ public class ScanStartComponentTests : TestContext
     }
 
     [Fact]
-    public async Task UnknownCode_ManualInput_HandsOffToScanOldWithCodePreserved()
+    public async Task UnknownCode_ManualInput_HandsOffToNewUnknownCodeScreenWithCodePreserved()
     {
+        // PILOT-SCAN-05: Unknown code from /scan routes to new /scan/unknown screen, not /scan/old
         var unknownCode = "UNKNOWN-99999";
         SetupAuthState("Owner");
 
@@ -117,7 +118,8 @@ public class ScanStartComponentTests : TestContext
         cut.WaitForAssertion(() =>
         {
             var escapedCode = Uri.EscapeDataString(unknownCode);
-            Assert.EndsWith($"/scan/old?code={escapedCode}", navigation.Uri);
+            Assert.EndsWith($"/scan/unknown?code={escapedCode}", navigation.Uri);
+            Assert.DoesNotContain("/scan/old", navigation.Uri);
         });
     }
 

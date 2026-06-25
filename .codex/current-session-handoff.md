@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-21.
+Updated: 2026-06-25.
 
 ## Rollen
 
@@ -10,12 +10,12 @@ Updated: 2026-06-21.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-scan-04-location-scan-context`.
-- Branch bevat nu de nieuwe locatie-scanwerkcontext uit `PILOT-SCAN-04`, inclusief
-  locatiecontext, muteren op bestaand product en `ander product toevoegen` binnen
-  dezelfde vaste locatiecontext.
+- Actieve branch: `codex/pilot-scan-05-unknown-code-flow`.
+- Branch bevat nu de nieuwe onbekende-code-flow uit `PILOT-SCAN-05`, inclusief
+  een nieuw onbekende-code-scherm, nieuwe koppel- en productaanmaakroutes binnen de
+  scanervaring en verplichte eenheidskeuze bij productaanmaak.
 - Volgende gitstap na deze handoff: committen, pushen en PR openen voor
-  `PILOT-SCAN-04`.
+  `PILOT-SCAN-05`.
 
 ## Actieve release
 
@@ -26,23 +26,18 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
 - afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
-  `PILOT-SCAN-03A`, `PILOT-SCAN-04`;
-- eerstvolgende focus: `PILOT-SCAN-05` voor de onbekende-code-flow en resterende
-  scanvervolgstappen, opnieuw zonder zichtbare terugval naar oude scanflow-schermen.
+  `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`;
+- eerstvolgende focus: `PILOT-LOG-01` voor een handmatig logboekmoment met actuele
+  NMEA-snapshot binnen de actieve reisflow.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Na merge van deze branch de volgende sessie starten met `PILOT-SCAN-05`, met als
-expliciete hoofdfocus de onbekende-code-flow binnen de nieuwe scanervaring. Die route
-mag niet eindigen in legacy, generieke beheerpagina's of doodlopende schermen, maar
-moet een helder nieuw beslispad bieden voor:
-
-- bestaand product koppelen of hervatten waar logisch;
-- nieuw product aanmaken waar nodig;
-- terug naar scanstart wanneer de gebruiker bewust annuleert.
+Na merge van deze branch de volgende sessie starten met `PILOT-LOG-01`, met als
+expliciete hoofdfocus een snel handmatig logboekmoment binnen de actieve reisflow,
+inclusief actuele beschikbare NMEA-snapshot en een duidelijke taakgerichte invoer.
 
 Technisch bevestigd in deze sessie:
 
@@ -76,11 +71,13 @@ Technisch bevestigd in deze sessie:
     nieuwe scanstijl;
   - er is geen zichtbare terugval naar oude scanflow-pagina's of de generieke
     locatiepagina als scan-eindervaring.
-- Voor `PILOT-SCAN-05` geldt dezelfde harde regel:
-  - geen gebruik van oude scanflow-pagina's;
-  - geen gebruik van oude scanflow-componenten;
-  - geen gebruik van generieke beheerpagina's als scan-eindervaring;
-  - onbekende codes krijgen een volledig nieuwe zichtbare afhandeling.
+- `PILOT-SCAN-05` is technisch gecontroleerd en handmatig geaccepteerd:
+  - onbekende codes gaan vanuit `/scan` naar een nieuw onbekende-code-scherm;
+  - de gebruiker kan binnen nieuwe scanroutes kiezen voor nieuw product, koppelen of
+    annuleren;
+  - de nieuwe productaanmaakroute vereist expliciete keuze van standaardeenheid;
+  - er is geen zichtbare terugval naar oude scanflow-pagina's of generieke
+    beheerpagina's als eindervaring.
 
 ## Niet-standaard context
 

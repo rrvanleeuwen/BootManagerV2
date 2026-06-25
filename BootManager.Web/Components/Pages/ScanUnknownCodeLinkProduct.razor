@@ -1,0 +1,213 @@
+@page "/scan/unknown/link-product"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+
+@inject NavigationManager NavigationManager
+@inject IProductService ProductService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Code aan product koppelen</PageTitle>
+
+<div class="scan-unknown-link-container">
+    <h2>Code aan product koppelen</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Laden...</div>
+    }
+    else if (string.IsNullOrEmpty(_code))
+    {
+        <div class="alert alert-warning">Geen code ontvangen. <button class="btn btn-sm btn-outline-secondary" @onclick="GoBackToUnknown">Terug naar code</button></div>
+    }
+    else
+    {
+        <!-- Context card: scanned code -->
+        <div class="scan-unknown-card card scan-unknown-context-header">
+            <div class="card-body">
+                <h5 class="card-title">Gescande code</h5>
+                <div class="scan-unknown-code-display">
+                    <code class="scan-code-text">@_code</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product search/selection card -->
+        <div class="scan-unknown-card card scan-unknown-form-card">
+            <div class="card-body">
+                <h5 class="card-title">Product zoeken</h5>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show alert-sm mb-2" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close btn-close-sm" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_successMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show alert-sm mb-2" role="alert">
+                        @_successMessage
+                        <button type="button" class="btn-close btn-close-sm" @onclick="() => _successMessage = null"></button>
+                    </div>
+                }
+
+                <!-- Search input with explicit search action -->
+                <div class="form-group mb-3">
+                    <label for="product-search" class="form-label">Productnaam of beschrijving *</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="product-search"
+                               @bind="_searchQuery"
+                               @bind:event="oninput"
+                               @onkeydown="HandleSearchKeyDown"
+                               placeholder="Zoek een product…"
+                               disabled="@_isLinking" />
+                        <button type="button" class="btn btn-outline-primary"
+                                @onclick="PerformSearch"
+                                disabled="@(string.IsNullOrWhiteSpace(_searchQuery) || _isLinking)">
+                            Zoeken
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search results -->
+                @if (_searchResults != null && _searchResults.Count > 0)
+                {
+                    <div class="form-group mb-3">
+                        <label class="form-label">Selecteer een product:</label>
+                        <div class="product-search-results">
+                            @foreach (var product in _searchResults)
+                            {
+                                <button type="button" class="btn btn-outline-primary d-grid btn-sm text-start p-2 product-result-item"
+                                        @onclick="() => LinkProductCode(product.Id)">
+                                    <strong>@product.Name</strong>
+                                    @if (!string.IsNullOrEmpty(product.ActiveCategoryName))
+                                    {
+                                        <small class="text-muted">@product.ActiveCategoryName</small>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (!string.IsNullOrWhiteSpace(_searchQuery) && _searchResults != null && _searchResults.Count == 0)
+                {
+                    <div class="alert alert-info alert-sm mb-3">
+                        Geen producten gevonden voor "@_searchQuery". Probeer een ander zoekterm.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Back button -->
+        <div class="scan-unknown-footer">
+            <button class="btn btn-outline-secondary d-grid" @onclick="GoBackToUnknown" disabled="@_isLinking">
+                Terug
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Code { get; set; }
+
+    private string _code = string.Empty;
+    private string _searchQuery = string.Empty;
+    private List<ProductDto>? _searchResults;
+    private bool _loading = true;
+    private bool _isLinking = false;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(Code))
+        {
+            _code = Code;
+        }
+
+        _loading = false;
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await PerformSearch();
+        }
+    }
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            _searchResults = new();
+            return;
+        }
+
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var results = await ProductService.SearchByNameOrDescriptionAsync(_searchQuery);
+            _searchResults = results != null
+                ? results.ToList()
+                : new();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Zoeken mislukt: {ex.Message}";
+            _searchResults = new();
+        }
+    }
+
+    private async Task LinkProductCode(Guid productId)
+    {
+        _isLinking = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var result = await ProductService.AddCodeAsync(productId, _code, "EAN13");
+
+            if (result.Success)
+            {
+                _successMessage = "Code gekoppeld. Navigeren naar product…";
+                await Task.Delay(500);
+                NavigationManager.NavigateTo($"/scan/product/{productId}");
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Code kon niet worden gekoppeld.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout: {ex.Message}";
+        }
+        finally
+        {
+            _isLinking = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoBackToUnknown()
+    {
+        NavigationManager.NavigateTo($"/scan/unknown?code={Uri.EscapeDataString(_code)}");
+    }
+}

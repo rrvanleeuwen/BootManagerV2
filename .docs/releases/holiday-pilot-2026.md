@@ -148,7 +148,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 12. **PILOT-SCAN-02** — **Done** — Parallelle scan-reworkbasis met `old`-isolatie van de huidige flow.
 13. **PILOT-SCAN-03** — **Done** — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
 14. **PILOT-SCAN-04** — **Done** — Locatiegerichte scanmodus met directe mutatie- en toevoegacties.
-15. **PILOT-SCAN-05** — **Gepland** — Onbekende-code-flow afronden en resterende scanvervolgstappen aanscherpen.
+15. **PILOT-SCAN-05** — **Done** — Onbekende-code-flow volledig binnen nieuwe scanervaring afronden.
 16. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
 17. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
 18. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
@@ -161,7 +161,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-SCAN-05` — Onbekende-code-flow afronden en resterende scanvervolgstappen aanscherpen.
+**Eerstvolgende story:** `PILOT-LOG-01` — Handmatig logboekmoment met actuele NMEA-snapshot.
 
 ## Expliciete herprioritering
 
@@ -181,7 +181,7 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve uitwerking nu `PILOT-SCAN-05` aan; voeg daarbinnen alleen de
+- Houd als actieve uitwerking nu `PILOT-LOG-01` aan; voeg daarbinnen alleen de
   eerstvolgende kleine implementatiestap toe wanneer die werkelijk aan de beurt is.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
@@ -402,35 +402,6 @@ locatie-werkcontext met:
 - zichtbare productbarcode-scan in dezelfde nieuwe scanstijl;
 - geen zichtbare terugval naar oude scanpagina's of de generieke locatiepagina als
   scan-eindervaring.
-
-### PILOT-SCAN-05 — Productgerichte scanmodus en onbekende-code-flow
-
-**Storyzin**
-Als Owner of Crew wil ik na het scannen van een product direct productinfo,
-voorraadlocaties en passende vervolgacties zien, en bij een onbekende code veilig een
-kort beslispad krijgen, zodat het systeem logisch reageert op elke scan.
-
-**Statusnotitie 2026-06-21**
-De bekende product- en bekende locatieroutes zijn nu handmatig geaccepteerd in nieuwe
-scancontexten. De eerstvolgende expliciete focus is daarom de onbekende-code-flow:
-een onbekende scan mag niet meer in legacy of doodlopende paden eindigen, maar moet een
-duidelijk nieuw beslispad bieden binnen dezelfde scanervaring.
-
-**Scope**
-
-- Onbekende-code-flow binnen de nieuwe scanervaring.
-- Expliciete keuze wat de gebruiker met een onbekende code wil doen.
-- Doorzetten naar bestaand product koppelen of nieuw product aanmaken zonder legacy-
-  terugval.
-- Rustige, taakgerichte schermen voor mobiel en desktop volgens de scanflow-UI-
-  richtlijnen.
-- Alleen resterende productgerichte vervolgstappen die nog nodig zijn om de
-  onbekende-code-flow logisch af te ronden.
-
-**Buiten scope**
-
-- Definitieve verwijdering van de oude scanflow.
-- Verdere dashboard- of rapportagekoppelingen.
 
 ### PILOT-INV-03 — Scan-gestuurde inruimflow met locatievoorstel
 
