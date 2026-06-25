@@ -7,6 +7,81 @@ beschikbaar blijven wanneer die opnieuw nodig zijn.
 
 ## Afgeronde stories
 
+### PILOT-SCAN-05 — Onbekende-code-flow binnen nieuwe scanervaring
+
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-25.
+
+**Resultaat:** onbekende productcodes blijven nu volledig binnen de nieuwe
+scanervaring. Vanuit `Scannen` opent een onbekende code een nieuw beslisscherm met
+drie expliciete keuzes: nieuw product aanmaken, aan bestaand product koppelen of
+annuleren. Zowel de koppelroute als de productaanmaakroute blijven binnen nieuwe
+scanflow-schermen en vallen niet meer zichtbaar terug naar `/scan/old` of generieke
+beheerpagina's. In de nieuwe productaanmaakroute kiest de gebruiker expliciet een
+standaardeenheid voordat opslaan mogelijk is.
+
+**Als** Owner of Crew<br>
+**wil ik** dat een onbekende scan direct een kort, duidelijk en veilig beslispad opent
+binnen de nieuwe scanervaring<br>
+**zodat** ik een nieuwe productcode kan afhandelen zonder legacy-terugval of
+contextverlies.
+
+**Scope**
+
+- Een nieuw onbekende-code-scherm binnen de nieuwe scanroutes.
+- Expliciete keuze tussen:
+  - nieuw product aanmaken;
+  - aan bestaand product koppelen;
+  - annuleren en terug naar scanstart.
+- Behoud van de gescande code als leidende context totdat de gebruiker annuleert of
+  opslaat.
+- Doorzetten naar nieuwe vervolgstappen voor koppelen of productaanmaak zonder
+  zichtbare legacy-terugval.
+- UI-herbouw conform de scanflow- en UI-richtlijnen.
+- Verplichte keuze van standaardeenheid in de nieuwe productaanmaakroute.
+
+**Buiten scope**
+
+- Definitieve verwijdering van de oude scanflow.
+- Brede herbouw van al geaccepteerde bekende product- of locatieflows.
+- Nieuwe beheer- of rapportagefuncties buiten de onbekende-code-afhandeling.
+
+**Acceptatiecriteria**
+
+1. Een onbekende scan eindigt niet meer zichtbaar op `/scan/old`.
+2. De gebruiker ziet direct dat de code onbekend is en welke drie veilige keuzes er
+   zijn.
+3. `Nieuw product aanmaken` blijft binnen nieuwe scanflow-schermen en voelt niet als
+   een terugval naar een oud CRUD-scherm.
+4. `Aan bestaand product koppelen` blijft binnen nieuwe scanflow-schermen en leidt
+   daarna logisch door naar vervolgwerk binnen dezelfde scanervaring.
+5. `Annuleren` brengt de gebruiker bewust en begrijpelijk terug naar `/scan`.
+6. De gescande code blijft zichtbaar of anderszins duidelijk leidend totdat de
+   gebruiker annuleert of opslaat.
+7. De schermen volgen zichtbaar de afgesproken scan-UI-richtlijnen op mobiel en
+   desktop.
+8. De gebruiker kan in de nieuwe productaanmaakroute expliciet een standaardeenheid
+   kiezen en zonder die keuze niet opslaan.
+
+**Legacy-impact**
+
+- Rondt `US2.14 QR-scanner-modus` functioneel af in de nieuwe scanervaring.
+- Vervangt voor dit pad de zichtbare oude scanflow-afhandeling uit `PILOT-INV-03`
+  door een nieuwe scanroute, terwijl de onderliggende functionele keuzes
+  `nieuw product`, `koppelen` en `annuleren` behouden blijven.
+
+**Handmatige acceptatietest**
+
+1. Open `/scan` als ingelogde Owner of Crew.
+2. Scan of voer een onbekende productcode in.
+3. Controleer dat de app niet eindigt op `/scan/old` of een generieke beheerpagina.
+4. Controleer dat direct een nieuw onbekende-code-scherm zichtbaar is met de drie
+   keuzes `Nieuw product aanmaken`, `Aan bestaand product koppelen` en `Annuleren`.
+5. Kies `Annuleren` en controleer dat de gebruiker terugkomt op `/scan`.
+6. Kies `Nieuw product aanmaken`, selecteer expliciet een eenheid, rond de minimale
+   flow af en controleer dat de vervolgstappen binnen de nieuwe scanervaring blijven.
+7. Herhaal met `Aan bestaand product koppelen` en controleer dat ook deze route
+   binnen de nieuwe scanervaring blijft en logisch doorloopt.
+
 ### PILOT-INV-04 — Product terugvinden via scan of zoeken
 
 **Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-20.

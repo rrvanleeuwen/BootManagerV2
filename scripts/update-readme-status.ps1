@@ -193,9 +193,9 @@ function Get-HolidayPilotStatus {
 
     # De pilotstories hebben een vaste prioriteitsvolgorde in het releasedocument.
     # Houd deze tellers bij wanneer een pilotstory administratief van status wijzigt.
-    $done = 15
+    $done = 16
     $partial = 0
-    $open = 6
+    $open = 5
     $parked = 0
     $progress = Get-Progress -Done $done -Replaced 0 -Partial $partial -Open $open -Parked $parked -Obsolete 0
 
@@ -208,7 +208,7 @@ function Get-HolidayPilotStatus {
         Parked = $parked
         Active = $done + $partial + $open
         Progress = $progress
-        Next = "PILOT-SCAN-05 - Onbekende-code-flow en resterende scanvervolgstappen"
+        Next = "PILOT-LOG-01 - Handmatig logboekmoment met actuele NMEA-snapshot"
     }
 }
 

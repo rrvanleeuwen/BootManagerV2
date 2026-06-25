@@ -1,0 +1,242 @@
+@page "/scan/unknown/create-product"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+
+@inject NavigationManager NavigationManager
+@inject IProductService ProductService
+@inject IProductCategoryService CategoryService
+@inject IUnitService UnitService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Nieuw product</PageTitle>
+
+<div class="scan-unknown-create-container">
+    <h2>Nieuw product aanmaken</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Laden...</div>
+    }
+    else if (string.IsNullOrEmpty(_code))
+    {
+        <div class="alert alert-warning">Geen code ontvangen. <button class="btn btn-sm btn-outline-secondary" @onclick="GoBackToUnknown">Terug naar code</button></div>
+    }
+    else
+    {
+        <!-- Context card: scanned code -->
+        <div class="scan-unknown-card card scan-unknown-context-header">
+            <div class="card-body">
+                <h5 class="card-title">Gescande code</h5>
+                <div class="scan-unknown-code-display">
+                    <code class="scan-code-text">@_code</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product form card -->
+        <div class="scan-unknown-card card scan-unknown-form-card">
+            <div class="card-body">
+                <h5 class="card-title">Productgegevens</h5>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show alert-sm mb-2" role="alert">
+                        @_errorMessage
+                        <button type="button" class="btn-close btn-close-sm" @onclick="() => _errorMessage = null"></button>
+                    </div>
+                }
+
+                <!-- Product name -->
+                <div class="form-group mb-3">
+                    <label for="product-name" class="form-label">Productnaam *</label>
+                    <input type="text" class="form-control" id="product-name"
+                           @bind="_productName"
+                           placeholder="Voer productnaam in…"
+                           disabled="@_isSaving" />
+                </div>
+
+                <!-- Product category -->
+                <div class="form-group mb-3">
+                    <label for="product-category" class="form-label">Categorie *</label>
+                    <select class="form-select" id="product-category"
+                            @bind="_selectedCategoryId"
+                            disabled="@_isSaving">
+                        <option value="">-- Kies een categorie --</option>
+                        @if (_categories != null)
+                        {
+                            @foreach (var cat in _categories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Unit selection -->
+                <div class="form-group mb-3">
+                    <label for="product-unit" class="form-label">Eenheid *</label>
+                    <select class="form-select" id="product-unit"
+                            @bind="_selectedUnitId"
+                            disabled="@_isSaving">
+                        <option value="">-- Kies een eenheid --</option>
+                        @if (_units != null)
+                        {
+                            @foreach (var unit in _units)
+                            {
+                                <option value="@unit.Id">@unit.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Product code (pre-filled, read-only for now) -->
+                <div class="form-group mb-3">
+                    <label for="product-code" class="form-label">Code</label>
+                    <input type="text" class="form-control" id="product-code"
+                           value="@_code"
+                           readonly />
+                    <small class="form-text text-muted">Deze code wordt automatisch gekoppeld.</small>
+                </div>
+
+                <!-- Description (optional) -->
+                <div class="form-group mb-3">
+                    <label for="product-description" class="form-label">Omschrijving</label>
+                    <textarea class="form-control" id="product-description" rows="2"
+                              @bind="_productDescription"
+                              placeholder="Optionele omschrijving…"
+                              disabled="@_isSaving"></textarea>
+                </div>
+
+                <!-- Primary action: Save and continue -->
+                <button class="btn btn-primary d-grid btn-lg"
+                        @onclick="CreateProduct"
+                        disabled="@(string.IsNullOrWhiteSpace(_productName) || string.IsNullOrWhiteSpace(_selectedCategoryId) || string.IsNullOrWhiteSpace(_selectedUnitId) || _isSaving)">
+                    @if (_isSaving)
+                    {
+                        <span>Opslaan…</span>
+                    }
+                    else
+                    {
+                        <span>Product aanmaken</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <!-- Back button -->
+        <div class="scan-unknown-footer">
+            <button class="btn btn-outline-secondary d-grid" @onclick="GoBackToUnknown">
+                Terug
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Code { get; set; }
+
+    private string _code = string.Empty;
+    private string _productName = string.Empty;
+    private string _selectedCategoryId = string.Empty;
+    private string _selectedUnitId = string.Empty;
+    private string _productDescription = string.Empty;
+    private List<ProductCategoryDto>? _categories;
+    private List<UnitDto>? _units;
+    private bool _loading = true;
+    private bool _isSaving = false;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(Code))
+        {
+            _code = Code;
+        }
+
+        try
+        {
+            var categoriesResult = await CategoryService.GetAllAsync();
+            _categories = categoriesResult != null
+                ? categoriesResult.ToList()
+                : new();
+
+            var unitsResult = await UnitService.GetActiveAsync();
+            _units = unitsResult != null ? unitsResult.ToList() : new();
+        }
+        catch
+        {
+            _categories = new();
+            _units = new();
+        }
+
+        _loading = false;
+    }
+
+    private async Task CreateProduct()
+    {
+        if (string.IsNullOrWhiteSpace(_productName) || string.IsNullOrWhiteSpace(_selectedCategoryId) || string.IsNullOrWhiteSpace(_selectedUnitId))
+            return;
+
+        if (!Guid.TryParse(_selectedCategoryId, out var categoryId))
+            return;
+
+        if (!Guid.TryParse(_selectedUnitId, out var unitId))
+            return;
+
+        _isSaving = true;
+        _errorMessage = null;
+
+        try
+        {
+            var createResult = await ProductService.CreateAsync(
+                _productName.Trim(),
+                string.IsNullOrWhiteSpace(_productDescription) ? null : _productDescription.Trim(),
+                unitId,
+                categoryId);
+
+            if (createResult.Success && createResult.Data != null)
+            {
+                var codeResult = await ProductService.AddCodeAsync(createResult.Data.Id, _code, "EAN13");
+
+                if (codeResult.Success)
+                {
+                    NavigationManager.NavigateTo($"/scan/product/{createResult.Data.Id}");
+                }
+                else
+                {
+                    _errorMessage = codeResult.ErrorMessage ?? "Code kon niet worden gekoppeld.";
+                }
+            }
+            else
+            {
+                _errorMessage = createResult.ErrorMessage ?? "Product kon niet worden aangemaakt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fout: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoBackToUnknown()
+    {
+        NavigationManager.NavigateTo($"/scan/unknown?code={Uri.EscapeDataString(_code)}");
+    }
+}

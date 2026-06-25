@@ -7,7 +7,8 @@
 - [x] `PILOT-SCAN-03` nieuwe scanstart-UX plus eerste acceptabele routering
 - [x] `PILOT-SCAN-03A` product-scanwerkcontext zonder legacy-terugval
 - [x] `PILOT-SCAN-04` locatiegerichte scanwerkcontext uitwerken
-- [ ] `PILOT-SCAN-05` onbekende-code-flow en resterende scanvervolgstappen afronden
+- [x] `PILOT-SCAN-05` onbekende-code-flow en resterende scanvervolgstappen afronden
+- [ ] `PILOT-LOG-01` handmatig logboekmoment met actuele NMEA-snapshot
 
 ### ✅ Completed Vertical Slices
 
@@ -137,10 +138,17 @@
   - **Buiten scope:** productgerichte route en volledige onbekende-code-flow buiten locatiecontext.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-SCAN-05 onbekende-code-flow en resterende scanvervolgstappen**
-  - **Doel:** een onbekende scan veilig en begrijpelijk afhandelen binnen de nieuwe scanervaring, zonder legacy-terugval of doodlopende paden.
-  - **Kern:** expliciete keuze bij onbekende code, doorzetten naar bestaand product koppelen of nieuw product aanmaken, en alleen de resterende productgerichte vervolgstappen die daarvoor nog nodig zijn.
-  - **Buiten scope:** definitieve verwijdering van de oude scanflow.
+- [x] **Holiday Pilot 2026 — PILOT-SCAN-05 onbekende-code-flow binnen nieuwe scanervaring**
+  - **Status 2026-06-25:** technisch gecontroleerd en handmatig geaccepteerd, inclusief expliciete eenheidskeuze in de nieuwe `Nieuw product aanmaken`-route.
+  - **Doel:** een onbekende scan veilig, duidelijk en volledig binnen de nieuwe scanervaring afhandelen, zonder zichtbare legacy-terugval.
+  - **Kern:** nieuw onbekende-code-scherm, expliciete keuze tussen nieuw product, koppelen of annuleren, nieuwe vervolgroutes binnen de scanervaring en verplichte standaardeenheidskeuze bij productaanmaak.
+  - **Buiten scope:** definitieve verwijdering van de oude scanflow en brede herbouw van al geaccepteerde bekende scanroutes.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-LOG-01 handmatig logboekmoment met actuele NMEA-snapshot**
+  - **Doel:** binnen een actieve reis snel een handmatig logboekmoment vastleggen met de actuele beschikbare NMEA-waarden als snapshot.
+  - **Kern:** duidelijke actie `Moment vastleggen`, concept-logregel met actuele meetwaarden en taakgerichte vervolgstap binnen de actieve reisflow.
+  - **Buiten scope:** uitgebreide gebeurtenis- en weerkeuze uit `PILOT-LOG-02`.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**

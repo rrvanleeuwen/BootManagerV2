@@ -1,0 +1,103 @@
+@page "/scan/unknown"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+
+@inject NavigationManager NavigationManager
+@inject IProductService ProductService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Onbekende code</PageTitle>
+
+<div class="scan-unknown-container">
+    <h2>Code onbekend</h2>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Laden...</div>
+    }
+    else if (string.IsNullOrEmpty(_code))
+    {
+        <div class="alert alert-warning">Geen code ontvangen. <button class="btn btn-sm btn-outline-secondary" @onclick="GoBackToScan">Terug naar scannen</button></div>
+    }
+    else
+    {
+        <!-- Context card: scanned code display -->
+        <div class="scan-unknown-card card scan-unknown-context">
+            <div class="card-body">
+                <h5 class="card-title">Gescande code</h5>
+                <div class="scan-unknown-code-display">
+                    <code class="scan-code-text">@_code</code>
+                </div>
+                <p class="text-muted small">Deze code is nog niet in BootManager bekend.</p>
+            </div>
+        </div>
+
+        <!-- Three explicit choices as primary actions -->
+        <div class="scan-unknown-choices">
+            <!-- Choice 1: Create new product -->
+            <button class="btn btn-primary d-grid btn-lg scan-unknown-choice-button"
+                    @onclick="() => GoToCreateProduct()">
+                <span class="choice-label">Nieuw product aanmaken</span>
+                <span class="choice-detail">Maak een nieuw product aan met deze code</span>
+            </button>
+
+            <!-- Choice 2: Link to existing product -->
+            <button class="btn btn-outline-primary d-grid btn-lg scan-unknown-choice-button"
+                    @onclick="() => GoToLinkProduct()">
+                <span class="choice-label">Aan bestaand product koppelen</span>
+                <span class="choice-detail">Koppel deze code aan een bekende product</span>
+            </button>
+
+            <!-- Choice 3: Cancel -->
+            <button class="btn btn-outline-secondary d-grid btn-lg scan-unknown-choice-button"
+                    @onclick="GoBackToScan">
+                <span class="choice-label">Annuleren</span>
+                <span class="choice-detail">Terug naar scannen zonder wijzigingen</span>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Code { get; set; }
+
+    private string _code = string.Empty;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(Code))
+        {
+            _code = Code;
+        }
+
+        _loading = false;
+    }
+
+    private void GoToCreateProduct()
+    {
+        NavigationManager.NavigateTo($"/scan/unknown/create-product?code={Uri.EscapeDataString(_code)}");
+    }
+
+    private void GoToLinkProduct()
+    {
+        NavigationManager.NavigateTo($"/scan/unknown/link-product?code={Uri.EscapeDataString(_code)}");
+    }
+
+    private void GoBackToScan()
+    {
+        NavigationManager.NavigateTo("/scan");
+    }
+}

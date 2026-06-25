@@ -366,8 +366,8 @@
             return;
         }
 
-        // Unknown code — handoff to /scan/old with code
-        NavigationManager.NavigateTo($"/scan/old?code={Uri.EscapeDataString(code)}");
+        // Unknown code — navigate to new unknown-code screen within new scan flow
+        NavigationManager.NavigateTo($"/scan/unknown?code={Uri.EscapeDataString(code)}");
     }
 
     private void AddRecentScan(string code)
