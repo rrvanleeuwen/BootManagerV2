@@ -20,8 +20,8 @@ Updated: 2026-06-25.
   - regressietests dekken camera-succes- en foutpaden zonder placeholder-asserties;
   - handmatige Raspberry Pi-/mobielvalidatie voor
     `onbekende code -> nieuw product -> locatie-QR scannen` is akkoord.
-- Volgende gitstap na deze handoff: verdergaan met de eerstvolgende geplande story
-  `PILOT-LOG-01`.
+- Volgende gitstap na deze handoff: de nieuw geprioriteerde UX-slices voor home en
+  productoverzicht uitwerken, te beginnen met `PILOT-UX-01`.
 
 ## Actieve release
 
@@ -33,17 +33,23 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
   `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`;
-- eerstvolgende focus: `PILOT-LOG-01` voor een handmatig logboekmoment met actuele
-  NMEA-snapshot binnen de actieve reisflow.
+- eerstvolgende focus: `PILOT-UX-01` voor een mockup-geleide home-optimalisatie met
+  snelle tegels en productzoekwidget; daarna `PILOT-INV-06` voor het responsieve
+  productoverzicht.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-Na merge van deze branch de volgende sessie starten met `PILOT-LOG-01`, met als
-expliciete hoofdfocus een snel handmatig logboekmoment binnen de actieve reisflow,
-inclusief actuele beschikbare NMEA-snapshot en een duidelijke taakgerichte invoer.
+Na afronding van de scanfixes is de volgende sessie expliciet gericht op
+gebruiksgemak tijdens de pilot:
+
+- eerst `PILOT-UX-01` voor een nieuwe home met snelle tegels naar `Logboek`,
+  `Dashboard` en `Scannen`, plus een productzoekwidget;
+- daarna `PILOT-INV-06` voor een redesign van `Voorraadbeheer > Producten` met
+  dezelfde zoek- en resultaatpresentatie;
+- pas daarna terug naar `PILOT-LOG-01`.
 
 Technisch bevestigd in deze sessie:
 
@@ -89,6 +95,13 @@ Technisch bevestigd in deze sessie:
     gebruikten niet hetzelfde callback- en resolvepad als `/scan`;
   - technische fix en regressietests zijn lokaal groen;
   - handmatige bevestiging op mobiel/Raspberry Pi is akkoord.
+- nieuwe expliciete herprioritering 2026-06-25:
+  - de gebruiker wil vóór de logboekvervolgstories extra pilotgebruiksgemak op home
+    en in `Voorraadbeheer > Producten`;
+  - de map `.docs/analysis/stitch_responsive_bootstrap_process_design/` is leidend
+    voor deze slices;
+  - Claude moet die mockups bij implementatie als verplichte ontwerprichting volgen en
+    mag niet terugvallen naar generieke bootstrap- of CRUD-layouts.
 
 ## Niet-standaard context
 

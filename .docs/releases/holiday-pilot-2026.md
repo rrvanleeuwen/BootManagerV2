@@ -149,11 +149,13 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 13. **PILOT-SCAN-03** — **Done** — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
 14. **PILOT-SCAN-04** — **Done** — Locatiegerichte scanmodus met directe mutatie- en toevoegacties.
 15. **PILOT-SCAN-05** — **Done** — Onbekende-code-flow volledig binnen nieuwe scanervaring afronden; regressiefix voor locatie-QR-scan na nieuw product is op 2026-06-25 ook handmatig gevalideerd op Raspberry Pi/mobiel.
-16. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
-17. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
-18. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
-19. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
-20. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
+16. **PILOT-UX-01** — **Gepland** — Home optimaliseren als snelle pilot-hub met tiles en productzoekwidget.
+17. **PILOT-INV-06** — **Gepland** — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl.
+18. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
+19. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
+20. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
+21. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
+22. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
 
 Codex kiest geen story buiten deze volgorde, tenzij:
 
@@ -161,7 +163,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-LOG-01` — Handmatig logboekmoment met actuele NMEA-snapshot.
+**Eerstvolgende story:** `PILOT-UX-01` — Home optimaliseren als snelle pilot-hub met tiles en productzoekwidget.
 
 ## Expliciete herprioritering
 
@@ -174,6 +176,12 @@ Deze afwijking is toegestaan omdat de gebruiker deze prioriteit expliciet heeft
 vastgesteld en de scanflow nu als directe pilotkritieke blocker voor gebruiksgemak en
 acceptatie wordt beschouwd.
 
+Op 2026-06-25 is daar een tweede expliciete pilot-herprioritering aan toegevoegd:
+eerst extra gebruiksgemak in de dagelijkse pilotbediening via home en
+productoverzicht, daarna pas terug naar de eerstvolgende logboekstories. Deze
+afwijking is toegestaan omdat de gebruiker dit expliciet heeft gekozen als praktische
+testversneller voor de vakantiepilot.
+
 ## Story-uitwerking en archief
 
 Dit release-document blijft compact voor actuele pilotsturing. Volledig uitgewerkte
@@ -181,14 +189,158 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve uitwerking nu `PILOT-LOG-01` aan; voeg daarbinnen alleen de
-  eerstvolgende kleine implementatiestap toe wanneer die werkelijk aan de beurt is.
+- Houd als actieve uitwerking nu eerst `PILOT-UX-01` en daarna `PILOT-INV-06` aan;
+  voeg daarbinnen alleen de eerstvolgende kleine implementatiestap toe wanneer die
+  werkelijk aan de beurt is.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
 - Verplaats een story na afronding en administratieve controle naar het archief,
   zodat de dagelijkse context klein blijft maar de historie beschikbaar blijft.
 - Raadpleeg het archief alleen wanneer historische scope, acceptatie,
   implementatiestatus of legacy-impact opnieuw relevant is.
+
+### PILOT-UX-01 — Home optimaliseren als snelle pilot-hub
+
+**Storyzin**
+Als Owner of Crew wil ik op de homepagina direct naar `Logboek`, `Dashboard` en
+`Scannen` kunnen gaan en meteen producten kunnen zoeken, zodat de meest gebruikte
+pilotacties zonder omwegen bereikbaar zijn.
+
+**Waarom deze slice nu**
+Tijdens de pilot zijn snelheid, duidelijkheid en minimale navigatie belangrijker dan
+extra functionele diepte. Deze slice maakt de homepagina een echte dagelijkse
+startplek voor Roelof en Carla.
+
+**Scope**
+
+- De homepagina krijgt drie duidelijke primaire tegels:
+  - `Logboek`;
+  - `Dashboard`;
+  - `Scannen`.
+- De homepagina krijgt een productzoekwidget als directe actie zonder extra navigatie.
+- De zoekwidget toont per resultaat:
+  - productnaam;
+  - totale hoeveelheid;
+  - eenheid;
+  - locaties waar het product te vinden is.
+- Resultaten worden per 10 items gepagineerd.
+- Desktop en groter:
+  - resultaten als compacte lijst;
+  - visuele hiërarchie in de richting van
+    `.docs/analysis/stitch_responsive_bootstrap_process_design/home_desktop/code.html`.
+- Mobiel:
+  - resultaten als cards;
+  - visuele hiërarchie in de richting van
+    `.docs/analysis/stitch_responsive_bootstrap_process_design/home/code.html`.
+
+**Buiten scope**
+
+- Nieuwe dashboardinhoud of extra dashboardwidgets buiten de snelle doorsteek.
+- Nieuwe logboekfunctionaliteit.
+- Wijzigingen aan scanflows.
+- Uitgebreide statistiek- of beheerblokken op home die niet direct bijdragen aan de
+  snelle pilotstart.
+
+**Ontwerprichting is verplicht**
+
+- De mockups in
+  `.docs/analysis/stitch_responsive_bootstrap_process_design/home/` en
+  `.docs/analysis/stitch_responsive_bootstrap_process_design/home_desktop/` zijn voor
+  deze slice leidend, niet slechts inspirerend.
+- Claude mag de layout technisch vertalen naar de bestaande app, maar niet vrij
+  terugvallen naar een generieke CRUD-, tabel- of standaard-bootstrap-home.
+- Afwijkingen van de mockup zijn alleen acceptabel wanneer een bestaand
+  design-system- of autorisatiepatroon dat aantoonbaar vereist; zulke afwijkingen
+  moeten dan expliciet in de reviewnotities worden benoemd.
+
+**Acceptatiecriteria**
+
+1. Home toont direct zichtbare primaire tegels voor `Logboek`, `Dashboard` en
+   `Scannen`.
+2. De productzoekwidget is op home bruikbaar zonder extra navigatie.
+3. Elk resultaat toont productnaam, hoeveelheid, eenheid en locaties.
+4. Resultaten zijn gepagineerd per 10 items.
+5. Desktop toont resultaten als lijst; mobiel toont resultaten als cards.
+6. De resulterende UI volgt aantoonbaar de aangeleverde mockup-hiërarchie en voelt
+   niet als generieke bootstrap-lijst.
+
+**Handmatige acceptatietest**
+
+1. Open home op desktop en controleer dat `Logboek`, `Dashboard` en `Scannen` als
+   duidelijke primaire tegels zichtbaar zijn.
+2. Zoek een product dat op meerdere locaties ligt en controleer dat productnaam,
+   hoeveelheid, eenheid en alle locaties zichtbaar zijn.
+3. Controleer paginering na meer dan 10 resultaten.
+4. Herhaal op mobiel en controleer dat dezelfde resultaten als cards verschijnen.
+5. Vergelijk desktop en mobiel globaal met de aangeleverde mockups en controleer dat
+   de taakhiërarchie herkenbaar overeenkomt.
+
+### PILOT-INV-06 — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl
+
+**Storyzin**
+Als Owner of Crew wil ik in `Voorraadbeheer > Producten` dezelfde heldere zoek- en
+resultaatpresentatie gebruiken als op home, zodat producten sneller terug te vinden
+zijn en de pagina op mobiel minder druk is.
+
+**Waarom deze slice nu**
+De home-widget en het productoverzicht horen tijdens de pilot als één herkenbare
+zoekervaring aan te voelen. Door direct door te trekken naar het bestaande
+productoverzicht wordt dagelijks gebruik consistenter en sneller.
+
+**Scope**
+
+- `Voorraadbeheer > Producten` krijgt een redesign in de richting van
+  `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/code.html`.
+- Het overzicht toont per resultaat:
+  - productnaam;
+  - totale hoeveelheid;
+  - eenheid;
+  - locaties.
+- Resultaten worden per 10 items gepagineerd.
+- Desktop en groter:
+  - resultaten als lijst.
+- Mobiel:
+  - resultaten als cards.
+- De inhoudelijke resultaatopbouw sluit aan op `PILOT-UX-01`, bij voorkeur via
+  gedeelde presentatiecomponenten of hetzelfde viewmodel waar logisch.
+- De knoppen `Gearchiveerd weergeven` en `Voorraadbijzonderheid` vervallen op mobiel.
+
+**Buiten scope**
+
+- Wijzigingen aan onderliggende voorraadlogica, mutaties of scans.
+- Nieuwe productvelden of archiveerregels.
+- Grote herbouw van overige voorraadbeheerschermen buiten deze pagina.
+
+**Ontwerprichting is verplicht**
+
+- De mockup in
+  `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/`
+  is leidend voor deze slice.
+- Claude mag niet terugvallen naar een bestaande tabelpagina met alleen cosmetische
+  tweaks als de card-/lijsthiërarchie uit de mockup daardoor verloren gaat.
+- Home-widget en productoverzicht moeten herkenbaar familie van elkaar zijn; twee los
+  ontworpen zoekervaringen zijn niet acceptabel.
+
+**Acceptatiecriteria**
+
+1. `Voorraadbeheer > Producten` gebruikt dezelfde inhoudelijke resultaatopbouw als de
+   home-widget uit `PILOT-UX-01`.
+2. Elk resultaat toont productnaam, hoeveelheid, eenheid en locaties.
+3. Resultaten zijn gepagineerd per 10 items.
+4. Desktop toont lijstweergave; mobiel toont cardweergave.
+5. `Gearchiveerd weergeven` en `Voorraadbijzonderheid` zijn op mobiel niet zichtbaar.
+6. De resulterende UI volgt aantoonbaar de aangeleverde mockup-hiërarchie en voelt
+   niet als generieke bootstrap-beheerpagina.
+
+**Handmatige acceptatietest**
+
+1. Open `Voorraadbeheer > Producten` op desktop en zoek meerdere producten.
+2. Controleer dat lijstweergave, paginering en locatie-informatie kloppen.
+3. Open dezelfde pagina op mobiel.
+4. Controleer cardweergave en dat `Gearchiveerd weergeven` en
+   `Voorraadbijzonderheid` daar niet zichtbaar zijn.
+5. Vergelijk de pagina globaal met de aangeleverde mockup en controleer dat de
+   taakhiërarchie herkenbaar overeenkomt.
 
 ### PILOT-SCAN-02 — Parallelle scan-reworkbasis met `old`-isolatie
 

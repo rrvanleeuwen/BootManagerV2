@@ -146,6 +146,20 @@
   - **Buiten scope:** definitieve verwijdering van de oude scanflow en brede herbouw van al geaccepteerde bekende scanroutes.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
+- [ ] **Holiday Pilot 2026 — PILOT-UX-01 home optimaliseren als snelle pilot-hub**
+  - **Doel:** home wordt de dagelijkse pilotstart met directe acties naar `Logboek`, `Dashboard` en `Scannen` plus een directe productzoekwidget.
+  - **Kern:** mockup-geleide home-layout; zoekresultaten tonen productnaam, hoeveelheid, eenheid en locaties; desktop als lijst en mobiel als cards; paginering per 10.
+  - **Belangrijk:** de designs in `.docs/analysis/stitch_responsive_bootstrap_process_design/home/` en `home_desktop/` zijn leidend; geen generieke bootstrap-terugval.
+  - **Buiten scope:** nieuwe dashboardinhoud, nieuwe logboekfunctionaliteit en scanflowwijzigingen.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-INV-06 productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl**
+  - **Doel:** `Voorraadbeheer > Producten` moet dezelfde heldere zoekervaring geven als de home-widget.
+  - **Kern:** zelfde resultaatinhoud als home; desktop als lijst, mobiel als cards; paginering per 10; locaties zichtbaar per product.
+  - **Belangrijk:** design in `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/` is leidend; `Gearchiveerd weergeven` en `Voorraadbijzonderheid` vervallen op mobiel.
+  - **Buiten scope:** voorraadlogica, scanroutes en brede herbouw van andere voorraadpagina's.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
 - [ ] **Holiday Pilot 2026 — PILOT-LOG-01 handmatig logboekmoment met actuele NMEA-snapshot**
   - **Doel:** binnen een actieve reis snel een handmatig logboekmoment vastleggen met de actuele beschikbare NMEA-waarden als snapshot.
   - **Kern:** duidelijke actie `Moment vastleggen`, concept-logregel met actuele meetwaarden en taakgerichte vervolgstap binnen de actieve reisflow.
