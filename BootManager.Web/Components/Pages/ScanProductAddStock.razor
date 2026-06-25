@@ -443,7 +443,7 @@
     }
 
     [JSInvokable]
-    public async void OnLocationScanResult(int requestId, string value, string format)
+    public async void OnScanResult(int requestId, string value, string format)
     {
         if (requestId != _scanRequestId)
             return;
@@ -457,27 +457,59 @@
             return;
         }
 
-        var scannedLocation = _availableLocations.FirstOrDefault(l => l.Id.ToString() == value);
+        // Try to resolve as BootManager location QR first
+        var qrResolution = await StorageService.ResolveQrValueAsync(value);
 
-        if (scannedLocation != null)
+        if (qrResolution.Status == QrStatus.Linked && qrResolution.LinkedLocationId.HasValue)
         {
-            _selectedLocationId = scannedLocation.Id.ToString();
+            // Known location QR — find and select it
+            var matchedLocation = _availableLocations.FirstOrDefault(l => l.Id == qrResolution.LinkedLocationId.Value);
+            if (matchedLocation != null)
+            {
+                _selectedLocationId = matchedLocation.Id.ToString();
+                _scanErrorMessage = null;
+                _successMessage = $"Locatie '{matchedLocation.Name}' gescand.";
+                StateHasChanged();
+                await Task.Delay(800);
+                _successMessage = null;
+                StateHasChanged();
+                return;
+            }
+        }
+        else if (qrResolution.Status == QrStatus.Unknown)
+        {
+            // Valid BootManager QR but not linked to any location
+            _scanStatus = ScanStatus.Error;
+            _scanErrorMessage = "Onbekende BootManager locatie-QR.";
+            StateHasChanged();
+            return;
+        }
+
+        // Not a BootManager QR or Invalid — fall back to ID matching
+        var fallbackMatch = _availableLocations.FirstOrDefault(l =>
+            l.Id.ToString().Equals(value, StringComparison.OrdinalIgnoreCase) ||
+            l.Name.Equals(value, StringComparison.OrdinalIgnoreCase));
+
+        if (fallbackMatch != null)
+        {
+            _selectedLocationId = fallbackMatch.Id.ToString();
             _scanErrorMessage = null;
-            _successMessage = $"Locatie '{scannedLocation.Name}' gescand.";
-            await StopLocationScan();
+            _successMessage = $"Locatie '{fallbackMatch.Name}' gescand.";
+            StateHasChanged();
             await Task.Delay(800);
             _successMessage = null;
+            StateHasChanged();
         }
         else
         {
+            _scanStatus = ScanStatus.Error;
             _scanErrorMessage = $"Locatie niet herkend: {value}";
+            StateHasChanged();
         }
-
-        StateHasChanged();
     }
 
     [JSInvokable]
-    public void OnLocationScanError(int requestId, string errorCode)
+    public void OnScanError(int requestId, string errorCode)
     {
         if (requestId != _scanRequestId)
             return;
@@ -495,6 +527,24 @@
         };
 
         StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnCamerasAvailable(int requestId, object[] cameras)
+    {
+        // Not needed for this flow.
+    }
+
+    [JSInvokable]
+    public void OnDiagnostics(int requestId, object diagnostics)
+    {
+        // Not needed for this flow.
+    }
+
+    [JSInvokable]
+    public void OnDecoderSupport(int requestId, object decoderSupport)
+    {
+        // Not needed for this flow.
     }
 
     private async Task AddStock()
