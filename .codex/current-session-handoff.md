@@ -10,12 +10,16 @@ Updated: 2026-06-25.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-scan-05-unknown-code-flow`.
-- Branch bevat nu de nieuwe onbekende-code-flow uit `PILOT-SCAN-05`, inclusief
-  een nieuw onbekende-code-scherm, nieuwe koppel- en productaanmaakroutes binnen de
-  scanervaring en verplichte eenheidskeuze bij productaanmaak.
-- Volgende gitstap na deze handoff: committen, pushen en PR openen voor
-  `PILOT-SCAN-05`.
+- Actieve branch: `codex/scan-location-qr-regression-fix`.
+- Branch bevat een follow-upfix op `PILOT-SCAN-05` voor de locatie-QR-scan in
+  `ScanProductAddStock` na productaanmaak vanuit een onbekende code:
+  - callbackcontract van de gedeelde scanner sluit nu aan op de component;
+  - cameraresultaten resolven BootManager locatie-QR's nu via
+    `ResolveQrValueAsync` in plaats van raw vergelijking met `LocationId`;
+  - onbekende of niet-herkende cameraresultaten tonen nu ook zichtbaar een scanfout;
+  - regressietests dekken nu camera-succes- en foutpaden zonder placeholder-asserties.
+- Volgende gitstap na deze handoff: handmatige Raspberry Pi-validatie uitvoeren voor
+  het pad `onbekende code -> nieuw product -> locatie-QR scannen`, daarna PR mergen.
 
 ## Actieve release
 
@@ -78,6 +82,11 @@ Technisch bevestigd in deze sessie:
   - de nieuwe productaanmaakroute vereist expliciete keuze van standaardeenheid;
   - er is geen zichtbare terugval naar oude scanflow-pagina's of generieke
     beheerpagina's als eindervaring.
+- follow-up 2026-06-25 op aparte branch:
+  - locatie-QR's in `ScanProductAddStock` na nieuw product vanuit onbekende code
+    gebruikten niet hetzelfde callback- en resolvepad als `/scan`;
+  - technische fix en regressietests zijn lokaal groen;
+  - handmatige bevestiging op mobiel/Raspberry Pi staat nog open.
 
 ## Niet-standaard context
 

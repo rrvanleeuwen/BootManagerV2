@@ -508,6 +508,220 @@ public class ScanProductAddStockComponentTests : TestContext
         });
     }
 
+    [Fact]
+    public async Task AddStockForm_WithCameraScannedBootManagerLocationQr_ResolvesAndSelectsLocation()
+    {
+        var productId = Guid.NewGuid();
+        var locationId = Guid.NewGuid();
+        var qrToken = "b57e72abe729a2f3dc2408eb9ab76d0c";
+        var qrValue = $"bootmanager:location:{qrToken}";
+        SetupAuthState("Crew");
+
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Test Product",
+            DefaultUnitName = "stuk"
+        };
+
+        var location = new StorageLocationDto
+        {
+            Id = locationId,
+            StorageAreaId = Guid.NewGuid(),
+            StorageAreaName = "Kombuis",
+            Name = "Kastje"
+        };
+
+        _productServiceMock
+            .Setup(s => s.GetByIdAsync(productId, default))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, default))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        _storageServiceMock
+            .Setup(s => s.GetAllAreasAsync(default))
+            .ReturnsAsync(new[] { new StorageAreaDto { Id = location.StorageAreaId, Name = "Kombuis" } });
+
+        _storageServiceMock
+            .Setup(s => s.GetLocationsByAreaAsync(location.StorageAreaId, default))
+            .ReturnsAsync(new[] { location });
+
+        _storageServiceMock
+            .Setup(s => s.ResolveQrValueAsync(qrValue, default))
+            .ReturnsAsync(QrResolutionResult.Linked(locationId));
+
+        _stockServiceMock
+            .Setup(s => s.AddOrIncrementStockAsync(productId, locationId, 3m, default))
+            .ReturnsAsync(InventoryOperationResult<StockDto>.Ok(new StockDto()));
+
+        var cut = RenderComponent<ScanProductAddStock>(parameters => parameters
+            .Add(p => p.ProductId, productId.ToString()));
+
+        // Simulate camera scan result via OnScanResult callback (matching barcodeScanner.js behavior)
+        var component = cut.Instance as ScanProductAddStock;
+        await cut.InvokeAsync(() =>
+        {
+            if (component != null)
+            {
+                component.OnScanResult(0, qrValue, "QR_CODE");
+            }
+        });
+
+        // Wait for the async processing and state change to complete
+        cut.WaitForAssertion(() =>
+        {
+            _storageServiceMock.Verify(
+                s => s.ResolveQrValueAsync(qrValue, default),
+                Times.Once);
+        }, TimeSpan.FromSeconds(5));
+
+        // Now proceed with quantity and save
+        await cut.InvokeAsync(() =>
+        {
+            var quantityInput = cut.FindAll("input[type='number']")[0];
+            quantityInput.Change(3);
+
+            var submitButton = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("Voorraad toevoegen"));
+            if (submitButton != null)
+                submitButton.Click();
+        });
+
+        cut.WaitForAssertion(() =>
+        {
+            _stockServiceMock.Verify(
+                s => s.AddOrIncrementStockAsync(productId, locationId, 3m, default),
+                Times.Once);
+        }, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task AddStockForm_WithCameraScannedUnknownBootManagerQr_ShowsErrorMessage()
+    {
+        var productId = Guid.NewGuid();
+        var qrToken = "a00000000000000000000000000000d0";
+        var qrValue = $"bootmanager:location:{qrToken}";
+        SetupAuthState("Crew");
+
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Test Product",
+            DefaultUnitName = "stuk"
+        };
+
+        var location = new StorageLocationDto
+        {
+            Id = Guid.NewGuid(),
+            StorageAreaId = Guid.NewGuid(),
+            StorageAreaName = "Kombuis",
+            Name = "Kastje"
+        };
+
+        _productServiceMock
+            .Setup(s => s.GetByIdAsync(productId, default))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, default))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        _storageServiceMock
+            .Setup(s => s.GetAllAreasAsync(default))
+            .ReturnsAsync(new[] { new StorageAreaDto { Id = location.StorageAreaId, Name = "Kombuis" } });
+
+        _storageServiceMock
+            .Setup(s => s.GetLocationsByAreaAsync(location.StorageAreaId, default))
+            .ReturnsAsync(new[] { location });
+
+        _storageServiceMock
+            .Setup(s => s.ResolveQrValueAsync(qrValue, default))
+            .ReturnsAsync(QrResolutionResult.Unknown(qrToken));
+
+        var cut = RenderComponent<ScanProductAddStock>(parameters => parameters
+            .Add(p => p.ProductId, productId.ToString()));
+
+        // Simulate camera scan result via OnScanResult callback
+        var component = cut.Instance as ScanProductAddStock;
+        await cut.InvokeAsync(() =>
+        {
+            if (component != null)
+            {
+                component.OnScanResult(0, qrValue, "QR_CODE");
+            }
+        });
+
+        // Verify that the QR was resolved as expected
+        cut.WaitForAssertion(() =>
+        {
+            _storageServiceMock.Verify(
+                s => s.ResolveQrValueAsync(qrValue, default),
+                Times.Once);
+            Assert.Contains("Onbekende BootManager locatie-QR", cut.Markup);
+        }, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task AddStockForm_WithCameraScanError_ShowsPermissionDeniedMessage()
+    {
+        var productId = Guid.NewGuid();
+        SetupAuthState("Crew");
+
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Test Product",
+            DefaultUnitName = "stuk"
+        };
+
+        var location = new StorageLocationDto
+        {
+            Id = Guid.NewGuid(),
+            StorageAreaId = Guid.NewGuid(),
+            StorageAreaName = "Kombuis",
+            Name = "Kastje"
+        };
+
+        _productServiceMock
+            .Setup(s => s.GetByIdAsync(productId, default))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product));
+
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, default))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        _storageServiceMock
+            .Setup(s => s.GetAllAreasAsync(default))
+            .ReturnsAsync(new[] { new StorageAreaDto { Id = location.StorageAreaId, Name = "Kombuis" } });
+
+        _storageServiceMock
+            .Setup(s => s.GetLocationsByAreaAsync(location.StorageAreaId, default))
+            .ReturnsAsync(new[] { location });
+
+        _storageServiceMock
+            .Setup(s => s.ResolveQrValueAsync(It.IsAny<string>(), default))
+            .ReturnsAsync(QrResolutionResult.Invalid());
+
+        var cut = RenderComponent<ScanProductAddStock>(parameters => parameters
+            .Add(p => p.ProductId, productId.ToString()));
+
+        // Simulate camera error callback
+        var component = cut.Instance as ScanProductAddStock;
+        await cut.InvokeAsync(() =>
+        {
+            if (component != null)
+            {
+                component.OnScanError(0, "PERMISSION_DENIED");
+            }
+        });
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Cameratoestemming geweigerd.", cut.Markup);
+        });
+    }
+
     private void SetupAuthState(string role)
     {
         var claims = new List<Claim>

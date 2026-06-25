@@ -8,6 +8,7 @@
 - [x] `PILOT-SCAN-03A` product-scanwerkcontext zonder legacy-terugval
 - [x] `PILOT-SCAN-04` locatiegerichte scanwerkcontext uitwerken
 - [x] `PILOT-SCAN-05` onbekende-code-flow en resterende scanvervolgstappen afronden
+  - Follow-up 2026-06-25: regressiefix voorbereid voor locatie-QR-scan in `ScanProductAddStock` na nieuw product vanuit onbekende code; wacht nog op handmatige Raspberry Pi-validatie.
 - [ ] `PILOT-LOG-01` handmatig logboekmoment met actuele NMEA-snapshot
 
 ### ✅ Completed Vertical Slices
