@@ -148,7 +148,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 12. **PILOT-SCAN-02** — **Done** — Parallelle scan-reworkbasis met `old`-isolatie van de huidige flow.
 13. **PILOT-SCAN-03** — **Done** — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
 14. **PILOT-SCAN-04** — **Done** — Locatiegerichte scanmodus met directe mutatie- en toevoegacties.
-15. **PILOT-SCAN-05** — **Done** — Onbekende-code-flow volledig binnen nieuwe scanervaring afronden; follow-up regressiefix voor locatie-QR-scan na nieuw product loopt via aparte review/PR en wacht nog op Raspberry Pi-validatie.
+15. **PILOT-SCAN-05** — **Done** — Onbekende-code-flow volledig binnen nieuwe scanervaring afronden; regressiefix voor locatie-QR-scan na nieuw product is op 2026-06-25 ook handmatig gevalideerd op Raspberry Pi/mobiel.
 16. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
 17. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
 18. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.

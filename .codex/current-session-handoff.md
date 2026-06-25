@@ -10,16 +10,18 @@ Updated: 2026-06-25.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/scan-location-qr-regression-fix`.
-- Branch bevat een follow-upfix op `PILOT-SCAN-05` voor de locatie-QR-scan in
-  `ScanProductAddStock` na productaanmaak vanuit een onbekende code:
+- Actieve branch: `master`.
+- `master` bevat nu ook de follow-upfix op `PILOT-SCAN-05` voor de locatie-QR-scan
+  in `ScanProductAddStock` na productaanmaak vanuit een onbekende code:
   - callbackcontract van de gedeelde scanner sluit nu aan op de component;
   - cameraresultaten resolven BootManager locatie-QR's nu via
     `ResolveQrValueAsync` in plaats van raw vergelijking met `LocationId`;
   - onbekende of niet-herkende cameraresultaten tonen nu ook zichtbaar een scanfout;
-  - regressietests dekken nu camera-succes- en foutpaden zonder placeholder-asserties.
-- Volgende gitstap na deze handoff: handmatige Raspberry Pi-validatie uitvoeren voor
-  het pad `onbekende code -> nieuw product -> locatie-QR scannen`, daarna PR mergen.
+  - regressietests dekken camera-succes- en foutpaden zonder placeholder-asserties;
+  - handmatige Raspberry Pi-/mobielvalidatie voor
+    `onbekende code -> nieuw product -> locatie-QR scannen` is akkoord.
+- Volgende gitstap na deze handoff: verdergaan met de eerstvolgende geplande story
+  `PILOT-LOG-01`.
 
 ## Actieve release
 
@@ -82,11 +84,11 @@ Technisch bevestigd in deze sessie:
   - de nieuwe productaanmaakroute vereist expliciete keuze van standaardeenheid;
   - er is geen zichtbare terugval naar oude scanflow-pagina's of generieke
     beheerpagina's als eindervaring.
-- follow-up 2026-06-25 op aparte branch:
+- follow-up 2026-06-25 op aparte branch, inmiddels gemerged en handmatig bevestigd:
   - locatie-QR's in `ScanProductAddStock` na nieuw product vanuit onbekende code
     gebruikten niet hetzelfde callback- en resolvepad als `/scan`;
   - technische fix en regressietests zijn lokaal groen;
-  - handmatige bevestiging op mobiel/Raspberry Pi staat nog open.
+  - handmatige bevestiging op mobiel/Raspberry Pi is akkoord.
 
 ## Niet-standaard context
 
