@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+
+<html class="light" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BootManager - Producten Overzicht</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700;800&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f0f1f2",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#217128",
+                        "inverse-surface": "#2e3132",
+                        "secondary-fixed": "#a3f69c",
+                        "outline": "#737685",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#b3c5ff",
+                        "secondary": "#1b6d24",
+                        "tertiary-container": "#6d757d",
+                        "tertiary-fixed-dim": "#bfc7d0",
+                        "on-background": "#191c1d",
+                        "on-surface-variant": "#434654",
+                        "surface-container-low": "#f3f4f5",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "primary-fixed": "#dae1ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "surface-container": "#edeeef",
+                        "secondary-fixed-dim": "#88d982",
+                        "on-tertiary-fixed": "#151c23",
+                        "on-surface": "#191c1d",
+                        "surface-dim": "#d9dadb",
+                        "on-primary-fixed": "#001849",
+                        "primary-container": "#366de9",
+                        "surface-tint": "#0f55d1",
+                        "background": "#f8f9fa",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e7e8e9",
+                        "on-primary-container": "#fefcff",
+                        "tertiary-fixed": "#dbe3ec",
+                        "outline-variant": "#c3c6d6",
+                        "tertiary": "#555d64",
+                        "on-primary-fixed-variant": "#003fa4",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "primary": "#0753cf",
+                        "on-tertiary-fixed-variant": "#40484f",
+                        "surface-variant": "#e1e3e4",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#a0f399",
+                        "on-tertiary-container": "#fcfcff",
+                        "on-secondary-fixed": "#002204",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f8f9fa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "1rem",
+                        "container-padding": "1.5rem",
+                        "section-margin": "2rem",
+                        "element-gap": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "nav-link": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["22px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg": ["28px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                        "nav-link": ["14px", {"lineHeight": "1", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-active {
+            position: relative;
+        }
+        .sidebar-active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 10%;
+            height: 80%;
+            width: 4px;
+            background-color: #0753cf;
+            border-radius: 0 4px 4px 0;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-surface border-b border-outline-variant flex justify-between items-center w-full px-container-padding h-16 fixed top-0 z-50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="inventory">inventory</span>
+<h1 class="text-headline-lg font-headline-lg font-bold text-on-surface">BootManager</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant">
+<div class="text-right hidden md:block">
+<p class="text-label-sm font-label-sm font-bold">Roelof van Leeuwen</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Fleet Manager</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold">
+                    RL
+                </div>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen pt-16">
+<!-- NavigationDrawer -->
+<aside class="bg-surface-container border-r border-outline-variant h-[calc(100vh-64px)] w-64 fixed left-0 top-16 hidden lg:flex flex-col p-4 space-y-2 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-nav-link font-nav-link">Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="qr_code_scanner">qr_code_scanner</span>
+<span class="text-nav-link font-nav-link">Scannen</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-nav-link font-nav-link">Logboek</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-nav-link font-nav-link">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container font-bold rounded-lg transition-all duration-150 sidebar-active" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-nav-link font-nav-link">Voorraadbeheer</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="warehouse">warehouse</span>
+<span class="text-nav-link font-nav-link">Opslag</span>
+</a>
+<div class="mt-auto pt-4 border-t border-outline-variant space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span class="text-nav-link font-nav-link">Beheerder</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-nav-link font-nav-link">Instellingen</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 lg:ml-64 p-container-padding bg-background pb-24 lg:pb-8">
+<!-- Breadcrumbs / Context Header -->
+<div class="mb-6 flex flex-col gap-1">
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-on-surface-variant opacity-70">
+<span>Admin</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="chevron_right">chevron_right</span>
+<span>Voorraad</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="chevron_right">chevron_right</span>
+<span class="text-primary font-bold">Producten</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-2">
+<h2 class="text-headline-md font-headline-md text-on-surface">Producten Overzicht</h2>
+<div class="flex gap-2">
+<button class="bg-secondary text-on-secondary px-4 py-2 rounded shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2 font-label-sm text-label-sm">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                            Nieuw Product
+                        </button>
+</div>
+</div>
+</div>
+<!-- Dashboard Banner Image -->
+<div class="mb-8 rounded-xl overflow-hidden border border-outline-variant shadow-sm h-32 relative group">
+<img alt="Product Banner" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYEHMJCbR-enSx_unyOmyxzWkhReTqJnOEMgz6A2tL0ONuzPG3r66Q7mry2dyKmSnlDBJOGZQRcuB9jQqDqlqqtGqv-nva0pgdw_TnMwfwcrW2RSkDZKWeiU-BoHVQPnzzC0N8n20am7KbQ0ZcdSNiJsXmMBmhOydg90OwAmR2x7DAFSemwHlZNZlhHfFzsZmxi-LILUar9Z9U9FeOB4meVdM1QUv1vo0bQyu2z88plc4DkL2jM9SFCXd6UtUR3HYQpveuY_DMZ6pq"/>
+<div class="absolute inset-0 bg-gradient-to-r from-on-background/60 to-transparent flex items-center px-8">
+<div class="text-on-primary-container">
+<h3 class="text-headline-md font-bold">Marine Voorraad Catalogus</h3>
+<p class="text-body-md opacity-90 max-w-md">Beheer uw vlootonderdelen en maritieme benodigdheden met precisie en real-time data.</p>
+</div>
+</div>
+</div>
+<!-- Filters and Search Bar -->
+<div class="bg-surface border border-outline-variant p-4 rounded-lg mb-gutter flex flex-col xl:flex-row items-center gap-4">
+<!-- Search -->
+<div class="relative flex-1 w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#ced4da] rounded focus:ring-2 focus:ring-primary focus:border-primary text-body-md outline-none" placeholder="Zoek op naam, code of categorie..." type="text"/>
+</div>
+<!-- Toggle Switches / Quick Filters -->
+<div class="flex items-center gap-3 w-full xl:w-auto">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-high border border-outline-variant rounded hover:bg-surface-container-highest transition-colors text-on-surface-variant text-label-sm font-label-sm whitespace-nowrap">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+                        Voorraadbijzonderheid
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-high border border-outline-variant rounded hover:bg-surface-container-highest transition-colors text-on-surface-variant text-label-sm font-label-sm whitespace-nowrap">
+<span class="material-symbols-outlined" data-icon="archive">archive</span>
+                        Gearchiveerde weergeven
+                    </button>
+<button class="p-2 border border-outline-variant rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="filter_list">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Data Table Section -->
+<div class="bg-surface border border-outline-variant rounded-lg overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Name</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Category</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Unit</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Code</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Stock</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Locations</th>
+<th class="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-center">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Product Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings_applications">settings_applications</span>
+</div>
+<span class="text-body-md font-semibold text-on-surface">Pakking Turbo Charger V2</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full text-[10px] font-bold uppercase">Motoronderdelen</span>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">Stuk</td>
+<td class="px-6 py-4 text-body-md font-mono text-primary">MC-992-PX</td>
+<td class="px-6 py-4 text-right">
+<span class="text-body-md font-bold text-secondary">24</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[11px] text-on-surface-variant">A-12</span>
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[11px] text-on-surface-variant">B-04</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<button class="p-1.5 border border-outline-variant rounded hover:bg-primary-container hover:text-on-primary-container transition-all" title="Edit">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 border border-outline-variant rounded hover:bg-error-container hover:text-on-error-container transition-all" title="Archive">
+<span class="material-symbols-outlined text-sm" data-icon="archive">archive</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Product Row 2 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="water_drop">water_drop</span>
+</div>
+<span class="text-body-md font-semibold text-on-surface">Hydraulische Olie ISO 46</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full text-[10px] font-bold uppercase">Vloeistoffen</span>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">Liter</td>
+<td class="px-6 py-4 text-body-md font-mono text-primary">LQ-460-HY</td>
+<td class="px-6 py-4 text-right">
+<span class="text-body-md font-bold text-error">5</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[11px] text-on-surface-variant">MAG-01</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<button class="p-1.5 border border-outline-variant rounded hover:bg-primary-container hover:text-on-primary-container transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 border border-outline-variant rounded hover:bg-error-container hover:text-on-error-container transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="archive">archive</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Product Row 3 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="flashlight_on">flashlight_on</span>
+</div>
+<span class="text-body-md font-semibold text-on-surface">LED Deck Spotlight 50W</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full text-[10px] font-bold uppercase">Verlichting</span>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">Stuk</td>
+<td class="px-6 py-4 text-body-md font-mono text-primary">EL-550-DK</td>
+<td class="px-6 py-4 text-right">
+<span class="text-body-md font-bold text-on-surface">12</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[11px] text-on-surface-variant">E-09</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<button class="p-1.5 border border-outline-variant rounded hover:bg-primary-container hover:text-on-primary-container transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 border border-outline-variant rounded hover:bg-error-container hover:text-on-error-container transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="archive">archive</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Product Row 4 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+</div>
+<span class="text-body-md font-semibold text-on-surface">Zekeringenset 20A</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full text-[10px] font-bold uppercase">Electra</span>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">Set</td>
+<td class="px-6 py-4 text-body-md font-mono text-primary">EL-020-ZE</td>
+<td class="px-6 py-4 text-right">
+<span class="text-body-md font-bold text-secondary">42</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[11px] text-on-surface-variant">C-22</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<button class="p-1.5 border border-outline-variant rounded hover:bg-primary-container hover:text-on-primary-container transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 border border-outline-variant rounded hover:bg-error-container hover:text-on-error-container transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="archive">archive</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-on-surface-variant">Weergeven 1-4 van 128 resultaten</span>
+<div class="flex gap-1">
+<button class="p-2 border border-outline-variant rounded disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="px-3 py-1.5 bg-primary text-on-primary rounded text-label-sm font-label-sm">1</button>
+<button class="px-3 py-1.5 hover:bg-surface-container-high rounded text-label-sm font-label-sm">2</button>
+<button class="px-3 py-1.5 hover:bg-surface-container-high rounded text-label-sm font-label-sm">3</button>
+<button class="p-2 border border-outline-variant rounded">
+<span class="material-symbols-outlined text-sm" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-2 bg-surface lg:hidden border-t border-outline-variant shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-label-sm font-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="qr_code_scanner">qr_code_scanner</span>
+<span class="text-label-sm font-label-sm">Scannen</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="text-label-sm font-label-sm">Voorraad</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-label-sm font-label-sm">Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-sm font-label-sm">Instellingen</span>
+</a>
+</nav>
+<!-- Floating Action Button (Contextual for Stock) -->
+<button class="fixed bottom-24 right-6 lg:bottom-10 lg:right-10 bg-primary-container text-on-primary-container w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center lg:hidden active:scale-95">
+<span class="material-symbols-outlined" data-icon="qr_code_scanner" style="font-variation-settings: 'wght' 700;">qr_code_scanner</span>
+</button>
+<script>
+        // Simple micro-interaction for rows
+        document.querySelectorAll('tr').forEach(row => {
+            row.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                // Interaction logic could go here
+                console.log('Row clicked');
+            });
+        });
+    </script>
+</body></html>

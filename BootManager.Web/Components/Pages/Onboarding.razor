@@ -24,7 +24,7 @@
             else if (!string.IsNullOrEmpty(SuccessMessage))
             {
                 <div class="alert alert-success">
-                    <strong>Succes!</strong> Je setup is voltooid. Je wordt doorgestuurd naar het dashboard...
+                    <strong>Succes!</strong> Je setup is voltooid. Je wordt doorgestuurd naar de homepagina...
                 </div>
             }
             else if (!string.IsNullOrEmpty(ErrorMessage))
@@ -268,7 +268,7 @@
             {
                 SuccessMessage = "Setup voltooid! Je wordt doorgestuurd...";
                 await Task.Delay(1500); // Geef gebruiker even tijd om het bericht te zien
-                NavigationManager.NavigateTo("/dashboard", forceLoad: true);
+                NavigationManager.NavigateTo("/", forceLoad: true);
             }
             else
             {

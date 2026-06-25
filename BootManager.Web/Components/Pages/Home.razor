@@ -1,5 +1,307 @@
 ﻿@page "/"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Core.Entities
+@using BootManager.Web.Components.Inventory
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject IProductService ProductService
+@inject IStockService StockService
+@inject NavigationManager NavigationManager
+@inject ILogger<Home> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using BootManager.Web.Components.Pages
 
 <PageTitle>BootManager</PageTitle>
 
-<p>Doorsturen...</p>
+<div class="home-container">
+    <!-- Primary Navigation Tiles -->
+    <section class="tiles-section">
+        <div class="tiles-grid">
+            <a href="/scan" class="tile tile-primary">
+                <div class="tile-eyebrow">Scannen</div>
+                <div class="tile-content">
+                    <h2>Voorraadmutatie via barcode of QR-code</h2>
+                </div>
+            </a>
+
+            <a href="/dashboard" class="tile tile-secondary">
+                <div class="tile-eyebrow">Dashboard</div>
+                <div class="tile-content">
+                    <h2>Real-time status en statistieken</h2>
+                </div>
+            </a>
+
+            <a href="/logbook" class="tile tile-secondary">
+                <div class="tile-eyebrow">Logboek</div>
+                <div class="tile-content">
+                    <h2>Historiek van alle bewegingen</h2>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- Product Search Widget -->
+    <section class="search-section">
+        <div class="search-input-group">
+            <input
+                type="text"
+                class="search-input"
+                placeholder="Zoeken op product naam of omschrijving…"
+                @bind="_searchTerm"
+                @bind:event="oninput"
+                @onkeydown="HandleSearchKeyDown" />
+        </div>
+
+        @if (_searchResults != null && _searchResults.Count > 0)
+        {
+            <!-- Results Display -->
+            <div class="search-results">
+                <!-- Display paginated results -->
+                @foreach (var product in _pagedResults)
+                {
+                    <div class="result-item" @onclick="() => SelectProductFromSearch(product)">
+                        <div class="result-header">
+                            <h3>@product.Name</h3>
+                        </div>
+                        <div class="result-details">
+                            @if (_productStockData.TryGetValue(product.Id, out var stockData))
+                            {
+                                @if (stockData.ActiveLocations != null && stockData.ActiveLocations.Count > 0)
+                                {
+                                    <div class="result-quantity">
+                                        <span class="quantity-value">@CalculateTotalQuantity(stockData.ActiveLocations)</span>
+                                        <span class="quantity-unit">@GetUnitName(product.Id)</span>
+                                    </div>
+                                    <div class="result-locations">
+                                        <span class="locations-label">Locaties:</span>
+                                        <span class="locations-list">@string.Join(", ", stockData.ActiveLocations.Select(l => $"{l.StorageAreaName} - {l.StorageLocationName}"))</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="result-no-stock">
+                                        <span>Geen actieve voorraad</span>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="result-loading">
+                                    <span>Laden…</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Pagination -->
+                @if (_totalPages > 1)
+                {
+                    <div class="pagination">
+                        <button
+                            class="pagination-btn"
+                            disabled="@(_currentPage == 1)"
+                            @onclick="() => PreviousPage()">
+                            Vorige
+                        </button>
+                        <span class="pagination-info">
+                            Pagina @_currentPage van @_totalPages
+                        </span>
+                        <button
+                            class="pagination-btn"
+                            disabled="@(_currentPage >= _totalPages)"
+                            @onclick="() => NextPage()">
+                            Volgende
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_searchTerm) && _searchResults != null && _searchResults.Count == 0)
+        {
+            <div class="search-no-results">
+                <p>Geen producten gevonden.</p>
+            </div>
+        }
+    </section>
+
+    <!-- Add Stock Modal -->
+    @if (_showAddStockModal && _selectedProduct != null)
+    {
+        <AddStockToProductModal
+            Product="_selectedProduct"
+            OnClose="CloseAddStockModal"
+            OnStockAdded="HandleAddStockSuccess">
+        </AddStockToProductModal>
+    }
+
+    <!-- Product Details Modal -->
+    @if (_showProductDetails && _selectedProduct != null)
+    {
+        <ProductDetailsFromHome
+            Product="_selectedProduct"
+            OnClose="CloseProductDetails">
+        </ProductDetailsFromHome>
+    }
+
+    @if (_errorMessage != null)
+    {
+        <div class="alert alert-danger">
+            @_errorMessage
+            <button class="btn-close" @onclick="() => _errorMessage = null">×</button>
+        </div>
+    }
+</div>
+
+@code {
+    private string _searchTerm = "";
+    private List<ProductDto>? _searchResults;
+    private Dictionary<Guid, (List<StockDto>? ActiveLocations, decimal TotalQuantity)> _productStockData = new();
+    private ProductDto? _selectedProduct;
+    private bool _showProductDetails = false;
+    private bool _showAddStockModal = false;
+    private string? _errorMessage;
+
+    // Pagination
+    private int _currentPage = 1;
+    private const int ItemsPerPage = 10;
+    private int _totalPages = 1;
+    private List<ProductDto> _pagedResults = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Verify user is authorized
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (!authState.User.Identity?.IsAuthenticated ?? true)
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during initialization");
+        }
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await PerformSearch();
+        }
+    }
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _searchResults = new();
+            _productStockData.Clear();
+            _currentPage = 1;
+            return;
+        }
+
+        try
+        {
+            _searchResults = (await ProductService.SearchByNameOrDescriptionAsync(_searchTerm)).ToList();
+            _productStockData.Clear();
+            _currentPage = 1;
+            _totalPages = Math.Max(1, (int)Math.Ceiling(_searchResults.Count / (double)ItemsPerPage));
+
+            foreach (var product in _searchResults)
+            {
+                var activeStocksResult = await StockService.GetActiveStocksByProductAsync(product.Id);
+                var activeLocations = activeStocksResult.Success && activeStocksResult.Data != null
+                    ? activeStocksResult.Data.ToList()
+                    : new List<StockDto>();
+
+                var totalQty = activeLocations.Sum(l => l.Quantity);
+                _productStockData[product.Id] = (activeLocations, totalQty);
+            }
+
+            UpdatePaginatedResults();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error performing search");
+            _errorMessage = "Fout bij zoeken.";
+        }
+    }
+
+    private void UpdatePaginatedResults()
+    {
+        if (_searchResults == null || _searchResults.Count == 0)
+        {
+            _pagedResults = new();
+            return;
+        }
+
+        var skip = (_currentPage - 1) * ItemsPerPage;
+        _pagedResults = _searchResults.Skip(skip).Take(ItemsPerPage).ToList();
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            UpdatePaginatedResults();
+            StateHasChanged();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            UpdatePaginatedResults();
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectProductFromSearch(ProductDto product)
+    {
+        _selectedProduct = product;
+        _showProductDetails = true;
+        StateHasChanged();
+    }
+
+    private void CloseProductDetails()
+    {
+        _showProductDetails = false;
+        _selectedProduct = null;
+        StateHasChanged();
+    }
+
+    private void CloseAddStockModal()
+    {
+        _showAddStockModal = false;
+        CloseProductDetails();
+    }
+
+    private void HandleAddStockSuccess(Guid productId)
+    {
+        CloseAddStockModal();
+    }
+
+    private decimal CalculateTotalQuantity(List<StockDto> locations)
+    {
+        return locations.Sum(l => l.Quantity);
+    }
+
+    private string GetUnitName(Guid productId)
+    {
+        if (_searchResults != null)
+        {
+            var product = _searchResults.FirstOrDefault(p => p.Id == productId);
+            return product?.DefaultUnitName ?? "";
+        }
+        return "";
+    }
+}

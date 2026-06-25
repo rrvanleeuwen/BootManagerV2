@@ -7,6 +7,81 @@ beschikbaar blijven wanneer die opnieuw nodig zijn.
 
 ## Afgeronde stories
 
+### PILOT-UX-01 — Home optimaliseren als snelle pilot-hub
+
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-25.
+
+**Resultaat:** home is nu de dagelijkse pilotstart in plaats van een directe
+doorstuurroute naar dashboard. De pagina volgt de aangeleverde mockup-hiërarchie met
+snelle tegels naar `Logboek`, `Dashboard` en `Scannen`, plus een directe
+productzoekwidget met responsieve lijst-/cardweergave en paginering. Een klik op een
+zoekresultaat in home opent nu eerst productinformatie in home-context, waarna de
+gebruiker direct kan doorstarten naar de verbruiksflow voor dat product.
+
+**Als** Owner of Crew<br>
+**wil ik** op de homepagina direct naar `Logboek`, `Dashboard` en `Scannen` kunnen
+gaan en meteen producten kunnen zoeken<br>
+**zodat** de meest gebruikte pilotacties zonder omwegen bereikbaar zijn.
+
+**Scope**
+
+- Home is de standaard landingspagina na opstarten en inloggen.
+- Drie duidelijke primaire tegels op home:
+  - `Logboek`;
+  - `Dashboard`;
+  - `Scannen`.
+- Directe productzoekwidget zonder extra navigatie.
+- Per resultaat zichtbaar:
+  - productnaam;
+  - totale hoeveelheid;
+  - eenheid;
+  - locaties.
+- Resultaten per 10 gepagineerd.
+- Desktop als compacte lijst, mobiel als cards.
+- Klikken op een productresultaat in home opent een productgerichte detailstap binnen
+  home-context in plaats van directe navigatie naar een locatie.
+- Vanuit die detailstap kan de gebruiker direct naar de verbruiksflow voor het
+  gekozen product.
+
+**Buiten scope**
+
+- Nieuwe dashboardinhoud of extra dashboardwidgets.
+- Nieuwe logboekfunctionaliteit.
+- Brede herbouw van scanflows buiten de home-ingang en doorsteken.
+
+**Acceptatiecriteria**
+
+1. Home toont direct zichtbare primaire tegels voor `Logboek`, `Dashboard` en
+   `Scannen`.
+2. De productzoekwidget is op home bruikbaar zonder extra navigatie.
+3. Elk resultaat toont productnaam, hoeveelheid, eenheid en locaties.
+4. Resultaten zijn gepagineerd per 10 items.
+5. Desktop toont resultaten als lijst; mobiel toont resultaten als cards.
+6. Een klik op een product in home opent eerst productinformatie in plaats van direct
+   een locatiepagina.
+7. Vanuit die productinformatie is een directe route beschikbaar om verbruik voor dat
+   product te registreren.
+8. De resulterende UI volgt aantoonbaar de aangeleverde mockup-hiërarchie en voelt
+   niet als generieke bootstrap-lijst.
+
+**Legacy-impact**
+
+- Verdiept `US2.12 Zoeken en filteren` met een extra dagelijkse zoekingang op home.
+- Verdiept `US7.11 Interactieve navigatie` met directe pilotdoorklikken vanaf home.
+
+**Handmatige acceptatietest**
+
+1. Open home op desktop en controleer dat `Logboek`, `Dashboard` en `Scannen` als
+   duidelijke primaire tegels zichtbaar zijn.
+2. Zoek een product dat op meerdere locaties ligt en controleer dat productnaam,
+   hoeveelheid, eenheid en alle locaties zichtbaar zijn.
+3. Klik een product aan en controleer dat eerst productinformatie opent, niet direct
+   een locatiepagina.
+4. Start vanuit die productinformatie de verbruiksactie en controleer dat het product
+   vooraf geselecteerd wordt in de verbruiksflow.
+5. Controleer paginering na meer dan 10 resultaten.
+6. Herhaal op mobiel en controleer dat dezelfde resultaten als cards verschijnen.
+
 ### PILOT-SCAN-05 — Onbekende-code-flow binnen nieuwe scanervaring
 
 **Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-25.

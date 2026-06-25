@@ -20,6 +20,9 @@
 
         var auth = AuthenticationStateTask is null ? null : await AuthenticationStateTask;
         var isAuthenticated = auth?.User?.Identity?.IsAuthenticated == true;
-        Nav.NavigateTo(isAuthenticated ? "/dashboard" : "/login", replace: true);
+        if (!isAuthenticated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+        }
     }
 }
