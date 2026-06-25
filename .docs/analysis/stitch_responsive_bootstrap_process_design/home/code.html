@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="light" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f0f1f2",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#217128",
+                    "inverse-surface": "#2e3132",
+                    "secondary-fixed": "#a3f69c",
+                    "outline": "#737685",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#b3c5ff",
+                    "secondary": "#1b6d24",
+                    "tertiary-container": "#6d757d",
+                    "tertiary-fixed-dim": "#bfc7d0",
+                    "on-background": "#191c1d",
+                    "on-surface-variant": "#434654",
+                    "surface-container-low": "#f3f4f5",
+                    "on-secondary": "#ffffff",
+                    "surface": "#f8f9fa",
+                    "primary-fixed": "#dae1ff",
+                    "on-secondary-fixed-variant": "#005312",
+                    "surface-container": "#edeeef",
+                    "secondary-fixed-dim": "#88d982",
+                    "on-tertiary-fixed": "#151c23",
+                    "on-surface": "#191c1d",
+                    "surface-dim": "#d9dadb",
+                    "on-primary-fixed": "#001849",
+                    "primary-container": "#366de9",
+                    "surface-tint": "#0f55d1",
+                    "background": "#f8f9fa",
+                    "on-primary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#e7e8e9",
+                    "on-primary-container": "#fefcff",
+                    "tertiary-fixed": "#dbe3ec",
+                    "outline-variant": "#c3c6d6",
+                    "tertiary": "#555d64",
+                    "on-primary-fixed-variant": "#003fa4",
+                    "surface-container-highest": "#e1e3e4",
+                    "primary-fixed-dim": "#b3c5ff",
+                    "primary": "#0753cf",
+                    "on-tertiary-fixed-variant": "#40484f",
+                    "surface-variant": "#e1e3e4",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#a0f399",
+                    "on-tertiary-container": "#fcfcff",
+                    "on-secondary-fixed": "#002204",
+                    "on-tertiary": "#ffffff",
+                    "surface-bright": "#f8f9fa"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "1rem",
+                    "container-padding": "1.5rem",
+                    "section-margin": "2rem",
+                    "element-gap": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline-md": ["Hanken Grotesk"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Hanken Grotesk"],
+                    "nav-link": ["Inter"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["22px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-lg": ["28px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                    "nav-link": ["14px", {"lineHeight": "1", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-tab-indicator {
+            position: relative;
+        }
+        .active-tab-indicator::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #0753cf;
+        }
+        /* Focus styles for search */
+        .search-container:focus-within .results-dropdown {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .results-dropdown {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.2s ease-out;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24 lg:pb-0 lg:pl-64">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-background fixed top-0 left-0 right-0 z-40 border-b border-outline-variant dark:border-on-tertiary-fixed-variant flex justify-between items-center w-full px-container-padding h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-size: 24px;">inventory</span>
+<h1 class="text-headline-lg font-headline-lg font-bold text-on-surface dark:text-inverse-on-surface">BootManager</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex gap-6 mr-6">
+<a class="text-label-sm font-label-sm text-primary dark:text-primary-fixed-dim border-b-2 border-primary pb-1 active:opacity-80 transition-all duration-200" href="#">Home</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Scannen</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Logboek</a>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">RL</div>
+</div>
+</header>
+<!-- NavigationDrawer (Desktop Only) -->
+<nav class="fixed left-0 top-16 h-screen w-64 hidden lg:flex flex-col p-4 space-y-2 bg-surface-container dark:bg-inverse-surface border-r border-outline-variant dark:border-on-tertiary-fixed-variant z-30">
+<div class="mb-6 px-2">
+<span class="text-headline-md font-headline-md text-on-surface dark:text-inverse-on-surface">Menu</span>
+</div>
+<a class="flex items-center gap-3 p-3 bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary font-bold rounded-lg transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-nav-link font-nav-link">Home</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-tertiary-container rounded-lg transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<span class="text-nav-link font-nav-link">Scannen</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-tertiary-container rounded-lg transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-nav-link font-nav-link">Logboek</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-tertiary-container rounded-lg transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-nav-link font-nav-link">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-tertiary-container rounded-lg transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-nav-link font-nav-link">Voorraadbeheer</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-tertiary-container rounded-lg transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">warehouse</span>
+<span class="text-nav-link font-nav-link">Opslag</span>
+</a>
+<div class="mt-auto pb-20">
+<a class="flex items-center gap-3 p-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-tertiary-container rounded-lg transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="text-nav-link font-nav-link">Beheerder</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-tertiary-container rounded-lg transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-nav-link font-nav-link">Instellingen</span>
+</a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="pt-24 px-container-padding max-w-5xl mx-auto space-y-section-margin">
+<!-- Search Widget -->
+<section class="search-container relative">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="block w-full pl-11 pr-4 py-4 bg-white border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md font-body-md" id="productSearch" placeholder="Snel zoeken in producten" type="text"/>
+<div class="absolute inset-y-0 right-0 pr-4 flex items-center">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded text-[10px] font-bold border border-outline-variant">CMD + K</span>
+</div>
+</div>
+<!-- Instant Results Dropdown -->
+<div class="results-dropdown absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-outline-variant z-50 overflow-hidden" id="searchResults">
+<div class="p-2 border-b border-surface-container-low bg-surface">
+<p class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider px-2 py-1">Recente resultaten</p>
+</div>
+<div class="max-h-64 overflow-y-auto">
+<button class="w-full flex items-center justify-between p-4 hover:bg-primary-container/10 transition-colors border-b border-surface-container">
+<div class="flex flex-col items-start">
+<span class="font-bold text-on-surface">Reddingsvest Pro 150N</span>
+<span class="text-label-sm text-on-surface-variant">Schap A-24 • Voorraad: 12</span>
+</div>
+<span class="material-symbols-outlined text-primary">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 hover:bg-primary-container/10 transition-colors border-b border-surface-container">
+<div class="flex flex-col items-start">
+<span class="font-bold text-on-surface">Ankerketting 8mm G40</span>
+<span class="text-label-sm text-on-surface-variant">Magazijn B • Voorraad: 45m</span>
+</div>
+<span class="material-symbols-outlined text-primary">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 hover:bg-primary-container/10 transition-colors">
+<div class="flex flex-col items-start">
+<span class="font-bold text-on-surface">VHF Radio Handheld HX300</span>
+<span class="text-label-sm text-on-surface-variant">Kantoor Voorraad • Voorraad: 2</span>
+</div>
+<span class="material-symbols-outlined text-primary">chevron_right</span>
+</button>
+</div>
+<div class="p-3 bg-surface-container-lowest text-center">
+<a class="text-primary font-bold text-label-sm hover:underline" href="#">Bekijk alle 14 resultaten</a>
+</div>
+</div>
+</section>
+<!-- Navigation Tiles (Bento Style) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Scannen Tile (Primary Action) -->
+<a class="group relative overflow-hidden bg-primary-container text-on-primary-container p-8 rounded-xl flex flex-col justify-between h-48 lg:h-64 transition-transform active:scale-95 shadow-sm" href="#">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-[48px] opacity-90" style="font-variation-settings: 'FILL' 1;">qr_code_scanner</span>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<div>
+<h2 class="text-headline-md font-headline-md font-bold mb-1">Scannen</h2>
+<p class="text-label-sm opacity-80">Voorraadmutatie via barcode of QR-code</p>
+</div>
+</a>
+<!-- Dashboard Tile -->
+<a class="group relative overflow-hidden bg-white border border-outline-variant p-8 rounded-xl flex flex-col justify-between h-48 lg:h-64 transition-all hover:border-primary active:scale-95 shadow-sm" href="#">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-[48px]">dashboard</span>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<div>
+<h2 class="text-headline-md font-headline-md font-bold mb-1 text-on-surface">Dashboard</h2>
+<p class="text-label-sm text-on-surface-variant">Real-time status en statistieken</p>
+</div>
+</a>
+<!-- Logboek Tile -->
+<a class="group relative overflow-hidden bg-white border border-outline-variant p-8 rounded-xl flex flex-col justify-between h-48 lg:h-64 transition-all hover:border-primary active:scale-95 shadow-sm" href="#">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-secondary text-[48px]">menu_book</span>
+<span class="material-symbols-outlined text-secondary opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<div>
+<h2 class="text-headline-md font-headline-md font-bold mb-1 text-on-surface">Logboek</h2>
+<p class="text-label-sm text-on-surface-variant">Historiek van alle bewegingen</p>
+</div>
+</a>
+</section>
+<!-- Contextual Stats Section -->
+<section class="grid grid-cols-2 lg:grid-cols-4 gap-gutter">
+<div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant">
+<p class="text-label-sm text-on-surface-variant mb-1 uppercase tracking-tight">Vandaag gescand</p>
+<p class="text-headline-md font-headline-md text-on-surface">142</p>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant">
+<p class="text-label-sm text-on-surface-variant mb-1 uppercase tracking-tight">Kritieke voorraad</p>
+<p class="text-headline-md font-headline-md text-error">8</p>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant hidden md:block">
+<p class="text-label-sm text-on-surface-variant mb-1 uppercase tracking-tight">Inkomend</p>
+<p class="text-headline-md font-headline-md text-secondary">24</p>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant hidden md:block">
+<p class="text-label-sm text-on-surface-variant mb-1 uppercase tracking-tight">Magazijn bezetting</p>
+<p class="text-headline-md font-headline-md text-on-surface">78%</p>
+</div>
+</section>
+<!-- Atmospheric Image Grid -->
+<section class="rounded-xl overflow-hidden shadow-sm border border-outline-variant h-64 relative group">
+<div class="absolute inset-0 bg-gradient-to-t from-on-background/80 to-transparent z-10"></div>
+<div class="absolute bottom-6 left-6 z-20 text-white">
+<h3 class="text-headline-md font-headline-md font-bold">Haven van Rotterdam</h3>
+<p class="text-label-sm opacity-80">Huidige operationele basis • 12 actieve zendingen</p>
+</div>
+<div class="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="A cinematic wide shot of the Port of Rotterdam at twilight, with massive container ships and towering cranes illuminated by industrial floodlights. The cool blue tones of the water reflect the orange glows of the port infrastructure. The style is professional and systematic, emphasizing large-scale maritime logistics and precision engineering." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCeQrffOxk9yoLWMzejP601v49vbSU1Bx33-3U6xPgkMk4cCArwv6T9ZF2hABzMuY917Fha3bPI2eRpzzFjuGx_vMEEf3EpxdkWm_zxqW8NNqeHJhHDLmwjZyuZQ8OPLuePVleRkko5Uc0Lg3IWEw1FX9B9DF-nWNQTTpNCbbNhflaQ9vAJqgTYF6FY27VsCudtfzh-Vw6iQpDg3n73n2yRrjpB8Q5vxiUjkXTxYBP-nynPJLxbBUhB0rFUMabBq0_vFohj2vV0wBvJ')"></div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-2 bg-surface dark:bg-on-background border-t border-outline-variant dark:border-on-tertiary-fixed-variant lg:hidden shadow-lg">
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-label-sm font-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant active:bg-surface-container-highest dark:active:bg-tertiary-container p-1 px-3 rounded-lg" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<span class="text-label-sm font-label-sm">Scannen</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant active:bg-surface-container-highest dark:active:bg-tertiary-container p-1 px-3 rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-label-sm font-label-sm">Voorraad</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant active:bg-surface-container-highest dark:active:bg-tertiary-container p-1 px-3 rounded-lg" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-label-sm font-label-sm">Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant active:bg-surface-container-highest dark:active:bg-tertiary-container p-1 px-3 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-sm font-label-sm">Instellingen</span>
+</a>
+</nav>
+<!-- Contextual FAB -->
+<button class="fixed right-6 bottom-24 lg:bottom-10 lg:right-10 bg-secondary text-on-secondary p-4 rounded-full shadow-lg hover:shadow-xl hover:bg-secondary-fixed-dim transition-all active:scale-95 flex items-center gap-2 group z-50">
+<span class="material-symbols-outlined">add</span>
+<span class="hidden group-hover:inline-block pr-2 font-bold text-label-sm">Nieuw product</span>
+</button>
+<script>
+        // Simple search interaction logic
+        const searchInput = document.getElementById('productSearch');
+        const searchResults = document.getElementById('searchResults');
+
+        // Initial state
+        searchResults.style.display = 'none';
+
+        searchInput.addEventListener('focus', () => {
+            searchResults.style.display = 'block';
+            setTimeout(() => {
+                searchResults.style.opacity = '1';
+                searchResults.style.transform = 'translateY(0)';
+            }, 10);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.opacity = '0';
+                searchResults.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    searchResults.style.display = 'none';
+                }, 200);
+            }
+        });
+
+        // Shortcut listener (visual feedback only for demo)
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+    </script>
+</body></html>

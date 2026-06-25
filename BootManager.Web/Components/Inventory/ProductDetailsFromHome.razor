@@ -1,0 +1,118 @@
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@inject IStockService StockService
+@inject NavigationManager NavigationManager
+
+<div class="modal d-block" style="display: block; background-color: rgba(0, 0, 0, 0.5);">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@_product?.Name</h5>
+                <button type="button" class="btn-close" @onclick="OnClose"></button>
+            </div>
+            <div class="modal-body">
+                @if (_product != null)
+                {
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <span class="text-muted small">Totale hoeveelheid</span>
+                                <div class="h5">@CalculateTotalQuantity() @_product.DefaultUnitName</div>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-muted small">Eenheid</span>
+                                <div class="h5">@_product.DefaultUnitName</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="text-muted small">Locaties</span>
+                        @if (_activeLocations != null && _activeLocations.Count > 0)
+                        {
+                            <div class="list-group">
+                                @foreach (var location in _activeLocations)
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>@location.StorageAreaName - @location.StorageLocationName</strong>
+                                            <span class="badge bg-primary">@location.Quantity @location.DefaultUnitName</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning mb-0">
+                                Geen actieve voorraad
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-4">
+                        <button class="btn btn-primary" @onclick="NavigateToConsumption">
+                            Verbruik registreren
+                        </button>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="OnClose">Sluiten</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ProductDto? Product { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private ProductDto? _product;
+    private List<StockDto>? _activeLocations;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _product = Product;
+        if (_product != null)
+        {
+            await LoadActiveLocationsAsync();
+        }
+    }
+
+    private async Task LoadActiveLocationsAsync()
+    {
+        if (_product == null)
+            return;
+
+        try
+        {
+            var result = await StockService.GetActiveStocksByProductAsync(_product.Id);
+            _activeLocations = result.Success && result.Data != null
+                ? result.Data.ToList()
+                : new();
+        }
+        catch
+        {
+            _activeLocations = new();
+        }
+    }
+
+    private decimal CalculateTotalQuantity()
+    {
+        if (_activeLocations == null || _activeLocations.Count == 0)
+            return 0;
+        return _activeLocations.Sum(l => l.Quantity);
+    }
+
+    private void NavigateToConsumption()
+    {
+        if (_product != null)
+        {
+            NavigationManager.NavigateTo($"/inventory/mutations-admin?productId={_product.Id}");
+        }
+    }
+}

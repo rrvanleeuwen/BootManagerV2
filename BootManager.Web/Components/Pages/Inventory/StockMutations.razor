@@ -4,6 +4,7 @@
 @using BootManager.Application.Inventory.DTOs
 @using BootManager.Core.Entities
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components
 @inject IProductService ProductService
 @inject IStockService StockService
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -174,6 +175,9 @@ else if (_step == MutationStep.EnterMutation && _selectedProduct != null && _sel
 @code {
     enum MutationStep { SelectProduct, SelectLocation, EnterMutation }
 
+    [SupplyParameterFromQuery(Name = "productId")]
+    public string? ProductIdQueryParam { get; set; }
+
     private MutationStep _step = MutationStep.SelectProduct;
     private string _searchTerm = "";
     private List<ProductDto>? _searchResults;
@@ -185,6 +189,44 @@ else if (_step == MutationStep.EnterMutation && _selectedProduct != null && _sel
     private string? _note;
     private string? _errorMessage;
     private bool _isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(ProductIdQueryParam) && Guid.TryParse(ProductIdQueryParam, out var productId))
+        {
+            await LoadPreselectedProduct(productId);
+        }
+    }
+
+    private async Task LoadPreselectedProduct(Guid productId)
+    {
+        try
+        {
+            var allProducts = await ProductService.GetActiveAsync();
+            _selectedProduct = allProducts.FirstOrDefault(p => p.Id == productId);
+
+            if (_selectedProduct != null)
+            {
+                _step = MutationStep.SelectLocation;
+                _activeLocations = null;
+
+                var result = await StockService.GetActiveStocksByProductAsync(productId);
+                if (result.Success)
+                {
+                    _activeLocations = result.Data?.ToList() ?? new List<StockDto>();
+                    if (_activeLocations.Count == 1)
+                    {
+                        _selectedLocation = _activeLocations[0];
+                    }
+                }
+                StateHasChanged();
+            }
+        }
+        catch
+        {
+            _errorMessage = "Fout bij laden van product.";
+        }
+    }
 
     private async Task PerformSearch()
     {

@@ -13,7 +13,7 @@ How it works:
 - Whitelist routes that are allowed before onboarding is complete:
   /login, /logout, /onboarding, /health
 - If user is authenticated and SetupRequired=true, redirects to /onboarding.
-- If user is authenticated and SetupRequired=false and on /onboarding, redirects to /dashboard.
+- If user is authenticated and SetupRequired=false and on /onboarding, redirects to /.
 - Anonymous users are handled by AuthorizeRouteView (not this component).
 - Properly disposes LocationChanged subscription to prevent memory leaks.
 
@@ -157,8 +157,8 @@ Dependencies:
         // Setup is not required
         if (string.Equals(relative, "onboarding", StringComparison.OrdinalIgnoreCase))
         {
-            // User is done with setup but is on /onboarding; redirect to dashboard
-            Nav.NavigateTo("/dashboard", replace: true);
+            // User is done with setup but is on /onboarding; redirect to home
+            Nav.NavigateTo("/", replace: true);
         }
     }
 

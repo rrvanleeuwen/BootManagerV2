@@ -146,11 +146,12 @@
   - **Buiten scope:** definitieve verwijdering van de oude scanflow en brede herbouw van al geaccepteerde bekende scanroutes.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-UX-01 home optimaliseren als snelle pilot-hub**
+- [x] **Holiday Pilot 2026 — PILOT-UX-01 home optimaliseren als snelle pilot-hub**
+  - **Status 2026-06-25:** technisch gecontroleerd en handmatig geaccepteerd; home is nu de standaard startpagina met mockup-geleide snelle tegels, productzoekwidget en productgerichte doorklik vanuit home.
   - **Doel:** home wordt de dagelijkse pilotstart met directe acties naar `Logboek`, `Dashboard` en `Scannen` plus een directe productzoekwidget.
-  - **Kern:** mockup-geleide home-layout; zoekresultaten tonen productnaam, hoeveelheid, eenheid en locaties; desktop als lijst en mobiel als cards; paginering per 10.
+  - **Kern:** mockup-geleide home-layout; zoekresultaten tonen productnaam, hoeveelheid, eenheid en locaties; desktop als lijst en mobiel als cards; paginering per 10; home-resultaat opent een productdetailflow met directe actie om verbruik te registreren.
   - **Belangrijk:** de designs in `.docs/analysis/stitch_responsive_bootstrap_process_design/home/` en `home_desktop/` zijn leidend; geen generieke bootstrap-terugval.
-  - **Buiten scope:** nieuwe dashboardinhoud, nieuwe logboekfunctionaliteit en scanflowwijzigingen.
+  - **Buiten scope:** nieuwe dashboardinhoud, nieuwe logboekfunctionaliteit en scanflowwijzigingen buiten de home-startflow.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-INV-06 productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl**

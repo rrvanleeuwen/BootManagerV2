@@ -95,7 +95,7 @@ else
         if (authState.User.Identity?.IsAuthenticated == true)
         {
             _redirectingAuthenticatedUser = true;
-            Nav.NavigateTo("/dashboard", replace: true);
+            Nav.NavigateTo("/", replace: true);
             return;
         }
 
@@ -211,7 +211,7 @@ else
     {
         if (string.IsNullOrWhiteSpace(ReturnUrl))
         {
-            return "/dashboard";
+            return "/";
         }
 
         if (ReturnUrl.StartsWith("/", StringComparison.Ordinal) &&
@@ -227,11 +227,11 @@ else
                 absolute.Port == baseUri.Port &&
                 string.Equals(absolute.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase))
             {
-                return string.IsNullOrEmpty(absolute.PathAndQuery) ? "/dashboard" : absolute.PathAndQuery;
+                return string.IsNullOrEmpty(absolute.PathAndQuery) ? "/" : absolute.PathAndQuery;
             }
         }
 
-        return "/dashboard";
+        return "/";
     }
 
     /// <summary>
@@ -246,7 +246,7 @@ else
 
         if (raw.StartsWith("/", StringComparison.Ordinal) && !raw.StartsWith("//", StringComparison.Ordinal))
         {
-            return raw.Length == 1 ? "het dashboard" : raw;
+            return raw.Length == 1 ? "de homepagina" : raw;
         }
 
         if (Uri.TryCreate(raw, UriKind.Absolute, out var absolute))
