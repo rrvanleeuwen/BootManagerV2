@@ -10,7 +10,7 @@ Updated: 2026-06-25.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-ux-01-home-hub`.
+- Actieve branch: `master`.
 - `master` bevat nu ook de follow-upfix op `PILOT-SCAN-05` voor de locatie-QR-scan
   in `ScanProductAddStock` na productaanmaak vanuit een onbekende code:
   - callbackcontract van de gedeelde scanner sluit nu aan op de component;
@@ -20,8 +20,10 @@ Updated: 2026-06-25.
   - regressietests dekken camera-succes- en foutpaden zonder placeholder-asserties;
   - handmatige Raspberry Pi-/mobielvalidatie voor
     `onbekende code -> nieuw product -> locatie-QR scannen` is akkoord.
-- Volgende gitstap na deze handoff: `PILOT-UX-01` documenteren/afronden en daarna
-  verder met `PILOT-INV-06`.
+- `PILOT-UX-01` is inmiddels gemerged naar `master` samen met documentatie,
+  tests en home-follow-upfixes.
+- Volgende gitstap na deze handoff: vanaf een nieuwe werkbranch `PILOT-INV-06`
+  oppakken.
 
 ## Actieve release
 
