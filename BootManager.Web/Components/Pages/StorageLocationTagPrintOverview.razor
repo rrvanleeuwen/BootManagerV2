@@ -1,0 +1,138 @@
+@page "/storage/tag-print-overview"
+@layout BootManager.Web.Components.Layout.PrintLayout
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Storage.Contracts
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Services
+@using Microsoft.JSInterop
+@inject IStorageService StorageService
+@inject IStorageLocationQrTagRenderer QrRenderer
+@inject IJSRuntime JsRuntime
+
+<PageTitle>QR-tags afdrukken</PageTitle>
+
+<div class="mb-3 no-print">
+    <button class="btn btn-sm btn-primary" @onclick="PrintAsync">🖨 Afdrukken</button>
+</div>
+
+@if (_loading)
+{
+    <p>Laden…</p>
+}
+else if (_tags.Count == 0)
+{
+    <div class="alert alert-info">Geen opslaglocaties met QR-tag gevonden.</div>
+}
+else
+{
+    <div class="tag-print-grid">
+        @foreach (var tag in _tags)
+        {
+            <div class="tag-print-card">
+                <div class="tag-print-area">@tag.AreaName</div>
+                <div class="tag-print-location">@tag.LocationName</div>
+                <div class="tag-print-qr">
+                    @if (_svgByLocationId.TryGetValue(tag.Id, out var svg) && !string.IsNullOrEmpty(svg))
+                    {
+                        @((MarkupString)svg)
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<style>
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+    }
+
+    .tag-print-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5cm;
+    }
+
+    .tag-print-card {
+        text-align: center;
+        border: 1px solid #ddd;
+        padding: 0.4cm;
+        page-break-inside: avoid;
+    }
+
+    .tag-print-area {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .tag-print-location {
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 0.2cm;
+    }
+
+    .tag-print-qr {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 4.5cm;
+        height: 4.5cm;
+        margin: 0 auto;
+    }
+
+    .tag-print-qr svg {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+    }
+</style>
+
+@code {
+    private bool _loading = true;
+    private List<StorageLocationOverviewDto> _tags = new();
+    private readonly Dictionary<Guid, string> _svgByLocationId = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTagsAsync();
+    }
+
+    private async Task LoadTagsAsync()
+    {
+        _loading = true;
+        try
+        {
+            var overview = await StorageService.GetAllLocationsOverviewAsync();
+            _tags = overview
+                .Where(l => !string.IsNullOrEmpty(l.QrValue))
+                .OrderBy(l => l.AreaName)
+                .ThenBy(l => l.LocationName)
+                .ToList();
+
+            foreach (var tag in _tags)
+            {
+                try
+                {
+                    var rendered = await QrRenderer.RenderQrTagAsync(tag.QrValue!);
+                    _svgByLocationId[tag.Id] = rendered.SvgContent;
+                }
+                catch
+                {
+                    // QR-render mislukte voor deze locatie; tag toont dan zonder afbeelding.
+                }
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task PrintAsync()
+    {
+        await JsRuntime.InvokeVoidAsync("window.print");
+    }
+}

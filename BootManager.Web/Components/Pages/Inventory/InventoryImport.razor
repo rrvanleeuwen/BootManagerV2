@@ -1,0 +1,293 @@
+@page "/inventory/import"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using BootManager.Application.Inventory.Contracts
+@using BootManager.Application.Inventory.DTOs
+@using BootManager.Application.Inventory.Results
+@using BootManager.Application.Storage.DTOs
+@using BootManager.Application.Storage.Services
+@using Microsoft.AspNetCore.Components.Forms
+@inject IInventoryImportService ImportService
+@inject IStorageService StorageService
+@inject NavigationManager NavigationManager
+
+<PageTitle>CSV-startimport</PageTitle>
+
+<h3>CSV-startimport vakantievoorraad</h3>
+<p class="text-muted">
+    Owner-only startimport die de bestaande voorraadbeheerdata vervangt door de inhoud van
+    een CSV-overzicht (kolommen: Aantal; Eenheid; Product; Locatie).
+</p>
+
+@if (_step == ImportStep.Upload)
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Stap 1 — CSV kiezen</h5>
+            <div class="mb-3">
+                <label class="form-label">CSV-bestand *</label>
+                <InputFile class="form-control" accept=".csv,text/csv" OnChange="OnFileSelectedAsync" />
+            </div>
+
+            @if (_parseErrors.Count > 0)
+            {
+                <div class="alert alert-danger" role="alert">
+                    <strong>Het bestand kon niet worden verwerkt:</strong>
+                    <ul class="mb-0">
+                        @foreach (var error in _parseErrors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (_step == ImportStep.Mapping)
+{
+    <div class="alert alert-warning" role="alert">
+        <strong>Let op:</strong> bij het uitvoeren van deze import worden <em>alle</em> bestaande
+        opslaggebieden, opslaglocaties, QR-tokens, producten, productcodes, voorraadregels en
+        voorraadmutaties verwijderd. Eenheden blijven behouden.
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Stap 2 — Locaties koppelen</h5>
+            <p class="text-muted">
+                @_rows.Count regels ingelezen; @_mappings.Count unieke CSV-locaties. Koppel elke
+                CSV-locatie aan een gebied en een locatie. Dezelfde CSV-locatie hoeft maar één keer
+                gekoppeld te worden.
+            </p>
+
+            <datalist id="existing-areas">
+                @foreach (var areaName in _existingAreaNames)
+                {
+                    <option value="@areaName"></option>
+                }
+            </datalist>
+
+            <p class="text-muted small">
+                Kies bij Locatie een bestaande locatie uit het gekozen gebied of typ een nieuwe naam.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>CSV-locatie</th>
+                            <th>Gebied *</th>
+                            <th>Locatie *</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < _mappings.Count; i++)
+                        {
+                            var mapping = _mappings[i];
+                            var locationListId = $"existing-locations-{i}";
+                            var existingLocations = ExistingLocationsForArea(mapping.AreaName);
+                            <tr>
+                                <td><code>@mapping.SourceLocation</code></td>
+                                <td>
+                                    <input class="form-control form-control-sm" list="existing-areas"
+                                           placeholder="Gebiedsnaam"
+                                           @bind="mapping.AreaName" @bind:event="oninput" />
+                                </td>
+                                <td>
+                                    <input class="form-control form-control-sm" list="@locationListId"
+                                           placeholder="Bestaande locatie kiezen of nieuwe naam typen"
+                                           @bind="mapping.LocationName" @bind:event="oninput" />
+                                    <datalist id="@locationListId">
+                                        @foreach (var locationName in existingLocations)
+                                        {
+                                            <option value="@locationName"></option>
+                                        }
+                                    </datalist>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Stap 3 — Bevestigen en importeren</h5>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="confirm-destructive"
+                       @bind="_confirmDestructive" />
+                <label class="form-check-label" for="confirm-destructive">
+                    Ik begrijp dat de bestaande voorraadbeheerdata wordt verwijderd en vervangen.
+                </label>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_executeError))
+            {
+                <div class="alert alert-danger" role="alert">@_executeError</div>
+            }
+
+            <button class="btn btn-danger" @onclick="ExecuteImportAsync"
+                    disabled="@(_importing || !_confirmDestructive || !AllMappingsComplete())">
+                @if (_importing)
+                {
+                    <span>Bezig met importeren…</span>
+                }
+                else
+                {
+                    <span>Import uitvoeren</span>
+                }
+            </button>
+            <button class="btn btn-outline-secondary ms-2" @onclick="ResetToUpload" disabled="@_importing">
+                Ander bestand kiezen
+            </button>
+        </div>
+    </div>
+}
+else if (_step == ImportStep.Done && _result != null)
+{
+    <div class="alert alert-success" role="alert">
+        <h5>Import geslaagd</h5>
+        <ul class="mb-0">
+            <li>@_result.AreasCreated gebieden aangemaakt</li>
+            <li>@_result.LocationsCreated locaties aangemaakt</li>
+            <li>@_result.TokensGenerated QR-tokens gegenereerd</li>
+            <li>@_result.ProductsCreated producten aangemaakt</li>
+            <li>@_result.StockRowsCreated voorraadregels aangemaakt</li>
+            <li>@_result.UnitsCreated nieuwe eenheden aangemaakt (bestaande behouden)</li>
+        </ul>
+    </div>
+
+    <a class="btn btn-primary" href="/storage/tag-print-overview">Naar A4 QR-tagoverzicht</a>
+    <a class="btn btn-outline-secondary ms-2" href="/inventory/products">Naar producten</a>
+}
+
+@code {
+    private enum ImportStep { Upload, Mapping, Done }
+
+    private ImportStep _step = ImportStep.Upload;
+    private List<InventoryImportRowDto> _rows = new();
+    private List<InventoryLocationMappingDto> _mappings = new();
+    private List<string> _parseErrors = new();
+    private List<string> _existingAreaNames = new();
+    private List<StorageLocationOverviewDto> _existingLocations = new();
+    private bool _confirmDestructive;
+    private bool _importing;
+    private string? _executeError;
+    private InventoryImportExecutionResult? _result;
+
+    /// <summary>Maximaal toegestane CSV-grootte (5 MB) om ongebonden geheugengebruik te voorkomen.</summary>
+    private const long MaxCsvBytes = 5 * 1024 * 1024;
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _parseErrors = new();
+        _executeError = null;
+
+        try
+        {
+            using var stream = e.File.OpenReadStream(MaxCsvBytes);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+
+            var parseResult = ImportService.ParseCsv(content);
+            if (!parseResult.Success)
+            {
+                _parseErrors = parseResult.Errors.Count > 0
+                    ? parseResult.Errors
+                    : new List<string> { "Onbekende fout bij het lezen van het CSV-bestand." };
+                return;
+            }
+
+            _rows = parseResult.Rows;
+            _mappings = parseResult.DistinctSourceLocations
+                .Select(source => new InventoryLocationMappingDto
+                {
+                    SourceLocation = source,
+                    AreaName = string.Empty,
+                    LocationName = source
+                })
+                .ToList();
+
+            _existingAreaNames = (await StorageService.GetAllAreasAsync())
+                .Select(a => a.Name)
+                .OrderBy(n => n)
+                .ToList();
+
+            _existingLocations = (await StorageService.GetAllLocationsOverviewAsync()).ToList();
+
+            _confirmDestructive = false;
+            _step = ImportStep.Mapping;
+        }
+        catch (Exception ex)
+        {
+            _parseErrors = new List<string> { $"Bestand lezen mislukt: {ex.Message}" };
+        }
+    }
+
+    /// <summary>
+    /// Bestaande locatienamen binnen het gekozen gebied (hoofdletterongevoelig), voor de
+    /// gebied-bewuste keuzelijst. Lege lijst wanneer nog geen gebied is gekozen.
+    /// </summary>
+    private IReadOnlyList<string> ExistingLocationsForArea(string? areaName)
+    {
+        if (string.IsNullOrWhiteSpace(areaName))
+            return Array.Empty<string>();
+
+        var trimmedArea = areaName.Trim();
+        return _existingLocations
+            .Where(l => string.Equals(l.AreaName, trimmedArea, StringComparison.OrdinalIgnoreCase))
+            .Select(l => l.LocationName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n)
+            .ToList();
+    }
+
+    private bool AllMappingsComplete()
+        => _mappings.Count > 0
+           && _mappings.All(m => !string.IsNullOrWhiteSpace(m.AreaName)
+                                 && !string.IsNullOrWhiteSpace(m.LocationName));
+
+    private async Task ExecuteImportAsync()
+    {
+        _executeError = null;
+
+        if (!_confirmDestructive || !AllMappingsComplete())
+            return;
+
+        _importing = true;
+        try
+        {
+            var result = await ImportService.ExecuteImportAsync(_rows, _mappings);
+            if (!result.Success)
+            {
+                _executeError = result.ErrorMessage ?? "Import mislukte.";
+                return;
+            }
+
+            _result = result;
+            _step = ImportStep.Done;
+        }
+        catch (Exception ex)
+        {
+            _executeError = $"Import mislukte: {ex.Message}";
+        }
+        finally
+        {
+            _importing = false;
+        }
+    }
+
+    private void ResetToUpload()
+    {
+        _step = ImportStep.Upload;
+        _rows = new();
+        _mappings = new();
+        _parseErrors = new();
+        _executeError = null;
+        _confirmDestructive = false;
+        _result = null;
+    }
+}

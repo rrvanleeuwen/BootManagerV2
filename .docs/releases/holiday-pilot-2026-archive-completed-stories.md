@@ -7,6 +7,104 @@ beschikbaar blijven wanneer die opnieuw nodig zijn.
 
 ## Afgeronde stories
 
+### PILOT-INV-07 — Owner-only CSV-startimport voor echte vakantievoorraad, locatie-mapping en QR-tags
+
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-16.
+
+**Resultaat:** BootManager ondersteunt nu een Owner-only CSV-startimport voor de al
+fysiek ingeladen vakantievoorraad. De import verwerkt het concrete
+`voorraadoverzicht_boot_zomervakantie.csv`, bewaart bestaande eenheden en categorieën,
+vraagt per nieuwe CSV-locatienaam een eenmalige mapping naar gebied en locatie,
+maakt daarna producten, locaties, voorraadregels en QR-tokens aan en biedt direct een
+printvriendelijk A4-overzicht van alle relevante locatietags. Geimporteerde producten
+mogen zonder barcode en zonder verplichte categorie bestaan; een later onbekend
+gescande barcode kan alsnog aan zo'n bestaand product gekoppeld worden via de
+bestaande scanflow.
+
+**Als** Owner<br>
+**wil ik** een bestaand CSV-voorraadoverzicht van de al ingeladen
+vakantieboodschappen kunnen importeren<br>
+**zodat** de echte bootvoorraad snel in BootManager staat zonder alle producten,
+locaties en beginhoeveelheden handmatig opnieuw in te voeren.
+
+**Scope**
+
+- Alleen de Owner kan een CSV-startimport uitvoeren.
+- De import is gericht op het concrete bestand
+  `.docs/extraInfo/voorraadoverzicht_boot_zomervakantie.csv` en hetzelfde kolommodel:
+  `Aantal`, `Eenheid`, `Product`, `Locatie`.
+- Voor de import verwijdert BootManager alle bestaande inventory-data behalve
+  eenheden en categorieën.
+- Bestaande eenheden blijven behouden; ontbrekende eenheden uit het CSV mogen tijdens
+  de import worden aangemaakt.
+- Voor iedere nieuwe CSV-locatienaam vraagt BootManager om gebied- en
+  locatie-mapping, inclusief aanmaken waar nodig, en hergebruikt die mapping daarna
+  voor alle regels met dezelfde locatietekst.
+- Na bevestigde mapping maakt BootManager de benodigde gebieden, locaties, producten,
+  voorraadregels en QR-tokens aan.
+- Na een geslaagde import is een printvriendelijk A4-tagoverzicht beschikbaar met per
+  QR-code minimaal de gebiedsnaam en locatienaam.
+- Geimporteerde producten mogen zonder categorie en zonder barcode bestaan; later kan
+  een onbekende gescande barcode aan een bestaand geimporteerd product gekoppeld
+  worden.
+
+**Buiten scope**
+
+- Generieke import/exportmodule voor willekeurige CSV-formaten.
+- Crew-toegang tot import of destructieve reset.
+- Automatische afleiding van gebieden uit vrije locatietekst zonder Owner-bevestiging.
+- Verplichte categorisering tijdens import.
+- Nieuwe barcodeverwerking buiten de al bestaande scan- en koppelroutes.
+- Opschonen of migreren van data buiten voorraadbeheer.
+
+**Acceptatiecriteria**
+
+1. Alleen de Owner kan de CSV-startimport openen en uitvoeren.
+2. Voor de eigenlijke import verwijdert BootManager alle bestaande voorraadbeheerdata
+   behalve eenheden en categorieën.
+3. Ontbrekende eenheden uit het CSV worden aangemaakt; bestaande eenheden blijven
+   bruikbaar.
+4. Voor iedere nog onbekende CSV-locatienaam vraagt BootManager expliciet om gebied-
+   en locatie-mapping, inclusief aanmaken waar nodig.
+5. Eenzelfde CSV-locatienaam hoeft tijdens een import maar eenmalig gemapt te worden
+   en wordt daarna consequent hergebruikt.
+6. Na afronding bestaan alle geimporteerde producten, locaties en voorraadregels met
+   de hoeveelheden uit het CSV.
+7. Voor alle gebruikte locaties is direct een BootManager QR-token beschikbaar.
+8. Het systeem biedt na import een printvriendelijk A4-overzicht van alle relevante
+   QR-tags met minimaal gebied en locatienaam per tag.
+9. Geimporteerde producten mogen zonder categorie bestaan en blijven later handmatig
+   te categoriseren.
+10. Een later gescande onbekende barcode kan aan een geimporteerd bestaand product
+    worden gekoppeld zonder dat daarvoor een nieuw product hoeft te worden aangemaakt.
+
+**Legacy-impact**
+
+- `US2.15 Bulkimport/export voorraad` is nu `Partial`: de pilot dekt een beperkte
+  eenmalige CSV-startimport voor vakantievoorraad af, maar generieke import/export
+  blijft open.
+- Verdiept `US1.12` en `US1.15` praktisch verder doordat alle nieuw gebruikte
+  importlocaties direct QR-tokens en een batchprintbaar tagoverzicht krijgen.
+
+**Handmatige acceptatietest**
+
+1. Log in als Owner en open de CSV-startimport.
+2. Bevestig dat de flow duidelijk waarschuwt dat bestaande voorraadbeheerdata wordt
+   verwijderd, terwijl eenheden en categorieën behouden blijven.
+3. Upload `voorraadoverzicht_boot_zomervakantie.csv`.
+4. Doorloop voor alle nieuwe locatienamen de mappingstap door gebieden en locaties te
+   kiezen of aan te maken.
+5. Rond de import af en controleer dat de oude testvoorraad, testproducten,
+   testlocaties en oude locatietokens verdwenen zijn.
+6. Controleer dat de geimporteerde producten en voorraadregels overeenkomen met het
+   CSV-bestand.
+7. Controleer dat alle gebruikte locaties een QR-tag hebben en dat het A4-overzicht
+   per tag gebied en locatienaam toont.
+8. Open daarna `Scannen`, scan een nog onbekende productbarcode en koppel die aan een
+   bestaand geimporteerd product.
+9. Controleer dat die barcode daarna als bekende productcode werkt in de bestaande
+   scanflow.
+
 ### PILOT-UX-01 — Home optimaliseren als snelle pilot-hub
 
 **Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-06-25.
