@@ -4,12 +4,16 @@
 @using BootManager.Application.Storage.Services
 @using BootManager.Core.Enums
 @inject IStorageService StorageService
+@inject NavigationManager NavigationManager
 
 <PageTitle>QR-tag overzicht</PageTitle>
 
 <div class="mb-3">
     <h3>QR-tag overzicht</h3>
     <p class="text-muted">Beheer QR-tags per locatie, inclusief status en vervangingen.</p>
+    <button class="btn btn-sm btn-primary" @onclick="OpenBatchPrint" title="Alle beschikbare tags afdrukken">
+        <i class="fas fa-print"></i> Alle tags afdrukken
+    </button>
 </div>
 
 @if (_loading)
@@ -98,6 +102,15 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadLocations();
+    }
+
+    /// <summary>
+    /// Opent de bestaande A4-tagprintroute voor alle beschikbare locatietags.
+    /// Directe beheeractie; geen nieuw export- of labelformaat.
+    /// </summary>
+    private void OpenBatchPrint()
+    {
+        NavigationManager.NavigateTo("/storage/tag-print-overview");
     }
 
     private async Task LoadLocations()

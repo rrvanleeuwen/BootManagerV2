@@ -1,4 +1,4 @@
-# BootManagerV2
+﻿# BootManagerV2
 
 BootManagerV2 is een lokale, Raspberry Pi-vriendelijke bootmanagementapplicatie met digitaal logboek, NMEA/YDEN-ingest, live dashboard en systeembeheer voor gebruik aan boord.
 
@@ -15,15 +15,15 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[###############-----]` 75% | 24 |
+| Vakantiepilot 2026 | `[################----]` 79.2% | 24 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
-| Legacy scope | `[#######-------------]` 33.3% | 129 |
+| Legacy scope | `[#######-------------]` 33.7% | 129 |
 
 ### Vakantiepilot 2026
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[###############-----]` 75% | 18 | 0 | 6 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-08 - Product-zoekdetails en A4-tagbatchprint vanuit bestaande beheerflows |
+| `[################----]` 79.2% | 19 | 0 | 5 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-06 - Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl |
 
 ### BootManagerV2 Epics
 
@@ -43,7 +43,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 |---|---:|---:|---:|---:|---:|---:|
 | Epic 0: Installatie & Authenticatie | `[####################]` 100% | 4 | 2 | 0 | 0 | 0 |
 | Epic 1: Bootbeheer & Gebruikersbeheer | `[###############-----]` 75% | 7 | 0 | 4 | 1 | 5 |
-| Epic 2: Inventarisbeheer | `[#############-------]` 63.2% | 10 | 0 | 4 | 5 | 2 |
+| Epic 2: Inventarisbeheer | `[#############-------]` 65.8% | 10 | 0 | 5 | 4 | 2 |
 | Epic 3: Passageplanning | `[--------------------]` 0% | 0 | 0 | 0 | 13 | 1 |
 | Epic 4: Documentbeheer | `[--------------------]` 0% | 0 | 0 | 0 | 12 | 1 |
 | Epic 5: Logboek | `[############--------]` 61.5% | 4 | 0 | 8 | 1 | 1 |
