@@ -47,6 +47,14 @@
                                         Producten
                                     </NavLink>
                                 </li>
+                                @if (inventoryContext.User.IsInRole("Owner"))
+                                {
+                                    <li>
+                                        <NavLink class="dropdown-item" href="inventory/import" @onclick="CloseInventoryDropdown">
+                                            CSV-startimport
+                                        </NavLink>
+                                    </li>
+                                }
                                 <li>
                                     <NavLink class="dropdown-item" href="inventory/mutations" @onclick="CloseInventoryDropdown">
                                         Voorraadbijzonderheden

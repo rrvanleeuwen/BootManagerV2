@@ -50,10 +50,21 @@ Ieder implementation packet bevat daarnaast verplicht:
 - expliciete uitvoeringsgrenzen: wat Claude wel en niet mag wijzigen of uitvoeren;
 - een verbod op story-, release-, TODO-, legacy-, README- en handoffwijzigingen;
 - een verbod op commits, pushes, branches, PR's, merges, releases en deployments;
+- een verplichte processtatus-update van Claude in `.docs/processtatus/`;
 - een definitie van technische oplevering met verplichte tests, build, diffcheck en
   migratiebewijs wanneer de story dataopslag raakt;
 - concrete situaties waarin Claude `niet gereed` moet rapporteren;
 - de regel dat Claude een story nooit zelf `Done`, geaccepteerd of productierijp noemt.
+
+De verplichte processtatus-update werkt als volgt:
+
+- Claude maakt of hergebruikt `.docs/processtatus/<branch-map>/ClaudeStatus.md`.
+- `<branch-map>` is de actuele branchnaam, filesystem-veilig gemaakt door iedere `/` te
+  vervangen door `-`.
+- Claude plaatst in `ClaudeStatus.md` zijn volledige `Completion Notes`.
+- Claude sluit altijd af met een aparte regel `Done: yyyy-MM-dd HH:mm`.
+- Die `Done:`-regel is geen product- of storystatus, maar uitsluitend een
+  proces-signaal dat Claude zijn implementatieronde heeft afgerond voor Codex-review.
 
 Voor iedere nieuwe test of regressietest beschrijft het packet welk defect of gedrag
 de test daadwerkelijk uitvoert en welke concrete uitkomst wordt geassert. Tests die
@@ -75,6 +86,11 @@ Claude mag uitsluitend `gereed voor Codex-review` melden wanneer de volledige pa
 is geïmplementeerd en alle verplichte checks acceptabel zijn. Codex bepaalt na review of
 de implementatie naar handmatige acceptatie kan; alleen na die acceptatie wordt een
 storystatus administratief afgerond.
+
+Wanneer Codex in `.docs/processtatus/<branch-map>/ClaudeStatus.md` een nieuwe
+`Done:`-timestamp aantreft die nog niet door Codex is verwerkt, geldt dat als directe
+aanleiding om de review op die branch op te pakken vóór andere normale vervolgstappen,
+tenzij de gebruiker expliciet iets anders vraagt.
 
 ## Review en testen
 

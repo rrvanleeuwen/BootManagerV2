@@ -74,7 +74,7 @@ Bij afronding van een story of PR:
 | US2.12 Zoeken en filteren | Partial | `PILOT-INV-04` levert eenvoudige handmatige zoekfallback in `Voorraadbeheer > Producten` op productnaam en omschrijving, hoofdletterongevoelig en met deelmatches. `PILOT-UX-01` voegt dezelfde basiszoeking toe aan home als dagelijkse pilot-ingang, inclusief productgerichte vervolgactie vanuit het zoekresultaat. Uitgebreide filters, categorie-/gebiedfilters en bredere zoekopties blijven open. |
 | US2.13 Voorraadlogboek | Done | `PILOT-INV-05` voegt een aparte historiepagina toe met datum/tijd, type, product, gebied + locatie, oude hoeveelheid, nieuwe hoeveelheid, gebruiker en notitie. |
 | US2.14 QR-scanner-modus | Done | `PILOT-SCAN-01` levert de generieke QR-/barcodebasis, `PILOT-LOC-02` voegt BootManager locatie-QR routing toe, `PILOT-SCAN-03` maakt `Scannen` de nieuwe centrale scan-ingang, `PILOT-SCAN-03A` levert de nieuwe productscanwerkcontext, `PILOT-SCAN-04` levert de nieuwe locatie-scanwerkcontext en `PILOT-SCAN-05` rondt de onbekende-code-flow af met nieuwe keuzes, nieuwe vervolgroutes en geen zichtbare legacy-terugval. |
-| US2.15 Bulkimport/export voorraad | Open | Later na datamodel. |
+| US2.15 Bulkimport/export voorraad | Partial | `PILOT-INV-07` levert een beperkte Owner-only CSV-startimport voor vakantievoorraad, locatie-mapping en QR-tagbootstrap. Generieke import/export en bredere beheerformaten blijven open. |
 | US2.16 Voorraadstatus in dashboard | Open | Afhankelijk van inventory en dashboard. |
 | US2.17 Integratie met passageplanning | Open | Afhankelijk van inventory en passageplanning. |
 | US2.18 Productfoto of label | Open | Later na productcatalogus. |

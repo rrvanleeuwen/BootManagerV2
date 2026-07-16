@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-06-25.
+Updated: 2026-07-16.
 
 ## Rollen
 
@@ -10,13 +10,12 @@ Updated: 2026-06-25.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `master`.
-- `master` bevat de laatst geaccepteerde pilotfixes en documentatie tot en met
-  `PILOT-SCAN-05` follow-up en `PILOT-UX-01`.
-- `PILOT-UX-01` is inmiddels gemerged naar `master` samen met documentatie,
-  tests en home-follow-upfixes.
-- Volgende gitstap na deze handoff: vanaf een nieuwe werkbranch `PILOT-INV-06`
-  oppakken.
+- Actieve branch: `codex/pilot-inv-07-csv-startimport`.
+- Op deze branch staat `PILOT-INV-07` technisch afgerond en handmatig geaccepteerd,
+  inclusief documentatie-, processtatus- en reviewadministratie.
+- Volgende gitstap na deze handoff: deze branch documentair afronden, committen,
+  pushen en als PR aanbieden; de eerstvolgende nieuwe werkbranch daarna is
+  `PILOT-INV-08`.
 
 ## Actieve release
 
@@ -27,18 +26,24 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
 - afgerond: `PILOT-SCAN-01`, `PILOT-AUTH-01`, `PILOT-LOC-01`, `PILOT-LOC-02`,
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
-  `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`, `PILOT-UX-01`;
-- eerstvolgende focus: `PILOT-INV-06` voor het responsieve productoverzicht; daarna
-  terug naar `PILOT-LOG-01`.
+  `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`, `PILOT-UX-01`,
+  `PILOT-INV-07`;
+- eerstvolgende focus: `PILOT-INV-08` voor twee kleine maar vakantiekritieke
+  UX-verbeteringen in productzoeken en tagbatchprint; daarna `PILOT-INV-06` en pas
+  dan terug naar `PILOT-LOG-01`.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-De eerstvolgende sessie blijft gericht op het resterende pilotgebruiksgemak:
+De eerstvolgende sessie blijft gericht op het resterende pilotgebruiksgemak en snelle
+vakantie-ingebruikname:
 
-- eerst `PILOT-INV-06` voor een redesign van `Voorraadbeheer > Producten` met
+- eerst `PILOT-INV-08` voor een aparte productdetailactie in
+  `Voorraadbeheer > Producten` en een directe batchprintactie in
+  `Opslag > Tagoverzicht`;
+- daarna `PILOT-INV-06` voor een redesign van `Voorraadbeheer > Producten` met
   dezelfde zoek- en resultaatpresentatie als home;
 - pas daarna terug naar `PILOT-LOG-01`.
 

@@ -43,6 +43,12 @@ Before changing an additional area, explain why it is required.
   `master`.
 - Do not change story, release, TODO, legacy, README, handoff or other project
   documentation.
+- Before finishing, create or update `.docs/processtatus/<branch-map>/ClaudeStatus.md`,
+  where `<branch-map>` is the active branch name with every `/` replaced by `-`.
+- Put the full `Completion Notes` content in that `ClaudeStatus.md` file and end the
+  file with a separate line `Done: yyyy-MM-dd HH:mm`.
+- Treat that `Done:` line only as a handoff signal for Codex review, never as a claim
+  that the story is accepted or production-ready.
 - Do not create commits, pushes, branches, PRs, merges, releases or deployments.
 - Do not change scope, acceptance criteria or architectural direction. Stop and report
   the smallest missing decision when an approved direction cannot be followed.
@@ -144,3 +150,7 @@ Return only:
 4. migration/configuration impact;
 5. remaining risks and manual test requirements;
 6. final status: `ready for Codex review` or `not ready`, with the concrete reason.
+
+Additionally, write the same completion content to
+`.docs/processtatus/<branch-map>/ClaudeStatus.md` and end that file with
+`Done: yyyy-MM-dd HH:mm`.

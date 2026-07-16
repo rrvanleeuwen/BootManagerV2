@@ -9,6 +9,7 @@
 - [x] `PILOT-SCAN-04` locatiegerichte scanwerkcontext uitwerken
 - [x] `PILOT-SCAN-05` onbekende-code-flow en resterende scanvervolgstappen afronden
   - Follow-up 2026-06-25: regressiefix voor locatie-QR-scan in `ScanProductAddStock` na nieuw product vanuit onbekende code is handmatig gevalideerd op Raspberry Pi/mobiel.
+- [ ] `PILOT-INV-08` product-zoekdetails en tagbatchprint
 - [ ] `PILOT-LOG-01` handmatig logboekmoment met actuele NMEA-snapshot
 
 ### ✅ Completed Vertical Slices
@@ -152,6 +153,22 @@
   - **Kern:** mockup-geleide home-layout; zoekresultaten tonen productnaam, hoeveelheid, eenheid en locaties; desktop als lijst en mobiel als cards; paginering per 10; home-resultaat opent een productdetailflow met directe actie om verbruik te registreren.
   - **Belangrijk:** de designs in `.docs/analysis/stitch_responsive_bootstrap_process_design/home/` en `home_desktop/` zijn leidend; geen generieke bootstrap-terugval.
   - **Buiten scope:** nieuwe dashboardinhoud, nieuwe logboekfunctionaliteit en scanflowwijzigingen buiten de home-startflow.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [x] **Holiday Pilot 2026 — PILOT-INV-07 Owner-only CSV-startimport voor echte vakantievoorraad**
+  - **Status 2026-07-16:** technisch gecontroleerd en handmatig geaccepteerd.
+  - **Doel:** een bestaand CSV-overzicht van al ingeladen bootvoorraad in één Owner-flow importeren, inclusief locatie-mapping, voorraadopbouw en QR-tags.
+  - **Kern:** bestaande voorraadbeheerdata mag weg behalve eenheden; import vraagt per nieuwe CSV-locatie om gebied- en locatie-mapping; daarna maakt het systeem producten, locaties, voorraad en QR-tokens aan.
+  - **Belangrijk:** geimporteerde producten mogen zonder barcode en zonder verplichte categorie bestaan; categorieën blijven behouden en later handmatig toekenbaar; na import is een printvriendelijk A4-tagoverzicht met gebied + locatienaam beschikbaar.
+  - **Buiten scope:** generieke bulkimport/export, Crew-import, automatische gebiedsafleiding zonder bevestiging en brede systeemreset buiten voorraadbeheer.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-INV-08 product-zoekdetails en tagbatchprint vanuit bestaande beheerflows**
+  - **Status 2026-07-16:** nieuw expliciet geprioriteerd vóór `PILOT-INV-06` als resterend vakantiekritiek gebruiksgemak.
+  - **Doel:** vanuit `Voorraadbeheer > Producten` en `Opslag > Tagoverzicht` sneller de juiste vervolgactie kiezen zonder omwegen.
+  - **Kern:** productzoekresultaten krijgen naast het bestaande hoofdklikgedrag een aparte detailactie voor een compacte eigenschappen-popup; tagoverzicht krijgt een directe batchprintactie voor alle tags via de bestaande A4-printroute.
+  - **Belangrijk:** het huidige klikgedrag van zoekresultaten blijft intact; batchprint moet automatisch meerpagina-ondersteuning gebruiken als niet alles op één A4 past.
+  - **Buiten scope:** brede redesign van het productoverzicht, nieuwe voorraadlogica en nieuwe exporttypes buiten de bestaande A4-tagroute.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-INV-06 productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl**

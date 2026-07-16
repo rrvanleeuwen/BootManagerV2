@@ -5,7 +5,7 @@ BootManagerV2 is een lokale, Raspberry Pi-vriendelijke bootmanagementapplicatie 
 <!-- PROJECT-STATUS:START -->
 ## Projectstatus
 
-_Laatst bijgewerkt: 2026-06-25. Gegenereerd met `scripts/update-readme-status.ps1`._
+_Laatst bijgewerkt: 2026-07-16. Gegenereerd met `scripts/update-readme-status.ps1`._
 
 De percentages zijn voortgangsindicatoren, geen harde planning. Berekening: `Done` en `Replaced` tellen als 100%, `Partial` telt als 50%, `Open` telt als 0%. `Parked` en `Obsolete` tellen niet mee in de actieve scope.
 
@@ -15,7 +15,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[###############-----]` 77.3% | 22 |
+| Vakantiepilot 2026 | `[###############-----]` 75% | 24 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
 | Legacy scope | `[#######-------------]` 33.3% | 129 |
 
@@ -23,7 +23,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[###############-----]` 77.3% | 17 | 0 | 5 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-06 - Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl |
+| `[###############-----]` 75% | 18 | 0 | 6 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-08 - Product-zoekdetails en A4-tagbatchprint vanuit bestaande beheerflows |
 
 ### BootManagerV2 Epics
 
