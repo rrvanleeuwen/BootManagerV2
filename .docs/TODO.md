@@ -9,7 +9,7 @@
 - [x] `PILOT-SCAN-04` locatiegerichte scanwerkcontext uitwerken
 - [x] `PILOT-SCAN-05` onbekende-code-flow en resterende scanvervolgstappen afronden
   - Follow-up 2026-06-25: regressiefix voor locatie-QR-scan in `ScanProductAddStock` na nieuw product vanuit onbekende code is handmatig gevalideerd op Raspberry Pi/mobiel.
-- [ ] `PILOT-INV-08` product-zoekdetails en tagbatchprint
+- [x] `PILOT-INV-08` product-zoekdetails en tagbatchprint
 - [ ] `PILOT-LOG-01` handmatig logboekmoment met actuele NMEA-snapshot
 
 ### ✅ Completed Vertical Slices
@@ -163,11 +163,11 @@
   - **Buiten scope:** generieke bulkimport/export, Crew-import, automatische gebiedsafleiding zonder bevestiging en brede systeemreset buiten voorraadbeheer.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-INV-08 product-zoekdetails en tagbatchprint vanuit bestaande beheerflows**
-  - **Status 2026-07-16:** nieuw expliciet geprioriteerd vóór `PILOT-INV-06` als resterend vakantiekritiek gebruiksgemak.
+- [x] **Holiday Pilot 2026 — PILOT-INV-08 product-zoekdetails en tagbatchprint vanuit bestaande beheerflows**
+  - **Status 2026-07-16:** technisch gecontroleerd en handmatig geaccepteerd.
   - **Doel:** vanuit `Voorraadbeheer > Producten` en `Opslag > Tagoverzicht` sneller de juiste vervolgactie kiezen zonder omwegen.
-  - **Kern:** productzoekresultaten krijgen naast het bestaande hoofdklikgedrag een aparte detailactie voor een compacte eigenschappen-popup; tagoverzicht krijgt een directe batchprintactie voor alle tags via de bestaande A4-printroute.
-  - **Belangrijk:** het huidige klikgedrag van zoekresultaten blijft intact; batchprint moet automatisch meerpagina-ondersteuning gebruiken als niet alles op één A4 past.
+  - **Kern:** productzoekresultaten hebben naast het bestaande hoofdklikgedrag een aparte detailactie voor een compacte eigenschappen-popup en een directe bewerkactie naar het specifieke product; tagoverzicht heeft een directe batchprintactie voor alle tags via de bestaande A4-printroute.
+  - **Belangrijk:** het huidige klikgedrag van zoekresultaten blijft intact; de bewerkactie opent direct de bestaande `Gekoppelde code`-sectie voor barcodebeheer; batchprint gebruikt automatisch meerpagina-ondersteuning als niet alles op één A4 past.
   - **Buiten scope:** brede redesign van het productoverzicht, nieuwe voorraadlogica en nieuwe exporttypes buiten de bestaande A4-tagroute.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 

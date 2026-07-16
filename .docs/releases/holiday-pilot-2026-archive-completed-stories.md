@@ -7,6 +7,94 @@ beschikbaar blijven wanneer die opnieuw nodig zijn.
 
 ## Afgeronde stories
 
+### PILOT-INV-08 — Product-zoekdetails en A4-tagbatchprint vanuit bestaande beheerflows
+
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-16.
+
+**Resultaat:** Productzoekresultaten in `Voorraadbeheer > Producten` hebben nu naast
+het bestaande hoofdklikgedrag een compacte detailactie en een directe bewerkactie voor
+het specifieke product. De detailactie opent in context een productpopup met naam,
+standaardeenheid, gekoppelde code indien aanwezig en actieve voorraad-/locatiesamenvatting.
+De bewerkactie opent via `editProductId` direct de bestaande productbewerkform met de
+sectie `Gekoppelde code`, zodat een barcode sneller toegevoegd of gewijzigd kan worden
+zonder door de lange productlijst te scrollen. `Opslag > Tagoverzicht` heeft daarnaast
+een directe batchprintactie naar de bestaande A4-tagweergave voor alle beschikbare
+locatietags.
+
+**Als** Owner of Crew<br>
+**wil ik** vanuit de bestaande productzoek- en tagbeheerflows sneller de juiste
+vervolgactie kunnen kiezen<br>
+**zodat** dagelijks gebruik aan boord minder omwegen vraagt.
+
+**Scope**
+
+- In `Voorraadbeheer > Producten` blijft het bestaande hoofdklikgedrag van een
+  zoekresultaat behouden.
+- Elk zoekresultaat krijgt daarnaast een expliciete zichtbare detailactie.
+- Die detailactie opent dezelfde soort producteigenschappen-popup als al bruikbaar is
+  vanuit locatiecontexten:
+  - productnaam;
+  - standaardeenheid;
+  - gekoppelde code indien aanwezig;
+  - relevante locatie- of voorraadsamenvatting voor het gekozen product.
+- De popup opent in context zonder directe navigatie naar een locatiepagina.
+- Elk zoekresultaat krijgt daarnaast een directe bewerkactie naar het specifieke
+  product, zodat de bestaande code-/barcode-sectie direct bereikbaar is.
+- In `Opslag > Tagoverzicht` komt een directe actie om alle beschikbare locatietags via
+  de bestaande A4-printroute te openen.
+- Als alle tags niet op één pagina passen, ondersteunt die printroute automatisch
+  meerdere pagina's met dezelfde bestaande tagopmaak.
+
+**Buiten scope**
+
+- Brede herbouw van het volledige productoverzicht uit `PILOT-INV-06`.
+- Nieuwe voorraadlogica, mutatietypes of scanroutes.
+- Nieuwe QR-formaten, labeltypes of exportkanalen buiten de bestaande A4-tagroute.
+- Grote herinrichting van productdetailinformatie buiten wat nodig is voor een compacte
+  popup.
+- Nieuwe barcode-scanflow binnen het productformulier.
+
+**Acceptatiecriteria**
+
+1. Een klik op een productzoekresultaat in `Voorraadbeheer > Producten` behoudt het
+   bestaande hoofdgedrag voor navigatie of terugvinden.
+2. Elk productzoekresultaat heeft daarnaast een aparte zichtbare detailactie.
+3. Die detailactie opent een compacte producteigenschappen-popup zonder directe
+   navigatie.
+4. De popup toont minimaal productnaam, standaardeenheid en gekoppelde code indien
+   aanwezig.
+5. Elk productzoekresultaat heeft een aparte bewerkactie die direct de bestaande
+   bewerkform voor dat product opent.
+6. `Opslag > Tagoverzicht` biedt een directe batchprintactie voor alle beschikbare
+   tags.
+7. De batchprint gebruikt de bestaande A4-tagweergave en ondersteunt meerdere pagina's
+   wanneer het aantal tags daar om vraagt.
+
+**Handmatige acceptatietest**
+
+1. Open `Voorraadbeheer > Producten` en zoek een bestaand product.
+2. Klik op de nieuwe detailactie in een zoekresultaat en controleer dat een compacte
+   productpopup opent met de afgesproken basisinformatie.
+3. Klik daarna op het zoekresultaat zelf en controleer dat het bestaande
+   navigatie-/terugvindgedrag ongewijzigd blijft.
+4. Klik op de nieuwe bewerkactie en controleer dat de bestaande bewerkform voor het
+   juiste product opent met de sectie `Gekoppelde code` zichtbaar.
+5. Voeg of wijzig een code en sla op.
+6. Open `Opslag > Tagoverzicht` en gebruik de nieuwe batchprintactie.
+7. Controleer dat het bestaande A4-tagoverzicht nu voor alle tags tegelijk opent en bij
+   grotere aantallen automatisch over meerdere pagina's verdeeld kan worden.
+
+**Implementatiestatus 2026-07-16**
+
+- technisch gecontroleerd door Codex;
+- handmatige acceptatie door gebruiker akkoord bevonden;
+- gerichte regressies groen:
+  `dotnet test BootManager.UnitTests/BootManager.UnitTests.csproj --no-restore --filter "FullyQualifiedName~ProductsComponentTests"`;
+- solution-build groen:
+  `dotnet build BootManager.sln --no-restore`;
+- diffcheck schoon:
+  `git diff --check`.
+
 ### PILOT-INV-07 — Owner-only CSV-startimport voor echte vakantievoorraad, locatie-mapping en QR-tags
 
 **Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-16.

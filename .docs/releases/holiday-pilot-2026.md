@@ -151,7 +151,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 15. **PILOT-SCAN-05** — **Done** — Onbekende-code-flow volledig binnen nieuwe scanervaring afronden; regressiefix voor locatie-QR-scan na nieuw product is op 2026-06-25 ook handmatig gevalideerd op Raspberry Pi/mobiel.
 16. **PILOT-UX-01** — **Done** — Home is nu de standaard pilotstart met snelle tegels, productzoekwidget en productgerichte doorklik vanuit home.
 17. **PILOT-INV-07** — **Done** — Owner-only CSV-startimport voor echte vakantievoorraad, locatie-mapping en QR-tags.
-18. **PILOT-INV-08** — **Gepland** — Product-zoekdetails en A4-tagbatchprint vanuit bestaande beheerflows.
+18. **PILOT-INV-08** — **Done** — Product-zoekdetails, directe productbewerking en A4-tagbatchprint vanuit bestaande beheerflows.
 19. **PILOT-INV-06** — **Gepland** — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl.
 20. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
 21. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
@@ -165,7 +165,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-INV-08` — Product-zoekdetails en A4-tagbatchprint vanuit bestaande beheerflows.
+**Eerstvolgende story:** `PILOT-INV-06` — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl.
 
 ## Expliciete herprioritering
 
@@ -204,7 +204,7 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve uitwerking nu eerst `PILOT-INV-08` aan; voeg daarbinnen alleen de
+- Houd als actieve uitwerking nu eerst `PILOT-INV-06` aan; voeg daarbinnen alleen de
   eerstvolgende kleine implementatiestap toe wanneer die werkelijk aan de beurt is.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
@@ -212,71 +212,6 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
   zodat de dagelijkse context klein blijft maar de historie beschikbaar blijft.
 - Raadpleeg het archief alleen wanneer historische scope, acceptatie,
   implementatiestatus of legacy-impact opnieuw relevant is.
-
-### PILOT-INV-08 — Product-zoekdetails en A4-tagbatchprint vanuit bestaande beheerflows
-
-**Storyzin**
-Als Owner of Crew wil ik vanuit de bestaande productzoek- en tagbeheerflows sneller
-de juiste vervolgactie kunnen kiezen, zodat dagelijks gebruik aan boord minder
-omwegen vraagt.
-
-**Waarom deze slice nu**
-De CSV-startimport is geaccepteerd en de echte voorraad staat nu in BootManager. In het
-dagelijks gebruik blijven nog twee kleine maar irritante omwegen over: vanuit
-`Voorraadbeheer > Producten` ontbreekt een directe productdetailactie in de
-zoekresultaten en vanuit `Opslag > Tagoverzicht` ontbreekt een directe batchprint van
-alle tags. Deze slice maakt juist die resterende vakantiepraktijk sneller.
-
-**Scope**
-
-- In `Voorraadbeheer > Producten` blijft het bestaande hoofdklikgedrag van een
-  zoekresultaat behouden.
-- Elk zoekresultaat krijgt daarnaast een expliciete zichtbare detailactie, bijvoorbeeld
-  een info-icoon of vergelijkbare knop.
-- Die detailactie opent dezelfde soort producteigenschappen-popup als al bruikbaar is
-  vanuit locatiecontexten:
-  - productnaam;
-  - standaardeenheid;
-  - gekoppelde code indien aanwezig;
-  - relevante locatie- of voorraadsamenvatting voor het gekozen product.
-- De popup opent in context zonder directe navigatie naar een locatiepagina.
-- In `Opslag > Tagoverzicht` komt een directe actie om alle beschikbare locatietags via
-  de bestaande A4-printroute te openen.
-- Als alle tags niet op één pagina passen, ondersteunt die printroute automatisch
-  meerdere pagina's met dezelfde bestaande tagopmaak.
-
-**Buiten scope**
-
-- Brede herbouw van het volledige productoverzicht uit `PILOT-INV-06`.
-- Nieuwe voorraadlogica, mutatietypes of scanroutes.
-- Nieuwe QR-formaten, labeltypes of exportkanalen buiten de bestaande A4-tagroute.
-- Grote herinrichting van productdetailinformatie buiten wat nodig is voor een compacte
-  popup.
-
-**Acceptatiecriteria**
-
-1. Een klik op een productzoekresultaat in `Voorraadbeheer > Producten` behoudt het
-   bestaande hoofdgedrag voor navigatie of terugvinden.
-2. Elk productzoekresultaat heeft daarnaast een aparte zichtbare detailactie.
-3. Die detailactie opent een compacte producteigenschappen-popup zonder directe
-   navigatie.
-4. De popup toont minimaal productnaam, standaardeenheid en gekoppelde code indien
-   aanwezig.
-5. `Opslag > Tagoverzicht` biedt een directe batchprintactie voor alle beschikbare
-   tags.
-6. De batchprint gebruikt de bestaande A4-tagweergave en ondersteunt meerdere pagina's
-   wanneer het aantal tags daar om vraagt.
-
-**Handmatige acceptatietest**
-
-1. Open `Voorraadbeheer > Producten` en zoek een bestaand product.
-2. Klik op de nieuwe detailactie in een zoekresultaat en controleer dat een compacte
-   productpopup opent met de afgesproken basisinformatie.
-3. Klik daarna op het zoekresultaat zelf en controleer dat het bestaande
-   navigatie-/terugvindgedrag ongewijzigd blijft.
-4. Open `Opslag > Tagoverzicht` en gebruik de nieuwe batchprintactie.
-5. Controleer dat het bestaande A4-tagoverzicht nu voor alle tags tegelijk opent en bij
-   grotere aantallen automatisch over meerdere pagina's verdeeld kan worden.
 
 ### PILOT-INV-06 — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl
 
@@ -829,6 +764,7 @@ administratieve fallback toe, plus een eenvoudige historie voor controle achtera
 - `PILOT-INV-04` — product terugvinden via scan of zoeken en voorraad toevoegen vanuit geen-voorraad via compacte modal, geaccepteerd op 2026-06-20.
 - `PILOT-INV-05` — voorraadmutaties, scan/fallback-mutatieflow en eenvoudige historie, geaccepteerd op 2026-06-21.
 - `PILOT-INV-07` — CSV-startimport voor echte vakantievoorraad, locatie-mapping en QR-tags, technisch gecontroleerd en handmatig geaccepteerd op 2026-07-16.
+- `PILOT-INV-08` — product-zoekdetails, directe productbewerking en A4-tagbatchprint, technisch gecontroleerd en handmatig geaccepteerd op 2026-07-16.
 
 ## Niet-doelen voor deze pilot
 

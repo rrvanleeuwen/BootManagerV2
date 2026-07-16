@@ -26,6 +26,14 @@
                         </div>
                     </div>
 
+                    @if (_product.Code != null && !string.IsNullOrEmpty(_product.Code.Value))
+                    {
+                        <div class="mb-3">
+                            <span class="text-muted small">Gekoppelde code</span>
+                            <div><code>@_product.Code.Value</code> <span class="text-muted small">(@_product.Code.Format)</span></div>
+                        </div>
+                    }
+
                     <div class="mb-3">
                         <span class="text-muted small">Locaties</span>
                         @if (_activeLocations != null && _activeLocations.Count > 0)

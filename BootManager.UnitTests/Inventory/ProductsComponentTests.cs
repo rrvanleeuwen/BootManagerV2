@@ -628,6 +628,293 @@ public class ProductsComponentTests : TestContext
             Times.Once);
     }
 
+    [Fact]
+    public async Task ProductSearchResult_ExposesSeparateDetailAction_DistinctFromMainClick()
+    {
+        // Arrange
+        var productId = Guid.NewGuid();
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Appel",
+            Description = "Rode appels",
+            DefaultUnitName = "stuk"
+        };
+
+        SetupBaseMocks();
+        _productServiceMock
+            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        var cut = RenderComponent<Products>();
+
+        await OpenSearchAndSearchAsync(cut, "appel");
+
+        cut.WaitForAssertion(() => Assert.Contains("Appel", cut.Markup));
+
+        // Assert: the main result button (carrying the product name) is a different element
+        // than the explicit detail action button.
+        var mainClickButton = cut.FindAll("button").First(b => b.TextContent.Contains("Appel"));
+        var detailButton = cut.FindAll("button[title='Productdetails']").Single();
+
+        Assert.NotSame(mainClickButton, detailButton);
+        Assert.DoesNotContain("Appel", detailButton.TextContent);
+        Assert.Contains("Details", detailButton.TextContent);
+    }
+
+    [Fact]
+    public async Task ProductDetailAction_OpensPopupWithoutNavigating_ShowsUnitCodeAndStock()
+    {
+        // Arrange: product with a linked code and a single active stock location.
+        var productId = Guid.NewGuid();
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Appel",
+            Description = "Rode appels",
+            DefaultUnitName = "stuk",
+            Code = new ProductCodeDto { Id = Guid.NewGuid(), Value = "8712345678904", Format = "barcode" }
+        };
+
+        var activeLocation = new StockDto
+        {
+            StorageLocationId = Guid.NewGuid(),
+            StorageAreaName = "Kombuis",
+            StorageLocationName = "Kast",
+            Quantity = 5,
+            DefaultUnitName = "stuk"
+        };
+
+        SetupBaseMocks();
+        _productServiceMock
+            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
+                new List<StockDto> { activeLocation }.AsReadOnly()));
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var initialUri = navigation.Uri;
+        var cut = RenderComponent<Products>();
+
+        await OpenSearchAndSearchAsync(cut, "appel");
+        cut.WaitForAssertion(() => Assert.Contains("Appel", cut.Markup));
+
+        // Act: click the explicit detail action (NOT the main result click).
+        await cut.InvokeAsync(() =>
+            cut.FindAll("button[title='Productdetails']").Single().Click());
+
+        // Assert: popup content is shown and no navigation happened even though the
+        // product has exactly one active location (the main click would navigate).
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Gekoppelde code", cut.Markup);
+            Assert.Contains("8712345678904", cut.Markup);
+            Assert.Contains("Eenheid", cut.Markup);
+            Assert.Contains("Kombuis - Kast", cut.Markup);
+        });
+        Assert.Equal(initialUri, navigation.Uri);
+    }
+
+    [Fact]
+    public async Task ProductDetailAction_WithNoActiveStock_ShowsNoStockWithoutCrash()
+    {
+        // Arrange: product without a linked code and without any active stock.
+        var productId = Guid.NewGuid();
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Appel",
+            DefaultUnitName = "stuk"
+        };
+
+        SetupBaseMocks();
+        _productServiceMock
+            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        var cut = RenderComponent<Products>();
+
+        await OpenSearchAndSearchAsync(cut, "appel");
+        cut.WaitForAssertion(() => Assert.Contains("Appel", cut.Markup));
+
+        // Act: open detail popup.
+        await cut.InvokeAsync(() =>
+            cut.FindAll("button[title='Productdetails']").Single().Click());
+
+        // Assert: popup renders the no-active-stock state and does not show a code section.
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Geen actieve voorraad", cut.Markup, StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain("Gekoppelde code", cut.Markup);
+    }
+
+    [Fact]
+    public async Task ProductSearchResult_RendersDetailsAndEditActionsAsSeparateButtons()
+    {
+        // Arrange
+        var productId = Guid.NewGuid();
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Appel",
+            DefaultUnitName = "stuk"
+        };
+
+        SetupBaseMocks();
+        _productServiceMock
+            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        var cut = RenderComponent<Products>();
+        await OpenSearchAndSearchAsync(cut, "appel");
+        cut.WaitForAssertion(() => Assert.Contains("Appel", cut.Markup));
+
+        // Assert: both the Details and the new edit/code action exist as distinct buttons.
+        var detailButton = cut.FindAll("button[title='Productdetails']").Single();
+        var editButton = cut.FindAll("button[title='Bewerken/code']").Single();
+
+        Assert.NotSame(detailButton, editButton);
+        Assert.Contains("Details", detailButton.TextContent);
+        Assert.Contains("Bewerken", editButton.TextContent);
+    }
+
+    [Fact]
+    public async Task EditProductAction_NavigatesToDeepLinkWithProductId()
+    {
+        // Arrange
+        var productId = Guid.NewGuid();
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Appel",
+            DefaultUnitName = "stuk"
+        };
+
+        SetupBaseMocks();
+        _productServiceMock
+            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _stockServiceMock
+            .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        var cut = RenderComponent<Products>();
+        await OpenSearchAndSearchAsync(cut, "appel");
+        cut.WaitForAssertion(() => Assert.Contains("Appel", cut.Markup));
+
+        // Act: click the edit/code action.
+        await cut.InvokeAsync(() =>
+            cut.FindAll("button[title='Bewerken/code']").Single().Click());
+
+        // Assert: deep link carries the selected product id.
+        Assert.EndsWith($"/inventory/products?editProductId={productId}", navigation.Uri);
+    }
+
+    [Fact]
+    public void Products_WithEditProductIdQuery_OpensEditFormWithCodeSection()
+    {
+        // Arrange: a product with a linked code that is returned by the normal data load.
+        var productId = Guid.NewGuid();
+        var product = new ProductDto
+        {
+            Id = productId,
+            Name = "Appel",
+            Description = "Rode appels",
+            DefaultUnitName = "stuk",
+            DefaultUnitId = Guid.NewGuid(),
+            Code = new ProductCodeDto { Id = Guid.NewGuid(), Value = "8712345678904", Format = "barcode" }
+        };
+
+        SetupBaseMocks();
+        _productServiceMock
+            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo($"/inventory/products?editProductId={productId}");
+
+        // Act: render the page as if opened via the deep link.
+        var cut = RenderComponent<Products>();
+
+        // Assert: the existing edit form is open for this product with the code section.
+        cut.WaitForAssertion(() =>
+        {
+            var nameInput = cut.Find("input[placeholder='Productnaam']");
+            Assert.Equal("Appel", nameInput.GetAttribute("value"));
+            Assert.Contains("Gekoppelde code", cut.Markup);
+            Assert.Contains("8712345678904", cut.Markup);
+        });
+    }
+
+    [Fact]
+    public void Products_WithUnknownEditProductIdQuery_ShowsErrorWithoutCrash()
+    {
+        // Arrange: query references an id that is not in the loaded product set.
+        var missingId = Guid.NewGuid();
+
+        SetupBaseMocks();
+        _productServiceMock
+            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto>().AsReadOnly());
+
+        var navigation = Services.GetRequiredService<NavigationManager>();
+        navigation.NavigateTo($"/inventory/products?editProductId={missingId}");
+
+        // Act
+        var cut = RenderComponent<Products>();
+
+        // Assert: clear error, no edit form, list view still usable (search button present).
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Product niet gevonden voor bewerken.", cut.Markup));
+        Assert.Empty(cut.FindAll("input[placeholder='Productnaam']"));
+        Assert.NotNull(cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("Zoeken")));
+    }
+
+    private void SetupBaseMocks()
+    {
+        _productServiceMock
+            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductDto>().AsReadOnly());
+        _categoryServiceMock
+            .Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProductCategoryDto>().AsReadOnly());
+        _unitServiceMock
+            .Setup(s => s.InitializeDefaultUnitsAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _unitServiceMock
+            .Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UnitDto>().AsReadOnly());
+        _categoryServiceMock
+            .Setup(s => s.GetValidIconKeys())
+            .Returns(new List<string>());
+    }
+
+    private static async Task OpenSearchAndSearchAsync(IRenderedComponent<Products> cut, string term)
+    {
+        await cut.InvokeAsync(() =>
+            cut.FindAll("button").First(b => b.TextContent.Contains("Zoeken")).Click());
+
+        cut.WaitForAssertion(() =>
+            Assert.NotNull(cut.Find("input[placeholder='Zoeken op naam of omschrijving…']")));
+
+        await cut.InvokeAsync(() =>
+        {
+            cut.Find("input[placeholder='Zoeken op naam of omschrijving…']").Input(term);
+            cut.FindAll("button").First(b => b.TextContent.Contains("Zoeken")).Click();
+        });
+    }
+
     private void SetupAuthState(string role, Guid? userId = null)
     {
         var claims = new List<Claim> { new Claim(ClaimTypes.Role, role) };

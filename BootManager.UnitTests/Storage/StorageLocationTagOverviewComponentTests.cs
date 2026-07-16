@@ -214,6 +214,56 @@ public class StorageLocationTagOverviewComponentTests : TestContext
     }
 
     [Fact]
+    public void Component_RendersBatchPrintAction()
+    {
+        var location = new StorageLocationOverviewDto
+        {
+            Id = Guid.NewGuid(),
+            AreaName = "Kombuis",
+            LocationName = "Koelkast",
+            QrValue = "bootmanager:location:abcd1234efgh5678ijkl9012mnop3456",
+            TagStatus = TagStatus.Printed
+        };
+
+        _storageMock.Setup(s => s.GetAllLocationsOverviewAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([location]);
+
+        SetupAuthState(owner: true);
+
+        var cut = RenderComponent<StorageLocationTagOverview>();
+
+        var batchPrintButton = cut.FindAll("button")
+            .FirstOrDefault(b => b.TextContent.Contains("Alle tags afdrukken"));
+        Assert.NotNull(batchPrintButton);
+    }
+
+    [Fact]
+    public async Task Component_BatchPrintAction_NavigatesToExistingPrintRoute()
+    {
+        var location = new StorageLocationOverviewDto
+        {
+            Id = Guid.NewGuid(),
+            AreaName = "Kombuis",
+            LocationName = "Koelkast",
+            QrValue = "bootmanager:location:abcd1234efgh5678ijkl9012mnop3456",
+            TagStatus = TagStatus.Printed
+        };
+
+        _storageMock.Setup(s => s.GetAllLocationsOverviewAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([location]);
+
+        SetupAuthState(owner: true);
+
+        var navigation = Services.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+        var cut = RenderComponent<StorageLocationTagOverview>();
+
+        var batchPrintButton = cut.FindAll("button").First(b => b.TextContent.Contains("Alle tags afdrukken"));
+        await cut.InvokeAsync(() => batchPrintButton.Click());
+
+        Assert.EndsWith("/storage/tag-print-overview", navigation.Uri);
+    }
+
+    [Fact]
     public async Task Component_CanReplaceToken()
     {
         var locationId = Guid.NewGuid();

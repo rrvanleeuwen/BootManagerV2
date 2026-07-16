@@ -27,6 +27,14 @@
     </AddStockToProductModal>
 }
 
+@if (_showProductDetailsPopup && _detailsPopupProduct != null)
+{
+    <ProductDetailsFromHome
+        Product="_detailsPopupProduct"
+        OnClose="CloseProductDetailsPopup">
+    </ProductDetailsFromHome>
+}
+
 @if (!_editMode)
 {
     @* List view *@
@@ -78,27 +86,33 @@
                     <div class="list-group">
                         @foreach (var product in _searchResults)
                         {
-                            <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectProductFromSearch(product)">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <strong>@product.Name</strong>
-                                        @if (!string.IsNullOrEmpty(product.Description))
-                                        {
-                                            <br />
-                                            <small class="text-muted">@(product.Description.Length > 80 ? product.Description.Substring(0, 80) + "…" : product.Description)</small>
-                                        }
+                            <div class="list-group-item d-flex justify-content-between align-items-start gap-2">
+                                <button type="button" class="btn btn-link text-start text-decoration-none flex-grow-1 p-0" @onclick="() => SelectProductFromSearch(product)">
+                                    <strong>@product.Name</strong>
+                                    @if (!string.IsNullOrEmpty(product.Description))
+                                    {
                                         <br />
-                                        @if (_productSearchLocations.TryGetValue(product.Id, out var locations) && locations != null && locations.Count > 0)
-                                        {
-                                            <small class="text-muted">Locaties: @string.Join(", ", locations.Select(l => $"{l.StorageAreaName} - {l.StorageLocationName}"))</small>
-                                        }
-                                        else
-                                        {
-                                            <small class="text-muted">Geen actieve voorraad</small>
-                                        }
-                                    </div>
+                                        <small class="text-muted">@(product.Description.Length > 80 ? product.Description.Substring(0, 80) + "…" : product.Description)</small>
+                                    }
+                                    <br />
+                                    @if (_productSearchLocations.TryGetValue(product.Id, out var locations) && locations != null && locations.Count > 0)
+                                    {
+                                        <small class="text-muted">Locaties: @string.Join(", ", locations.Select(l => $"{l.StorageAreaName} - {l.StorageLocationName}"))</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">Geen actieve voorraad</small>
+                                    }
+                                </button>
+                                <div class="d-flex gap-1 flex-shrink-0">
+                                    <button type="button" class="btn btn-sm btn-outline-info" title="Productdetails" @onclick="() => ShowProductDetailsPopup(product)">
+                                        <i class="fas fa-info-circle"></i> Details
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Bewerken/code" @onclick="() => NavigateToEditProduct(product)">
+                                        <i class="fas fa-edit"></i> Bewerken
+                                    </button>
                                 </div>
-                            </button>
+                            </div>
                         }
                     </div>
                 }
@@ -613,6 +627,17 @@ else
 }
 
 @code {
+    /// <summary>
+    /// Optionele deep-link: opent bij het laden direct de bewerkform van het product met
+    /// dit id, zodat een gebruiker vanuit een zoekresultaat meteen een code kan toevoegen
+    /// of wijzigen zonder door de volledige productlijst te scrollen.
+    /// </summary>
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "editProductId")]
+    public Guid? EditProductId { get; set; }
+
+    private Guid? _handledEditProductId;
+
     private List<ProductDto> _products = new();
     private List<ProductDto> _displayedProducts = new();
     private List<ProductCategoryDto> _activeCategories = new();
@@ -650,6 +675,10 @@ else
     private Dictionary<Guid, List<BootManager.Application.Inventory.DTOs.StockDto>?> _productStocks = new();
     private bool _showAddStockModal = false;
 
+    // Product details popup (zoekresultaat detailactie)
+    private bool _showProductDetailsPopup = false;
+    private ProductDto? _detailsPopupProduct;
+
     // Mutation fallback state
     private bool _showMutationFallback = false;
     private ProductDto? _fallbackProduct;
@@ -665,6 +694,37 @@ else
         await UnitService.InitializeDefaultUnitsAsync();
         await LoadDataAsync();
         _validIconKeys = CategoryService.GetValidIconKeys();
+    }
+
+    /// <summary>
+    /// Verwerkt de <see cref="EditProductId"/> deep-link. Draait na het laden van de data
+    /// (eerste weergave) en opnieuw wanneer op dezelfde pagina naar een ander product-id
+    /// wordt genavigeerd. Een onbekend id laat de pagina bruikbaar en toont een melding.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        if (EditProductId == _handledEditProductId)
+        {
+            return;
+        }
+
+        _handledEditProductId = EditProductId;
+
+        if (!EditProductId.HasValue)
+        {
+            return;
+        }
+
+        var product = _products.FirstOrDefault(p => p.Id == EditProductId.Value);
+        if (product == null)
+        {
+            _errorMessage = "Product niet gevonden voor bewerken.";
+            _editMode = false;
+            return;
+        }
+
+        _errorMessage = null;
+        OpenEditForm(product);
     }
 
     private async Task LoadDataAsync()
@@ -1099,6 +1159,36 @@ else
 
         _showSearchFindingFlow = true;
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// Opent de compacte producteigenschappen-popup voor het gekozen zoekresultaat
+    /// zonder naar een locatiepagina te navigeren. Losstaand van het hoofdklikgedrag.
+    /// </summary>
+    private void ShowProductDetailsPopup(ProductDto product)
+    {
+        _detailsPopupProduct = product;
+        _showProductDetailsPopup = true;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Sluit de producteigenschappen-popup en laat het zoekresultaat ongewijzigd.
+    /// </summary>
+    private void CloseProductDetailsPopup()
+    {
+        _showProductDetailsPopup = false;
+        _detailsPopupProduct = null;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Navigeert naar de deep-link van dit product zodat de bestaande bewerkform met de
+    /// Gekoppelde code-sectie direct opent, zonder het hoofdklik- of detailgedrag te raken.
+    /// </summary>
+    private void NavigateToEditProduct(ProductDto product)
+    {
+        NavigationManager.NavigateTo($"/inventory/products?editProductId={product.Id}");
     }
 
     private async Task HandleSearchKeyDown(KeyboardEventArgs e)
