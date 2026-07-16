@@ -10,10 +10,11 @@ Updated: 2026-07-16.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-inv-08-product-details-tagbatchprint`.
-- `PILOT-INV-08` is technisch gecontroleerd en handmatig geaccepteerd op 2026-07-16.
-- Volgende gitstap na deze handoff: documentatie en code voor `PILOT-INV-08`
-  committen, pushen en via PR naar `master` brengen.
+- Actieve branch: `master`.
+- `PILOT-INV-08` is technisch gecontroleerd, handmatig geaccepteerd en via PR #106
+  gemerged naar `master`.
+- Volgende gitstap na deze handoff: bij hervatten vanaf een nieuwe werkbranch
+  `PILOT-INV-06` oppakken.
 
 ## Actieve release
 
