@@ -10,12 +10,11 @@ Updated: 2026-07-16.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-inv-07-csv-startimport`.
-- Op deze branch staat `PILOT-INV-07` technisch afgerond en handmatig geaccepteerd,
-  inclusief documentatie-, processtatus- en reviewadministratie.
-- Volgende gitstap na deze handoff: deze branch documentair afronden, committen,
-  pushen en als PR aanbieden; de eerstvolgende nieuwe werkbranch daarna is
-  `PILOT-INV-08`.
+- Actieve branch: `master`.
+- `PILOT-INV-07` is inmiddels gemerged naar `master`, inclusief documentatie-,
+  processtatus- en reviewadministratie.
+- Volgende gitstap na deze handoff: vanaf een nieuwe werkbranch `PILOT-INV-08`
+  oppakken.
 
 ## Actieve release
 
