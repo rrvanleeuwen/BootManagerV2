@@ -71,6 +71,18 @@ public interface ILogbookService
     Task<LogbookEntryDto> CreateDraftEntryAsync(int tripId, DateTime entryTimeUtc, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Legt handmatig een logboekmoment vast op het huidige tijdstip (UTC) voor een lopende reis.
+    /// De regel krijgt een momentopname van de laatst bekende boordwaarden (course, wind, GPS-status,
+    /// positie en gemiddelde SOG) via de suggestiemechaniek met <c>onlyPeriodData: false</c> en wordt
+    /// als <see cref="Core.Enums.LogbookEntryStatus.Draft"/> opgeslagen. Ontbrekende meetwaarden blijven null.
+    /// </summary>
+    /// <param name="tripId">ID van de lopende reis waarvoor het moment wordt vastgelegd.</param>
+    /// <param name="cancellationToken">Annuleringstoken.</param>
+    /// <returns>De aangemaakte Draft-logboekregel.</returns>
+    /// <exception cref="InvalidOperationException">Gegooid als de reis niet gevonden wordt of al is afgesloten.</exception>
+    Task<LogbookEntryDto> CreateManualDraftEntryAsync(int tripId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Berekent alle gemiste logmomenten voor een reis.
     /// Retourneert een overzicht met totaal aantal en geordende lijst van gemiste momenten (UTC).
     /// </summary>

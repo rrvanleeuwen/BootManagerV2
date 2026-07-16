@@ -272,6 +272,16 @@ else
                 <div class="d-flex gap-2">
                     @if (_selectedTrip.Status == LogbookTripStatus.Open)
                     {
+                        <button class="btn btn-sm btn-primary" @onclick="MomentVastleggen" disabled="@_capturingMoment" title="Leg direct een moment vast met de actuele beschikbare boordwaarden">
+                            @if (_capturingMoment)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span><span>Vastleggen…</span>
+                            }
+                            else
+                            {
+                                <span>📍 Moment vastleggen</span>
+                            }
+                        </button>
                         <button class="btn btn-sm btn-danger" @onclick="OpenCompleteModal" title="Reis afronden bij aankomst">
                             ⊗ Beëindig reis
                         </button>
@@ -890,6 +900,7 @@ else
     private MissedLogMomentsDto? _missedLogMoments;
     private bool _creatingDraftEntries;
     private bool _checkingMissedMoments;
+    private bool _capturingMoment;
 
     // Variabelen voor verwijderingsbevestiging
     private int? _entryIdToDelete;
@@ -1428,6 +1439,41 @@ else
             _dateFilterEnd = null;
         }
         ResetCardPaging();
+    }
+
+    /// <summary>
+    /// Legt handmatig een logboekmoment vast met de actuele beschikbare boordwaarden.
+    /// Maakt een nieuwe conceptregel (Draft) aan zonder de lopende reis te sluiten en
+    /// toont het concept direct in het overzicht.
+    /// </summary>
+    private async Task MomentVastleggen()
+    {
+        if (_selectedTrip == null) return;
+        try
+        {
+            _capturingMoment = true;
+            var entry = await LogbookService.CreateManualDraftEntryAsync(_selectedTrip.Id);
+
+            // Voeg het nieuwe concept toe aan het overzicht en houd de chronologische volgorde aan.
+            _entries.Add(entry);
+            _entries = _entries.OrderBy(e => e.EntryTimeUtc).ToList();
+
+            // Reset paging zodat het nieuwe concept in de card-view zichtbaar is.
+            ResetCardPaging();
+
+            // Herbereken gemiste logmomenten op basis van de nieuwe regel.
+            await BerekenVolgendeLogmoment();
+
+            _foutmelding = null;
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Moment vastleggen mislukt: {ex.Message}";
+        }
+        finally
+        {
+            _capturingMoment = false;
+        }
     }
 
     private async Task MaakMultipleDraftRegels()
