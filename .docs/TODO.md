@@ -11,6 +11,7 @@
   - Follow-up 2026-06-25: regressiefix voor locatie-QR-scan in `ScanProductAddStock` na nieuw product vanuit onbekende code is handmatig gevalideerd op Raspberry Pi/mobiel.
 - [x] `PILOT-INV-08` product-zoekdetails en tagbatchprint
 - [ ] `PILOT-LOG-01` handmatig logboekmoment met actuele NMEA-snapshot
+- [ ] `PILOT-LOG-02` gebeurteniskeuze, weericonen en notitie
 
 ### ✅ Completed Vertical Slices
 
@@ -171,17 +172,26 @@
   - **Buiten scope:** brede redesign van het productoverzicht, nieuwe voorraadlogica en nieuwe exporttypes buiten de bestaande A4-tagroute.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
+- [ ] **Holiday Pilot 2026 — PILOT-LOG-01 handmatig logboekmoment met actuele NMEA-snapshot**
+  - **Status 2026-07-16:** expliciet gekozen als eerstvolgende story na afronding van `PILOT-INV-08`.
+  - **Doel:** binnen een actieve reis snel een handmatig logboekmoment vastleggen met de actuele beschikbare NMEA-waarden als snapshot.
+  - **Kern:** duidelijke actie `Moment vastleggen`, concept-logregel met actuele meetwaarden en taakgerichte vervolgstap binnen de actieve reisflow.
+  - **Buiten scope:** uitgebreide gebeurtenis- en weerkeuze uit `PILOT-LOG-02`.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-LOG-02 gebeurteniskeuze, weericonen en notitie**
+  - **Doel:** het handmatige logboekmoment praktisch afronden met gebeurtenis, weerconditie en korte notitie.
+  - **Kern:** keuze uit pilotgebeurtenissen, grote weericonen en vrije korte notitie op de concept-logregel.
+  - **Belangrijk:** bouwt voort op `PILOT-LOG-01`; weerconditie wordt als stabiele domeinwaarde opgeslagen.
+  - **Buiten scope:** automatische routekaart, passageplanning en uitgebreide logboekrapportage.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
 - [ ] **Holiday Pilot 2026 — PILOT-INV-06 productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl**
+  - **Status 2026-07-16:** blijft gepland, maar schuift achter `PILOT-LOG-01` en `PILOT-LOG-02`.
   - **Doel:** `Voorraadbeheer > Producten` moet dezelfde heldere zoekervaring geven als de home-widget.
   - **Kern:** zelfde resultaatinhoud als home; desktop als lijst, mobiel als cards; paginering per 10; locaties zichtbaar per product.
   - **Belangrijk:** design in `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/` is leidend; `Gearchiveerd weergeven` en `Voorraadbijzonderheid` vervallen op mobiel.
   - **Buiten scope:** voorraadlogica, scanroutes en brede herbouw van andere voorraadpagina's.
-  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
-
-- [ ] **Holiday Pilot 2026 — PILOT-LOG-01 handmatig logboekmoment met actuele NMEA-snapshot**
-  - **Doel:** binnen een actieve reis snel een handmatig logboekmoment vastleggen met de actuele beschikbare NMEA-waarden als snapshot.
-  - **Kern:** duidelijke actie `Moment vastleggen`, concept-logregel met actuele meetwaarden en taakgerichte vervolgstap binnen de actieve reisflow.
-  - **Buiten scope:** uitgebreide gebeurtenis- en weerkeuze uit `PILOT-LOG-02`.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**

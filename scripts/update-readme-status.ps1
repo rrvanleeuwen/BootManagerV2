@@ -208,7 +208,7 @@ function Get-HolidayPilotStatus {
         Parked = $parked
         Active = $done + $partial + $open
         Progress = $progress
-        Next = "PILOT-INV-06 - Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl"
+        Next = "PILOT-LOG-01 - Handmatig logboekmoment met actuele NMEA-snapshot"
     }
 }
 

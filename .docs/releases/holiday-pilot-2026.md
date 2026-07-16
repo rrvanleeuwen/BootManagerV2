@@ -152,9 +152,9 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 16. **PILOT-UX-01** — **Done** — Home is nu de standaard pilotstart met snelle tegels, productzoekwidget en productgerichte doorklik vanuit home.
 17. **PILOT-INV-07** — **Done** — Owner-only CSV-startimport voor echte vakantievoorraad, locatie-mapping en QR-tags.
 18. **PILOT-INV-08** — **Done** — Product-zoekdetails, directe productbewerking en A4-tagbatchprint vanuit bestaande beheerflows.
-19. **PILOT-INV-06** — **Gepland** — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl.
-20. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
-21. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
+19. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
+20. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
+21. **PILOT-INV-06** — **Gepland** — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl.
 22. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
 23. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
 24. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
@@ -165,7 +165,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-INV-06` — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl.
+**Eerstvolgende story:** `PILOT-LOG-01` — Handmatig logboekmoment met actuele NMEA-snapshot.
 
 ## Expliciete herprioritering
 
@@ -197,6 +197,12 @@ daarna pas de bredere layoutstory `PILOT-INV-06`. Deze afwijking is toegestaan o
 de gebruiker deze twee resterende praktische bevindingen nog vóór vertrek opgelost wil
 hebben.
 
+Op 2026-07-16 is na afronding en merge van `PILOT-INV-08` opnieuw expliciet gekozen om
+eerst terug te keren naar de logboekpilot: `PILOT-LOG-01` en daarna `PILOT-LOG-02`.
+`PILOT-INV-06` blijft gepland, maar schuift achter deze twee logboekstories. Deze
+afwijking is toegestaan omdat de gebruiker de logboekbasis nu als eerstvolgende
+pilotfocus heeft vastgesteld.
+
 ## Story-uitwerking en archief
 
 Dit release-document blijft compact voor actuele pilotsturing. Volledig uitgewerkte
@@ -204,7 +210,7 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve uitwerking nu eerst `PILOT-INV-06` aan; voeg daarbinnen alleen de
+- Houd als actieve uitwerking nu eerst `PILOT-LOG-01` aan; voeg daarbinnen alleen de
   eerstvolgende kleine implementatiestap toe wanneer die werkelijk aan de beurt is.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
@@ -212,6 +218,116 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
   zodat de dagelijkse context klein blijft maar de historie beschikbaar blijft.
 - Raadpleeg het archief alleen wanneer historische scope, acceptatie,
   implementatiestatus of legacy-impact opnieuw relevant is.
+
+### PILOT-LOG-01 — Handmatig logboekmoment met actuele NMEA-snapshot
+
+**Storyzin**
+Als Owner of Crew wil ik tijdens een actieve reis direct een handmatig logboekmoment
+kunnen vastleggen met de actuele beschikbare boordwaarden, zodat belangrijke momenten
+niet verloren gaan wanneer ze niet automatisch worden herkend.
+
+**Waarom deze slice nu**
+De voorraad- en scanflows zijn voldoende bruikbaar voor de vakantiepilot. De volgende
+pilotpropositie is het digitale logboek: Roelof en Carla moeten onderweg snel een
+moment kunnen vastleggen zonder achteraf alle gegevens handmatig te reconstrueren.
+
+**Scope**
+
+- Binnen de actieve-reisflow komt een duidelijke actie `Moment vastleggen`.
+- Bij indrukken maakt BootManager een nieuwe concept-logregel.
+- De conceptregel krijgt een snapshot van de actuele beschikbare NMEA-/boordwaarden die
+  al in BootManager beschikbaar zijn.
+- De regel wordt als Draft opgeslagen en kan later worden bekeken of verder aangevuld.
+- De uitvoerende lokale gebruiker wordt vastgelegd waar dat in de bestaande
+  logboekmutaties past.
+
+**Buiten scope**
+
+- Gebeurteniskeuze, weericonen en notitie; die volgen in `PILOT-LOG-02`.
+- Nieuwe NMEA-sentence-types of sensoruitbreidingen.
+- Routekaart, passageplanning of uitgebreide logboekrapportage.
+- Automatische herkenning van gebeurtenissen.
+
+**Acceptatiecriteria**
+
+1. Owner en Crew zien tijdens een actieve reis een duidelijke actie
+   `Moment vastleggen`.
+2. De actie maakt een nieuwe concept-logregel zonder de actieve reis te sluiten.
+3. De concept-logregel bevat een snapshot van de actuele beschikbare boordwaarden.
+4. De concept-logregel wordt als Draft opgeslagen.
+5. De uitvoerende lokale gebruiker wordt vastgelegd wanneer de bestaande
+   logboekregistratie dat ondersteunt.
+6. De flow blijft bruikbaar zonder nieuwe NMEA-uitbreidingen.
+
+**Handmatige acceptatietest**
+
+1. Start of open een actieve reis.
+2. Klik `Moment vastleggen`.
+3. Controleer dat een nieuwe concept-logregel ontstaat.
+4. Controleer dat de beschikbare actuele boordwaarden als snapshot zijn overgenomen.
+5. Controleer dat de reis actief blijft en de conceptregel later terug te vinden is.
+
+### PILOT-LOG-02 — Gebeurteniskeuze, weericonen en notitie
+
+**Storyzin**
+Als Owner of Crew wil ik bij een handmatig logboekmoment snel een gebeurtenis, weerbeeld
+en korte notitie kunnen vastleggen, zodat het moment later begrijpelijk is zonder veel
+typewerk aan boord.
+
+**Waarom deze slice nu**
+`PILOT-LOG-01` legt het technische en taakgerichte moment vast. Deze vervolgslice maakt
+dat moment bruikbaar in de praktijk door de belangrijkste context toe te voegen die
+Roelof en Carla tijdens de vakantie willen herkennen.
+
+**Scope**
+
+- Gebruiker kan bij een handmatig moment een gebeurtenis kiezen, minimaal:
+  - overstag;
+  - gijp;
+  - zeil gewijzigd;
+  - motor gestart;
+  - motor gestopt;
+  - vertrek;
+  - aankomst;
+  - voor anker;
+  - bijzonder moment;
+  - alleen momentopname.
+- Gebruiker kan een weerconditie kiezen via grote pictogrammen, minimaal:
+  - zonnig;
+  - licht bewolkt;
+  - half bewolkt;
+  - bewolkt;
+  - buien;
+  - regen;
+  - onweer;
+  - mist;
+  - veel wind.
+- Gebruiker kan een korte vrije notitie toevoegen.
+- Weerconditie wordt als stabiele domeinwaarde opgeslagen; icoon en label zijn
+  presentatie.
+
+**Buiten scope**
+
+- Nieuwe automatische gebeurtenisdetectie.
+- Uitgebreide teksteditor, bijlagen of rapportage.
+- Routekaart of passageplanning.
+
+**Acceptatiecriteria**
+
+1. Een handmatig logboekmoment kan een gebeurtenis uit de pilotlijst opslaan.
+2. Een handmatig logboekmoment kan een weerconditie uit de pilotlijst opslaan.
+3. Weerkeuze gebruikt grote, begrijpelijke pictogrammen.
+4. Een korte vrije notitie kan worden opgeslagen.
+5. Weerconditie wordt als stabiele domeinwaarde opgeslagen.
+6. Bestaande concept-/Draft-opslag uit `PILOT-LOG-01` blijft intact.
+
+**Handmatige acceptatietest**
+
+1. Maak een handmatig moment vanuit een actieve reis.
+2. Kies een gebeurtenis, weerconditie en korte notitie.
+3. Sla het moment op.
+4. Controleer dat gebeurtenis, weerconditie en notitie later zichtbaar blijven.
+5. Controleer dat de opgeslagen weerwaarde niet alleen afhankelijk is van het icoonlabel.
 
 ### PILOT-INV-06 — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl
 

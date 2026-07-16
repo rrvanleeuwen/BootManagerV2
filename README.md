@@ -23,7 +23,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[################----]` 79.2% | 19 | 0 | 5 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-INV-06 - Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl |
+| `[################----]` 79.2% | 19 | 0 | 5 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-LOG-01 - Handmatig logboekmoment met actuele NMEA-snapshot |
 
 ### BootManagerV2 Epics
 
