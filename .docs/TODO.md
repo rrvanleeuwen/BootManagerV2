@@ -196,6 +196,32 @@
   - **Verificatie:** 20 `ProductsComponentTests`, solution-build en diffcheck groen; desktop- en mobiele handmatige acceptatie akkoord.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
+- [ ] **Holiday Pilot 2026 — PILOT-PERF-01 productoverzicht met vast querybudget**
+  - **Doel:** productoverzicht, zoeken en paginering databasegestuurd uitvoeren zonder losse code-, categorie- en voorraadquery per product.
+  - **Kern:** gespecialiseerde EF Core-readquery, DTO-projectie, stabiele server-side paginering per tien, gebatchte voorraadlocaties en SQLite-querybudgettest.
+  - **Belangrijk:** bestaand productgedrag en UI blijven gelijk; de eerste pagina gebruikt maximaal vijf databasecommando's en groeit niet mee met het totale productaantal.
+  - **Buiten scope:** homezoeking, UI-redesign, scanroutes en DbContext-/write-hardening.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-PERF-02 home- en gedeelde productzoeking batchen**
+  - **Doel:** home en gedeelde productzoekflows laten schalen zonder per zoekresultaat afzonderlijke voorraadqueries.
+  - **Kern:** readquery uit `PILOT-PERF-01` hergebruiken, alleen zichtbare resultaten verrijken en naam-/omschrijvingzoeking in de database uitvoeren.
+  - **Belangrijk:** resultaten, totalen, locaties, paginering en vervolgacties blijven functioneel gelijk; queryaantal blijft begrensd bij meer matches.
+  - **Buiten scope:** nieuwe zoekvelden, fuzzy search, UI-redesign en overige voorraad-readpaden.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-PERF-03 overige voorraad-readpaden set-based maken**
+  - **Doel:** resterende door de pilot gebruikte `StockService`-lijsten zonder N+1-querypatronen uitvoeren.
+  - **Kern:** gerichte projecties of batchqueries, begrensde resultsets en querybudget-/resultaatregressietests per geraakte flow.
+  - **Buiten scope:** functionele voorraadwijzigingen, UI-redesign en context-/write-lifetimewijzigingen.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
+- [ ] **Holiday Pilot 2026 — PILOT-PERF-04 inventory-DbContext- en write-flowhardening**
+  - **Doel:** trackingconflicten, langlevende circuitcontext en gedeeltelijk opgeslagen meerstapsbewerkingen voorkomen.
+  - **Kern:** context-per-operatie via de bestaande factory, expliciete transactieboundaries en één logische save per bedrijfsbewerking waar passend.
+  - **Buiten scope:** brede applicatiebrede repositoryvervanging, onnodige migraties en nieuwe inventoryfunctionaliteit.
+  - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
+
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**
   - **Aanleiding 2026-05-26:** Tijdens Raspberry Pi test vóór login/onboarding stond in het menu nog **Register Owner**. Klikken navigeert naar `/register-owner`. Dit is oude vrije registratie en hoort niet meer bij de huidige bootstrap owner + verplichte onboarding flow.
   - **Status:** afgerond via PR #64, merge commit `a441ca8`. User story `US7: Legacy Register Owner Route En Menu Verwijderen` staat als gereed in `.docs/epics/first-run-onboarding.md`.

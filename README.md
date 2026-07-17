@@ -15,7 +15,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Scope | Voortgang | Actieve items |
 |---|---:|---:|
-| Vakantiepilot 2026 | `[##################--]` 91.7% | 24 |
+| Vakantiepilot 2026 | `[###############-----]` 75.9% | 29 |
 | BootManagerV2 huidige epics | `[##############------]` 72% | 66 |
 | Legacy scope | `[#######-------------]` 33.7% | 129 |
 
@@ -23,7 +23,7 @@ Legacy-percentages worden automatisch berekend uit `.docs/legacy-analysis/legacy
 
 | Voortgang | Done | Partial | Open | Parked | Bron | Eerstvolgende story |
 |---:|---:|---:|---:|---:|---|---|
-| `[##################--]` 91.7% | 22 | 0 | 2 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-E2E-01 - End-to-end gebruikstest |
+| `[###############-----]` 75.9% | 22 | 0 | 7 | 0 | [.docs/releases/holiday-pilot-2026.md](.docs/releases/holiday-pilot-2026.md) | PILOT-PERF-01 - Productoverzicht met vast querybudget |
 
 ### BootManagerV2 Epics
 

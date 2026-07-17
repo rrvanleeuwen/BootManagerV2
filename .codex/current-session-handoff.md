@@ -25,18 +25,25 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
   `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`, `PILOT-UX-01`,
   `PILOT-INV-07`, `PILOT-INV-08`, `PILOT-LOG-01`, `PILOT-LOG-02`, `PILOT-INV-06`;
-- eerstvolgende stap: `PILOT-E2E-01` voor de end-to-end gebruikstest.
+- eerstvolgende stap: `PILOT-PERF-01` voor een databasegestuurd productoverzicht met
+  vast querybudget;
+- daarna: `PILOT-PERF-02` voor gebatchte home- en gedeelde productzoeking en vervolgens
+  `PILOT-E2E-01` voor de end-to-end gebruikstest.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-De eerstvolgende sessie blijft gericht op de integrale praktijktest en snelle
-vakantie-ingebruikname:
+De eerstvolgende sessie blijft gericht op snelle vakantie-ingebruikname en lost eerst
+de aangetoonde inventoryperformanceproblemen op:
 
-- `PILOT-E2E-01` voor de end-to-end gebruikstest;
-- daarna `PILOT-OPS-01` voor duur-, herstart-, opslag- en back-uptest.
+- `PILOT-PERF-01` voor productoverzicht, databasefiltering, server-side paginering en
+  een vast querybudget;
+- `PILOT-PERF-02` voor home- en gedeelde productzoeking zonder per-product
+  voorraadqueries;
+- daarna `PILOT-E2E-01`, gevolgd door de bredere performancevervolgstories en
+  `PILOT-OPS-01`.
 
 Historische scanrework-details, acceptatie-uitkomsten en de expliciete
 herprioriteringen rond scan/home/productoverzicht staan in

@@ -147,17 +147,22 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 11. **PILOT-INV-05** — **Done** — Verbruik, correcties en eenvoudige historie.
 12. **PILOT-SCAN-02** — **Done** — Parallelle scan-reworkbasis met `old`-isolatie van de huidige flow.
 13. **PILOT-SCAN-03** — **Done** — Nieuw scanstartscherm met code-routering, handmatige fallback en recente scans.
-14. **PILOT-SCAN-04** — **Done** — Locatiegerichte scanmodus met directe mutatie- en toevoegacties.
-15. **PILOT-SCAN-05** — **Done** — Onbekende-code-flow volledig binnen nieuwe scanervaring afronden; regressiefix voor locatie-QR-scan na nieuw product is op 2026-06-25 ook handmatig gevalideerd op Raspberry Pi/mobiel.
-16. **PILOT-UX-01** — **Done** — Home is nu de standaard pilotstart met snelle tegels, productzoekwidget en productgerichte doorklik vanuit home.
-17. **PILOT-INV-07** — **Done** — Owner-only CSV-startimport voor echte vakantievoorraad, locatie-mapping en QR-tags.
-18. **PILOT-INV-08** — **Done** — Product-zoekdetails, directe productbewerking en A4-tagbatchprint vanuit bestaande beheerflows.
-19. **PILOT-LOG-01** — **Done** — Handmatig logboekmoment met actuele NMEA-snapshot is op 2026-07-17 geaccepteerd; verdere praktijktest van de logboekflow volgt tijdens de vakantie.
-20. **PILOT-LOG-02** — **Done** — Gebeurteniskeuze, weericonen en notitie is op 2026-07-17 geaccepteerd; verdere praktijktest van de logboekflow volgt tijdens de vakantie.
-21. **PILOT-INV-06** — **Done** — Productoverzicht gebruikt nu een responsieve, mockup-geleide zoek- en resultaatpresentatie; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-17.
-22. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
-23. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
-24. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
+14. **PILOT-SCAN-03A** — **Done** — Product-scanwerkcontext zonder legacy-terugval.
+15. **PILOT-SCAN-04** — **Done** — Locatiegerichte scanmodus met directe mutatie- en toevoegacties.
+16. **PILOT-SCAN-05** — **Done** — Onbekende-code-flow volledig binnen nieuwe scanervaring afronden; regressiefix voor locatie-QR-scan na nieuw product is op 2026-06-25 ook handmatig gevalideerd op Raspberry Pi/mobiel.
+17. **PILOT-UX-01** — **Done** — Home is nu de standaard pilotstart met snelle tegels, productzoekwidget en productgerichte doorklik vanuit home.
+18. **PILOT-INV-07** — **Done** — Owner-only CSV-startimport voor echte vakantievoorraad, locatie-mapping en QR-tags.
+19. **PILOT-INV-08** — **Done** — Product-zoekdetails, directe productbewerking en A4-tagbatchprint vanuit bestaande beheerflows.
+20. **PILOT-LOG-01** — **Done** — Handmatig logboekmoment met actuele NMEA-snapshot is op 2026-07-17 geaccepteerd; verdere praktijktest van de logboekflow volgt tijdens de vakantie.
+21. **PILOT-LOG-02** — **Done** — Gebeurteniskeuze, weericonen en notitie is op 2026-07-17 geaccepteerd; verdere praktijktest van de logboekflow volgt tijdens de vakantie.
+22. **PILOT-INV-06** — **Done** — Productoverzicht gebruikt nu een responsieve, mockup-geleide zoek- en resultaatpresentatie; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-17.
+23. **PILOT-PERF-01** — **Gepland** — Productoverzicht met databasegestuurde filtering, paginering en een vast querybudget.
+24. **PILOT-PERF-02** — **Gepland** — Home- en gedeelde productzoekflows zonder per-product voorraadqueries.
+25. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
+26. **PILOT-PERF-03** — **Gepland** — Overige voorraad-readpaden set-based en zonder N+1-querypatronen maken.
+27. **PILOT-PERF-04** — **Gepland** — Inventory-DbContext-lifetime en transactionele write-flow verharden.
+28. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
+29. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
 
 Codex kiest geen story buiten deze volgorde, tenzij:
 
@@ -165,7 +170,8 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende stap:** `PILOT-E2E-01`; daarna volgt `PILOT-OPS-01`.
+**Eerstvolgende stap:** `PILOT-PERF-01`; daarna volgen `PILOT-PERF-02` en
+`PILOT-E2E-01`.
 
 ## Expliciete herprioritering
 
@@ -203,6 +209,13 @@ eerst terug te keren naar de logboekpilot: `PILOT-LOG-01` en daarna `PILOT-LOG-0
 afwijking is toegestaan omdat de gebruiker de logboekbasis nu als eerstvolgende
 pilotfocus heeft vastgesteld.
 
+Op 2026-07-17 is na performanceanalyse van het productoverzicht expliciet gekozen om
+de direct zichtbare N+1-querypatronen vóór de end-to-endtest op te lossen. Daarom
+schuiven `PILOT-PERF-01` en `PILOT-PERF-02` vóór `PILOT-E2E-01`. De bredere
+voorraad-readpaden en DbContext-/write-hardening blijven afzonderlijke kleine stories
+na de E2E-test, zodat de directe pilotverbetering niet uitgroeit tot één risicovolle
+architectuurrefactor.
+
 ## Story-uitwerking en archief
 
 Dit release-document blijft compact voor actuele pilotsturing. Volledig uitgewerkte
@@ -210,13 +223,141 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- `PILOT-E2E-01` is nu de eerstvolgende implementatiestory.
+- `PILOT-PERF-01` is nu de eerstvolgende implementatiestory.
+- `PILOT-PERF-02` volgt direct daarna; vervolgens hervat `PILOT-E2E-01` de integrale
+  praktijktest.
+- `PILOT-PERF-03` en `PILOT-PERF-04` blijven afzonderlijke vervolgstories na de
+  E2E-test en vóór de duur-/operationele test.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
 - Verplaats een story na afronding en administratieve controle naar het archief,
   zodat de dagelijkse context klein blijft maar de historie beschikbaar blijft.
 - Raadpleeg het archief alleen wanneer historische scope, acceptatie,
   implementatiestatus of legacy-impact opnieuw relevant is.
+
+### PILOT-PERF-01 — Productoverzicht met vast querybudget
+
+**Story:** Als gebruiker wil ik het productoverzicht en de productzoeking snel kunnen
+openen en doorbladeren, zodat de responstijd niet lineair verslechtert door losse
+databasequeries per product.
+
+**Scope:**
+
+- een gespecialiseerde EF Core-readquery voor het productoverzicht;
+- databasegestuurde actieve/gearchiveerde filtering, zoeken, stabiele sortering en
+  paginering per tien resultaten;
+- directe DTO-projectie van product, eenheid, code en actieve categorie;
+- voorraadtotalen en locaties in een gebatchte query voor alleen de huidige pagina;
+- categorie- en eenheidlookups pas laden wanneer aanmaken of bewerken ze nodig heeft;
+- SQLite-integratietest met een vast querybudget dat niet groeit met het totale aantal
+  producten.
+
+**Buiten scope:** UI-herontwerp, nieuwe voorraadregels, scanroutes, homezoeking en de
+bredere DbContext-/write-refactor.
+
+**Acceptatiecriteria:**
+
+- bestaand productoverzicht, zoeken, archieftoggle, paginering, detail- en bewerkactie
+  blijven functioneel gelijk;
+- de eerste overzichtspagina wordt met maximaal vijf databasecommando's opgebouwd;
+- meer opgeslagen producten verhogen het aantal databasecommando's voor dezelfde
+  pagina niet;
+- alleen de tien zichtbare producten en hun benodigde overzichtsdata worden geladen;
+- lege voorraad blijft als `0` met de bestaande no-stockpresentatie zichtbaar.
+
+**Handmatige acceptatietest:** Open `Voorraadbeheer > Producten` op desktop en mobiel,
+zoek op een deel van naam en omschrijving, blader vooruit en terug, wissel naar
+gearchiveerd en open detail en bewerken. Controleer tegelijk in de EF-log dat het
+queryaantal per pagina begrensd blijft en dat aantallen, eenheden en locaties gelijk
+zijn aan de bestaande gegevens.
+
+**Legacy-impact:** Verbetert de bestaande dekking van `US2.12 Zoeken en filteren`
+zonder nieuwe functionele filters toe te voegen.
+
+### PILOT-PERF-02 — Home- en gedeelde productzoeking batchen
+
+**Story:** Als gebruiker wil ik vanuit home en scan-/voorraadzoekflows snel producten
+kunnen vinden, zodat een zoekopdracht niet voor ieder resultaat afzonderlijk product-
+en voorraadgegevens hoeft op te halen.
+
+**Scope:**
+
+- de readquery uit `PILOT-PERF-01` hergebruiken voor de home-productzoekwidget;
+- voorraad alleen voor de zichtbare zoekresultaatpagina batchgewijs ophalen;
+- gedeelde naam-/omschrijvingzoeking databasegestuurd uitvoeren;
+- gerichte regressietests voor homepaginering, totalen, locaties en vervolgacties;
+- querybudget en responstijd met representatieve pilotdata vastleggen.
+
+**Buiten scope:** nieuwe zoekvelden, fuzzy search, UI-redesign, scanroutering en nog
+niet door deze flows gebruikte `StockService`-methoden.
+
+**Acceptatiecriteria:**
+
+- home toont dezelfde zoekresultaten, aantallen, eenheden, locaties en vervolgacties;
+- alleen de zichtbare resultaatpagina krijgt voorraadgegevens;
+- het databasecommandoaantal blijft begrensd wanneer het aantal zoekmatches groeit;
+- productzoeken op naam en omschrijving blijft hoofdletterongevoelig en ondersteunt
+  deelmatches.
+
+**Handmatige acceptatietest:** Zoek vanaf home naar een term met meer dan tien matches,
+blader door beide resultaatpagina's en open producten met nul, één en meerdere actieve
+locaties. Vergelijk de gegevens met het productoverzicht en controleer het begrensde
+queryaantal in de EF-log.
+
+**Legacy-impact:** Verbetert de bestaande dekking van `US2.12 Zoeken en filteren`
+zonder de functionele zoekscope uit te breiden.
+
+### PILOT-PERF-03 — Overige voorraad-readpaden set-based maken
+
+**Story:** Als gebruiker wil ik voorraad per product en locatie zonder oplopende
+vertraging kunnen bekijken, zodat ook de overige inventoryflows bruikbaar blijven bij
+groeiende pilotdata.
+
+**Scope:** inventariseer de resterende readmethoden in `StockService`, vervang bewezen
+N+1-lussen door gerichte projecties of gebatchte queries en borg per geraakte flow een
+querybudget en resultaatregressietest.
+
+**Buiten scope:** functionele voorraadwijzigingen, UI-redesign en DbContext-/write-
+lifetimewijzigingen uit `PILOT-PERF-04`.
+
+**Acceptatiecriteria:** alle door de pilot-UI gebruikte voorraadlijsten hebben een
+begrensd queryaantal; product-, locatie-, gebieds- en eenheidsgegevens blijven correct;
+geen readpad laadt onbegrensd alle inventorydata wanneer slechts één pagina of locatie
+nodig is.
+
+**Handmatige acceptatietest:** Doorloop product terugvinden, locatie-inhoud,
+voorraadbijzonderheid en scan-gestuurde voorraadweergave met nul, één en meerdere
+locaties en controleer gegevens en EF-log.
+
+**Legacy-impact:** Technische verbetering van bestaande inventorydekking; geen nieuwe
+legacy-functionaliteit.
+
+### PILOT-PERF-04 — DbContext- en write-flowhardening
+
+**Story:** Als gebruiker wil ik dat inventorybewerkingen betrouwbaar en atomair worden
+opgeslagen, zodat een langlevende Blazor-sessie of een fout halverwege geen tracking-
+conflict of gedeeltelijk opgeslagen bedrijfsbewerking veroorzaakt.
+
+**Scope:** context-per-operatie voor inventory via de bestaande DbContext-factory,
+expliciete transactieboundaries voor meerstaps writes, één `SaveChanges` per
+bedrijfsbewerking waar passend en regressietests voor tracking, rollback en
+gelijktijdige UI-acties.
+
+**Buiten scope:** brede applicatiebrede repositoryvervanging, migraties zonder
+aangetoonde noodzaak en functionele inventorywijzigingen.
+
+**Acceptatiecriteria:** inventory-read- en write-operaties delen geen onbedoeld
+langlevende circuitcontext; een mislukte meerstapsbewerking laat geen gedeeltelijke
+product-/mapping-/code-/voorraadstatus achter; bestaande create-, edit-, scan- en
+mutatieflows blijven werken.
+
+**Handmatige acceptatietest:** Maak, wijzig en archiveer producten, voeg en vervang een
+code, voeg voorraad toe en forceer de beschikbare validatiefoutpaden binnen één lange
+ingelogde sessie. Controleer dat geen tracking-/concurrencyfouten ontstaan en dat
+mislukte acties geen gedeeltelijke data opslaan.
+
+**Legacy-impact:** Geen nieuwe legacy-functionaliteit; betrouwbaarheidshardening van
+bestaande product- en voorraadflows.
 
 ## Niet-doelen voor deze pilot
 

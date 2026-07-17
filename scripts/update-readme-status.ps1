@@ -195,7 +195,7 @@ function Get-HolidayPilotStatus {
     # Houd deze tellers bij wanneer een pilotstory administratief van status wijzigt.
     $done = 22
     $partial = 0
-    $open = 2
+    $open = 7
     $parked = 0
     $progress = Get-Progress -Done $done -Replaced 0 -Partial $partial -Open $open -Parked $parked -Obsolete 0
 
@@ -208,7 +208,7 @@ function Get-HolidayPilotStatus {
         Parked = $parked
         Active = $done + $partial + $open
         Progress = $progress
-        Next = "PILOT-E2E-01 - End-to-end gebruikstest"
+        Next = "PILOT-PERF-01 - Productoverzicht met vast querybudget"
     }
 }
 
