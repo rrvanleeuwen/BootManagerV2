@@ -11,7 +11,7 @@
   - Follow-up 2026-06-25: regressiefix voor locatie-QR-scan in `ScanProductAddStock` na nieuw product vanuit onbekende code is handmatig gevalideerd op Raspberry Pi/mobiel.
 - [x] `PILOT-INV-08` product-zoekdetails en tagbatchprint
 - [x] `PILOT-LOG-01` handmatig logboekmoment met actuele NMEA-snapshot (2026-07-17 administratief geaccepteerd; actieve-reis praktijktest niet uitvoerbaar in huidige database)
-- [ ] `PILOT-LOG-02` gebeurteniskeuze, weericonen en notitie
+- [x] `PILOT-LOG-02` gebeurteniskeuze, weericonen en notitie (2026-07-17 geaccepteerd; verdere praktijktest volgt tijdens de vakantie)
 
 ### ✅ Completed Vertical Slices
 
@@ -179,7 +179,8 @@
   - **Buiten scope:** uitgebreide gebeurtenis- en weerkeuze uit `PILOT-LOG-02`.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-LOG-02 gebeurteniskeuze, weericonen en notitie**
+- [x] **Holiday Pilot 2026 — PILOT-LOG-02 gebeurteniskeuze, weericonen en notitie**
+  - **Status 2026-07-17:** technisch gecontroleerd, gemerged en daarna door de gebruiker geaccepteerd; verdere praktijktest volgt tijdens de vakantie.
   - **Doel:** het handmatige logboekmoment praktisch afronden met gebeurtenis, weerconditie en korte notitie.
   - **Kern:** keuze uit pilotgebeurtenissen, grote weericonen en vrije korte notitie op de concept-logregel.
   - **Belangrijk:** bouwt voort op `PILOT-LOG-01`; weerconditie wordt als stabiele domeinwaarde opgeslagen.
@@ -187,7 +188,7 @@
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-INV-06 productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl**
-  - **Status 2026-07-16:** blijft gepland, maar schuift achter `PILOT-LOG-01` en `PILOT-LOG-02`.
+  - **Status 2026-07-17:** is nu de eerstvolgende open implementatiestory na acceptatie van `PILOT-LOG-01` en `PILOT-LOG-02`.
   - **Doel:** `Voorraadbeheer > Producten` moet dezelfde heldere zoekervaring geven als de home-widget.
   - **Kern:** zelfde resultaatinhoud als home; desktop als lijst, mobiel als cards; paginering per 10; locaties zichtbaar per product.
   - **Belangrijk:** design in `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/` is leidend; `Gearchiveerd weergeven` en `Voorraadbijzonderheid` vervallen op mobiel.

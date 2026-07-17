@@ -11,8 +11,8 @@ Updated: 2026-07-17.
 
 - Basisbranch: `master`.
 - Actieve branch: `master`.
-- `PILOT-LOG-01` is op 2026-07-17 administratief geaccepteerd na merge van PR #107.
-  De actieve-reis praktijktest kon in de huidige database niet worden uitgevoerd.
+- `PILOT-LOG-01` en `PILOT-LOG-02` zijn op 2026-07-17 door de gebruiker geaccepteerd.
+  Verdere praktijktest van de logboekflow volgt tijdens de vakantie.
 
 ## Actieve release
 
@@ -24,9 +24,8 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
   `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`, `PILOT-UX-01`,
-  `PILOT-INV-07`, `PILOT-INV-08`, `PILOT-LOG-01`;
-- eerstvolgende stap: `PILOT-LOG-02` voor de logboekpilot. `PILOT-INV-06` blijft gepland maar
-  schuift daarachter.
+  `PILOT-INV-07`, `PILOT-INV-08`, `PILOT-LOG-01`, `PILOT-LOG-02`;
+- eerstvolgende stap: `PILOT-INV-06` voor het productoverzicht-redesign.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
@@ -36,8 +35,8 @@ of expliciete andere prioriteit van de gebruiker.
 De eerstvolgende sessie blijft gericht op het resterende pilotgebruiksgemak en snelle
 vakantie-ingebruikname:
 
-- `PILOT-LOG-02` voor gebeurteniskeuze, weericonen en notitie;
-- daarna `PILOT-INV-06` voor het bredere productoverzicht-redesign.
+- `PILOT-INV-06` voor het bredere productoverzicht-redesign;
+- daarna `PILOT-E2E-01` voor de end-to-end gebruikstest.
 
 Historische scanrework-details, acceptatie-uitkomsten en de expliciete
 herprioriteringen rond scan/home/productoverzicht staan in
