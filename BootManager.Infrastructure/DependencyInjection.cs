@@ -1,8 +1,10 @@
 using BootManager.Core.Interfaces;
 using BootManager.Application.Dashboard.Services;
+using BootManager.Application.Inventory.Contracts;
 using BootManager.Application.Logbook.Services;
 using BootManager.Application.Storage.Contracts;
 using BootManager.Infrastructure.Dashboard;
+using BootManager.Infrastructure.Inventory;
 using BootManager.Infrastructure.Logbook;
 using BootManager.Infrastructure.Persistence;
 using BootManager.Infrastructure.Repositories;
@@ -28,6 +30,9 @@ public static class DependencyInjection
 
         // QR rendering voor opslaglocatietags
         services.AddScoped<IStorageLocationQrTagRenderer, QrCoderStorageLocationQrTagRenderer>();
+
+        // Gerichte EF Core-readmodel voor het productoverzicht (databasegestuurde paginering)
+        services.AddScoped<IProductOverviewReadQuery, ProductOverviewReadQuery>();
 
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IEncryptionService>(_ =>

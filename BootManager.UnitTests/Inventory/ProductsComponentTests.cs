@@ -16,15 +16,18 @@ using System.Reflection;
 namespace BootManager.UnitTests.Inventory;
 
 /// <summary>
-/// Real bUnit tests for the redesigned Products.razor overview (PILOT-INV-06).
-/// Covers the mockup-driven result presentation (name/total/unit/locations + no-stock
-/// state), 10-item pagination on the initial catalogue and on search results, and the
-/// preserved primary-click finding flow, detail popup, edit navigation and product
-/// management actions.
+/// Real bUnit tests for the Products.razor overview (PILOT-PERF-01). The overview is built
+/// from the dedicated <see cref="IProductOverviewReadQuery"/> paged reader: the component
+/// requests the correct search/archive/page arguments, renders the returned page content
+/// (name/total/unit/locations + no-stock), returns to page 1 on search and requests the
+/// correct server-side page on previous/next. The preserved primary-click finding flow,
+/// detail popup, edit deep-link navigation and product management still use IStockService
+/// and IProductService.
 /// </summary>
 public class ProductsComponentTests : TestContext
 {
     private readonly Mock<IProductService> _productServiceMock = new();
+    private readonly Mock<IProductOverviewReadQuery> _overviewReadQueryMock = new();
     private readonly Mock<IProductCategoryService> _categoryServiceMock = new();
     private readonly Mock<IUnitService> _unitServiceMock = new();
     private readonly Mock<IStockService> _stockServiceMock = new();
@@ -33,6 +36,7 @@ public class ProductsComponentTests : TestContext
     public ProductsComponentTests()
     {
         Services.AddScoped<IProductService>(_ => _productServiceMock.Object);
+        Services.AddScoped<IProductOverviewReadQuery>(_ => _overviewReadQueryMock.Object);
         Services.AddScoped<IProductCategoryService>(_ => _categoryServiceMock.Object);
         Services.AddScoped<IUnitService>(_ => _unitServiceMock.Object);
         Services.AddScoped<IStockService>(_ => _stockServiceMock.Object);
@@ -40,8 +44,8 @@ public class ProductsComponentTests : TestContext
         Services.AddLogging();
         SetupAuthState("Owner");
 
-        // Veilige standaardwaarden zodat het laden van paginavoorraad nooit op een
-        // niet-geconfigureerde mock crasht. Specifieke tests overschrijven deze.
+        // Veilige standaardwaarden zodat de finding-flow nooit op een niet-geconfigureerde
+        // mock crasht. Specifieke tests overschrijven deze.
         _stockServiceMock
             .Setup(s => s.GetActiveStocksByProductAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
@@ -51,28 +55,22 @@ public class ProductsComponentTests : TestContext
     }
 
     [Fact]
-    public void Overview_InitialCatalogueWith11ActiveProducts_RendersOnly10AndPaginatesToEleventh()
+    public void Overview_InitialPageWith11Products_RendersOnly10_AndRequestsSecondServerSidePage()
     {
-        // Arrange: 11 actieve producten, elk met één actieve locatie en hoeveelheid.
+        // Arrange: de reader levert pagina 1 (10 producten) en pagina 2 (het elfde),
+        // met een totaal van 11 matches.
         var products = Enumerable.Range(1, 11)
-            .Select(i => new ProductDto
-            {
-                Id = Guid.NewGuid(),
-                Name = $"Product {i:00}",
-                DefaultUnitName = "stuk"
-            })
+            .Select(i => new ProductDto { Id = Guid.NewGuid(), Name = $"Product {i:00}", DefaultUnitName = "stuk" })
             .ToList();
+        var location = Location("Kombuis", "Kast", 5);
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(products.AsReadOnly());
-        _stockServiceMock
-            .Setup(s => s.GetActiveStocksByProductAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>
-            {
-                new() { StorageLocationId = Guid.NewGuid(), StorageAreaName = "Kombuis", StorageLocationName = "Kast", Quantity = 5, DefaultUnitName = "stuk" }
-            }.AsReadOnly()));
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(null, false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(11, products.Take(10).Select(p => Item(p, location)).ToArray()));
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(null, false, 2, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(11, Item(products[10], location)));
 
         // Act
         var cut = RenderComponent<Products>();
@@ -94,17 +92,21 @@ public class ProductsComponentTests : TestContext
         cut.InvokeAsync(() =>
             cut.FindAll("button").First(b => b.TextContent.Contains("Volgende")).Click());
 
-        // Assert: het elfde resultaat staat op pagina 2 (exact 1 resultaat).
+        // Assert: het elfde resultaat staat op pagina 2 en de reader is server-side voor
+        // pagina 2 aangeroepen.
         cut.WaitForAssertion(() =>
         {
             Assert.Contains("Product 11", cut.Markup);
             Assert.Single(cut.FindAll(".product-result"));
             Assert.Contains("Pagina 2 van 2", cut.Markup);
         });
+        _overviewReadQueryMock.Verify(
+            q => q.GetPageAsync(null, false, 2, 10, It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
     }
 
     [Fact]
-    public async Task Overview_Search_StartsOnFirstPage_LoadsStockThroughStockService()
+    public async Task Overview_Search_ReturnsToFirstPage_AndRequestsServerSideSearchPage()
     {
         // Arrange: catalogus met paginering (11) en een zoekopdracht die 12 producten geeft.
         var catalogue = Enumerable.Range(1, 11)
@@ -113,21 +115,18 @@ public class ProductsComponentTests : TestContext
         var searchResults = Enumerable.Range(1, 12)
             .Select(i => new ProductDto { Id = Guid.NewGuid(), Name = $"Zoek {i:00}", DefaultUnitName = "stuk" })
             .ToList();
-        var firstSearchId = searchResults[0].Id;
+        var location = Location("Kombuis", "Kast", 5);
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(catalogue.AsReadOnly());
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("zoek", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(searchResults.AsReadOnly());
-        _stockServiceMock
-            .Setup(s => s.GetActiveStocksByProductAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>
-            {
-                new() { StorageLocationId = Guid.NewGuid(), StorageAreaName = "Kombuis", StorageLocationName = "Kast", Quantity = 5, DefaultUnitName = "stuk" }
-            }.AsReadOnly()));
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(null, false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(11, catalogue.Take(10).Select(p => Item(p, location)).ToArray()));
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(null, false, 2, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(11, Item(catalogue[10], location)));
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("zoek", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(12, searchResults.Take(10).Select(p => Item(p, location)).ToArray()));
 
         var cut = RenderComponent<Products>();
 
@@ -139,7 +138,7 @@ public class ProductsComponentTests : TestContext
         // Act: zoek.
         await SearchAsync(cut, "zoek");
 
-        // Assert: zoekresultaten beginnen op pagina 1, met dezelfde resultaatinhoud.
+        // Assert: zoekresultaten beginnen op pagina 1, met de door de reader geleverde inhoud.
         cut.WaitForAssertion(() =>
         {
             Assert.Contains("Zoek 01", cut.Markup);
@@ -152,25 +151,22 @@ public class ProductsComponentTests : TestContext
         Assert.Contains("stuk", firstCard);
         Assert.Contains("Kombuis - Kast", firstCard);
 
-        // Assert: de actieve voorraad van een zoekresultaat is via IStockService geladen.
-        _stockServiceMock.Verify(
-            s => s.GetActiveStocksByProductAsync(firstSearchId, It.IsAny<CancellationToken>()),
+        // Assert: de reader is met zoekterm, actieve stand en pagina 1 aangeroepen.
+        _overviewReadQueryMock.Verify(
+            q => q.GetPageAsync("zoek", false, 1, 10, It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
     }
 
     [Fact]
     public void Overview_ProductWithoutActiveStock_RendersNoStockState()
     {
-        // Arrange: één actief product zonder actieve voorraad.
+        // Arrange: één actief product zonder actieve voorraad (reader levert lege locaties).
         var product = new ProductDto { Id = Guid.NewGuid(), Name = "Appel", DefaultUnitName = "stuk" };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
-        _stockServiceMock
-            .Setup(s => s.GetActiveStocksByProductAsync(product.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(null, false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
 
         // Act
         var cut = RenderComponent<Products>();
@@ -195,9 +191,9 @@ public class ProductsComponentTests : TestContext
         var product = new ProductDto { Id = Guid.NewGuid(), Name = "Appel", DefaultUnitName = "stuk" };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(null, false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
 
         var cut = RenderComponent<Products>();
         cut.WaitForAssertion(() => Assert.Contains("Appel", cut.Markup));
@@ -220,11 +216,8 @@ public class ProductsComponentTests : TestContext
     [Fact]
     public void DesktopOnlyControls_AreGroupedUnderDesktopOnlyContainer()
     {
-        // Arrange
+        // Arrange: leeg overzicht (reader levert lege pagina via SetupBaseMocks).
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto>().AsReadOnly());
 
         // Act
         var cut = RenderComponent<Products>();
@@ -241,7 +234,36 @@ public class ProductsComponentTests : TestContext
     }
 
     [Fact]
-    public async Task ManualSearch_FindsProductByName_CaseInsensitive()
+    public async Task ArchiveToggle_RequestsArchivedFirstPageFromReader()
+    {
+        // Arrange: actieve pagina leeg, gearchiveerde pagina met één product.
+        var archived = new ProductDto { Id = Guid.NewGuid(), Name = "Oud product", DefaultUnitName = "stuk", IsArchived = true };
+
+        SetupBaseMocks();
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(null, true, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(archived)));
+
+        var cut = RenderComponent<Products>();
+
+        // Act: schakel naar gearchiveerde weergave.
+        await cut.InvokeAsync(() =>
+            cut.FindAll("button").First(b => b.TextContent.Contains("Gearchiveerde weergeven")).Click());
+
+        // Assert: de reader wordt met showArchived=true, pagina 1 aangeroepen en het
+        // gearchiveerde product wordt getoond met de reactiveer-actie.
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Oud product", cut.Markup);
+            Assert.NotEmpty(cut.FindAll("button[title='Reactiveren']"));
+        });
+        _overviewReadQueryMock.Verify(
+            q => q.GetPageAsync(null, true, 1, 10, It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task ManualSearch_RequestsReaderWithSearchTerm()
     {
         // Arrange
         var product = new ProductDto
@@ -253,9 +275,9 @@ public class ProductsComponentTests : TestContext
         };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
 
         var cut = RenderComponent<Products>();
 
@@ -264,8 +286,8 @@ public class ProductsComponentTests : TestContext
 
         // Assert
         cut.WaitForAssertion(() => Assert.Contains("Appel", cut.Markup));
-        _productServiceMock.Verify(
-            s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()),
+        _overviewReadQueryMock.Verify(
+            q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
     }
 
@@ -286,9 +308,9 @@ public class ProductsComponentTests : TestContext
         };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product, activeLocation)));
         _stockServiceMock
             .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
@@ -333,9 +355,9 @@ public class ProductsComponentTests : TestContext
         };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product, location1, location2)));
         _stockServiceMock
             .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
@@ -375,9 +397,9 @@ public class ProductsComponentTests : TestContext
         };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
         _stockServiceMock
             .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
@@ -409,9 +431,9 @@ public class ProductsComponentTests : TestContext
         var product = new ProductDto { Id = productId, Name = "Appel", DefaultUnitName = "stuk" };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
         _stockServiceMock
             .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
@@ -456,9 +478,6 @@ public class ProductsComponentTests : TestContext
     {
         // Arrange
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto>().AsReadOnly());
 
         var cut = RenderComponent<Products>();
 
@@ -581,9 +600,9 @@ public class ProductsComponentTests : TestContext
         var product = new ProductDto { Id = productId, Name = "Appel", DefaultUnitName = "stuk" };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
 
         var cut = RenderComponent<Products>();
         await SearchAsync(cut, "appel");
@@ -621,9 +640,9 @@ public class ProductsComponentTests : TestContext
         };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product, activeLocation)));
         _stockServiceMock
             .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(
@@ -659,9 +678,9 @@ public class ProductsComponentTests : TestContext
         var product = new ProductDto { Id = productId, Name = "Appel", DefaultUnitName = "stuk" };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
         _stockServiceMock
             .Setup(s => s.GetActiveStocksByProductAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(InventoryOperationResult<IReadOnlyList<StockDto>>.Ok(new List<StockDto>().AsReadOnly()));
@@ -688,9 +707,9 @@ public class ProductsComponentTests : TestContext
         var product = new ProductDto { Id = productId, Name = "Appel", DefaultUnitName = "stuk" };
 
         SetupBaseMocks();
-        _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
 
         var cut = RenderComponent<Products>();
         await SearchAsync(cut, "appel");
@@ -710,12 +729,15 @@ public class ProductsComponentTests : TestContext
     {
         // Arrange
         var productId = Guid.NewGuid();
-        var product = new ProductDto { Id = productId, Name = "Appel", DefaultUnitName = "stuk" };
+        var product = new ProductDto { Id = productId, Name = "Appel", DefaultUnitName = "stuk", DefaultUnitId = Guid.NewGuid() };
 
         SetupBaseMocks();
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync("appel", false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
         _productServiceMock
-            .Setup(s => s.SearchByNameOrDescriptionAsync("appel", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+            .Setup(s => s.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product));
 
         var navigation = Services.GetRequiredService<NavigationManager>();
         var cut = RenderComponent<Products>();
@@ -731,9 +753,10 @@ public class ProductsComponentTests : TestContext
     }
 
     [Fact]
-    public void Products_WithEditProductIdQuery_OpensEditFormWithCodeSection()
+    public void Products_WithEditProductIdQuery_FetchesTargetProductOnDemand_OpensEditFormWithCodeSection()
     {
-        // Arrange: product met code dat door de normale data-load wordt geleverd.
+        // Arrange: het doelproduct wordt op aanvraag via GetByIdAsync opgehaald, niet uit een
+        // volledige catalogus.
         var productId = Guid.NewGuid();
         var product = new ProductDto
         {
@@ -747,8 +770,8 @@ public class ProductsComponentTests : TestContext
 
         SetupBaseMocks();
         _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+            .Setup(s => s.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product));
 
         var navigation = Services.GetRequiredService<NavigationManager>();
         navigation.NavigateTo($"/inventory/products?editProductId={productId}");
@@ -756,7 +779,8 @@ public class ProductsComponentTests : TestContext
         // Act
         var cut = RenderComponent<Products>();
 
-        // Assert: bestaande bewerkform staat open voor dit product met de codesectie.
+        // Assert: bestaande bewerkform staat open voor dit product met de codesectie, en het
+        // doelproduct is op aanvraag opgehaald.
         cut.WaitForAssertion(() =>
         {
             var nameInput = cut.Find("input[placeholder='Productnaam']");
@@ -764,18 +788,21 @@ public class ProductsComponentTests : TestContext
             Assert.Contains("Gekoppelde code", cut.Markup);
             Assert.Contains("8712345678904", cut.Markup);
         });
+        _productServiceMock.Verify(
+            s => s.GetByIdAsync(productId, It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
     }
 
     [Fact]
     public void Products_WithUnknownEditProductIdQuery_ShowsErrorWithoutCrash()
     {
-        // Arrange: query verwijst naar een id dat niet in de geladen productset zit.
+        // Arrange: query verwijst naar een id dat niet bestaat.
         var missingId = Guid.NewGuid();
 
         SetupBaseMocks();
         _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto>().AsReadOnly());
+            .Setup(s => s.GetByIdAsync(missingId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
 
         var navigation = Services.GetRequiredService<NavigationManager>();
         navigation.NavigateTo($"/inventory/products?editProductId={missingId}");
@@ -793,7 +820,7 @@ public class ProductsComponentTests : TestContext
     [Fact]
     public void DeepLinkEdit_AfterCancel_CanReopenEditForSameProduct()
     {
-        // Arrange: één product dat via de normale data-load beschikbaar is.
+        // Arrange: één product dat zowel via het overzicht als via GetByIdAsync beschikbaar is.
         var productId = Guid.NewGuid();
         var product = new ProductDto
         {
@@ -805,9 +832,12 @@ public class ProductsComponentTests : TestContext
         };
 
         SetupBaseMocks();
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(null, false, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Page(1, Item(product)));
         _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto> { product }.AsReadOnly());
+            .Setup(s => s.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.Ok(product));
 
         var navigation = Services.GetRequiredService<NavigationManager>();
         navigation.NavigateTo($"/inventory/products?editProductId={productId}");
@@ -844,9 +874,15 @@ public class ProductsComponentTests : TestContext
 
     private void SetupBaseMocks()
     {
+        // Standaard: leeg overzicht voor iedere reader-aanroep; specifieke tests overschrijven.
+        _overviewReadQueryMock
+            .Setup(q => q.GetPageAsync(
+                It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProductOverviewPageDto());
+        // Standaard: onbekend product bij deep-link, tenzij overschreven.
         _productServiceMock
-            .Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ProductDto>().AsReadOnly());
+            .Setup(s => s.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryOperationResult<ProductDto>.NotFound());
         _categoryServiceMock
             .Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ProductCategoryDto>().AsReadOnly());
@@ -861,9 +897,30 @@ public class ProductsComponentTests : TestContext
             .Returns(new List<string>());
     }
 
+    private static ProductOverviewPageDto Page(int totalCount, params ProductOverviewItemDto[] items)
+        => new() { TotalCount = totalCount, Items = items.ToList() };
+
+    private static ProductOverviewItemDto Item(ProductDto product, params StockDto[] locations)
+        => new()
+        {
+            Product = product,
+            ActiveLocations = locations.ToList(),
+            TotalQuantity = locations.Sum(l => l.Quantity)
+        };
+
+    private static StockDto Location(string areaName, string locationName, decimal quantity)
+        => new()
+        {
+            StorageLocationId = Guid.NewGuid(),
+            StorageAreaName = areaName,
+            StorageLocationName = locationName,
+            Quantity = quantity,
+            DefaultUnitName = "stuk"
+        };
+
     /// <summary>
     /// Voert de directe zoekinvoer uit: typt de term en drukt Enter, zoals de
-    /// gebruiker op de herontworpen pagina zoekt.
+    /// gebruiker op de pagina zoekt.
     /// </summary>
     private static async Task SearchAsync(IRenderedComponent<Products> cut, string term)
     {

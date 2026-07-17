@@ -156,7 +156,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 20. **PILOT-LOG-01** — **Done** — Handmatig logboekmoment met actuele NMEA-snapshot is op 2026-07-17 geaccepteerd; verdere praktijktest van de logboekflow volgt tijdens de vakantie.
 21. **PILOT-LOG-02** — **Done** — Gebeurteniskeuze, weericonen en notitie is op 2026-07-17 geaccepteerd; verdere praktijktest van de logboekflow volgt tijdens de vakantie.
 22. **PILOT-INV-06** — **Done** — Productoverzicht gebruikt nu een responsieve, mockup-geleide zoek- en resultaatpresentatie; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-17.
-23. **PILOT-PERF-01** — **Gepland** — Productoverzicht met databasegestuurde filtering, paginering en een vast querybudget.
+23. **PILOT-PERF-01** — **Done** — Productoverzicht gebruikt databasegestuurde filtering en paginering met een vast querybudget; technisch gecontroleerd en door de gebruiker geaccepteerd op 2026-07-17.
 24. **PILOT-PERF-02** — **Gepland** — Home- en gedeelde productzoekflows zonder per-product voorraadqueries.
 25. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
 26. **PILOT-PERF-03** — **Gepland** — Overige voorraad-readpaden set-based en zonder N+1-querypatronen maken.
@@ -170,8 +170,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende stap:** `PILOT-PERF-01`; daarna volgen `PILOT-PERF-02` en
-`PILOT-E2E-01`.
+**Eerstvolgende stap:** `PILOT-PERF-02`; daarna volgt `PILOT-E2E-01`.
 
 ## Expliciete herprioritering
 
@@ -223,9 +222,10 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- `PILOT-PERF-01` is nu de eerstvolgende implementatiestory.
-- `PILOT-PERF-02` volgt direct daarna; vervolgens hervat `PILOT-E2E-01` de integrale
-  praktijktest.
+- `PILOT-PERF-01` is technisch gecontroleerd en door de gebruiker geaccepteerd;
+  de volledige story-uitwerking staat in het archief.
+- `PILOT-PERF-02` is nu de eerstvolgende implementatiestory; vervolgens hervat
+  `PILOT-E2E-01` de integrale praktijktest.
 - `PILOT-PERF-03` en `PILOT-PERF-04` blijven afzonderlijke vervolgstories na de
   E2E-test en vóór de duur-/operationele test.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
@@ -234,45 +234,6 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
   zodat de dagelijkse context klein blijft maar de historie beschikbaar blijft.
 - Raadpleeg het archief alleen wanneer historische scope, acceptatie,
   implementatiestatus of legacy-impact opnieuw relevant is.
-
-### PILOT-PERF-01 — Productoverzicht met vast querybudget
-
-**Story:** Als gebruiker wil ik het productoverzicht en de productzoeking snel kunnen
-openen en doorbladeren, zodat de responstijd niet lineair verslechtert door losse
-databasequeries per product.
-
-**Scope:**
-
-- een gespecialiseerde EF Core-readquery voor het productoverzicht;
-- databasegestuurde actieve/gearchiveerde filtering, zoeken, stabiele sortering en
-  paginering per tien resultaten;
-- directe DTO-projectie van product, eenheid, code en actieve categorie;
-- voorraadtotalen en locaties in een gebatchte query voor alleen de huidige pagina;
-- categorie- en eenheidlookups pas laden wanneer aanmaken of bewerken ze nodig heeft;
-- SQLite-integratietest met een vast querybudget dat niet groeit met het totale aantal
-  producten.
-
-**Buiten scope:** UI-herontwerp, nieuwe voorraadregels, scanroutes, homezoeking en de
-bredere DbContext-/write-refactor.
-
-**Acceptatiecriteria:**
-
-- bestaand productoverzicht, zoeken, archieftoggle, paginering, detail- en bewerkactie
-  blijven functioneel gelijk;
-- de eerste overzichtspagina wordt met maximaal vijf databasecommando's opgebouwd;
-- meer opgeslagen producten verhogen het aantal databasecommando's voor dezelfde
-  pagina niet;
-- alleen de tien zichtbare producten en hun benodigde overzichtsdata worden geladen;
-- lege voorraad blijft als `0` met de bestaande no-stockpresentatie zichtbaar.
-
-**Handmatige acceptatietest:** Open `Voorraadbeheer > Producten` op desktop en mobiel,
-zoek op een deel van naam en omschrijving, blader vooruit en terug, wissel naar
-gearchiveerd en open detail en bewerken. Controleer tegelijk in de EF-log dat het
-queryaantal per pagina begrensd blijft en dat aantallen, eenheden en locaties gelijk
-zijn aan de bestaande gegevens.
-
-**Legacy-impact:** Verbetert de bestaande dekking van `US2.12 Zoeken en filteren`
-zonder nieuwe functionele filters toe te voegen.
 
 ### PILOT-PERF-02 — Home- en gedeelde productzoeking batchen
 

@@ -10,9 +10,10 @@ Updated: 2026-07-17.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `master`.
-- `PILOT-INV-06` is op 2026-07-17 technisch gecontroleerd en door de gebruiker
-  geaccepteerd. De responsieve productzoek- en resultaatpagina is gereed voor de pilot.
+- Actieve branch: `codex/pilot-perf-01-product-overview`.
+- `PILOT-PERF-01` is op 2026-07-17 technisch gecontroleerd en door de gebruiker
+  geaccepteerd. Het productoverzicht gebruikt databasegestuurde paginering en een vast
+  querybudget.
 
 ## Actieve release
 
@@ -24,11 +25,10 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
   `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`, `PILOT-UX-01`,
-  `PILOT-INV-07`, `PILOT-INV-08`, `PILOT-LOG-01`, `PILOT-LOG-02`, `PILOT-INV-06`;
-- eerstvolgende stap: `PILOT-PERF-01` voor een databasegestuurd productoverzicht met
-  vast querybudget;
-- daarna: `PILOT-PERF-02` voor gebatchte home- en gedeelde productzoeking en vervolgens
-  `PILOT-E2E-01` voor de end-to-end gebruikstest.
+  `PILOT-INV-07`, `PILOT-INV-08`, `PILOT-LOG-01`, `PILOT-LOG-02`, `PILOT-INV-06`,
+  `PILOT-PERF-01`;
+- eerstvolgende stap: `PILOT-PERF-02` voor gebatchte home- en gedeelde productzoeking;
+- daarna: `PILOT-E2E-01` voor de end-to-end gebruikstest.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
@@ -38,8 +38,6 @@ of expliciete andere prioriteit van de gebruiker.
 De eerstvolgende sessie blijft gericht op snelle vakantie-ingebruikname en lost eerst
 de aangetoonde inventoryperformanceproblemen op:
 
-- `PILOT-PERF-01` voor productoverzicht, databasefiltering, server-side paginering en
-  een vast querybudget;
 - `PILOT-PERF-02` voor home- en gedeelde productzoeking zonder per-product
   voorraadqueries;
 - daarna `PILOT-E2E-01`, gevolgd door de bredere performancevervolgstories en

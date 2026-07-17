@@ -196,11 +196,13 @@
   - **Verificatie:** 20 `ProductsComponentTests`, solution-build en diffcheck groen; desktop- en mobiele handmatige acceptatie akkoord.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-PERF-01 productoverzicht met vast querybudget**
+- [x] **Holiday Pilot 2026 — PILOT-PERF-01 productoverzicht met vast querybudget**
+  - **Status 2026-07-17:** technisch gecontroleerd en door de gebruiker geaccepteerd.
   - **Doel:** productoverzicht, zoeken en paginering databasegestuurd uitvoeren zonder losse code-, categorie- en voorraadquery per product.
   - **Kern:** gespecialiseerde EF Core-readquery, DTO-projectie, stabiele server-side paginering per tien, gebatchte voorraadlocaties en SQLite-querybudgettest.
   - **Belangrijk:** bestaand productgedrag en UI blijven gelijk; de eerste pagina gebruikt maximaal vijf databasecommando's en groeit niet mee met het totale productaantal.
   - **Buiten scope:** homezoeking, UI-redesign, scanroutes en DbContext-/write-hardening.
+  - **Verificatie:** 3 SQLite-integratietests, 21 componenttests, solution-build en diffcheck groen; live SQL-log toont per overview-opbouw drie productqueries.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [ ] **Holiday Pilot 2026 — PILOT-PERF-02 home- en gedeelde productzoeking batchen**
