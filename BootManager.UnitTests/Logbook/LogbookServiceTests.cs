@@ -185,6 +185,106 @@ public class LogbookServiceTests
     }
 
     [Fact]
+    public async Task CreateEntryAsync_PersistsSelectedEventWeatherAndNote_ThroughRemarks()
+    {
+        const int tripId = 3;
+        LogbookEntry? persisted = null;
+        _entryRepo
+            .Setup(r => r.AddAsync(It.IsAny<LogbookEntry>(), It.IsAny<CancellationToken>()))
+            .Callback<LogbookEntry, CancellationToken>((e, _) => persisted = e)
+            .Returns(Task.CompletedTask);
+        _attachmentService
+            .Setup(a => a.GetAttachmentCountAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        var sut = CreateSut();
+
+        var dto = new SaveLogbookEntryDto
+        {
+            EntryTimeUtc = new DateTime(2026, 7, 16, 9, 30, 0, DateTimeKind.Utc),
+            Remarks = "Mooie zonsopgang",
+            EventType = LogbookEventType.Overstag,
+            WeatherCondition = LogbookWeatherCondition.Zonnig
+        };
+
+        var result = await sut.CreateEntryAsync(tripId, dto);
+
+        _entryRepo.Verify(r => r.AddAsync(It.IsAny<LogbookEntry>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.NotNull(persisted);
+        // Gebeurtenis en weerconditie worden als stabiele domeinwaarde persistent gemaakt.
+        Assert.Equal(LogbookEventType.Overstag, persisted!.EventType);
+        Assert.Equal(LogbookWeatherCondition.Zonnig, persisted.WeatherCondition);
+        // De korte notitie loopt via het bestaande Remarks-veld.
+        Assert.Equal("Mooie zonsopgang", persisted.Remarks);
+
+        // De teruggemapte DTO bevat dezelfde stabiele waarden.
+        Assert.Equal(LogbookEventType.Overstag, result.EventType);
+        Assert.Equal(LogbookWeatherCondition.Zonnig, result.WeatherCondition);
+        Assert.Equal("Mooie zonsopgang", result.Remarks);
+    }
+
+    [Fact]
+    public async Task UpdateEntryAsync_EnrichesDraftWithEventWeatherNote_WhilePreservingSnapshotAndDraftStatus()
+    {
+        const int entryId = 77;
+        // Bestaande handmatige Draft met snapshot uit PILOT-LOG-01 (nog zonder gebeurtenis/weer/notitie).
+        var draft = new LogbookEntry(
+            logbookTripId: 12,
+            entryTimeUtc: new DateTime(2026, 7, 16, 11, 30, 0, DateTimeKind.Utc),
+            course: 215,
+            windDescription: "NW 4",
+            gpsStatus: "OK",
+            latitude: 52.3702,
+            longitude: 4.8952,
+            averageSogKnots: 5.4m);
+        draft.SetDraft();
+
+        _entryRepo
+            .Setup(r => r.SingleOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<LogbookEntry, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(draft);
+        LogbookEntry? updated = null;
+        _entryRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<LogbookEntry>(), It.IsAny<CancellationToken>()))
+            .Callback<LogbookEntry, CancellationToken>((e, _) => updated = e)
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSut();
+
+        // De taakgerichte opslag stuurt de bestaande snapshotwaarden mee plus de nieuwe context.
+        var dto = new SaveLogbookEntryDto
+        {
+            EntryTimeUtc = draft.EntryTimeUtc,
+            Course = draft.Course,
+            Remarks = "Overstag bij de ton",
+            WindDescription = draft.WindDescription,
+            GpsStatus = draft.GpsStatus,
+            Latitude = draft.Latitude,
+            Longitude = draft.Longitude,
+            AverageSogKnots = draft.AverageSogKnots,
+            EventType = LogbookEventType.Overstag,
+            WeatherCondition = LogbookWeatherCondition.HalfBewolkt
+        };
+
+        await sut.UpdateEntryAsync(entryId, dto);
+
+        _entryRepo.Verify(r => r.UpdateAsync(It.IsAny<LogbookEntry>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.NotNull(updated);
+        // Nieuwe context is verrijkt met stabiele domeinwaarden en de notitie via Remarks.
+        Assert.Equal(LogbookEventType.Overstag, updated!.EventType);
+        Assert.Equal(LogbookWeatherCondition.HalfBewolkt, updated.WeatherCondition);
+        Assert.Equal("Overstag bij de ton", updated.Remarks);
+        // De oorspronkelijke snapshot blijft behouden.
+        Assert.Equal(215, updated.Course);
+        Assert.Equal("NW 4", updated.WindDescription);
+        Assert.Equal("OK", updated.GpsStatus);
+        Assert.Equal(52.3702, updated.Latitude);
+        Assert.Equal(4.8952, updated.Longitude);
+        Assert.Equal(5.4m, updated.AverageSogKnots);
+        // De regel blijft een Draft; de akkoordflow verandert niet door het verrijken.
+        Assert.Equal(LogbookEntryStatus.Draft, updated.Status);
+    }
+
+    [Fact]
     public async Task CreateDraftEntryAsync_StillUsesPeriodOnlyFlow_ForAutomaticMissedMoments()
     {
         const int tripId = 5;

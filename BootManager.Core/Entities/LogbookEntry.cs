@@ -71,6 +71,16 @@ public class LogbookEntry
     public decimal? AverageSogKnots { get; private set; }
 
     /// <summary>
+    /// Gekozen gebeurtenis bij dit logboekmoment (stabiele domeinwaarde). Null indien niet gekozen.
+    /// </summary>
+    public LogbookEventType? EventType { get; private set; }
+
+    /// <summary>
+    /// Gekozen weerconditie bij dit logboekmoment (stabiele domeinwaarde). Null indien niet gekozen.
+    /// </summary>
+    public LogbookWeatherCondition? WeatherCondition { get; private set; }
+
+    /// <summary>
     /// Status van de logboekregel in de akkoordflow.
     /// </summary>
     public LogbookEntryStatus Status { get; private set; }
@@ -114,7 +124,9 @@ public class LogbookEntry
         string? gpsStatus = null,
         double? latitude = null,
         double? longitude = null,
-        decimal? averageSogKnots = null)
+        decimal? averageSogKnots = null,
+        LogbookEventType? eventType = null,
+        LogbookWeatherCondition? weatherCondition = null)
     {
         LogbookTripId = logbookTripId;
         EntryTimeUtc = entryTimeUtc;
@@ -127,6 +139,8 @@ public class LogbookEntry
         Latitude = latitude;
         Longitude = longitude;
         AverageSogKnots = averageSogKnots;
+        EventType = eventType;
+        WeatherCondition = weatherCondition;
         Status = LogbookEntryStatus.Confirmed;
         CreatedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = DateTime.UtcNow;
@@ -145,7 +159,9 @@ public class LogbookEntry
         string? gpsStatus,
         double? latitude,
         double? longitude,
-        decimal? averageSogKnots)
+        decimal? averageSogKnots,
+        LogbookEventType? eventType = null,
+        LogbookWeatherCondition? weatherCondition = null)
     {
         EntryTimeUtc = entryTimeUtc;
         BaroPressure = baroPressure;
@@ -157,6 +173,8 @@ public class LogbookEntry
         Latitude = latitude;
         Longitude = longitude;
         AverageSogKnots = averageSogKnots;
+        EventType = eventType;
+        WeatherCondition = weatherCondition;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

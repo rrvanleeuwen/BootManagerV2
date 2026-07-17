@@ -327,7 +327,23 @@ else
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.BaroPressure" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.LogValue" /></td>
                                         <td><InputNumber class="form-control form-control-sm" @bind-Value="_entryForm.Course" /></td>
-                                        <td><InputText class="form-control form-control-sm" @bind-Value="_entryForm.Remarks" /></td>
+                                        <td>
+                                            <InputText class="form-control form-control-sm mb-1" @bind-Value="_entryForm.Remarks" />
+                                            <select class="form-select form-select-sm mb-1" @bind="_entryForm.EventType" aria-label="Gebeurtenis">
+                                                <option value="">— gebeurtenis —</option>
+                                                @foreach (var ev in EventChoices)
+                                                {
+                                                    <option value="@ev">@EventLabel(ev)</option>
+                                                }
+                                            </select>
+                                            <select class="form-select form-select-sm" @bind="_entryForm.WeatherCondition" aria-label="Weer">
+                                                <option value="">— weer —</option>
+                                                @foreach (var w in WeatherChoices)
+                                                {
+                                                    <option value="@w">@WeatherIcon(w) @WeatherLabel(w)</option>
+                                                }
+                                            </select>
+                                        </td>
                                         <td><span class="text-muted small">—</span></td>
                                         <td><InputText class="form-control form-control-sm" @bind-Value="_entryForm.WindDescription" /></td>
                                         <td><InputText class="form-control form-control-sm" @bind-Value="_entryForm.GpsStatus" /></td>
@@ -357,7 +373,25 @@ else
                                         <td>@(entry.BaroPressure.HasValue ? entry.BaroPressure.Value.ToString("F1") : "")</td>
                                         <td>@(entry.LogValue.HasValue ? entry.LogValue.Value.ToString("F1") : "")</td>
                                         <td>@(entry.Course.HasValue ? entry.Course.Value.ToString() + "°" : "")</td>
-                                        <td>@entry.Remarks</td>
+                                        <td>
+                                            @if (entry.EventType.HasValue || entry.WeatherCondition.HasValue)
+                                            {
+                                                <div class="mb-1 d-flex align-items-center gap-2 flex-wrap">
+                                                    @if (entry.EventType.HasValue)
+                                                    {
+                                                        <span class="badge bg-primary">@EventLabel(entry.EventType.Value)</span>
+                                                    }
+                                                    @if (entry.WeatherCondition.HasValue)
+                                                    {
+                                                        <span title="@WeatherLabel(entry.WeatherCondition.Value)">
+                                                            <span style="font-size: 1.2rem;">@WeatherIcon(entry.WeatherCondition.Value)</span>
+                                                            <span class="small text-muted">@WeatherLabel(entry.WeatherCondition.Value)</span>
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                            @entry.Remarks
+                                        </td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
                                                 @if (entry.AttachmentCount > 0)
@@ -398,7 +432,23 @@ else
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.BaroPressure" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.LogValue" /></td>
                                     <td><InputNumber class="form-control form-control-sm" @bind-Value="_newEntryForm.Course" /></td>
-                                    <td><InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.Remarks" /></td>
+                                    <td>
+                                        <InputText class="form-control form-control-sm mb-1" @bind-Value="_newEntryForm.Remarks" />
+                                        <select class="form-select form-select-sm mb-1" @bind="_newEntryForm.EventType" aria-label="Gebeurtenis">
+                                            <option value="">— gebeurtenis —</option>
+                                            @foreach (var ev in EventChoices)
+                                            {
+                                                <option value="@ev">@EventLabel(ev)</option>
+                                            }
+                                        </select>
+                                        <select class="form-select form-select-sm" @bind="_newEntryForm.WeatherCondition" aria-label="Weer">
+                                            <option value="">— weer —</option>
+                                            @foreach (var w in WeatherChoices)
+                                            {
+                                                <option value="@w">@WeatherIcon(w) @WeatherLabel(w)</option>
+                                            }
+                                        </select>
+                                    </td>
                                     <td><span class="text-muted small">—</span></td>
                                     <td><InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.WindDescription" /></td>
                                     <td><InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.GpsStatus" /></td>
@@ -457,6 +507,22 @@ else
                                 </div>
 
                                 <div class="logbook-card-body">
+                                    @if (entry.EventType.HasValue || entry.WeatherCondition.HasValue)
+                                    {
+                                        <div class="mb-2 d-flex align-items-center gap-2 flex-wrap">
+                                            @if (entry.EventType.HasValue)
+                                            {
+                                                <span class="badge bg-primary">@EventLabel(entry.EventType.Value)</span>
+                                            }
+                                            @if (entry.WeatherCondition.HasValue)
+                                            {
+                                                <span title="@WeatherLabel(entry.WeatherCondition.Value)">
+                                                    <span style="font-size: 1.4rem;">@WeatherIcon(entry.WeatherCondition.Value)</span>
+                                                    <span class="small text-muted">@WeatherLabel(entry.WeatherCondition.Value)</span>
+                                                </span>
+                                            }
+                                        </div>
+                                    }
                                     @if (!string.IsNullOrWhiteSpace(entry.Remarks))
                                     {
                                         <div class="logbook-card-remarks">
@@ -584,6 +650,28 @@ else
                                     </div>
                                     <div class="row g-2 mt-2">
                                         <div class="col-6">
+                                            <label class="form-label form-label-sm">Gebeurtenis</label>
+                                            <select class="form-select form-select-sm" @bind="_entryForm.EventType" aria-label="Gebeurtenis">
+                                                <option value="">— gebeurtenis —</option>
+                                                @foreach (var ev in EventChoices)
+                                                {
+                                                    <option value="@ev">@EventLabel(ev)</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label form-label-sm">Weer</label>
+                                            <select class="form-select form-select-sm" @bind="_entryForm.WeatherCondition" aria-label="Weer">
+                                                <option value="">— weer —</option>
+                                                @foreach (var w in WeatherChoices)
+                                                {
+                                                    <option value="@w">@WeatherIcon(w) @WeatherLabel(w)</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-6">
                                             <label class="form-label form-label-sm">Wind</label>
                                             <InputText class="form-control form-control-sm" @bind-Value="_entryForm.WindDescription" />
                                         </div>
@@ -640,6 +728,28 @@ else
                                 <div class="mt-2">
                                     <label class="form-label form-label-sm">Opmerkingen</label>
                                     <InputText class="form-control form-control-sm" @bind-Value="_newEntryForm.Remarks" />
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Gebeurtenis</label>
+                                        <select class="form-select form-select-sm" @bind="_newEntryForm.EventType" aria-label="Gebeurtenis">
+                                            <option value="">— gebeurtenis —</option>
+                                            @foreach (var ev in EventChoices)
+                                            {
+                                                <option value="@ev">@EventLabel(ev)</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Weer</label>
+                                        <select class="form-select form-select-sm" @bind="_newEntryForm.WeatherCondition" aria-label="Weer">
+                                            <option value="">— weer —</option>
+                                            @foreach (var w in WeatherChoices)
+                                            {
+                                                <option value="@w">@WeatherIcon(w) @WeatherLabel(w)</option>
+                                            }
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="row g-2 mt-2">
                                     <div class="col-6">
@@ -737,6 +847,83 @@ else
                         else
                         {
                             <span>Upload</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Taakgericht context-formulier direct na "Moment vastleggen" -->
+@if (_momentCaptureEntry != null && _momentContextForm != null)
+{
+    <div class="modal d-block" style="background-color: rgba(0,0,0,0.5);" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Moment vastgelegd — kies gebeurtenis, weer en notitie</h5>
+                    <button type="button" class="btn-close" @onclick="AnnuleerMomentContext" aria-label="Sluiten"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Het concept is vastgelegd om
+                        <strong>@BoordtijdHelper.NaarLokaal(_momentCaptureEntry.EntryTimeUtc).ToString("HH:mm")</strong>
+                        met de actuele boordwaarden. Vul hieronder snel de context aan.
+                    </p>
+
+                    <!-- Gebeurteniskeuze -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Gebeurtenis</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var ev in EventChoices)
+                            {
+                                <button type="button"
+                                        class="btn btn-sm @(_momentContextForm.EventType == ev ? "btn-primary" : "btn-outline-primary")"
+                                        @onclick="() => KiesGebeurtenis(ev)">
+                                    @EventLabel(ev)
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Weerkeuze met grote pictogrammen -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Weer</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var w in WeatherChoices)
+                            {
+                                <button type="button"
+                                        class="btn @(_momentContextForm.WeatherCondition == w ? "btn-info" : "btn-outline-secondary") d-flex flex-column align-items-center justify-content-center"
+                                        style="width: 92px; height: 92px;"
+                                        title="@WeatherLabel(w)"
+                                        aria-label="@WeatherLabel(w)"
+                                        @onclick="() => KiesWeer(w)">
+                                    <span style="font-size: 2.2rem; line-height: 1;">@WeatherIcon(w)</span>
+                                    <span class="small mt-1">@WeatherLabel(w)</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Korte notitie (hergebruikt Remarks) -->
+                    <div class="mb-1">
+                        <label class="form-label fw-semibold" for="momentNotitie">Korte notitie</label>
+                        <textarea id="momentNotitie" class="form-control form-control-sm" rows="2"
+                                  placeholder="Korte notitie (optioneel)…" @bind="_momentContextForm.Remarks"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="AnnuleerMomentContext">Overslaan</button>
+                    <button type="button" class="btn btn-primary" @onclick="OpslaanMomentContext" disabled="@_savingMomentContext">
+                        @if (_savingMomentContext)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span><span>Opslaan…</span>
+                        }
+                        else
+                        {
+                            <span>Moment opslaan</span>
                         }
                     </button>
                 </div>
@@ -901,6 +1088,11 @@ else
     private bool _creatingDraftEntries;
     private bool _checkingMissedMoments;
     private bool _capturingMoment;
+
+    // Taakgerichte context-invoer direct na "Moment vastleggen".
+    private LogbookEntryDto? _momentCaptureEntry;
+    private MomentContextForm? _momentContextForm;
+    private bool _savingMomentContext;
 
     // Variabelen voor verwijderingsbevestiging
     private int? _entryIdToDelete;
@@ -1231,6 +1423,8 @@ else
                     Latitude = e.Latitude,
                     Longitude = e.Longitude,
                     AverageSogKnots = e.AverageSogKnots,
+                    EventType = e.EventType,
+                    WeatherCondition = e.WeatherCondition,
                     Status = LogbookEntryStatus.Confirmed,
                     AttachmentCount = e.AttachmentCount,
                     UpdatedAtUtc = DateTime.UtcNow
@@ -1464,6 +1658,17 @@ else
             // Herbereken gemiste logmomenten op basis van de nieuwe regel.
             await BerekenVolgendeLogmoment();
 
+            // Open direct het taakgerichte context-formulier voor dit nieuwe concept, zodat de
+            // gebruiker zonder de reisflow te verlaten een gebeurtenis, weerconditie en korte
+            // notitie kan kiezen. De bestaande Draft en snapshot blijven ongewijzigd.
+            _momentCaptureEntry = entry;
+            _momentContextForm = new MomentContextForm
+            {
+                EventType = entry.EventType,
+                WeatherCondition = entry.WeatherCondition,
+                Remarks = entry.Remarks
+            };
+
             _foutmelding = null;
         }
         catch (Exception ex)
@@ -1474,6 +1679,105 @@ else
         {
             _capturingMoment = false;
         }
+    }
+
+    /// <summary>
+    /// Kiest een gebeurtenis in het taakgerichte context-formulier (klik nogmaals om te wissen).
+    /// </summary>
+    private void KiesGebeurtenis(LogbookEventType eventType)
+    {
+        if (_momentContextForm == null) return;
+        _momentContextForm.EventType = _momentContextForm.EventType == eventType ? null : eventType;
+    }
+
+    /// <summary>
+    /// Kiest een weerconditie in het taakgerichte context-formulier (klik nogmaals om te wissen).
+    /// </summary>
+    private void KiesWeer(LogbookWeatherCondition weather)
+    {
+        if (_momentContextForm == null) return;
+        _momentContextForm.WeatherCondition = _momentContextForm.WeatherCondition == weather ? null : weather;
+    }
+
+    /// <summary>
+    /// Slaat de gekozen gebeurtenis, weerconditie en korte notitie op voor het net vastgelegde moment.
+    /// De bestaande snapshotvelden en Draft-status blijven behouden; alleen de context wordt verrijkt.
+    /// De korte notitie wordt via het bestaande Remarks-veld opgeslagen.
+    /// </summary>
+    private async Task OpslaanMomentContext()
+    {
+        if (_momentCaptureEntry == null || _momentContextForm == null || _selectedTrip == null) return;
+        try
+        {
+            _savingMomentContext = true;
+
+            var dto = new SaveLogbookEntryDto
+            {
+                EntryTimeUtc = _momentCaptureEntry.EntryTimeUtc,
+                BaroPressure = _momentCaptureEntry.BaroPressure,
+                LogValue = _momentCaptureEntry.LogValue,
+                Course = _momentCaptureEntry.Course,
+                Remarks = _momentContextForm.Remarks,
+                WindDescription = _momentCaptureEntry.WindDescription,
+                GpsStatus = _momentCaptureEntry.GpsStatus,
+                Latitude = _momentCaptureEntry.Latitude,
+                Longitude = _momentCaptureEntry.Longitude,
+                AverageSogKnots = _momentCaptureEntry.AverageSogKnots,
+                EventType = _momentContextForm.EventType,
+                WeatherCondition = _momentContextForm.WeatherCondition
+            };
+
+            await LogbookService.UpdateEntryAsync(_momentCaptureEntry.Id, dto);
+
+            // Werk de lokale lijst bij met de verrijkte contextwaarden; snapshot en status blijven gelijk.
+            var idx = _entries.FindIndex(e => e.Id == _momentCaptureEntry.Id);
+            if (idx >= 0)
+            {
+                var e = _entries[idx];
+                _entries[idx] = new LogbookEntryDto
+                {
+                    Id = e.Id,
+                    LogbookTripId = e.LogbookTripId,
+                    EntryTimeUtc = e.EntryTimeUtc,
+                    BaroPressure = e.BaroPressure,
+                    LogValue = e.LogValue,
+                    Course = e.Course,
+                    Remarks = dto.Remarks,
+                    WindDescription = e.WindDescription,
+                    GpsStatus = e.GpsStatus,
+                    Latitude = e.Latitude,
+                    Longitude = e.Longitude,
+                    AverageSogKnots = e.AverageSogKnots,
+                    EventType = dto.EventType,
+                    WeatherCondition = dto.WeatherCondition,
+                    Status = e.Status,
+                    AttachmentCount = e.AttachmentCount,
+                    UpdatedAtUtc = DateTime.UtcNow
+                };
+            }
+
+            _momentCaptureEntry = null;
+            _momentContextForm = null;
+            ResetCardPaging();
+            _foutmelding = null;
+        }
+        catch (Exception ex)
+        {
+            _foutmelding = $"Momentcontext opslaan mislukt: {ex.Message}";
+        }
+        finally
+        {
+            _savingMomentContext = false;
+        }
+    }
+
+    /// <summary>
+    /// Sluit het taakgerichte context-formulier zonder wijzigingen; het vastgelegde concept blijft bestaan.
+    /// </summary>
+    private void AnnuleerMomentContext()
+    {
+        _momentCaptureEntry = null;
+        _momentContextForm = null;
     }
 
     private async Task MaakMultipleDraftRegels()
@@ -1888,6 +2192,8 @@ else
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public decimal? AverageSogKnots { get; set; }
+        public LogbookEventType? EventType { get; set; }
+        public LogbookWeatherCondition? WeatherCondition { get; set; }
 
         public EntryFormModel() { }
         public EntryFormModel(LogbookEntryDto dto)
@@ -1902,6 +2208,8 @@ else
             Latitude = dto.Latitude;
             Longitude = dto.Longitude;
             AverageSogKnots = dto.AverageSogKnots;
+            EventType = dto.EventType;
+            WeatherCondition = dto.WeatherCondition;
         }
 
         public SaveLogbookEntryDto ToDto() => new()
@@ -1915,8 +2223,75 @@ else
             GpsStatus = GpsStatus,
             Latitude = Latitude,
             Longitude = Longitude,
-            AverageSogKnots = AverageSogKnots
+            AverageSogKnots = AverageSogKnots,
+            EventType = EventType,
+            WeatherCondition = WeatherCondition
         };
+    }
+
+    // --- Presentatie van gebeurtenis en weerconditie (icoon/label horen bij de UI-laag) ---
+
+    /// <summary>De beschikbare pilot-gebeurtenissen in weergavevolgorde.</summary>
+    private static readonly LogbookEventType[] EventChoices = Enum.GetValues<LogbookEventType>();
+
+    /// <summary>De beschikbare pilot-weercondities in weergavevolgorde.</summary>
+    private static readonly LogbookWeatherCondition[] WeatherChoices = Enum.GetValues<LogbookWeatherCondition>();
+
+    /// <summary>Nederlands label voor een gebeurtenis (presentatie).</summary>
+    private static string EventLabel(LogbookEventType e) => e switch
+    {
+        LogbookEventType.Overstag => "Overstag",
+        LogbookEventType.Gijp => "Gijp",
+        LogbookEventType.ZeilGewijzigd => "Zeil gewijzigd",
+        LogbookEventType.MotorGestart => "Motor gestart",
+        LogbookEventType.MotorGestopt => "Motor gestopt",
+        LogbookEventType.Vertrek => "Vertrek",
+        LogbookEventType.Aankomst => "Aankomst",
+        LogbookEventType.VoorAnker => "Voor anker",
+        LogbookEventType.BijzonderMoment => "Bijzonder moment",
+        LogbookEventType.Momentopname => "Alleen momentopname",
+        _ => e.ToString()
+    };
+
+    /// <summary>Nederlands label voor een weerconditie (presentatie).</summary>
+    private static string WeatherLabel(LogbookWeatherCondition w) => w switch
+    {
+        LogbookWeatherCondition.Zonnig => "Zonnig",
+        LogbookWeatherCondition.LichtBewolkt => "Licht bewolkt",
+        LogbookWeatherCondition.HalfBewolkt => "Half bewolkt",
+        LogbookWeatherCondition.Bewolkt => "Bewolkt",
+        LogbookWeatherCondition.Buien => "Buien",
+        LogbookWeatherCondition.Regen => "Regen",
+        LogbookWeatherCondition.Onweer => "Onweer",
+        LogbookWeatherCondition.Mist => "Mist",
+        LogbookWeatherCondition.VeelWind => "Veel wind",
+        _ => w.ToString()
+    };
+
+    /// <summary>Groot, begrijpelijk pictogram voor een weerconditie (presentatie).</summary>
+    private static string WeatherIcon(LogbookWeatherCondition w) => w switch
+    {
+        LogbookWeatherCondition.Zonnig => "☀️",
+        LogbookWeatherCondition.LichtBewolkt => "🌤️",
+        LogbookWeatherCondition.HalfBewolkt => "⛅",
+        LogbookWeatherCondition.Bewolkt => "☁️",
+        LogbookWeatherCondition.Buien => "🌦️",
+        LogbookWeatherCondition.Regen => "🌧️",
+        LogbookWeatherCondition.Onweer => "⛈️",
+        LogbookWeatherCondition.Mist => "🌫️",
+        LogbookWeatherCondition.VeelWind => "💨",
+        _ => "❔"
+    };
+
+    /// <summary>
+    /// Taakgericht invulformulier voor de context (gebeurtenis, weer, korte notitie) van een net
+    /// vastgelegd handmatig moment. De korte notitie wordt hergebruikt via het bestaande Remarks-veld.
+    /// </summary>
+    private class MomentContextForm
+    {
+        public LogbookEventType? EventType { get; set; }
+        public LogbookWeatherCondition? WeatherCondition { get; set; }
+        public string? Remarks { get; set; }
     }
 
     /// <summary>

@@ -2,6 +2,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Crew")]
 @using BootManager.Application.Logbook.DTOs
 @using BootManager.Application.Logbook.Services
+@using BootManager.Core.Enums
 @using BootManager.Web.Helpers
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
@@ -221,6 +222,34 @@ else
                     <div class="col-md-3">
                         <span class="text-muted small">Lengtegraad</span>
                         <div>@(_detail.SavedValues.Longitude.HasValue ? $"{_detail.SavedValues.Longitude.Value:F5}" : "Nog niet ingevuld")</div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <span class="text-muted small">Gebeurtenis</span>
+                        <div>
+                            @if (_detail.SavedValues.EventType.HasValue)
+                            {
+                                <span class="badge bg-primary">@EventLabel(_detail.SavedValues.EventType.Value)</span>
+                            }
+                            else
+                            {
+                                <span>Nog niet ingevuld</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small">Weer</span>
+                        <div>
+                            @if (_detail.SavedValues.WeatherCondition.HasValue)
+                            {
+                                <span style="font-size: 1.4rem;">@WeatherIcon(_detail.SavedValues.WeatherCondition.Value)</span>
+                                <span class="ms-1">@WeatherLabel(_detail.SavedValues.WeatherCondition.Value)</span>
+                            }
+                            else
+                            {
+                                <span>Nog niet ingevuld</span>
+                            }
+                        </div>
                     </div>
 
                     @if (!string.IsNullOrEmpty(_detail.SavedValues.Remarks))
@@ -612,4 +641,50 @@ else
     {
         return summary?.Samples.Count ?? 0;
     }
+
+    /// <summary>Nederlands label voor een gebeurtenis (presentatie).</summary>
+    private static string EventLabel(LogbookEventType e) => e switch
+    {
+        LogbookEventType.Overstag => "Overstag",
+        LogbookEventType.Gijp => "Gijp",
+        LogbookEventType.ZeilGewijzigd => "Zeil gewijzigd",
+        LogbookEventType.MotorGestart => "Motor gestart",
+        LogbookEventType.MotorGestopt => "Motor gestopt",
+        LogbookEventType.Vertrek => "Vertrek",
+        LogbookEventType.Aankomst => "Aankomst",
+        LogbookEventType.VoorAnker => "Voor anker",
+        LogbookEventType.BijzonderMoment => "Bijzonder moment",
+        LogbookEventType.Momentopname => "Alleen momentopname",
+        _ => e.ToString()
+    };
+
+    /// <summary>Nederlands label voor een weerconditie (presentatie).</summary>
+    private static string WeatherLabel(LogbookWeatherCondition w) => w switch
+    {
+        LogbookWeatherCondition.Zonnig => "Zonnig",
+        LogbookWeatherCondition.LichtBewolkt => "Licht bewolkt",
+        LogbookWeatherCondition.HalfBewolkt => "Half bewolkt",
+        LogbookWeatherCondition.Bewolkt => "Bewolkt",
+        LogbookWeatherCondition.Buien => "Buien",
+        LogbookWeatherCondition.Regen => "Regen",
+        LogbookWeatherCondition.Onweer => "Onweer",
+        LogbookWeatherCondition.Mist => "Mist",
+        LogbookWeatherCondition.VeelWind => "Veel wind",
+        _ => w.ToString()
+    };
+
+    /// <summary>Groot, begrijpelijk pictogram voor een weerconditie (presentatie).</summary>
+    private static string WeatherIcon(LogbookWeatherCondition w) => w switch
+    {
+        LogbookWeatherCondition.Zonnig => "☀️",
+        LogbookWeatherCondition.LichtBewolkt => "🌤️",
+        LogbookWeatherCondition.HalfBewolkt => "⛅",
+        LogbookWeatherCondition.Bewolkt => "☁️",
+        LogbookWeatherCondition.Buien => "🌦️",
+        LogbookWeatherCondition.Regen => "🌧️",
+        LogbookWeatherCondition.Onweer => "⛈️",
+        LogbookWeatherCondition.Mist => "🌫️",
+        LogbookWeatherCondition.VeelWind => "💨",
+        _ => "❔"
+    };
 }
