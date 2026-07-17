@@ -154,7 +154,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 18. **PILOT-INV-08** — **Done** — Product-zoekdetails, directe productbewerking en A4-tagbatchprint vanuit bestaande beheerflows.
 19. **PILOT-LOG-01** — **Done** — Handmatig logboekmoment met actuele NMEA-snapshot is op 2026-07-17 geaccepteerd; verdere praktijktest van de logboekflow volgt tijdens de vakantie.
 20. **PILOT-LOG-02** — **Done** — Gebeurteniskeuze, weericonen en notitie is op 2026-07-17 geaccepteerd; verdere praktijktest van de logboekflow volgt tijdens de vakantie.
-21. **PILOT-INV-06** — **Gepland** — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl.
+21. **PILOT-INV-06** — **Done** — Productoverzicht gebruikt nu een responsieve, mockup-geleide zoek- en resultaatpresentatie; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-17.
 22. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
 23. **PILOT-OPS-01** — **Gepland** — Duur-, herstart-, opslag- en back-uptest.
 24. **PILOT-REL-01** — **Gepland** — Release-freeze en uitsluitend blockerfixes.
@@ -165,7 +165,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende stap:** `PILOT-INV-06`; daarna volgt `PILOT-E2E-01`.
+**Eerstvolgende stap:** `PILOT-E2E-01`; daarna volgt `PILOT-OPS-01`.
 
 ## Expliciete herprioritering
 
@@ -210,7 +210,7 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- `PILOT-INV-06` is nu de eerstvolgende implementatiestory.
+- `PILOT-E2E-01` is nu de eerstvolgende implementatiestory.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
 - Verplaats een story na afronding en administratieve controle naar het archief,
@@ -335,73 +335,6 @@ Roelof en Carla tijdens de vakantie willen herkennen.
 3. Sla het moment op.
 4. Controleer dat gebeurtenis, weerconditie en notitie later zichtbaar blijven.
 5. Controleer dat de opgeslagen weerwaarde niet alleen afhankelijk is van het icoonlabel.
-
-### PILOT-INV-06 — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl
-
-**Storyzin**
-Als Owner of Crew wil ik in `Voorraadbeheer > Producten` dezelfde heldere zoek- en
-resultaatpresentatie gebruiken als op home, zodat producten sneller terug te vinden
-zijn en de pagina op mobiel minder druk is.
-
-**Waarom deze slice nu**
-De home-widget en het productoverzicht horen tijdens de pilot als één herkenbare
-zoekervaring aan te voelen. Door direct door te trekken naar het bestaande
-productoverzicht wordt dagelijks gebruik consistenter en sneller.
-
-**Scope**
-
-- `Voorraadbeheer > Producten` krijgt een redesign in de richting van
-  `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/code.html`.
-- Het overzicht toont per resultaat:
-  - productnaam;
-  - totale hoeveelheid;
-  - eenheid;
-  - locaties.
-- Resultaten worden per 10 items gepagineerd.
-- Desktop en groter:
-  - resultaten als lijst.
-- Mobiel:
-  - resultaten als cards.
-- De inhoudelijke resultaatopbouw sluit aan op `PILOT-UX-01`, bij voorkeur via
-  gedeelde presentatiecomponenten of hetzelfde viewmodel waar logisch.
-- De knoppen `Gearchiveerd weergeven` en `Voorraadbijzonderheid` vervallen op mobiel.
-
-**Buiten scope**
-
-- Wijzigingen aan onderliggende voorraadlogica, mutaties of scans.
-- Nieuwe productvelden of archiveerregels.
-- Grote herbouw van overige voorraadbeheerschermen buiten deze pagina.
-
-**Ontwerprichting is verplicht**
-
-- De mockup in
-  `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/`
-  is leidend voor deze slice.
-- Claude mag niet terugvallen naar een bestaande tabelpagina met alleen cosmetische
-  tweaks als de card-/lijsthiërarchie uit de mockup daardoor verloren gaat.
-- Home-widget en productoverzicht moeten herkenbaar familie van elkaar zijn; twee los
-  ontworpen zoekervaringen zijn niet acceptabel.
-
-**Acceptatiecriteria**
-
-1. `Voorraadbeheer > Producten` gebruikt dezelfde inhoudelijke resultaatopbouw als de
-   home-widget uit `PILOT-UX-01`.
-2. Elk resultaat toont productnaam, hoeveelheid, eenheid en locaties.
-3. Resultaten zijn gepagineerd per 10 items.
-4. Desktop toont lijstweergave; mobiel toont cardweergave.
-5. `Gearchiveerd weergeven` en `Voorraadbijzonderheid` zijn op mobiel niet zichtbaar.
-6. De resulterende UI volgt aantoonbaar de aangeleverde mockup-hiërarchie en voelt
-   niet als generieke bootstrap-beheerpagina.
-
-**Handmatige acceptatietest**
-
-1. Open `Voorraadbeheer > Producten` op desktop en zoek meerdere producten.
-2. Controleer dat lijstweergave, paginering en locatie-informatie kloppen.
-3. Open dezelfde pagina op mobiel.
-4. Controleer cardweergave en dat `Gearchiveerd weergeven` en
-   `Voorraadbijzonderheid` daar niet zichtbaar zijn.
-5. Vergelijk de pagina globaal met de aangeleverde mockup en controleer dat de
-   taakhiërarchie herkenbaar overeenkomt.
 
 ### PILOT-SCAN-02 — Parallelle scan-reworkbasis met `old`-isolatie
 

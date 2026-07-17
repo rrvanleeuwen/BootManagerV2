@@ -187,12 +187,13 @@
   - **Buiten scope:** automatische routekaart, passageplanning en uitgebreide logboekrapportage.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-INV-06 productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl**
-  - **Status 2026-07-17:** is nu de eerstvolgende open implementatiestory na acceptatie van `PILOT-LOG-01` en `PILOT-LOG-02`.
+- [x] **Holiday Pilot 2026 — PILOT-INV-06 productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl**
+  - **Status 2026-07-17:** technisch gecontroleerd en handmatig geaccepteerd.
   - **Doel:** `Voorraadbeheer > Producten` moet dezelfde heldere zoekervaring geven als de home-widget.
   - **Kern:** zelfde resultaatinhoud als home; desktop als lijst, mobiel als cards; paginering per 10; locaties zichtbaar per product.
-  - **Belangrijk:** design in `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/` is leidend; `Gearchiveerd weergeven` en `Voorraadbijzonderheid` vervallen op mobiel.
+  - **Belangrijk:** design in `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/` is leidend; `Gearchiveerd weergeven` en `Voorraadbijzonderheid` vervallen op mobiel. Producten zonder actieve voorraad tonen `0`, eenheid en een no-stockstatus; annuleren van productbewerking wist de deeplink zodat hetzelfde product opnieuw bewerkt kan worden.
   - **Buiten scope:** voorraadlogica, scanroutes en brede herbouw van andere voorraadpagina's.
+  - **Verificatie:** 20 `ProductsComponentTests`, solution-build en diffcheck groen; desktop- en mobiele handmatige acceptatie akkoord.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
 - [x] **First-Run Onboarding – legacy Register Owner route verwijderen**

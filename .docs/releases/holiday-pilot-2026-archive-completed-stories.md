@@ -7,6 +7,67 @@ beschikbaar blijven wanneer die opnieuw nodig zijn.
 
 ## Afgeronde stories
 
+### PILOT-INV-06 — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl
+
+**Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-17.
+
+**Resultaat:** `Voorraadbeheer > Producten` is herbouwd van een generieke beheertabel
+naar een responsieve, mockup-geleide productzoek- en resultaatpagina. De catalogus en
+zoekresultaten tonen per product de naam, totale actieve voorraad, eenheid en
+locatiechips, met een duidelijke `0`- en no-stockstatus wanneer er geen actieve voorraad
+is. Resultaten pagineren per 10; desktop toont compacte lijstregels en mobiel cards.
+De bestaande vervolgflows, detailactie, productbewerking, archiveren/reactiveren en
+mutatiefallback bleven behouden. Bij annuleren van een deeplink-bewerking verdwijnt
+`editProductId` nu uit de URL, zodat hetzelfde product direct opnieuw bewerkt kan worden.
+
+**Als** Owner of Crew<br>
+**wil ik** in `Voorraadbeheer > Producten` dezelfde heldere zoek- en
+resultaatpresentatie gebruiken als op home<br>
+**zodat** producten sneller terug te vinden zijn en de pagina op mobiel minder druk is.
+
+**Scope**
+
+- Productoverzicht volgt de mockup onder
+  `.docs/analysis/stitch_responsive_bootstrap_process_design/producten_overzicht/`.
+- Elk resultaat toont productnaam, totale hoeveelheid, eenheid en actieve locaties.
+- Resultaten zijn gepagineerd per 10; desktop gebruikt lijstregels en mobiel cards.
+- `Gearchiveerd weergeven` en `Voorraadbijzonderheid` zijn niet zichtbaar op mobiel.
+- De inhoudelijke resultaatopbouw sluit aan op de home-widget uit `PILOT-UX-01`.
+
+**Buiten scope**
+
+- Wijzigingen aan onderliggende voorraadlogica, mutaties of scans.
+- Nieuwe productvelden of archiveerregels.
+- Grote herbouw van overige voorraadbeheerschermen buiten deze pagina.
+
+**Acceptatiecriteria**
+
+1. `Voorraadbeheer > Producten` gebruikt dezelfde inhoudelijke resultaatopbouw als de
+   home-widget uit `PILOT-UX-01`.
+2. Elk resultaat toont productnaam, hoeveelheid, eenheid en locaties.
+3. Resultaten zijn gepagineerd per 10 items.
+4. Desktop toont lijstweergave; mobiel toont cardweergave.
+5. `Gearchiveerd weergeven` en `Voorraadbijzonderheid` zijn op mobiel niet zichtbaar.
+6. De UI volgt aantoonbaar de aangeleverde mockup-hiërarchie en voelt niet als een
+   generieke Bootstrap-beheerpagina.
+
+**Handmatige acceptatietest**
+
+1. Controleer op desktop de lijstweergave, zoeken, 10-item-paginering en locatie-informatie.
+2. Controleer op mobiel de cardweergave en dat de twee desktopacties afwezig zijn.
+3. Controleer een product zonder actieve voorraad: `0`, eenheid en de no-stockstatus zijn zichtbaar.
+4. Open een product via `Bewerken`, annuleer en controleer dat hetzelfde product opnieuw
+   bewerkt kan worden.
+
+**Implementatiestatus 2026-07-17**
+
+- technisch gecontroleerd door Codex;
+- handmatige acceptatie door gebruiker akkoord bevonden;
+- 20 gerichte `ProductsComponentTests` groen, inclusief de no-stock- en
+  bewerken-annuleren-regressies;
+- solution-build groen;
+- diffcheck schoon.
+
 ### PILOT-INV-08 — Product-zoekdetails en A4-tagbatchprint vanuit bestaande beheerflows
 
 **Status:** Done; technisch gecontroleerd en handmatig geaccepteerd op 2026-07-16.
