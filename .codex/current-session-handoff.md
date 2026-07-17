@@ -11,8 +11,8 @@ Updated: 2026-07-17.
 
 - Basisbranch: `master`.
 - Actieve branch: `master`.
-- `PILOT-LOG-01` is technisch gecontroleerd en via PR #107 gemerged naar `master`.
-  De handmatige acceptatie staat nog open omdat de huidige database geen actieve reis bevat.
+- `PILOT-LOG-01` is op 2026-07-17 administratief geaccepteerd na merge van PR #107.
+  De actieve-reis praktijktest kon in de huidige database niet worden uitgevoerd.
 
 ## Actieve release
 
@@ -24,10 +24,8 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
   `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`, `PILOT-UX-01`,
-  `PILOT-INV-07`, `PILOT-INV-08`;
-- technisch gemerged, acceptatie open: `PILOT-LOG-01`;
-- eerstvolgende stap: `PILOT-LOG-01` handmatig accepteren op een actieve reis;
-  daarna `PILOT-LOG-02` voor de logboekpilot. `PILOT-INV-06` blijft gepland maar
+  `PILOT-INV-07`, `PILOT-INV-08`, `PILOT-LOG-01`;
+- eerstvolgende stap: `PILOT-LOG-02` voor de logboekpilot. `PILOT-INV-06` blijft gepland maar
   schuift daarachter.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
@@ -38,8 +36,7 @@ of expliciete andere prioriteit van de gebruiker.
 De eerstvolgende sessie blijft gericht op het resterende pilotgebruiksgemak en snelle
 vakantie-ingebruikname:
 
-- handmatige acceptatietest van `PILOT-LOG-01` op een actieve reis uitvoeren;
-- daarna `PILOT-LOG-02` voor gebeurteniskeuze, weericonen en notitie;
+- `PILOT-LOG-02` voor gebeurteniskeuze, weericonen en notitie;
 - daarna `PILOT-INV-06` voor het bredere productoverzicht-redesign.
 
 Historische scanrework-details, acceptatie-uitkomsten en de expliciete

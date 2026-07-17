@@ -117,7 +117,9 @@ public class LogbookEntryDetailService : ILogbookEntryDetailService
             GpsStatus = entry.GpsStatus,
             Latitude = entry.Latitude,
             Longitude = entry.Longitude,
-            AverageSogKnots = entry.AverageSogKnots
+            AverageSogKnots = entry.AverageSogKnots,
+            EventType = entry.EventType,
+            WeatherCondition = entry.WeatherCondition
         };
     }
 

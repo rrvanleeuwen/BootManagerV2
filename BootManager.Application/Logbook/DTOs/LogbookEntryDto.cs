@@ -44,6 +44,12 @@ public class LogbookEntryDto
     /// <summary>Gemiddelde SOG in knopen over de logperiode. Null indien niet beschikbaar.</summary>
     public decimal? AverageSogKnots { get; set; }
 
+    /// <summary>Gekozen gebeurtenis (stabiele domeinwaarde). Null indien niet gekozen.</summary>
+    public LogbookEventType? EventType { get; set; }
+
+    /// <summary>Gekozen weerconditie (stabiele domeinwaarde). Null indien niet gekozen.</summary>
+    public LogbookWeatherCondition? WeatherCondition { get; set; }
+
     /// <summary>Status van de logboekregel in de akkoordflow.</summary>
     public LogbookEntryStatus Status { get; set; }
 

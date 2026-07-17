@@ -168,7 +168,9 @@ public class LogbookService : ILogbookService
             gpsStatus: dto.GpsStatus,
             latitude: dto.Latitude,
             longitude: dto.Longitude,
-            averageSogKnots: dto.AverageSogKnots);
+            averageSogKnots: dto.AverageSogKnots,
+            eventType: dto.EventType,
+            weatherCondition: dto.WeatherCondition);
 
              await _entryRepo.AddAsync(entity, cancellationToken);
             _logger.LogInformation("Logboekregel aangemaakt met id {EntryId} voor reis {TripId}.", entity.Id, tripId);
@@ -193,7 +195,9 @@ public class LogbookService : ILogbookService
             gpsStatus: dto.GpsStatus,
             latitude: dto.Latitude,
             longitude: dto.Longitude,
-            averageSogKnots: dto.AverageSogKnots);
+            averageSogKnots: dto.AverageSogKnots,
+            eventType: dto.EventType,
+            weatherCondition: dto.WeatherCondition);
 
         await _entryRepo.UpdateAsync(entity, cancellationToken);
     }
@@ -475,6 +479,8 @@ public class LogbookService : ILogbookService
             Latitude = e.Latitude,
             Longitude = e.Longitude,
             AverageSogKnots = e.AverageSogKnots,
+            EventType = e.EventType,
+            WeatherCondition = e.WeatherCondition,
             Status = e.Status,
             UpdatedAtUtc = e.UpdatedAtUtc,
             AttachmentCount = attachmentCount

@@ -29,6 +29,10 @@ public class LogbookEntryConfiguration : IEntityTypeConfiguration<LogbookEntry>
         b.Property(x => x.Latitude);
         b.Property(x => x.Longitude);
         b.Property(x => x.AverageSogKnots).HasPrecision(7, 3);
+        // Gebeurtenis en weerconditie worden als stabiele domeinwaarde (integer) opgeslagen.
+        // Ze zijn optioneel; bestaande regels blijven null en zo ook backward compatible.
+        b.Property(x => x.EventType).HasConversion<int?>();
+        b.Property(x => x.WeatherCondition).HasConversion<int?>();
         b.Property(x => x.Status)
             .IsRequired()
             .HasDefaultValue(LogbookEntryStatus.Confirmed)

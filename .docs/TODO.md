@@ -10,7 +10,7 @@
 - [x] `PILOT-SCAN-05` onbekende-code-flow en resterende scanvervolgstappen afronden
   - Follow-up 2026-06-25: regressiefix voor locatie-QR-scan in `ScanProductAddStock` na nieuw product vanuit onbekende code is handmatig gevalideerd op Raspberry Pi/mobiel.
 - [x] `PILOT-INV-08` product-zoekdetails en tagbatchprint
-- [ ] `PILOT-LOG-01` handmatig logboekmoment met actuele NMEA-snapshot (gemerged; handmatige acceptatie op actieve reis open)
+- [x] `PILOT-LOG-01` handmatig logboekmoment met actuele NMEA-snapshot (2026-07-17 administratief geaccepteerd; actieve-reis praktijktest niet uitvoerbaar in huidige database)
 - [ ] `PILOT-LOG-02` gebeurteniskeuze, weericonen en notitie
 
 ### ✅ Completed Vertical Slices
@@ -172,8 +172,8 @@
   - **Buiten scope:** brede redesign van het productoverzicht, nieuwe voorraadlogica en nieuwe exporttypes buiten de bestaande A4-tagroute.
   - **Referentie:** `.docs/releases/holiday-pilot-2026.md`.
 
-- [ ] **Holiday Pilot 2026 — PILOT-LOG-01 handmatig logboekmoment met actuele NMEA-snapshot**
-  - **Status 2026-07-17:** technisch gecontroleerd en via PR #107 gemerged naar `master`; handmatige acceptatie staat open omdat de huidige database geen actieve reis bevat.
+- [x] **Holiday Pilot 2026 — PILOT-LOG-01 handmatig logboekmoment met actuele NMEA-snapshot**
+  - **Status 2026-07-17:** technisch gecontroleerd, via PR #107 gemerged naar `master` en daarna administratief geaccepteerd op gebruikersbesluit; de actieve-reis praktijktest was in de huidige database niet uitvoerbaar.
   - **Doel:** binnen een actieve reis snel een handmatig logboekmoment vastleggen met de actuele beschikbare NMEA-waarden als snapshot.
   - **Kern:** duidelijke actie `Moment vastleggen`, concept-logregel met actuele meetwaarden en taakgerichte vervolgstap binnen de actieve reisflow.
   - **Buiten scope:** uitgebreide gebeurtenis- en weerkeuze uit `PILOT-LOG-02`.

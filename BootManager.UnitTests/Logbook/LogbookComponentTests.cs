@@ -118,6 +118,167 @@ public class LogbookComponentTests : TestContext
     }
 
     [Fact]
+    public async Task CaptureMoment_ThenChooseEventWeatherNote_SavesStableValues_AndRendersContext()
+    {
+        var trip = Trip(33, LogbookTripStatus.Open);
+        SetupTrip(trip);
+
+        // Het handmatige moment levert eerst een kale Draft met snapshot (PILOT-LOG-01).
+        var draft = new LogbookEntryDto
+        {
+            Id = 777,
+            LogbookTripId = trip.Id,
+            EntryTimeUtc = new DateTime(2026, 7, 16, 11, 30, 0, DateTimeKind.Utc),
+            Course = 215,
+            WindDescription = "NW 4",
+            GpsStatus = "OK",
+            Latitude = 52.3702,
+            Longitude = 4.8952,
+            AverageSogKnots = 5.4m,
+            Status = LogbookEntryStatus.Draft
+        };
+        _logbookService
+            .Setup(s => s.CreateManualDraftEntryAsync(trip.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(draft);
+
+        SaveLogbookEntryDto? saved = null;
+        _logbookService
+            .Setup(s => s.UpdateEntryAsync(draft.Id, It.IsAny<SaveLogbookEntryDto>(), It.IsAny<CancellationToken>()))
+            .Callback<int, SaveLogbookEntryDto, CancellationToken>((_, dto, _) => saved = dto)
+            .Returns(Task.CompletedTask);
+
+        var cut = RenderComponent<LogbookPage>();
+
+        // Leg het moment vast → het taakgerichte context-formulier verschijnt.
+        var captureButton = cut.FindAll("button").First(b => b.TextContent.Contains("Moment vastleggen"));
+        await cut.InvokeAsync(() => captureButton.Click());
+
+        cut.WaitForAssertion(() => Assert.Contains("kies gebeurtenis, weer en notitie", cut.Markup));
+
+        // Kies een gebeurtenis uit de pilotlijst.
+        var eventButton = cut.FindAll("button").First(b => b.TextContent.Trim() == "Overstag");
+        await cut.InvokeAsync(() => eventButton.Click());
+
+        // Kies een weerconditie via de grote pictogramknoppen.
+        var weatherButton = cut.FindAll("button").First(b => b.TextContent.Contains("Half bewolkt"));
+        await cut.InvokeAsync(() => weatherButton.Click());
+
+        // Vul een korte notitie in (hergebruikt Remarks).
+        var notitie = cut.Find("#momentNotitie");
+        notitie.Change("Overstag bij de ton");
+
+        // Sla het moment op.
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("Moment opslaan"));
+        await cut.InvokeAsync(() => saveButton.Click());
+
+        // De opslag stuurt de stabiele domeinwaarden en de notitie via Remarks, met behoud van de snapshot.
+        _logbookService.Verify(
+            s => s.UpdateEntryAsync(draft.Id, It.IsAny<SaveLogbookEntryDto>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        Assert.NotNull(saved);
+        Assert.Equal(LogbookEventType.Overstag, saved!.EventType);
+        Assert.Equal(LogbookWeatherCondition.HalfBewolkt, saved.WeatherCondition);
+        Assert.Equal("Overstag bij de ton", saved.Remarks);
+        Assert.Equal(215, saved.Course);
+        Assert.Equal("NW 4", saved.WindDescription);
+        Assert.Equal(5.4m, saved.AverageSogKnots);
+
+        // Na opslaan toont het overzicht de opgeslagen gebeurtenis- en weContext.
+        cut.WaitForAssertion(() =>
+        {
+            Assert.DoesNotContain("kies gebeurtenis, weer en notitie", cut.Markup);
+            Assert.Contains("Overstag", cut.Markup);
+            Assert.Contains("Half bewolkt", cut.Markup);
+        });
+    }
+
+    [Fact]
+    public void EntriesWithoutEventOrWeather_RenderSafely_InList()
+    {
+        var trip = Trip(44, LogbookTripStatus.Open);
+        _logbookService
+            .Setup(s => s.GetAllTripsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<LogbookTripDto> { trip });
+        _logbookService
+            .Setup(s => s.GetMissedLogMomentsAsync(trip.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MissedLogMomentsDto { TotalCount = 0, MissedMoments = new List<MissedMomentDto>() });
+
+        // Bestaande regel zonder gebeurtenis/weer (null) — moet zonder fouten renderen.
+        var legacyEntry = new LogbookEntryDto
+        {
+            Id = 900,
+            LogbookTripId = trip.Id,
+            EntryTimeUtc = new DateTime(2026, 7, 16, 12, 0, 0, DateTimeKind.Utc),
+            Remarks = "Oude regel",
+            Status = LogbookEntryStatus.Confirmed,
+            EventType = null,
+            WeatherCondition = null
+        };
+        _logbookService
+            .Setup(s => s.GetEntriesAsync(trip.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<LogbookEntryDto> { legacyEntry });
+
+        var cut = RenderComponent<LogbookPage>();
+
+        // De regel is zichtbaar en er wordt geen gebeurtenis/weer weergegeven.
+        Assert.Contains("Oude regel", cut.Markup);
+        Assert.Empty(cut.FindAll("span.badge.bg-primary"));
+    }
+
+    [Fact]
+    public async Task ConfirmDraft_KeepsEventAndWeatherVisible_WithoutRefresh()
+    {
+        var trip = Trip(55, LogbookTripStatus.Open);
+        _logbookService
+            .Setup(s => s.GetAllTripsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<LogbookTripDto> { trip });
+        _logbookService
+            .Setup(s => s.GetMissedLogMomentsAsync(trip.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MissedLogMomentsDto { TotalCount = 0, MissedMoments = new List<MissedMomentDto>() });
+
+        var draft = new LogbookEntryDto
+        {
+            Id = 901,
+            LogbookTripId = trip.Id,
+            EntryTimeUtc = new DateTime(2026, 7, 16, 12, 15, 0, DateTimeKind.Utc),
+            Remarks = "Motor gestart voor uitvaren",
+            Status = LogbookEntryStatus.Draft,
+            EventType = LogbookEventType.MotorGestart,
+            WeatherCondition = LogbookWeatherCondition.Zonnig
+        };
+        _logbookService
+            .Setup(s => s.GetEntriesAsync(trip.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<LogbookEntryDto> { draft });
+        _logbookService
+            .Setup(s => s.ConfirmEntryAsync(draft.Id, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var cut = RenderComponent<LogbookPage>();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Motor gestart", cut.Markup);
+            Assert.Contains("Zonnig", cut.Markup);
+            Assert.Contains("Te accorderen", cut.Markup);
+        });
+
+        var confirmButton = cut.FindAll("button").First(b => b.TextContent.Contains("Accorderen"));
+        await cut.InvokeAsync(() => confirmButton.Click());
+
+        _logbookService.Verify(
+            s => s.ConfirmEntryAsync(draft.Id, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Motor gestart", cut.Markup);
+            Assert.Contains("Zonnig", cut.Markup);
+            Assert.DoesNotContain("Te accorderen", cut.Markup);
+            Assert.Contains("Definitief", cut.Markup);
+        });
+    }
+
+    [Fact]
     public void CompletedTrip_DoesNotRenderMomentVastleggenAction()
     {
         var trip = Trip(22, LogbookTripStatus.Completed);

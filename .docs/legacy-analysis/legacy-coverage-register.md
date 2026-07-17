@@ -123,7 +123,7 @@ Bij afronding van een story of PR:
 
 | Legacy US | Status | BootManagerV2 dekking / open punt |
 |---|---|---|
-| US5.1 Handmatig logboek invoeren met weerinformatie | Partial | Handmatige logregels bestaan. `PILOT-LOG-01` voegt op een open reis `Moment vastleggen` toe: een Draft met de laatst beschikbare koers-, wind-, GPS- en SOG-snapshot. De wijziging is op 2026-07-17 gemerged; handmatige acceptatie op een actieve reis en weer/barometer/temperatuur blijven open. |
+| US5.1 Handmatig logboek invoeren met weerinformatie | Partial | Handmatige logregels bestaan. `PILOT-LOG-01` voegt op een open reis `Moment vastleggen` toe: een Draft met de laatst beschikbare koers-, wind-, GPS- en SOG-snapshot. De story is op 2026-07-17 administratief geaccepteerd; weer/barometer/temperatuur blijven open. |
 | US5.2 Automatisch loggen en intervalinstelling | Partial | Missing moments + Draft-regels bestaan; echte automatische logging op NMEA interval is beperkt. `SYS-CTRL-1` voegt bewuste ingest-verwerking aan/uit toe met logboekwaarschuwing en nieuwe-reis-popup wanneer automatische meetdata uit staat. |
 | US5.3 Motoruren en brandstof in header | Partial | `LOG-TRIP-AUTO-1A` dekt motoruren start/eind, actuele motorurenstand in bootinstellingen, expliciete overname en voortschrijving van hogere waarden af. Brandstof/tankniveau is technisch beschikbaar via Fluid Level en dashboard, maar nog niet geïntegreerd in de logboekheader. |
 | US5.4 Notities en gebeurtenissen toevoegen | Done | Opmerkingen/zeilvoering per logregel aanwezig. |

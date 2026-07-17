@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BootManager.Core.Enums;
 
 namespace BootManager.Application.Logbook.DTOs;
 
@@ -79,6 +80,12 @@ public class LogbookSavedEntryValuesDto
 
     /// <summary>Gemiddelde snelheid over grond (SOG) in knopen.</summary>
     public decimal? AverageSogKnots { get; set; }
+
+    /// <summary>Gekozen gebeurtenis (stabiele domeinwaarde). Null indien niet gekozen.</summary>
+    public LogbookEventType? EventType { get; set; }
+
+    /// <summary>Gekozen weerconditie (stabiele domeinwaarde). Null indien niet gekozen.</summary>
+    public LogbookWeatherCondition? WeatherCondition { get; set; }
 }
 
 /// <summary>
