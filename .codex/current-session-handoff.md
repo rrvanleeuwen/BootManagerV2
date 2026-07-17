@@ -1,6 +1,6 @@
 # Current Codex Handoff
 
-Updated: 2026-07-16.
+Updated: 2026-07-17.
 
 ## Rollen
 
@@ -11,10 +11,8 @@ Updated: 2026-07-16.
 
 - Basisbranch: `master`.
 - Actieve branch: `master`.
-- `PILOT-INV-08` is technisch gecontroleerd, handmatig geaccepteerd en via PR #106
-  gemerged naar `master`.
-- Volgende gitstap na deze handoff: bij hervatten vanaf een nieuwe werkbranch
-  `PILOT-LOG-01` oppakken.
+- `PILOT-LOG-01` is technisch gecontroleerd en via PR #107 gemerged naar `master`.
+  De handmatige acceptatie staat nog open omdat de huidige database geen actieve reis bevat.
 
 ## Actieve release
 
@@ -27,8 +25,10 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
   `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`, `PILOT-UX-01`,
   `PILOT-INV-07`, `PILOT-INV-08`;
-- eerstvolgende focus: `PILOT-LOG-01` en daarna `PILOT-LOG-02` voor de
-  logboekpilot; `PILOT-INV-06` blijft gepland maar schuift daarachter.
+- technisch gemerged, acceptatie open: `PILOT-LOG-01`;
+- eerstvolgende stap: `PILOT-LOG-01` handmatig accepteren op een actieve reis;
+  daarna `PILOT-LOG-02` voor de logboekpilot. `PILOT-INV-06` blijft gepland maar
+  schuift daarachter.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
@@ -38,7 +38,7 @@ of expliciete andere prioriteit van de gebruiker.
 De eerstvolgende sessie blijft gericht op het resterende pilotgebruiksgemak en snelle
 vakantie-ingebruikname:
 
-- eerst `PILOT-LOG-01` voor een handmatig logboekmoment met actuele NMEA-snapshot;
+- handmatige acceptatietest van `PILOT-LOG-01` op een actieve reis uitvoeren;
 - daarna `PILOT-LOG-02` voor gebeurteniskeuze, weericonen en notitie;
 - daarna `PILOT-INV-06` voor het bredere productoverzicht-redesign.
 

@@ -194,8 +194,8 @@ function Get-HolidayPilotStatus {
     # De pilotstories hebben een vaste prioriteitsvolgorde in het releasedocument.
     # Houd deze tellers bij wanneer een pilotstory administratief van status wijzigt.
     $done = 19
-    $partial = 0
-    $open = 5
+    $partial = 1
+    $open = 4
     $parked = 0
     $progress = Get-Progress -Done $done -Replaced 0 -Partial $partial -Open $open -Parked $parked -Obsolete 0
 
@@ -208,7 +208,7 @@ function Get-HolidayPilotStatus {
         Parked = $parked
         Active = $done + $partial + $open
         Progress = $progress
-        Next = "PILOT-LOG-01 - Handmatig logboekmoment met actuele NMEA-snapshot"
+        Next = "PILOT-LOG-01 - Handmatige acceptatie op actieve reis"
     }
 }
 
@@ -317,4 +317,9 @@ else {
 }
 
 $updated = $updated.TrimEnd()
-Set-Content -Path $ReadmePath -Value $updated -Encoding utf8
+
+# README already uses a UTF-8 BOM; preserve it across generated status updates.
+[System.IO.File]::WriteAllText(
+    $ReadmePath,
+    $updated + [Environment]::NewLine,
+    [System.Text.UTF8Encoding]::new($true))

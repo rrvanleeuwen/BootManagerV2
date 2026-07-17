@@ -152,7 +152,7 @@ Voor extra voorraad van hetzelfde product op een andere plek:
 16. **PILOT-UX-01** — **Done** — Home is nu de standaard pilotstart met snelle tegels, productzoekwidget en productgerichte doorklik vanuit home.
 17. **PILOT-INV-07** — **Done** — Owner-only CSV-startimport voor echte vakantievoorraad, locatie-mapping en QR-tags.
 18. **PILOT-INV-08** — **Done** — Product-zoekdetails, directe productbewerking en A4-tagbatchprint vanuit bestaande beheerflows.
-19. **PILOT-LOG-01** — **Gepland** — Handmatig logboekmoment met actuele NMEA-snapshot.
+19. **PILOT-LOG-01** — **In acceptatie** — Handmatig logboekmoment met actuele NMEA-snapshot is technisch gecontroleerd en via PR #107 gemerged; praktijkacceptatie op een actieve reis staat nog open.
 20. **PILOT-LOG-02** — **Gepland** — Gebeurteniskeuze, weericonen en notitie.
 21. **PILOT-INV-06** — **Gepland** — Productoverzicht herontwerpen naar dezelfde responsieve zoek- en resultaatstijl.
 22. **PILOT-E2E-01** — **Gepland** — End-to-end gebruikstest door Roelof en Carla.
@@ -165,7 +165,7 @@ Codex kiest geen story buiten deze volgorde, tenzij:
 - een afhankelijkheid aantoonbaar ontbreekt;
 - de gebruiker expliciet een andere prioriteit vaststelt.
 
-**Eerstvolgende story:** `PILOT-LOG-01` — Handmatig logboekmoment met actuele NMEA-snapshot.
+**Eerstvolgende stap:** `PILOT-LOG-01` handmatig accepteren op een actieve reis; daarna volgt `PILOT-LOG-02`.
 
 ## Expliciete herprioritering
 
@@ -210,8 +210,8 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
 
 ### Actieve werkset
 
-- Houd als actieve uitwerking nu eerst `PILOT-LOG-01` aan; voeg daarbinnen alleen de
-  eerstvolgende kleine implementatiestap toe wanneer die werkelijk aan de beurt is.
+- Houd `PILOT-LOG-01` in de actieve werkset tot de handmatige acceptatietest op een
+  actieve reis is uitgevoerd; daarna is `PILOT-LOG-02` de eerstvolgende implementatiestory.
 - Houd in dit document alleen de actuele releasekaders, prioriteitsvolgorde,
   eerstvolgende story en de actieve of direct geplande uitgewerkte stories.
 - Verplaats een story na afronding en administratieve controle naar het archief,
@@ -220,6 +220,11 @@ afgeronde stories staan in `.docs/releases/holiday-pilot-2026-archive-completed-
   implementatiestatus of legacy-impact opnieuw relevant is.
 
 ### PILOT-LOG-01 — Handmatig logboekmoment met actuele NMEA-snapshot
+
+**Status 2026-07-17:** technisch gecontroleerd en via PR #107 gemerged naar `master`.
+De handmatige acceptatietest staat open omdat de huidige database geen actieve reis
+bevat. De story wordt pas administratief afgerond en gearchiveerd nadat die test op
+een actieve reis is geslaagd.
 
 **Storyzin**
 Als Owner of Crew wil ik tijdens een actieve reis direct een handmatig logboekmoment
