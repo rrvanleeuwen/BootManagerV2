@@ -7,6 +7,50 @@ beschikbaar blijven wanneer die opnieuw nodig zijn.
 
 ## Afgeronde stories
 
+### PILOT-PERF-01 — Productoverzicht met vast querybudget
+
+**Status 2026-07-17:** technisch gecontroleerd en door de gebruiker geaccepteerd na
+een live productzoektest met EF SQL-log.
+
+**Story**
+Als gebruiker wil ik het productoverzicht en de productzoeking snel kunnen openen en
+doorbladeren, zodat de responstijd niet lineair verslechtert door losse
+databasequeries per product.
+
+**Resultaat**
+
+- Een Application-contract voor de gepagineerde overview-read wordt in Infrastructure
+  door een gerichte EF Core-query geïmplementeerd; Web gebruikt uitsluitend dit
+  contract en geen directe EF Core- of Infrastructure-types.
+- Actieve/gearchiveerde filtering, naam-/omschrijvingzoeking, stabiele sortering en
+  paginering per tien lopen databasegestuurd.
+- De zichtbare productpagina projecteert product, eenheid, optionele code en actieve
+  categorie rechtstreeks; actieve voorraadtotalen en locaties komen in één
+  gebatchte query voor uitsluitend de zichtbare producten.
+- Categorie- en eenheidlookups worden pas geladen bij product aanmaken of bewerken.
+- Een SQLite-integratietest bewijst maximaal vijf databasecommando's voor de
+  overzichtspagina en geen groei wanneer extra, niet-zichtbare producten bestaan.
+
+**Buiten scope**
+
+- Home- en gedeelde productzoeking (`PILOT-PERF-02`).
+- Overige voorraad-readpaden (`PILOT-PERF-03`) en DbContext-/write-hardening
+  (`PILOT-PERF-04`).
+- Nieuwe functionele filters, UI-herontwerp, scanroutes en schemawijzigingen.
+
+**Verificatie**
+
+- 3 SQLite-integratietests voor filtering, paginering, projectie en querybudget groen;
+- 21 `ProductsComponentTests` groen;
+- `dotnet build BootManager.sln --no-restore` en `git diff --check` groen;
+- live SQL-log bevestigt bij openen én bij zoeken telkens drie productoverzichtqueries:
+  count, zichtbare productpagina en gebatchte voorraad.
+
+**Legacy-impact**
+
+Verbetert `US2.12 Zoeken en filteren` technisch, zonder nieuwe functionele filters toe
+te voegen. Home- en gedeelde zoekpaden blijven expliciet open in `PILOT-PERF-02`.
+
 ### PILOT-LOG-01 — Handmatig logboekmoment met actuele NMEA-snapshot
 
 **Status 2026-07-17:** technisch gecontroleerd, via PR #107 gemerged naar `master` en

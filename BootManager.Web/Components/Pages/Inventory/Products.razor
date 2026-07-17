@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @inject IProductService ProductService
+@inject IProductOverviewReadQuery OverviewReadQuery
 @inject IProductCategoryService CategoryService
 @inject IUnitService UnitService
 @inject IStockService StockService
@@ -86,7 +87,7 @@
     {
         <p>Bezig met laden...</p>
     }
-    else if (_resultProducts.Count == 0)
+    else if (_overviewItems.Count == 0)
     {
         <div class="products-empty">
             @if (_hasSearched)
@@ -102,10 +103,10 @@
     else
     {
         <div class="products-results">
-            @foreach (var product in _pagedResults)
+            @foreach (var item in _overviewItems)
             {
-                var stockLoaded = _productStockData.TryGetValue(product.Id, out var stockView);
-                var hasStock = stockLoaded && stockView.ActiveLocations.Count > 0;
+                var product = item.Product;
+                var hasStock = item.ActiveLocations.Count > 0;
 
                 <div class="product-result">
                     <button type="button" class="product-main" @onclick="() => SelectProductFromSearch(product)">
@@ -117,23 +118,16 @@
                             }
                         </span>
                         <span class="product-stock">
-                            @if (stockLoaded)
-                            {
-                                @* Ook zonder actieve voorraad tonen we de totale hoeveelheid (0) en de eenheid. *@
-                                <span class="stock-value">@stockView.TotalQuantity</span>
-                                <span class="stock-unit">@(product.DefaultUnitName ?? "")</span>
-                            }
+                            @* Ook zonder actieve voorraad tonen we de totale hoeveelheid (0) en de eenheid. *@
+                            <span class="stock-value">@item.TotalQuantity</span>
+                            <span class="stock-unit">@(product.DefaultUnitName ?? "")</span>
                         </span>
                         <span class="product-locations">
-                            @if (!stockLoaded)
-                            {
-                                <span class="product-loading">Laden…</span>
-                            }
-                            else if (hasStock)
+                            @if (hasStock)
                             {
                                 <span class="locations-label">Locaties:</span>
                                 <span class="location-chips">
-                                    @foreach (var location in stockView.ActiveLocations)
+                                    @foreach (var location in item.ActiveLocations)
                                     {
                                         <span class="location-chip">@location.StorageAreaName - @location.StorageLocationName</span>
                                     }
@@ -580,7 +574,6 @@ else
 
     private Guid? _handledEditProductId;
 
-    private List<ProductDto> _products = new();
     private List<ProductCategoryDto> _activeCategories = new();
     private List<UnitDto> _activeUnits = new();
     private bool _showArchived = false;
@@ -591,12 +584,16 @@ else
     private string? _formError;
     private IReadOnlyList<string> _validIconKeys = new List<string>();
 
-    // Overzicht: zoek- en resultaatstate (mockup-geleide unified weergave)
+    // Form-lookups (categorieën, eenheden, icoonsleutels) worden pas geladen wanneer de
+    // gebruiker een productform voor aanmaken of bewerken opent, niet bij de paginaopbouw.
+    private bool _formLookupsLoaded = false;
+
+    // Overzicht: zoek- en resultaatstate. De gepagineerde read levert per pagina alleen de
+    // zichtbare producten met hun reeds gebatchte actieve voorraad.
     private string _searchTerm = "";
     private bool _hasSearched = false;
-    private List<ProductDto> _resultProducts = new();
-    private List<ProductDto> _pagedResults = new();
-    private Dictionary<Guid, (List<StockDto> ActiveLocations, decimal TotalQuantity)> _productStockData = new();
+    private List<ProductOverviewItemDto> _overviewItems = new();
+    private int _totalCount = 0;
     private int _currentPage = 1;
     private const int ItemsPerPage = 10;
     private int _totalPages = 1;
@@ -641,17 +638,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await UnitService.InitializeDefaultUnitsAsync();
-        await LoadDataAsync();
-        _validIconKeys = CategoryService.GetValidIconKeys();
+        await LoadOverviewPageAsync(resetPage: true);
     }
 
     /// <summary>
     /// Verwerkt de <see cref="EditProductId"/> deep-link. Draait na het laden van de data
     /// (eerste weergave) en opnieuw wanneer op dezelfde pagina naar een ander product-id
-    /// wordt genavigeerd. Een onbekend id laat de pagina bruikbaar en toont een melding.
+    /// wordt genavigeerd. Haalt het ene doelproduct op aanvraag op zonder de volledige
+    /// catalogus te laden. Een onbekend id laat de pagina bruikbaar en toont een melding.
     /// </summary>
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (EditProductId == _handledEditProductId)
         {
@@ -665,8 +661,10 @@ else
             return;
         }
 
-        var product = _products.FirstOrDefault(p => p.Id == EditProductId.Value);
-        if (product == null)
+        await EnsureFormLookupsLoadedAsync();
+
+        var result = await ProductService.GetByIdAsync(EditProductId.Value);
+        if (!result.Success || result.Data == null)
         {
             _errorMessage = "Product niet gevonden voor bewerken.";
             _editMode = false;
@@ -674,31 +672,43 @@ else
         }
 
         _errorMessage = null;
-        OpenEditForm(product);
+        OpenEditForm(result.Data);
     }
 
-    private async Task LoadDataAsync()
+    /// <summary>
+    /// Laadt via de gepagineerde read exact de huidige pagina uit de database: gefilterd op
+    /// archiefstand en zoekterm, stabiel gesorteerd, met de actieve voorraad reeds gebatcht.
+    /// Er wordt geen volledige catalogus geladen en geen losse voorraadquery per product gedaan.
+    /// </summary>
+    private async Task LoadOverviewPageAsync(bool resetPage)
     {
+        if (resetPage)
+        {
+            _currentPage = 1;
+        }
+
         try
         {
-            _products = (await ProductService.GetAllAsync()).ToList();
-            _activeCategories = (await CategoryService.GetActiveAsync()).ToList();
-            _activeUnits = (await UnitService.GetActiveAsync()).ToList();
-            _productStockData.Clear();
+            _hasSearched = !string.IsNullOrWhiteSpace(_searchTerm);
+            var term = _hasSearched ? _searchTerm.Trim() : null;
 
-            if (_hasSearched && !string.IsNullOrWhiteSpace(_searchTerm))
+            var pageResult = await OverviewReadQuery.GetPageAsync(term, _showArchived, _currentPage, ItemsPerPage);
+            _totalCount = pageResult.TotalCount;
+            _totalPages = Math.Max(1, (int)Math.Ceiling(_totalCount / (double)ItemsPerPage));
+
+            if (_currentPage > _totalPages)
             {
-                await PerformSearch();
+                _currentPage = _totalPages;
+                pageResult = await OverviewReadQuery.GetPageAsync(term, _showArchived, _currentPage, ItemsPerPage);
             }
-            else
-            {
-                await ShowCatalogueAsync();
-            }
+
+            _overviewItems = pageResult.Items.ToList();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Fout bij laden van data");
+            Logger.LogError(ex, "Fout bij laden van productoverzicht");
             _errorMessage = "Fout bij laden van data.";
+            _overviewItems = new();
         }
         finally
         {
@@ -707,87 +717,30 @@ else
     }
 
     /// <summary>
-    /// Stelt het initiële resultaat samen uit de catalogus, gestuurd door de archieftoggle,
-    /// en begint op pagina 1.
+    /// Laadt de form-lookups (categorieën, eenheden, default-eenheden en icoonsleutels) één
+    /// keer, pas wanneer een aanmaak- of bewerkform ze nodig heeft.
     /// </summary>
-    private async Task ShowCatalogueAsync()
+    private async Task EnsureFormLookupsLoadedAsync()
     {
-        _hasSearched = false;
-        _resultProducts = _showArchived
-            ? _products.Where(p => p.IsArchived).ToList()
-            : _products.Where(p => !p.IsArchived).ToList();
-        await RecalculatePagingAsync(resetPage: true);
-    }
-
-    /// <summary>
-    /// Zoekt catalogusbreed op naam en omschrijving (hoofdletterongevoelig) en toont de
-    /// gevonden producten met dezelfde resultaatopbouw als het initiële overzicht.
-    /// Een nieuwe zoekopdracht begint op pagina 1.
-    /// </summary>
-    private async Task PerformSearch()
-    {
-        if (string.IsNullOrWhiteSpace(_searchTerm))
+        if (_formLookupsLoaded)
         {
-            await ShowCatalogueAsync();
             return;
         }
 
-        try
-        {
-            _hasSearched = true;
-            _resultProducts = (await ProductService.SearchByNameOrDescriptionAsync(_searchTerm)).ToList();
-            await RecalculatePagingAsync(resetPage: true);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Fout bij zoeken");
-            _errorMessage = "Fout bij zoeken.";
-        }
-    }
-
-    private async Task RecalculatePagingAsync(bool resetPage)
-    {
-        if (resetPage)
-        {
-            _currentPage = 1;
-        }
-
-        _totalPages = Math.Max(1, (int)Math.Ceiling(_resultProducts.Count / (double)ItemsPerPage));
-        if (_currentPage > _totalPages)
-        {
-            _currentPage = _totalPages;
-        }
-
-        UpdatePaginatedResults();
-        await LoadStockForPageAsync();
-    }
-
-    private void UpdatePaginatedResults()
-    {
-        var skip = (_currentPage - 1) * ItemsPerPage;
-        _pagedResults = _resultProducts.Skip(skip).Take(ItemsPerPage).ToList();
+        await UnitService.InitializeDefaultUnitsAsync();
+        _activeCategories = (await CategoryService.GetActiveAsync()).ToList();
+        _activeUnits = (await UnitService.GetActiveAsync()).ToList();
+        _validIconKeys = CategoryService.GetValidIconKeys();
+        _formLookupsLoaded = true;
     }
 
     /// <summary>
-    /// Laadt de actieve voorraad (totaal en locaties) voor de producten op de huidige pagina
-    /// via <see cref="IStockService.GetActiveStocksByProductAsync"/>, exact zoals de home-widget.
+    /// Voert de zoekopdracht uit: een nieuwe zoekopdracht begint altijd op pagina 1 en vraagt
+    /// de server-side pagina op.
     /// </summary>
-    private async Task LoadStockForPageAsync()
+    private async Task PerformSearch()
     {
-        foreach (var product in _pagedResults)
-        {
-            if (_productStockData.ContainsKey(product.Id))
-            {
-                continue;
-            }
-
-            var activeStocksResult = await StockService.GetActiveStocksByProductAsync(product.Id);
-            var activeLocations = activeStocksResult.Success && activeStocksResult.Data != null
-                ? activeStocksResult.Data.ToList()
-                : new List<StockDto>();
-
-            _productStockData[product.Id] = (activeLocations, activeLocations.Sum(l => l.Quantity));
-        }
+        await LoadOverviewPageAsync(resetPage: true);
     }
 
     private async Task NextPage()
@@ -795,9 +748,7 @@ else
         if (_currentPage < _totalPages)
         {
             _currentPage++;
-            UpdatePaginatedResults();
-            await LoadStockForPageAsync();
-            StateHasChanged();
+            await LoadOverviewPageAsync(resetPage: false);
         }
     }
 
@@ -806,21 +757,19 @@ else
         if (_currentPage > 1)
         {
             _currentPage--;
-            UpdatePaginatedResults();
-            await LoadStockForPageAsync();
-            StateHasChanged();
+            await LoadOverviewPageAsync(resetPage: false);
         }
     }
 
     /// <summary>
-    /// Wisselt de archiefstand. Dit vervangt de zoekopdracht door het catalogusoverzicht van
-    /// de gekozen archiefstand en begint op pagina 1.
+    /// Wisselt de archiefstand. Dit wist de zoekterm en vraagt de eerste pagina van de gekozen
+    /// archiefstand server-side op.
     /// </summary>
     private async Task ToggleArchivedAsync(bool showArchived)
     {
         _showArchived = showArchived;
         _searchTerm = "";
-        await ShowCatalogueAsync();
+        await LoadOverviewPageAsync(resetPage: true);
     }
 
     private async Task HandleSearchKeyDown(KeyboardEventArgs e)
@@ -832,19 +781,21 @@ else
     }
 
     /// <summary>
-    /// Houdt de zoekterm bij en herstelt het catalogusoverzicht zodra het veld wordt geleegd.
+    /// Houdt de zoekterm bij en herstelt het (server-side) catalogusoverzicht zodra het veld
+    /// wordt geleegd.
     /// </summary>
     private async Task OnSearchInput(ChangeEventArgs e)
     {
         _searchTerm = e.Value?.ToString() ?? "";
         if (string.IsNullOrWhiteSpace(_searchTerm) && _hasSearched)
         {
-            await ShowCatalogueAsync();
+            await LoadOverviewPageAsync(resetPage: true);
         }
     }
 
-    private void OpenCreateForm()
+    private async Task OpenCreateForm()
     {
+        await EnsureFormLookupsLoadedAsync();
         _editingProduct = new ProductDto { Id = Guid.Empty };
         _showAddCodeForm = false;
         _newCodeValue = "";
@@ -958,7 +909,7 @@ else
             }
 
             _editMode = false;
-            await LoadDataAsync();
+            await LoadOverviewPageAsync(resetPage: false);
         }
         catch (Exception ex)
         {
@@ -1002,7 +953,9 @@ else
             }
 
             _addCategoryModalOpen = false;
-            await LoadDataAsync();
+            // Vernieuw uitsluitend de categorie-lookup van het formulier; het overzicht wordt
+            // hier niet opnieuw opgebouwd.
+            _activeCategories = (await CategoryService.GetActiveAsync()).ToList();
             _editingProduct.ActiveCategoryId = result.Data!.Id;
         }
         catch (Exception ex)
@@ -1039,7 +992,9 @@ else
             }
 
             _addUnitModalOpen = false;
-            await LoadDataAsync();
+            // Vernieuw uitsluitend de eenheid-lookup van het formulier; het overzicht wordt
+            // hier niet opnieuw opgebouwd.
+            _activeUnits = (await UnitService.GetActiveAsync()).ToList();
             _editingProduct.DefaultUnitId = result.Data!.Id;
         }
         catch (Exception ex)
@@ -1142,7 +1097,7 @@ else
             }
             else
             {
-                await LoadDataAsync();
+                await LoadOverviewPageAsync(resetPage: false);
             }
         }
         catch (Exception ex)
@@ -1163,7 +1118,7 @@ else
             }
             else
             {
-                await LoadDataAsync();
+                await LoadOverviewPageAsync(resetPage: false);
             }
         }
         catch (Exception ex)
