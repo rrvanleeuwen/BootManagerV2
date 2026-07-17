@@ -10,10 +10,10 @@ Updated: 2026-07-17.
 ## Repositorystatus
 
 - Basisbranch: `master`.
-- Actieve branch: `codex/pilot-perf-01-product-overview`.
+- Actieve branch: `master`.
 - `PILOT-PERF-01` is op 2026-07-17 technisch gecontroleerd en door de gebruiker
-  geaccepteerd. Het productoverzicht gebruikt databasegestuurde paginering en een vast
-  querybudget.
+  geaccepteerd en via PR #110 gemerged. Het productoverzicht gebruikt
+  databasegestuurde paginering en een vast querybudget.
 
 ## Actieve release
 
