@@ -267,6 +267,46 @@ public class LogbookService : ILogbookService
         return await MapEntryAsync(entity, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task<LogbookEntryDto> CreateManualDraftEntryAsync(int tripId, CancellationToken cancellationToken = default)
+    {
+        var trip = await _tripRepo.SingleOrDefaultAsync(t => t.Id == tripId, cancellationToken)
+            ?? throw new InvalidOperationException($"Reis met id {tripId} niet gevonden.");
+
+        // Blokkeer aanroep voor afgeronde reizen: een afgesloten reis kan geen moment vastleggen.
+        if (trip.Status == LogbookTripStatus.Completed)
+            throw new InvalidOperationException("Kan geen handmatig moment vastleggen: deze reis is afgesloten.");
+
+        // Leg het moment vast op het huidige tijdstip (UTC).
+        var entryTimeUtc = DateTime.UtcNow;
+
+        // Handmatige momentopname: gebruik de laatst bekende meetwaarden (onlyPeriodData: false),
+        // in tegenstelling tot de automatische gemiste-momentflow die alleen logtijdvak-data gebruikt.
+        var suggestions = await _suggestionService.GetSuggestionsAsync(tripId, entryTimeUtc, onlyPeriodData: false, cancellationToken);
+
+        // Maak Draft-entry aan met beschikbare suggesties; ontbrekende waarden blijven null.
+        // Handmatige velden BaroPressure en LogValue blijven null.
+        var entity = new LogbookEntry(
+            logbookTripId: tripId,
+            entryTimeUtc: entryTimeUtc,
+            baroPressure: null,
+            logValue: null,
+            course: suggestions.Course,
+            remarks: null,
+            windDescription: suggestions.WindDescription,
+            gpsStatus: suggestions.GpsStatus,
+            latitude: suggestions.Latitude,
+            longitude: suggestions.Longitude,
+            averageSogKnots: suggestions.AverageSogKnots);
+
+        // Zet expliciet op Draft zodat het concept later kan worden bekeken en aangevuld.
+        entity.SetDraft();
+
+        await _entryRepo.AddAsync(entity, cancellationToken);
+        _logger.LogInformation("Handmatige Draft logboekregel aangemaakt met id {EntryId} voor reis {TripId}.", entity.Id, tripId);
+        return await MapEntryAsync(entity, cancellationToken);
+    }
+
     private static LogbookTripDto MapTrip(LogbookTrip t) => new()
     {
         Id = t.Id,
