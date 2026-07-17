@@ -11,8 +11,8 @@ Updated: 2026-07-17.
 
 - Basisbranch: `master`.
 - Actieve branch: `master`.
-- `PILOT-LOG-01` en `PILOT-LOG-02` zijn op 2026-07-17 door de gebruiker geaccepteerd.
-  Verdere praktijktest van de logboekflow volgt tijdens de vakantie.
+- `PILOT-INV-06` is op 2026-07-17 technisch gecontroleerd en door de gebruiker
+  geaccepteerd. De responsieve productzoek- en resultaatpagina is gereed voor de pilot.
 
 ## Actieve release
 
@@ -24,19 +24,19 @@ De leidende release is de **BootManager Holiday Pilot 2026**.
   `PILOT-LOC-03`, `PILOT-LOC-04`, `PILOT-INV-01`, `PILOT-INV-02`, `PILOT-INV-03`,
   `PILOT-INV-04`, `PILOT-INV-05`, `PILOT-SCAN-02`, `PILOT-SCAN-03`,
   `PILOT-SCAN-03A`, `PILOT-SCAN-04`, `PILOT-SCAN-05`, `PILOT-UX-01`,
-  `PILOT-INV-07`, `PILOT-INV-08`, `PILOT-LOG-01`, `PILOT-LOG-02`;
-- eerstvolgende stap: `PILOT-INV-06` voor het productoverzicht-redesign.
+  `PILOT-INV-07`, `PILOT-INV-08`, `PILOT-LOG-01`, `PILOT-LOG-02`, `PILOT-INV-06`;
+- eerstvolgende stap: `PILOT-E2E-01` voor de end-to-end gebruikstest.
 
 Kies geen story buiten deze release, behalve bij een blocker, ontbrekende afhankelijkheid
 of expliciete andere prioriteit van de gebruiker.
 
 ## Eerstvolgende actie
 
-De eerstvolgende sessie blijft gericht op het resterende pilotgebruiksgemak en snelle
+De eerstvolgende sessie blijft gericht op de integrale praktijktest en snelle
 vakantie-ingebruikname:
 
-- `PILOT-INV-06` voor het bredere productoverzicht-redesign;
-- daarna `PILOT-E2E-01` voor de end-to-end gebruikstest.
+- `PILOT-E2E-01` voor de end-to-end gebruikstest;
+- daarna `PILOT-OPS-01` voor duur-, herstart-, opslag- en back-uptest.
 
 Historische scanrework-details, acceptatie-uitkomsten en de expliciete
 herprioriteringen rond scan/home/productoverzicht staan in

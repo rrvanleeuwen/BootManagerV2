@@ -16,8 +16,6 @@
 
 <PageTitle>Producten</PageTitle>
 
-<h3>Producten</h3>
-
 @if (_showAddStockModal && _selectedSearchProduct != null)
 {
     <AddStockToProductModal
@@ -37,148 +35,43 @@
 
 @if (!_editMode)
 {
-    @* List view *@
-    <div class="mb-3">
-        @if (!_searchMode)
+    @* Responsieve productzoek- en resultaatpagina (PILOT-INV-06) *@
+    <div class="products-header">
+        <div class="products-identity">
+            <span class="products-eyebrow">Voorraadbeheer</span>
+            <h3 class="products-title">Producten</h3>
+        </div>
+        <button class="btn-new-product" @onclick="OpenCreateForm">
+            <i class="fas fa-plus"></i> Nieuw product
+        </button>
+    </div>
+
+    <div class="products-toolbar desktop-only">
+        @if (_showArchived)
         {
-            <div class="d-flex gap-2 mb-3">
-                @if (_showArchived)
-                {
-                    <button class="btn btn-secondary btn-sm" @onclick="() => _showArchived = false">
-                        <i class="fas fa-eye-slash"></i> Actieve weergeven
-                    </button>
-                }
-                else
-                {
-                    <button class="btn btn-secondary btn-sm" @onclick="() => _showArchived = true">
-                        <i class="fas fa-archive"></i> Gearchiveerde weergeven
-                    </button>
-                }
-
-                <button class="btn btn-primary btn-sm" @onclick="OpenCreateForm">
-                    <i class="fas fa-plus"></i> Nieuw product
-                </button>
-
-                <button class="btn btn-outline-secondary btn-sm" @onclick="OpenSearchMode">
-                    <i class="fas fa-search"></i> Zoeken
-                </button>
-
-                <button class="btn btn-info btn-sm" @onclick="OpenMutationFallback">
-                    <i class="fas fa-edit"></i> Voorraadbijzonderheid
-                </button>
-            </div>
+            <button class="btn btn-secondary btn-sm" title="Actieve weergeven" @onclick="() => ToggleArchivedAsync(false)">
+                <i class="fas fa-eye-slash"></i> Actieve weergeven
+            </button>
         }
         else
         {
-            <div class="input-group mb-3">
-                <input type="text" class="form-control" placeholder="Zoeken op naam of omschrijving…"
-                       @bind="_searchTerm"
-                       @bind:event="oninput"
-                       @onkeydown="HandleSearchKeyDown" />
-                <button class="btn btn-outline-secondary" @onclick="PerformSearch">Zoeken</button>
-                <button class="btn btn-outline-secondary" @onclick="CloseSearchMode">Sluiten</button>
-            </div>
-
-            @if (_searchResults != null)
-            {
-                @if (_searchResults.Count > 0)
-                {
-                    <div class="list-group">
-                        @foreach (var product in _searchResults)
-                        {
-                            <div class="list-group-item d-flex justify-content-between align-items-start gap-2">
-                                <button type="button" class="btn btn-link text-start text-decoration-none flex-grow-1 p-0" @onclick="() => SelectProductFromSearch(product)">
-                                    <strong>@product.Name</strong>
-                                    @if (!string.IsNullOrEmpty(product.Description))
-                                    {
-                                        <br />
-                                        <small class="text-muted">@(product.Description.Length > 80 ? product.Description.Substring(0, 80) + "…" : product.Description)</small>
-                                    }
-                                    <br />
-                                    @if (_productSearchLocations.TryGetValue(product.Id, out var locations) && locations != null && locations.Count > 0)
-                                    {
-                                        <small class="text-muted">Locaties: @string.Join(", ", locations.Select(l => $"{l.StorageAreaName} - {l.StorageLocationName}"))</small>
-                                    }
-                                    else
-                                    {
-                                        <small class="text-muted">Geen actieve voorraad</small>
-                                    }
-                                </button>
-                                <div class="d-flex gap-1 flex-shrink-0">
-                                    <button type="button" class="btn btn-sm btn-outline-info" title="Productdetails" @onclick="() => ShowProductDetailsPopup(product)">
-                                        <i class="fas fa-info-circle"></i> Details
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Bewerken/code" @onclick="() => NavigateToEditProduct(product)">
-                                        <i class="fas fa-edit"></i> Bewerken
-                                    </button>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-                else if (!string.IsNullOrEmpty(_searchTerm))
-                {
-                    <div class="alert alert-info">Geen producten gevonden.</div>
-                }
-            }
-
-            @if (_showSearchFindingFlow && _selectedSearchProduct != null)
-            {
-                <div class="card mt-3 p-3">
-                    @if (_searchFoundLocations != null && _searchFoundLocations.Count > 0)
-                    {
-                        @if (_searchFoundLocations.Count == 1)
-                        {
-                            <div class="alert alert-info">
-                                <h6>Product gevonden op één locatie</h6>
-                                <strong>@_selectedSearchProduct.Name</strong><br/>
-                                Locatie: @_searchFoundLocations[0].StorageAreaName - @_searchFoundLocations[0].StorageLocationName<br/>
-                                <small class="text-muted">Hoeveelheid: @_searchFoundLocations[0].Quantity @_searchFoundLocations[0].DefaultUnitName</small>
-                                <br/>
-                                <button class="btn btn-sm btn-primary mt-2" @onclick="() => NavigateToSearchFoundLocation(0)">Naar locatie</button>
-                            </div>
-                        }
-                        else
-                        {
-                            <div>
-                                <h6>Product gevonden op meerdere locaties</h6>
-                                <strong>@_selectedSearchProduct.Name</strong>
-                                <div class="list-group mt-2">
-                                    @foreach (var location in _searchFoundLocations)
-                                    {
-                                        <button type="button" class="list-group-item list-group-item-action"
-                                                @onclick="() => NavigateToLocation(location.StorageLocationId)">
-                                            <div class="d-flex justify-content-between">
-                                                <strong>@location.StorageAreaName - @location.StorageLocationName</strong>
-                                                <span class="badge bg-primary">@location.Quantity @location.DefaultUnitName</span>
-                                            </div>
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="alert alert-warning">
-                            <h6>Geen actieve voorraad</h6>
-                            <strong>@_selectedSearchProduct.Name</strong> is bekend maar momenteel niet op voorraad.
-                            @if (_searchExpectedLocation != null)
-                            {
-                                <div class="alert alert-info mt-2">
-                                    <strong>Verwachte locatie:</strong><br/>
-                                    @_searchExpectedLocation.StorageAreaName - @_searchExpectedLocation.StorageLocationName
-                                </div>
-                            }
-                            <button class="btn btn-sm btn-primary" @onclick="NavigateToAddStock">
-                                Voorraad toevoegen
-                            </button>
-                        </div>
-                    }
-                    <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="CloseSearchFindingFlow">Sluiten</button>
-                </div>
-            }
+            <button class="btn btn-secondary btn-sm" title="Gearchiveerde weergeven" @onclick="() => ToggleArchivedAsync(true)">
+                <i class="fas fa-archive"></i> Gearchiveerde weergeven
+            </button>
         }
+
+        <button class="btn btn-info btn-sm" title="Voorraadbijzonderheid" @onclick="OpenMutationFallback">
+            <i class="fas fa-edit"></i> Voorraadbijzonderheid
+        </button>
+    </div>
+
+    <div class="products-search">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="products-search-input"
+               placeholder="Zoek op productnaam of omschrijving…"
+               value="@_searchTerm"
+               @oninput="OnSearchInput"
+               @onkeydown="HandleSearchKeyDown" />
     </div>
 
     @if (_errorMessage != null)
@@ -189,116 +82,165 @@
         </div>
     }
 
-    @if (_products == null)
+    @if (!_loaded)
     {
         <p>Bezig met laden...</p>
     }
-    else if (_products.Count == 0)
+    else if (_resultProducts.Count == 0)
     {
-        <p class="text-muted">Geen producten beschikbaar.</p>
+        <div class="products-empty">
+            @if (_hasSearched)
+            {
+                <span>Geen producten gevonden.</span>
+            }
+            else
+            {
+                <span>Geen producten beschikbaar.</span>
+            }
+        </div>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th style="width: 40px;"></th>
-                        <th>Naam</th>
-                        <th>Categorie</th>
-                        <th>Eenheid</th>
-                        <th>Code</th>
-                        <th class="text-end">Acties</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var product in _displayedProducts)
-                    {
-                        <tr>
-                            <td>
-                                @if (!product.IsArchived)
-                                {
-                                    <button class="btn btn-sm btn-link p-0" @onclick="() => ToggleExpanded(product.Id)" title="Gekoppelde locaties">
-                                        <i class="fas @(_expandedProductIds.Contains(product.Id) ? "fa-chevron-down" : "fa-chevron-right")"></i>
-                                    </button>
-                                }
-                            </td>
-                            <td>@product.Name</td>
-                            <td>@(product.ActiveCategoryName ?? "-")</td>
-                            <td>@(product.DefaultUnitName ?? "-")</td>
-                            <td>@(product.Code?.Value ?? "-")</td>
-                            <td class="text-end">
-                                @if (product.IsArchived)
-                                {
-                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ReactivateAsync(product.Id)" title="Reactiveren">
-                                        <i class="fas fa-undo"></i>
-                                    </button>
-                                }
-                                else
-                                {
-                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenEditForm(product)" title="Bewerken">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ArchiveAsync(product.Id)" title="Archiveren">
-                                        <i class="fas fa-archive"></i>
-                                    </button>
-                                }
-                            </td>
-                        </tr>
-                        @if (_expandedProductIds.Contains(product.Id))
+        <div class="products-results">
+            @foreach (var product in _pagedResults)
+            {
+                var stockLoaded = _productStockData.TryGetValue(product.Id, out var stockView);
+                var hasStock = stockLoaded && stockView.ActiveLocations.Count > 0;
+
+                <div class="product-result">
+                    <button type="button" class="product-main" @onclick="() => SelectProductFromSearch(product)">
+                        <span class="product-identity">
+                            <span class="product-name">@product.Name</span>
+                            @if (!string.IsNullOrEmpty(product.Code?.Value))
+                            {
+                                <span class="product-code">Code: @product.Code!.Value</span>
+                            }
+                        </span>
+                        <span class="product-stock">
+                            @if (stockLoaded)
+                            {
+                                @* Ook zonder actieve voorraad tonen we de totale hoeveelheid (0) en de eenheid. *@
+                                <span class="stock-value">@stockView.TotalQuantity</span>
+                                <span class="stock-unit">@(product.DefaultUnitName ?? "")</span>
+                            }
+                        </span>
+                        <span class="product-locations">
+                            @if (!stockLoaded)
+                            {
+                                <span class="product-loading">Laden…</span>
+                            }
+                            else if (hasStock)
+                            {
+                                <span class="locations-label">Locaties:</span>
+                                <span class="location-chips">
+                                    @foreach (var location in stockView.ActiveLocations)
+                                    {
+                                        <span class="location-chip">@location.StorageAreaName - @location.StorageLocationName</span>
+                                    }
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="product-no-stock">Geen actieve voorraad</span>
+                            }
+                        </span>
+                    </button>
+                    <div class="product-actions">
+                        <button type="button" class="product-action" title="Productdetails" @onclick="() => ShowProductDetailsPopup(product)">
+                            <i class="fas fa-info-circle"></i> Details
+                        </button>
+                        <button type="button" class="product-action" title="Bewerken/code" @onclick="() => NavigateToEditProduct(product)">
+                            <i class="fas fa-edit"></i> Bewerken
+                        </button>
+                        @if (product.IsArchived)
                         {
-                            <tr>
-                                <td colspan="6">
-                                    <div class="p-3 bg-light">
-                                        <h6>Gekoppelde opslaglocaties</h6>
-                                        @if (_productStocks.TryGetValue(product.Id, out var stocks) && stocks != null)
-                                        {
-                                            @if (stocks.Count > 0)
-                                            {
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-borderless">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Gebied</th>
-                                                                <th>Locatie</th>
-                                                                <th class="text-end">Hoeveelheid</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @foreach (var stock in stocks)
-                                                            {
-                                                                <tr>
-                                                                    <td>@stock.StorageAreaName</td>
-                                                                    <td>@stock.StorageLocationName</td>
-                                                                    <td class="text-end">@stock.Quantity @stock.DefaultUnitName</td>
-                                                                </tr>
-                                                            }
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <p class="text-muted small">Geen opslaglocaties gekoppeld.</p>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <p class="text-muted small">Laden...</p>
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
+                            <button type="button" class="product-action" title="Reactiveren" @onclick="() => ReactivateAsync(product.Id)">
+                                <i class="fas fa-undo"></i> Reactiveren
+                            </button>
                         }
+                        else
+                        {
+                            <button type="button" class="product-action danger" title="Archiveren" @onclick="() => ArchiveAsync(product.Id)">
+                                <i class="fas fa-archive"></i> Archiveren
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (_totalPages > 1)
+        {
+            <div class="products-pagination">
+                <button class="pagination-btn" disabled="@(_currentPage == 1)" @onclick="PreviousPage">Vorige</button>
+                <span class="pagination-info">Pagina @_currentPage van @_totalPages</span>
+                <button class="pagination-btn" disabled="@(_currentPage >= _totalPages)" @onclick="NextPage">Volgende</button>
+            </div>
+        }
+    }
+
+    @if (_showSearchFindingFlow && _selectedSearchProduct != null)
+    {
+        <div class="card mt-3 p-3">
+            @if (_searchFoundLocations != null && _searchFoundLocations.Count > 0)
+            {
+                @if (_searchFoundLocations.Count == 1)
+                {
+                    <div class="alert alert-info">
+                        <h6>Product gevonden op één locatie</h6>
+                        <strong>@_selectedSearchProduct.Name</strong><br/>
+                        Locatie: @_searchFoundLocations[0].StorageAreaName - @_searchFoundLocations[0].StorageLocationName<br/>
+                        <small class="text-muted">Hoeveelheid: @_searchFoundLocations[0].Quantity @_searchFoundLocations[0].DefaultUnitName</small>
+                        <br/>
+                        <button class="btn btn-sm btn-primary mt-2" @onclick="() => NavigateToSearchFoundLocation(0)">Naar locatie</button>
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <h6>Product gevonden op meerdere locaties</h6>
+                        <strong>@_selectedSearchProduct.Name</strong>
+                        <div class="list-group mt-2">
+                            @foreach (var location in _searchFoundLocations)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action"
+                                        @onclick="() => NavigateToLocation(location.StorageLocationId)">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@location.StorageAreaName - @location.StorageLocationName</strong>
+                                        <span class="badge bg-primary">@location.Quantity @location.DefaultUnitName</span>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    <h6>Geen actieve voorraad</h6>
+                    <strong>@_selectedSearchProduct.Name</strong> is bekend maar momenteel niet op voorraad.
+                    @if (_searchExpectedLocation != null)
+                    {
+                        <div class="alert alert-info mt-2">
+                            <strong>Verwachte locatie:</strong><br/>
+                            @_searchExpectedLocation.StorageAreaName - @_searchExpectedLocation.StorageLocationName
+                        </div>
                     }
-                </tbody>
-            </table>
+                    <button class="btn btn-sm btn-primary" @onclick="NavigateToAddStock">
+                        Voorraad toevoegen
+                    </button>
+                </div>
+            }
+            <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="CloseSearchFindingFlow">Sluiten</button>
         </div>
     }
 }
 else
 {
     @* Edit/Create form view *@
+    <h3>Producten</h3>
+
     @if (_formError != null)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -499,14 +441,14 @@ else
                     {
                         <div class="mb-3">
                             <label class="form-label">Product selecteren *</label>
-                            <input type="text" class="form-control" placeholder="Typ productnaam…" @bind="_searchTerm" />
+                            <input type="text" class="form-control" placeholder="Typ productnaam…" @bind="_fallbackSearchTerm" />
                             <button class="btn btn-sm btn-primary mt-2" @onclick="PerformMutationFallbackSearch">Zoeken</button>
                         </div>
 
-                        @if (_searchResults != null && _searchResults.Count > 0)
+                        @if (_fallbackSearchResults != null && _fallbackSearchResults.Count > 0)
                         {
                             <div class="list-group">
-                                @foreach (var product in _searchResults)
+                                @foreach (var product in _fallbackSearchResults)
                                 {
                                     <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelectProductForMutationFallback(product)">
                                         <strong>@product.Name</strong>
@@ -639,23 +581,31 @@ else
     private Guid? _handledEditProductId;
 
     private List<ProductDto> _products = new();
-    private List<ProductDto> _displayedProducts = new();
     private List<ProductCategoryDto> _activeCategories = new();
     private List<UnitDto> _activeUnits = new();
     private bool _showArchived = false;
     private bool _editMode = false;
-    private bool _searchMode = false;
-    private string _searchTerm = "";
-    private List<ProductDto>? _searchResults;
-    private Dictionary<Guid, List<StockDto>?> _productSearchLocations = new();
-    private bool _showSearchFindingFlow = false;
-    private ProductDto? _selectedSearchProduct;
-    private List<StockDto>? _searchFoundLocations;
-    private StockDto? _searchExpectedLocation;
+    private bool _loaded = false;
     private ProductDto _editingProduct = new();
     private string? _errorMessage;
     private string? _formError;
     private IReadOnlyList<string> _validIconKeys = new List<string>();
+
+    // Overzicht: zoek- en resultaatstate (mockup-geleide unified weergave)
+    private string _searchTerm = "";
+    private bool _hasSearched = false;
+    private List<ProductDto> _resultProducts = new();
+    private List<ProductDto> _pagedResults = new();
+    private Dictionary<Guid, (List<StockDto> ActiveLocations, decimal TotalQuantity)> _productStockData = new();
+    private int _currentPage = 1;
+    private const int ItemsPerPage = 10;
+    private int _totalPages = 1;
+
+    // Finding flow (primaire klik op resultaat)
+    private bool _showSearchFindingFlow = false;
+    private ProductDto? _selectedSearchProduct;
+    private List<StockDto>? _searchFoundLocations;
+    private StockDto? _searchExpectedLocation;
 
     private bool _addCategoryModalOpen = false;
     private string _newCategoryName = "";
@@ -671,16 +621,16 @@ else
     private string _newCodeValue = "";
     private string _newCodeFormat = "";
 
-    private HashSet<Guid> _expandedProductIds = new();
-    private Dictionary<Guid, List<BootManager.Application.Inventory.DTOs.StockDto>?> _productStocks = new();
     private bool _showAddStockModal = false;
 
     // Product details popup (zoekresultaat detailactie)
     private bool _showProductDetailsPopup = false;
     private ProductDto? _detailsPopupProduct;
 
-    // Mutation fallback state
+    // Mutation fallback state (eigen zoekvelden, losstaand van het hoofdoverzicht)
     private bool _showMutationFallback = false;
+    private string _fallbackSearchTerm = "";
+    private List<ProductDto>? _fallbackSearchResults;
     private ProductDto? _fallbackProduct;
     private List<StockDto>? _fallbackProductLocations;
     private StockDto? _fallbackSelectedStock;
@@ -734,20 +684,163 @@ else
             _products = (await ProductService.GetAllAsync()).ToList();
             _activeCategories = (await CategoryService.GetActiveAsync()).ToList();
             _activeUnits = (await UnitService.GetActiveAsync()).ToList();
-            UpdateDisplayedProducts();
+            _productStockData.Clear();
+
+            if (_hasSearched && !string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                await PerformSearch();
+            }
+            else
+            {
+                await ShowCatalogueAsync();
+            }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Fout bij laden van data");
             _errorMessage = "Fout bij laden van data.";
         }
+        finally
+        {
+            _loaded = true;
+        }
     }
 
-    private void UpdateDisplayedProducts()
+    /// <summary>
+    /// Stelt het initiële resultaat samen uit de catalogus, gestuurd door de archieftoggle,
+    /// en begint op pagina 1.
+    /// </summary>
+    private async Task ShowCatalogueAsync()
     {
-        _displayedProducts = _showArchived
+        _hasSearched = false;
+        _resultProducts = _showArchived
             ? _products.Where(p => p.IsArchived).ToList()
             : _products.Where(p => !p.IsArchived).ToList();
+        await RecalculatePagingAsync(resetPage: true);
+    }
+
+    /// <summary>
+    /// Zoekt catalogusbreed op naam en omschrijving (hoofdletterongevoelig) en toont de
+    /// gevonden producten met dezelfde resultaatopbouw als het initiële overzicht.
+    /// Een nieuwe zoekopdracht begint op pagina 1.
+    /// </summary>
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            await ShowCatalogueAsync();
+            return;
+        }
+
+        try
+        {
+            _hasSearched = true;
+            _resultProducts = (await ProductService.SearchByNameOrDescriptionAsync(_searchTerm)).ToList();
+            await RecalculatePagingAsync(resetPage: true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fout bij zoeken");
+            _errorMessage = "Fout bij zoeken.";
+        }
+    }
+
+    private async Task RecalculatePagingAsync(bool resetPage)
+    {
+        if (resetPage)
+        {
+            _currentPage = 1;
+        }
+
+        _totalPages = Math.Max(1, (int)Math.Ceiling(_resultProducts.Count / (double)ItemsPerPage));
+        if (_currentPage > _totalPages)
+        {
+            _currentPage = _totalPages;
+        }
+
+        UpdatePaginatedResults();
+        await LoadStockForPageAsync();
+    }
+
+    private void UpdatePaginatedResults()
+    {
+        var skip = (_currentPage - 1) * ItemsPerPage;
+        _pagedResults = _resultProducts.Skip(skip).Take(ItemsPerPage).ToList();
+    }
+
+    /// <summary>
+    /// Laadt de actieve voorraad (totaal en locaties) voor de producten op de huidige pagina
+    /// via <see cref="IStockService.GetActiveStocksByProductAsync"/>, exact zoals de home-widget.
+    /// </summary>
+    private async Task LoadStockForPageAsync()
+    {
+        foreach (var product in _pagedResults)
+        {
+            if (_productStockData.ContainsKey(product.Id))
+            {
+                continue;
+            }
+
+            var activeStocksResult = await StockService.GetActiveStocksByProductAsync(product.Id);
+            var activeLocations = activeStocksResult.Success && activeStocksResult.Data != null
+                ? activeStocksResult.Data.ToList()
+                : new List<StockDto>();
+
+            _productStockData[product.Id] = (activeLocations, activeLocations.Sum(l => l.Quantity));
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            UpdatePaginatedResults();
+            await LoadStockForPageAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            UpdatePaginatedResults();
+            await LoadStockForPageAsync();
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Wisselt de archiefstand. Dit vervangt de zoekopdracht door het catalogusoverzicht van
+    /// de gekozen archiefstand en begint op pagina 1.
+    /// </summary>
+    private async Task ToggleArchivedAsync(bool showArchived)
+    {
+        _showArchived = showArchived;
+        _searchTerm = "";
+        await ShowCatalogueAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await PerformSearch();
+        }
+    }
+
+    /// <summary>
+    /// Houdt de zoekterm bij en herstelt het catalogusoverzicht zodra het veld wordt geleegd.
+    /// </summary>
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(_searchTerm) && _hasSearched)
+        {
+            await ShowCatalogueAsync();
+        }
     }
 
     private void OpenCreateForm()
@@ -784,6 +877,16 @@ else
     private void CancelForm()
     {
         _editMode = false;
+
+        // Als de form via de deep-link (?editProductId=<id>) is geopend, verwijderen we die
+        // queryparameter bij annuleren. De daaropvolgende parametercyclus zet
+        // _handledEditProductId terug op null, zodat opnieuw op Bewerken klikken voor
+        // hetzelfde product de form weer opent. Voor een nieuw (nog niet opgeslagen) product
+        // is er geen queryparameter en behouden we de bestaande terugkeer zonder routewijziging.
+        if (EditProductId.HasValue)
+        {
+            NavigationManager.NavigateTo("/inventory/products");
+        }
     }
 
     private async Task SaveAsync()
@@ -1070,69 +1173,6 @@ else
         }
     }
 
-    private async Task ToggleExpanded(Guid productId)
-    {
-        if (_expandedProductIds.Contains(productId))
-        {
-            _expandedProductIds.Remove(productId);
-        }
-        else
-        {
-            _expandedProductIds.Add(productId);
-            if (!_productStocks.ContainsKey(productId))
-            {
-                var result = await StockService.GetStocksByProductAsync(productId);
-                _productStocks[productId] = result.Success ? result.Data?.ToList() : null;
-            }
-        }
-    }
-
-    private void OpenSearchMode()
-    {
-        _searchMode = true;
-        _searchTerm = "";
-        _searchResults = null;
-        _productSearchLocations.Clear();
-        StateHasChanged();
-    }
-
-    private void CloseSearchMode()
-    {
-        _searchMode = false;
-        _searchTerm = "";
-        _searchResults = null;
-        _productSearchLocations.Clear();
-        StateHasChanged();
-    }
-
-    private async Task PerformSearch()
-    {
-        if (string.IsNullOrWhiteSpace(_searchTerm))
-        {
-            _searchResults = new();
-            return;
-        }
-
-        try
-        {
-            _searchResults = (await ProductService.SearchByNameOrDescriptionAsync(_searchTerm)).ToList();
-
-            foreach (var product in _searchResults)
-            {
-                if (!_productSearchLocations.ContainsKey(product.Id))
-                {
-                    var activeStocksResult = await StockService.GetActiveStocksByProductAsync(product.Id);
-                    _productSearchLocations[product.Id] = activeStocksResult.Success ? activeStocksResult.Data?.ToList() : null;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Fout bij zoeken");
-            _errorMessage = "Fout bij zoeken.";
-        }
-    }
-
     private async Task SelectProductFromSearch(ProductDto product)
     {
         // Load finding flow data for the product
@@ -1189,14 +1229,6 @@ else
     private void NavigateToEditProduct(ProductDto product)
     {
         NavigationManager.NavigateTo($"/inventory/products?editProductId={product.Id}");
-    }
-
-    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await PerformSearch();
-        }
     }
 
     private void CloseSearchFindingFlow()
@@ -1265,8 +1297,8 @@ else
         _fallbackQuantity = 0;
         _fallbackNote = null;
         _fallbackError = null;
-        _searchTerm = "";
-        _searchResults = null;
+        _fallbackSearchTerm = "";
+        _fallbackSearchResults = null;
         StateHasChanged();
     }
 
@@ -1280,22 +1312,22 @@ else
         _fallbackQuantity = 0;
         _fallbackNote = null;
         _fallbackError = null;
-        _searchTerm = "";
-        _searchResults = null;
+        _fallbackSearchTerm = "";
+        _fallbackSearchResults = null;
         StateHasChanged();
     }
 
     private async Task PerformMutationFallbackSearch()
     {
-        if (string.IsNullOrWhiteSpace(_searchTerm))
+        if (string.IsNullOrWhiteSpace(_fallbackSearchTerm))
         {
-            _searchResults = new();
+            _fallbackSearchResults = new();
             return;
         }
 
         try
         {
-            _searchResults = (await ProductService.SearchByNameOrDescriptionAsync(_searchTerm)).ToList();
+            _fallbackSearchResults = (await ProductService.SearchByNameOrDescriptionAsync(_fallbackSearchTerm)).ToList();
         }
         catch (Exception ex)
         {
